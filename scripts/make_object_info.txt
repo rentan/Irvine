@@ -1,0 +1,14 @@
+make_object_info.dms  by rentan
+
+
+Irvine/DMonkey の組み込みオブジェクトの情報を作成します。
+
+
+変更履歴
+========
+
+2014-03-09  version 20140309
+	初期バージョン。
+
+
+[EOF]

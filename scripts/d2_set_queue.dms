@@ -1,0 +1,147 @@
+/*
+スクリプト初期化データ
+guid={3D030643-7669-4800-B927-06E1A5DD952C}
+caption=キューフォルダ名をオプション設定
+version=20140309
+hint=POSTする文字列に queue=フォルダ名 を設定(Shiftキー押し下げ時は削除)
+event=OnMainMenuClick
+match=
+author=rentan
+synchronize=0
+*/
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+//メインメニューのクリックイベント
+function OnMainMenuClick (irvine, action) {
+
+
+  // true で全てのフォルダに設定する
+  //  HTTP POST でダウンロードする設定のフォルダは設定が壊れるので注意
+  var force = false;
+
+
+  // オプション追加・削除
+  function change_option (folder, key, value) {
+    var post = folder.Data ('http', 'post').split (';');
+    var np = [ ];
+
+    var found = false;
+
+    // 追加・削除するキー以外をコピー
+    for (var i = 0; i < post.length; ++i) {
+      var p = post [i];
+
+      if (p == '') {
+        continue;
+      }
+
+      if (!/^([^=]+?)\s*=.*$/.test (p) && !force) {
+        return false;
+      }
+      if (RegExp.$1 == key) {
+        found = true;
+      }
+      else {
+        np.push (p);
+      }
+    }
+
+    if (value == null) {
+      if (!found) {
+        // 削除すべきキーがなかった
+        return false;
+      }
+    }
+    else {
+      np.push (key + '=' + value);
+    }
+    folder.Data ('http', 'post') = np.join (';');
+
+    return true;
+  }
+
+  var dorothy2a_guids = {
+    '{DCE1A8A9-D753-471E-8F87-4EEA91E12596}': true,  // Dorothy2A.dms
+    '{115F43E2-884F-4B64-A854-D91568694635}': true   // Dorothy2R_a.dms
+  };
+
+  // Dorothy2 が設定されているキューフォルダか調べる
+  function is_dorothy2_enable (folder) {
+    var method = folder.Data ('http', 'httpmethod');
+    if (method != '0') {
+      // HTTP メソッドが GET ではない
+      return false;
+    }
+
+    var sc = parseInt (folder.Data ('script', 'script_count'));
+
+    for (var i = 0; i < sc; ++i) {
+      var guid = folder.Data ('script', 'script' + i);
+
+      if (dorothy2a_guids.hasKey (guid)) {
+        return dorothy2a_guids [guid];
+      }
+    }
+
+    return false;
+  }
+
+  // Dorothy2 用のキューフォルダならフォルダ名を設定
+  function set_option (list, folder) {
+    var ap = folder.AbsolutePath;
+
+    if (ap != '/') {
+      var stat = '無視';
+
+      if (force || is_dorothy2_enable (folder)) {
+        var r = change_option (folder, 'queue', remove_mode ? null : ap);
+        stat = r ? act : '失敗';
+      }
+
+      list.push (stat + '  ' + ap);
+    }
+
+    // 子フォルダを処理
+    for (var i = 0; i < folder.FolderCount; ++i) {
+      set_option (list, folder.Folders (i));
+    }
+  }
+
+
+  // Shift キーの状態
+  var remove_mode = Keyboard.shift;
+  var act = remove_mode ? '削除' : '設定';
+
+  var api = new ActiveXObject ('Irvine.Api');
+
+  var list = [ ];
+  set_option (list, api.Default);
+  set_option (list, api.Root);
+
+  alert ("キューフォルダ名を" + act + "しました。\n\n" + list.join ("\n"));
+}
+
+
+//メニューの更新イベント
+function OnMenuUpdate (irvine, action) {
+}
+
+
+// EOF
