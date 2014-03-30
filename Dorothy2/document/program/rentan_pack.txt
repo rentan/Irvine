@@ -1,0 +1,61 @@
+rentan_pack.dms
+
+
+いくつかのサイト用スクリプトの詰め合わせ。
+
+
+使用方法
+========
+
+設定機能はありませんが、スクリプトを書き換えた場合は設定画面から
+//match= 行の更新が出来ます。
+
+
+対応 URL
+========
+
+http://(ftp|download).vector.co.jp/
+http://img.toranoana.jp/popup_img18/
+http://sundaygx.com/members/[^/]+/download/wall_p/
+http://websunday.net/download/wallpaper/
+http://www.enterbrain.co.jp/fb/pc/(14gallery/14images|20omake/wallpaper)/
+http://www.microsoft.com/taiwan/silverlight/
+
+以下はコメントアウトしてあります。
+
+http://i-bbs.sijex.net/imageDisp.jsp
+http://image.i-bbs.sijex.net/bbs/
+http://my.vector.co.jp/servlet/System.FileDownload/download/
+
+
+仕様・制限事項
+==============
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
+
+  rentan_pack.set で common\EZDialog.dms を使わないようにした。
+
+2013-04-28
+  ファミ通文庫の URL 変更に対応。
+
+2012-10-22
+  サンデーGENE-X の対応 URL が固定になっていた不具合を修正。
+
+2012-03-29
+  設定プログラムを redirect.dms と rentan_pack.dms で共通化。
+  バックアップを保存する場所を backup フォルダに変更。
+
+  以下のサイトを追加。
+    WEBサンデー ダウンロード・スタジオ
+
+2012-01-20
+  初期バージョン。
+
+
+[EOF]

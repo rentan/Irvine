@@ -1,0 +1,104 @@
+twitpic_r.dms
+
+
+Twitpic 用のスクリプトです（27.140 氏の twitpic.dms や、IrvineまとめWiki
+の Abcdefgh 氏の twitpic.dms とは別物）。
+
+使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分
+ご注意下さい。
+
+一括ダウンロード時に HTML 解析に失敗するようなことがあるかも知れないので、
+ファイルを取りこぼしていないか必ず確認して下さい。
+
+
+使用方法
+========
+
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
+
+
+対応 URL
+========
+
+http://twitpic.com/[0-9a-z]+
+http://twitpic.com/[0-9a-z]+/full
+  画像と動画のページ
+
+http://twitpic.com/photos/[0-9a-zA-Z_]{1,15}
+  画像と動画の一覧ページ
+  その作者の全作品をダウンロード。
+
+  1ページ目だけダウンロードしたい場合は ?page=1 を付ける。
+
+http://twitpic.com/photos/[0-9a-zA-Z_]{1,15}?page=\d+
+  画像と動画の一覧ページ
+  そのページに表示されている全作品をダウンロード。
+
+
+仕様・制限事項
+==============
+
+・ホスト名は twitpic.com の他に以下のものも受け付けますが、twitpic.com に
+  置き換えて接続します。
+  www.twitpic.com
+  web\d+.twitpic.com
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
+
+  古い形式のファイル名変数 %CONTENT_ID% を削除。
+
+2012-09-07
+  画像 URL の変更に対応。
+
+2012-07-11
+  大幅に変更。
+
+2012-03-29
+  common\{http,utf8}.dms を使うようにした。
+
+2012-01-22
+  タイトルがないデータのファイル名形式を別に指定出来るようにした。
+  設定ファイルに
+    [General]
+    NoTitleFilename=true
+    [Filename]
+    PhotoNoTitle=twitpic_%CONTENT_ID%
+    VideoNoTitle=twitpic_%CONTENT_ID%
+  のように記述する（twitpic_r.Default.ini には書いてないので、
+  twitpic_r.ini に新たに書き加えて下さい）。
+
+2012-01-21
+  %USER_ID% を %TWITTER_ID% に変更。
+  HTML 構造の変更に対応。
+
+2011-12-18
+  Dorothy.userPath、Dorothy.userIniPath を使うようにした。
+  .ini ファイルの読み込みを common\fnutil.dms に実装。
+
+2011-12-10
+  新しい画像サーバ名に対応。
+
+2011-12-05
+  ヘッダの match= を修正。コメント（フィルタリング設定）を修正。
+
+  remove_this() を common/fnutil.dms に移動。
+  ソースの簡素化のため、common_load() を冒頭で一括して行うようにした。
+
+2011-10-22
+  ユーザーのページからの一括ダウンロードが出来なかった不具合を修正。
+
+  full ページの HTML の変更に対応。
+
+2011-09-24
+  初期バージョン。
+
+
+[EOF]

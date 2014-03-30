@@ -1,0 +1,147 @@
+//Dorothy2
+//caption=匠枕
+//version=20140331.0
+//hint=
+//match=^http://takumimakura\.com/catalog/index\.php\?id=\d
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2012,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'http', 'namebuilder', 'utf8');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: true,
+      RemoveSpace: true
+    },
+    Filename: {
+      ItemA: '匠枕_%ID%a_%CHAR%',
+      ItemB: '匠枕_%ID%b_%CHAR%',
+      ItemSp: '匠枕_%ID%sp_%CHAR%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+// <h3>～</h3> の中身を Utf8 に変換して返す
+function h3toutf8 (s) {
+  s = s.replace (/^<[^>]*>|<[^>]*>$/g, '');
+
+  if (ini.General.RemoveSpace) {
+    // 半角スペースを除去
+    s = s.replace (/\s+/g, '');
+
+    // 全角スペースを除去
+    var zensp = String.fromCharCode (0xe3, 0x80, 0x80);  // U+3000
+    var zensp_len = 3;
+
+    var sb = new StringBuffer (s);
+    var idx;
+    while ((idx = sb.indexOf (zensp)) != -1) {
+      sb = sb.delete (idx, idx + zensp_len);
+    }
+    s = sb.toString ();
+  }
+
+  var u = new Utf8 (s);
+  u = u.removeTags ();
+
+  return u;
+}
+
+
+// 特定の製品をダウンロード
+function dl_item (url) {
+  var http = new Http ();
+  if (!http.get (url)) {
+    http.retry_or_die ();
+  }
+
+  var h3 = http.data.match (/<h3\s+class="name">[^<]+<\/h3>/g);
+  if (!h3) {
+    http.die ('キャラクター名が見つかりません。');
+  }
+  if (h3.length < 2) {
+    http.die ('作家名が見つかりません。');
+  }
+
+  nb.char = h3toutf8 (h3 [0]);
+  nb.author = h3toutf8 (h3 [1]);
+
+  // 画像をリストに追加
+  var list = [ ];
+  function dl_item_img (filename, fmt) {
+    var img_url = http.expandUrl (filename);
+    var f = nb.assemble (fmt, img_url);
+    list.push ({ Url: img_url, Filename: f });
+  }
+
+  var h = 'id' + nb.id;
+  dl_item_img (h + '/itema.jpg', ini.Filename.ItemA);
+  dl_item_img (h + '/itemb.jpg', ini.Filename.ItemB);
+
+  // 初回限定版同梱特典
+  if (/<a\s+href="(id\d+\/itemsp.jpg)"/.test (http.data)) {
+    dl_item_img (RegExp.$1, ini.Filename.ItemSp);
+  }
+  else {
+    println ('itemsp.jpg はありません。');
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
+  // ファイル名の生成に使える情報
+  nb.id = null;      // item***
+  nb.author = null;  // 作家名
+  nb.char = null;    // キャラクター名
+
+
+  var url = urlinfo.url;
+
+  if (/^http:\/\/takumimakura\.com\/catalog\/index\.php\?id=(\d+)/.test (url)) {
+    nb.id = RegExp.$1;
+    url = 'http://takumimakura.com/catalog/index.php?id=' + nb.id;
+    dl_item (url);
+    return;
+  }
+
+  println ('未対応の URL です。');
+  return;
+}
+
+
+// EOF

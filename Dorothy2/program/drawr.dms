@@ -1,0 +1,362 @@
+//Dorothy2
+//caption=drawr
+//version=20140331.0
+//hint=
+//match=^http://drawr\.net/([a-z0-9][-_a-z0-9]+[a-z0-9]([?#].*)?$|(user|show)\.php\?id=)
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2011,2012,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'http', 'namebuilder', 'utf8');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: false,
+      DownloadXml: false
+    },
+    Filename: {
+      Illust: 'drawr_%ID%',
+      Anonymous: 'drawr_%ID%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+// 作者情報を抽出
+function get_spec_from_html (http) {
+  if (!/<a\s+href="faving\.php\?id=(\d+)">/.test (http.data)) {
+    http.die ('ユーザー ID が見つかりません。');
+  }
+  nb.user_id = RegExp.$1;
+
+  if (!/<p\s+class="side-profile-name">([^<]+)(\&nbsp;<a|<\/p>)/.test (http.data)) {
+    http.die ('ユーザー名が見つかりません。');
+  }
+  nb.user_name = (new Utf8 (RegExp.$1)).decodeCharRef ().toSJIS ();
+
+  if (!/<li\s+class="pbooku"><a\s+href="\/([^"]+)"/.test (http.data)) {
+    return err ('pixiv ID が見つかりません。');
+  }
+  nb.pixiv_id = RegExp.$1;
+}
+
+
+// 再生用データをリストに追加する
+//  Flash Player のパラメータでは .xml なのに実際の URL は .gz で、
+//  中身は gzip 形式ではないらしいという謎仕様。
+function add_xml_file (list, img_url, img_type) {
+  if (ini.General.DownloadXml == false) {
+    return;
+  }
+
+  var xml_url = img_url.replace (/\.[^.]+$/, '.gz');
+  var t = nb.assemble (ini.Filename [img_type], xml_url);
+
+  list.push ({ Url: xml_url, Filename: t });
+}
+
+
+// <div class="entryArea">～</div> の中身を解析してリストに追加する
+function add_user_item (list, html) {
+  function err (s) {
+    println ('entryArea [' + idx.toString () + ']: ' + s);
+    return;
+  }
+
+  var img_type = 'Illust';
+
+  // 画像 URL を抽出
+  var img_re = /<a\s+href="show\.php\?id=\d+(#rid\d+)?"><img\s+src="(http:\/\/[^.]+\.drawr\.net\/draw\/img\/\d+\/[^"]+)"/;
+
+  if (!img_re.test (html)) {
+    println ('画像の URL が見つかりません。');
+    exit ();
+  }
+  var img_url = RegExp.$2;
+
+  // イラストIDと時刻情報を抽出
+  var ts_re = /<a\s+href="\/?show\.php\?id=(\d+#rid)?(\d+)"[^>]*>(\d{4}-\d\d-\d\d\s+\d\d:\d\d:\d\d)/;
+
+  if (!ts_re.test (html)) {
+    println ('投稿時刻が見つかりません。');
+    exit ();
+  }
+  nb.id = RegExp.$2;
+  nb.setYmdhms (RegExp.$3);
+
+
+  var filename = nb.assemble (ini.Filename [img_type], img_url);
+  list.push ({ Url: img_url, Filename: filename });
+
+  add_xml_file (list, img_url, img_type);
+}
+
+
+// ユーザーページを解析してリストに追加
+//  true: 次のページあり  false: 次のページなし
+function dl_user_p (list, http) {
+  var start_len = list.length;
+
+  function add_list (s, p) {
+    add_user_item (list, p);
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/<div\s+class="entryArea">(.*?)<div\s+class="clear"><\/div>/g, add_list);
+
+  if (start_len == list.length) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+
+  // 次のページへのリンクを探す
+  if (/<a\s+href="\/user\.php\?id=\d+&amp;page=\d+">\s*Older\s*&#187;\s*<\/a>/.test (http.data)) {
+    return true;
+  }
+  if (/<li\s+class="left-food-link">\s*<span>\s*Older\s*&#187;\s*<\/span>/.test (http.data)) {
+    return false;
+  }
+  http.die ('次のページへのリンクが見つかりません。');
+}
+
+
+// ユーザーページの作品をダウンロード
+//  http://drawr.net/pixivid
+//  http://drawr.net/user.php?id=user_id
+//  http://drawr.net/user.php?id=user_id&page=***
+function dl_user (url) {
+  var list = [ ];
+
+  // 1ページ目を処理
+  var http = new Http (url);
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  // 作品を抽出する前に、作者情報を抽出しておく
+  get_spec_from_html (http);
+
+  var next = dl_user_p (list, http);
+
+  var p = /[?&]page=(\d+)/.test (url);  // ページ指定はあるか？
+
+  // ページ指定がなければ2ページ目以降を処理
+  if (!p) {
+    if (!/^http:\/\/drawr\.net\/user\.php/.test (url)) {
+      // http://drawr.net/pixivid の2ページ目は user.php に移る
+      url = 'http://drawr.net/user.php?id=' + nb.user_id;
+    }
+    url += '&page=';
+
+    for (var page = 2; next ; ++page) {
+      if (!http.get (url + page)) {
+        return http.retry_or_die ();
+      }
+      next = dl_user_p (list, http);
+    }
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// <div class="permalinkEntry">～</div> の中身を解析してリストに追加する
+function add_thread_item (list, html) {
+  var img_type = 'Anonymous';
+  nb.pixiv_id = null;
+  nb.user_name = null;
+
+  // 画像 URL を抽出
+  if (!/<div\s+class="floleft">\s*<div[^>]*>\s*<a[^>]*>\s*<img\s+src="(http:\/\/[^.]+\.drawr\.net\/draw\/img\/(\d+)\/[^"]+)"/.test (html)) {
+    println ('画像の URL が見つかりません。');
+    exit ();
+  }
+  var img_url = RegExp.$1;
+  nb.user_id = RegExp.$2;
+
+  // 作者情報を抽出
+  var info_re = /<li\s+class="mgnRight10">\s*<a\s+href="\/([^"]+)"><img\s+src="[^"]+"\s+alt="([^"]+)"/;
+
+  if (info_re.test (html)) {
+    nb.pixiv_id = RegExp.$1;
+    nb.user_name = (new Utf8 (RegExp.$2)).decodeCharRef ();
+
+    img_type = 'Illust';
+  }
+  else {
+    // println ('匿名イラストのため作者情報はありません。');
+
+    // 匿名イラストは 55226「どろなしさん」として扱われている
+    nb.user_id = null;
+  }
+
+  // イラストIDと時刻情報を抽出
+  var ts_re = /<a\s+href="(\/?show\.php\?id=\d+#rid|\/?show\.php\?id=|#rid)(\d+)"[^>]*>(\d{4}-\d\d-\d\d\s+\d\d:\d\d:\d\d)/;
+
+  if (!ts_re.test (html)) {
+    println  ('投稿時刻が見つかりません。');
+    exit ();
+  }
+  nb.id = RegExp.$2;
+  nb.setYmdhms (RegExp.$3);
+
+  var filename = nb.assemble (ini.Filename [img_type], img_url);
+  list.push ({ Url: img_url, Filename: filename });
+
+  add_xml_file (list, img_url, img_type);
+}
+
+// スレッド内の画像をダウンロードする
+function dl_thread (url, top_only) {
+  var http = new Http ();
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  var html = http.data;
+
+  if (top_only) {
+    // PermaLink Entry を切り出す
+    var entry_re = /<!--\s*start\s*PermaLink\s*Entry\s*-->\s*(.*)\s*<!--\s*end\s*PermaLink\s*Entry\s*-->/;
+    if (!entry_re.test (http.data)) {
+      http.die ('PermaLink Entry が見つかりません。');
+    }
+    html = RegExp.$1;
+  }
+  // top_only == false なら Comments Entry も処理する
+
+  var list = [ ];
+
+  function add_list (s, p) {
+    add_thread_item (list, p);
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  html.replace (/<div\s+class="permalinkEntry">(.*?)<div\s+class="clear"><\/div>/g, add_list);
+
+  if (list.length == 0) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+  if (list.length == 1) {
+    // 1個だけなら自分を書き換えてダウンロード
+    urlinfo.url = list [0].Url;
+    headers.Host = (new URL (urlinfo.url)).host;
+    headers.Referer = url;
+    Dorothy.fileName = list [0].Filename;
+    return;
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// イラストまたはスレッド等
+function dl_show (url) {
+  // 全てのイラストをダウンロードする
+  dl_thread (url, false);
+}
+
+
+// イラスト
+//  スレッドの ID、コメント付きのイラストの場合もあるが
+//  先頭のイラストだけをダウンロードする
+function dl_illustid (illust_id) {
+  nb.id = illust_id;
+
+  var url = 'http://drawr.net/show.php?id=' + illust_id;
+
+  // 先頭のイラストだけダウンロードする
+  dl_thread (url, true);
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han, ymdhms: true });
+
+  // ファイル名の生成に使える情報
+  nb.pixiv_id = null;   // pixiv ID
+  nb.user_id = null;    // ユーザー ID
+  nb.user_name = null;  // ユーザー名
+  nb.id = null;         // イラスト番号
+
+
+  // http://drawr.net/pixiv_id という形式の URL から pixiv ID を取り出す
+  function get_pixivid_from_url (path) {
+    if (!/^([a-z0-9][-_a-z0-9]+[a-z0-9])([?#].*)?$/.test (path)) {
+      return null;
+    }
+    var pixiv_id = RegExp.$1;
+
+    // 特別なページ名を除外  今のところ http://drawr.net/admin のみ。
+    if (pixiv_id.match (/^(admin)$/)) {
+      return null;
+    }
+
+    return pixiv_id;
+  }
+
+
+  var url = urlinfo.url;
+  var path = (new URL (url)).path.slice (1);
+  var pixiv_id = get_pixivid_from_url (path);
+
+  if (pixiv_id) {
+    // ユーザー情報ページ
+    dl_user (url);
+    return;
+  }
+  if (/^user\.php\?id=(\d+)/.test (path)) {
+    // 作品一覧ページ
+    dl_user (url);
+    return;
+  }
+  if (/^show\.php\?id=\d+/.test (path)) {
+    // イラストまたはスレッド
+    if (/#rid(\d+)/.test (path)) {
+      // #rid\d+ 付きならそのイラストだけをダウンロード
+      dl_illustid (RegExp.$1);
+      return;
+    }
+    dl_show (url);
+    return;
+  }
+
+  println ('未対応の URL です。');
+  return;
+}
+
+
+// EOF

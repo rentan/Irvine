@@ -1,0 +1,182 @@
+common\additem.dms
+
+
+Irvine にキューアイテムを追加するオブジェクトです。
+
+
+使用方法(一般ユーザ向け)
+========================
+
+このオブジェクトを使用したスクリプトの設定ファイルには、以下のような
+セクションがあるはずです(スクリプトによっては異なる場合がありますので、
+スクリプトの説明書を参照して下さい)。
+
+[AddItem]
+Mode=
+Queue=
+Listname=
+
+
+Mode では動作モードを指定します。Auto AddQueueItem Import OptionQueue
+のいずれかで、省略時は Auto とみなされます。
+
+・Mode=Auto の場合
+  AddQueueItem モードとして動作します。
+
+・Mode=AddQueueItem の場合
+  AddQueueItem をアイテム数だけ繰り返し実行します。任意のキューフォルダに
+  追加することが出来ます。
+
+  Queue= で追加するキューフォルダを指定することが出来ます。省略時はカレント
+  キューフォルダに追加されます。
+
+  ※この「カレントキューフォルダ」は、AddItem を呼び出したアイテムが存在
+    するフォルダという意味ではなく、実行された時点での Irvine のカレント
+    です。アイテムとは別のフォルダをカレントにしている場合は、そのフォルダ
+    に追加されます。
+
+・Mode=Import の場合
+  アイテムをリストファイルとして保存し、Import を実行します。必ずカレント
+  キューフォルダに追加されます。
+
+  Listname= でリストファイルのファイル名を指定することが出来ます。
+  省略時は
+    Dorothy2\user\プログラム名\プログラム名.irv
+  に保存されます。また、ファイル名を指定すると、
+    Dorothy2\user\プログラム名\指定したファイル名.irv
+  に保存されます。フルパス名を指定すると、そのパスに保存されます。
+
+・Mode=OptionQueue の場合
+  AddQueueItem をアイテム数だけ繰り返し実行します。
+
+  オプション設定の queue= で指定されたキューフォルダに追加されます。
+  アイテムのコメント欄またはフォルダ設定 → HTTP(1) → HTTP メソッド
+  → POST する文字列に
+    queue=キューフォルダ名
+  の形式で設定して下さい。
+    例: queue=/Dorothy2/NecoNecoDouga
+
+  各フォルダの queue= にそれ自体のキューフォルダ名を設定しておけば、
+  「同じフォルダに追加する」という動作が可能です。
+
+  別途配布されるスクリプト d2_set_queue.dms を使えば、一括して各フォ
+  ルダにその設定を行うことができます(手作業で設定しても構いません)。
+
+
+※好みにより Irvine のフィルタリング設定での振り分けを活用して下さい。
+
+
+使用方法(スクリプト作成者向け)
+==============================
+
+  common_load ('additem');
+
+  var ini = { Mode: 'Auto', Queue: '/Default', Listname: '' };
+  var additem = new AddItem (ini);
+
+  var list = [
+    { Url: 'http://example.com/', Filename: 'index.html' }
+  ];
+  additem.send (list) || exit ();
+
+
+AddItem オブジェクトのプロパティ
+================================
+
+mode ... string
+  動作モード。'Auto' 'AddQueueItem' 'Import' のいずれか。空文字列または
+  null の場合は 'Auto' と見なす。
+
+queue ... string
+  AddQueueItem モード時、追加するキューフォルダ(省略時はカレントキュー
+  フォルダ)。
+
+listname ... string
+  Import モード時、キューリストのファイル名(省略時はプログラム名)。
+
+iniTemplate ... object
+  new AddItem() に渡す引数の構造を表す雛形オブジェクト。
+  common\rutil.dms Util.ini_load() 用です。
+
+
+AddItem オブジェクトのメソッド
+==============================
+
+コンストラクタ
+new AddItem (opt)
+  opt ... object: プロパティ指定値(省略可)
+  戻り値 ... AddItem インスタンス
+
+  AddItem インスタンスを作成して返す。opt でオブジェクトが指定された
+  場合はその中身をプロパティに設定する(iniTemplate で定義されている
+  もののみ。またキー名は全て小文字になる)。
+
+  例: var additem = new AddItem ({ Mode: 'Import' });
+
+
+send (list)
+  list ... object または array: ダウンロードリスト
+  戻り値 ... boolean
+
+  オブジェクトをキューアイテムとして Irvine にダウンロード登録する。
+  成功した場合は true、失敗した場合は false を返す(確実ではない)。
+
+
+仕様・制限事項
+==============
+
+・Import モードでキューフォルダの指定が出来ません。
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
+
+2014-02-27  version 8.0
+  common\options.dms の代わりに common\rutil.dms Util.get_option()
+  を使うようにした。
+
+2014-01-10  version 7.0
+  _optionQueue: Mode=OptionQueue の時、オプションに特定の内容が
+  設定されていると ECallError が発生する不具合を修正。
+
+  common\call.dms の代わりに common\exec.dms を使うようにした。
+
+  インデントを2スペースに変更。ドキュメント加筆修正。
+
+2013-10-06  version 6.0
+  _callAddQueueItem: " \ を \" \\ とエスケープするようにした。
+  _makeList: \t \r \n がスペースに置換されない不具合を修正。
+
+2012-11-19  version 5.0
+  作業ファイルの作成場所を Dorothy.temp に変更。
+
+2012-08-09  version 4.0
+  開発中に使用してた alert() を削除し忘れていたのを修正。
+  call() の待機時間を10秒から100秒に変更。
+
+2012-08-04  version 3.0
+  AddQueueItem/OptionQueue モードで引数によっては ircom.exe でアイテム
+  が登録されない問題を回避するため、JScript ファイルを動的に生成して
+  wscript.exe で実行する方法に変更。
+
+  AddQueueItem と Import モードで速度差が縮み、また Import モードには
+  キューフォルダを指定できない欠点が残るだけになったので、Auto モードを
+  AddQueueItem 固定に変更。
+
+  試行錯誤中のため今後も仕様が変更される可能性があります。
+
+2012-08-03  version 2.0
+  複数のスレッドが同時に動作しないようにした(Mutex による排他制御)。
+
+2012-07-29
+  ドキュメント加筆。
+
+2012-07-11  version 1.0
+  新規作成。
+
+
+[EOF]

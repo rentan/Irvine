@@ -1,0 +1,371 @@
+common\htmlform.dms
+
+
+HTML のフォームを扱うためのオブジェクトです。
+
+
+使用方法
+========
+
+  var src = '<form name="f1">...</form> <form name="f2">...</form>';
+
+  common_load ('htmlform');
+  var forms = new HtmlForms (src);
+  var form = forms.getFormByName ('key');
+
+
+HtmlForms オブジェクト
+  HTML ソースコードを解析し、それに含まれるフォームを全て HtmlForm
+  オブジェクトとして取り込みます。
+
+  HtmlForm オブジェクトの数は length プロパティで、それぞれのオブジェクトは
+  '0' ... 'n' プロパティ(n は length - 1)で参照できます。
+  ただし HtmlForms オブジェクトは配列ではないため Array.pop() などのメソッド
+  は使えません。
+
+HtmlForm オブジェクト
+  単一の <form> 要素を解析して取り込みます。HtmlForms のコンストラクタから
+  呼び出されますが、直接使うことも出来ます。
+
+HtmlFormSelect
+  単一の <select> 要素を解析して取り込みます。HtmlForm のコンストラクタから
+  呼び出されます。
+
+
+HtmlForms オブジェクトのプロパティ
+==================================
+
+length ... number
+  このオブジェクトに含まれる HtmlForm オブジェクトの数。
+
+'0' ～ ... HtmlForm
+  HtmlForm オブジェクト。length == 0 の場合は存在しない。
+
+
+HtmlForms オブジェクトのメソッド
+================================
+
+コンストラクタ
+new HtmlForms (src, opt_url)
+  src ... Http または string
+  opt_url ... string: URL(省略可)
+  戻り値 ... HtmlForms インスタンス
+
+  HtmlForms インスタンスを作成して返す。
+
+  src に Http オブジェクトを指定すると、src.data からコメント部分を
+  削除した HTML ソースを解析する。また、opt_url が省略されていれば
+  src.baseUrl を HTML の存在する URL として取り込む。
+
+  src に文字列を指定することもできるが、その場合はコメント部分の削除
+  は行われない。
+
+  例:
+  var http = new Http ();
+  http.get (～);
+  var forms = new HtmlForms (http);
+  for (var i = 0; i < forms.length; ++i) {
+    println (nameOf (forms [i]));
+  }
+
+
+getFormById (val)
+getFormByName (val)
+getFormByClass (val)
+getFormByAction (val)
+getFormByMethod (val)
+  val ... string: 属性値
+  戻り値 ... HtmlForm または null
+
+  <form> タグの属性値が val で指定した値と一致するフォームを探し、
+  先頭のものを返す。見つからなければ null を返す。
+
+  getFormByMethod() は属性値の大文字小文字は同一視される。
+
+getFormsById (val)
+getFormsByName (val)
+getFormsByClass (val)
+getFormsByAction (val)
+getFormsByMethod (val)
+  val ... string: 属性値
+  戻り値 ... HtmlForm の配列または null
+
+  <form> タグの属性値が val で指定した値と一致するフォームを全て探し、
+  配列として返す。見つからなければ null を返す。
+
+getFormByElementId (val)
+getFormByElementName (val)
+getFormByElementTagName (val)
+getFormByElementClass (val)
+getFormByElementType (val)
+getFormByElementValue (val)
+  val ... string: 属性値
+  戻り値 ... HtmlForm または null
+
+  <form> 要素内にある <input> <select> <textarea> タグの属性値が
+  val で指定した値と一致するフォームを探し、先頭のものを返す。
+  見つからなければ null を返す。
+
+  getFormByElementType() は属性値の大文字小文字は同一視される。
+
+  getFormByElementTagName() はタグ名と比較する。大文字小文字は
+  同一視される。
+
+getFormsByElementId (val)
+getFormsByElementName (val)
+getFormsByElementTagName (val)
+getFormsByElementClass (val)
+getFormsByElementType (val)
+getFormsByElementValue (val)
+  val ... string: 属性値
+  戻り値 ... HtmlForm の配列または null
+
+  <form> 要素内にある <input> <select> <textarea> タグの属性値が
+  val で指定した値と一致するフォームを全て探し、配列として返す。
+  見つからなければ null を返す。
+
+
+HtmlForm オブジェクトのプロパティ
+=================================
+
+url ... string または null
+  コンストラクタの opt_url 引数で指定した URL。省略した場合は null。
+
+outerHTML ... string
+  コンストラクタの src 引数で指定した HTML ソース。
+
+'accept-charset' ... string
+action ... string
+class ... string
+enctype ... string
+id ... string
+method ... string
+name ... string
+target ... string
+  <form> タグの属性値。指定されていない場合は空文字列。
+
+elements ... 配列
+  フォーム要素のタグの配列。
+  <input> <select> <textarea> <button>
+
+
+HtmlForm オブジェクトのメソッド
+===============================
+
+コンストラクタ
+new HtmlForm (src, opt_url)
+  src ... string
+  opt_url ... string: URL(省略可)
+  戻り値 ... HtmlForm インスタンス
+
+  HtmlForm インスタンスを作成して返す。
+
+  src には <form> 要素の HTML ソースを指定する。コメント部分の
+  削除は行われない。
+
+getElementById (val)
+getElementByName (val)
+getElementByTagName (val)
+getElementByClass (val)
+getElementByType (val)
+getElementByValue (val)
+  val ... string: 属性値
+  戻り値 ... タグのオブジェクトまたは null
+
+  elements 配列からタグの属性値が val で指定した値と一致するもの
+  を探し、先頭のものを返す。見つからなければ null を返す。
+
+  getElementByType() は属性値の大文字小文字は同一視される。
+
+  getElementByTagName() はタグ名と比較する。大文字小文字は同一視
+  される。
+
+getElementsById (val)
+getElementsByName (val)
+getElementsByTagName (val)
+getElementsByClass (val)
+getElementsByType (val)
+getElementsByValue (val)
+  val ... string: 属性値
+  戻り値 ... タグのオブジェクトの配列または null
+
+  elements 配列からタグの属性値が val で指定した値と一致するもの
+  を全て探し、配列として返す。見つからなければ null を返す。
+
+removeElementById (val)
+removeElementByName (val)
+removeElementByTagName (val)
+removeElementByClass (val)
+removeElementByType (val)
+removeElementByValue (val)
+  val ... string: 属性値
+  戻り値 ... タグのオブジェクトまたは null
+
+  elements 配列からタグの属性値が val で指定した値と一致するもの
+  を探し、先頭のものを削除してそのオブジェクトを返す。見つからな
+  ければ null を返す。
+
+removeElementsById (val)
+removeElementsByName (val)
+removeElementsByTagName (val)
+removeElementsByClass (val)
+removeElementsByType (val)
+removeElementsByValue (val)
+  val ... string: 属性値
+  戻り値 ... タグのオブジェクトの配列または null
+
+  elements 配列からタグの属性値が val で指定した値と一致するもの
+  を全て探し、削除してそのオブジェクトを配列として返す。見つから
+  なければ null を返す。
+
+add (obj)
+  obj ... object: タグ名、属性値
+  戻り値 ... object
+
+  obj で指定した引数に従って <input> <textarea> タグのオブジェクト
+  を作成し、elements 配列に追加してそのオブジェクトを返す。
+
+  obj オブジェクトは以下の形式で指定する。
+    obj = {
+      tagName: タグ名,    // 'input' または 'textarea'
+      属性名: 属性値,
+      ...
+    };
+
+change (name, val)
+  name ... string: name 属性値
+  val ... string: 書き込む値
+  戻り値 ... タグのオブジェクトまたは null
+
+  elements 配列からタグの name 属性値が name で指定した値と一致する
+  ものを探し、先頭のオブジェクトの value 属性値を val で指定した値に
+  書き換えて、そのオブジェクトを返す。見つからなければ null を返す。
+
+submit (element)
+  element ... object: 送信ボタンとして使用するタグのオブジェクト
+                (省略可)
+  戻り値 ... object
+
+  フォームを送信するためのデータを求め、オブジェクトとして返す。
+
+  戻り値は以下の形式。Http.exec() の引数としてそのまま渡すことが出来る。
+    result = {
+      method: メソッド,  // 'get' または 'post'
+      url: URL,
+      postdata: 送信データ  // 'post' の場合のみ
+    };
+
+  フォーム内のパラメータは、GET メソッドの場合は url に、POST
+  メソッドの場合は postdata に反映される。
+
+  element として <input type="submit"> または <input type="image">
+  のタグのオブジェクトを指定すると、そのタグをクリックしたものとして
+  送信するデータを求める。省略した場合はそれらのタグのパラメータは
+  送信されない(<input type="text"> で Enter キーを押した場合の動作)。
+
+HtmlFormSelect オブジェクトのプロパティ
+=======================================
+
+outerHTML ... string
+  コンストラクタの src 引数で指定した HTML ソース。
+
+tagName ... string
+  タグ名 'select'。
+
+disabled ... boolean
+multiple ... boolean
+class ... string
+id ... string
+name ... string
+size ... string
+  <select> タグの属性値。
+
+type ... string
+  常に空文字列(HtmlForm.elements 配列の仕様統一のため)。
+
+options ... 配列
+  <option> タグの配列。
+
+  [
+    {
+      class: '',
+      id: '',
+      name: '',
+      value: '',
+      type: ''
+      tagName: 'option',
+      disabled: boolean,
+      selected: boolean  // 書き込み禁止
+    },
+    ...
+  ]
+
+selectedIndex ... number
+  選択されている <option> タグのうちもっとも小さい番号。
+  multiple == true、かつ、一つも選択されていない場合は -1。
+
+  書き込み禁止。選択状態を変更したい場合は必ず select() メソッド
+  を使うこと。
+
+
+HtmlFormSelect オブジェクトのメソッド
+=====================================
+
+コンストラクタ
+new HtmlFormSelect (src)
+  src ... string
+  戻り値 ... HtmlFormSelect インスタンス
+
+  HtmlFormSelect インスタンスを作成して返す。
+
+  src には <select> 要素の HTML ソースを指定する。コメント部分の
+  削除は行われない。
+
+select (option, b)
+  option ... object: <option> タグのオブジェクト
+  b ... boolean: 選択状態
+  戻り値 ... boolean
+
+  option で指定した <option> タグを、b == true であれば選択し、
+  それ以外の場合は選択解除する。
+
+
+仕様・制限事項
+==============
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
+
+2013-11-23  version 5.0
+  <button> に対応。
+
+  <form> の閉じタグ(</form>)がない場合に末尾まで取り込むようにした。
+
+  <input type='image'> で座標ではなく value の値を送ってしまう
+  不具合を修正(name.x=0&name.y=0 を送信するようにした)。
+
+  タグの属性値で一般的なもの以外は無視するようにした。
+  (<input hasKey='foo'> のような記述への対策)
+
+  インデントを2スペースに変更。
+
+2012-11-19  version 4.0
+  微調整。
+
+2012-10-22  version 3.0
+  HtmlForms.getForm(s)ByElement*(): 新規。
+  HtmlForm.getElement(s)ByTagName(): 新規。
+
+2012-07-29  version 2.0
+  <input type="checkbox"> に対応。
+
+2012-07-11  version 1.0
+  新規作成。
+
+
+[EOF]

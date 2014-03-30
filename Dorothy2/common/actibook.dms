@@ -1,0 +1,286 @@
+//Dorothy2
+//caption=ActiBook
+//version=20140331.0
+//hint=new ActiBook ()
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+
+//-------------------------------- ActiBook --------------------------------
+
+
+common_load ('http', 'utf8');
+
+
+// コンストラクタ
+void function ActiBook () {
+  if (nameOf (this) != 'ActiBook') {
+    alert ('new なしで ActiBook() が呼ばれました。');
+    exit ();
+  }
+
+  this.list = [ ];
+};
+
+
+// プロパティ初期値
+ActiBook.prototype.comment = '';
+ActiBook.prototype.http = null;
+ActiBook.prototype.url = null;
+
+
+// NameBuilder オブジェクト
+ActiBook.prototype.nameBuilder = null;
+ActiBook.prototype.nameFormat = '%NAME% p%PZ%';
+ActiBook.prototype.pageOrigin = 1;
+
+
+// 内部で使用
+ActiBook.prototype._psZoom = null;
+
+
+// 内部で使用: メッセージを表示して false を返す
+ActiBook.prototype._p = function (msg) {
+  println ('ActiBook: ' + msg);
+  return false;
+};
+
+
+// .get() の戻り値
+ActiBook.prototype.OK = 0;
+ActiBook.prototype.NG = 1;
+ActiBook.prototype.RETRY = 2;
+ActiBook.prototype.UNKNOWN = 3;
+ActiBook.prototype.MIS = 4;
+
+
+// .get() の戻り値に応じて終了処理
+ActiBook.prototype.end = function (r) {
+  if (r == this.RETRY) {
+    return retry ();
+  }
+  if (r != this.OK && r != this.MIS) {
+    exit ();
+  }
+};
+
+
+// 内部で使用: HTTP アクセスでエラーした場合の戻り値の選択
+ActiBook.prototype._httpError = function () {
+  var http = this.http;
+
+  var c = http && http.code;
+  if (c) {
+    this.comment = http.statusLine;
+  }
+
+  return (c == 0 || c == 503) ? this.RETRY : this.NG;
+};
+
+
+// 内部で使用: メッセージ表示&commentに保存
+ActiBook.prototype._p = function (s) {
+  println (this.comment = nameOf (this) + ': ' + s);
+  return false;
+};
+
+
+// 内部で使用: XML:<book>:<pages>:<page> を解析
+ActiBook.prototype._analyzePage = function (page, imgBase) {
+  var nb = this.nameBuilder;
+
+  // ページ番号
+  if (!/<number>(\d+)<\/number>/.test (page)) {
+    return this._p ('<number> が見つかりません。');
+  }
+  var number = RegExp.$1;
+  nb.p = parseInt (number) - 1;  // PageOrigin 用に補正
+
+  // 拡張子
+  if (!/<type>(jpg)<\/type>/.test (page)) {
+    return this._p ('<type> が見つかりません。');
+  }
+  var ext = '.' + RegExp.$1;
+
+  var o = { Url: imgBase + number + ext };
+
+  // NameBuilder オブジェクトが指定されていればファイル名を生成
+  if (typeof nb.assemble == 'function') {
+    o.Filename = nb.assemble (this.nameFormat, ext);
+  }
+
+  this.list.push (o);
+  return true;
+};
+
+
+// 内部で使用: XML:<book>:<pages> を解析
+ActiBook.prototype._analyzePages = function (book) {
+  var page = http.data.match (/<page>.*?<\/page>/g);
+  if (!page) {
+    return this._p ('<page> が見つかりません。');
+  }
+
+  var pageLen = page.length;
+  if (999 < pageLen) {
+    return this._p ('<page> の数が異常です。');
+  }
+  if (pageLen != this.nameBuilder.pages) {
+    return this._p ('<total> と <page> の数が一致しません。');
+  }
+
+  var imgBase = this.url + 'books/images/' + this._psZoom + '/';
+
+  for (var i = 0; i < pageLen; ++i) {
+    if (!this._analyzePage (page [i], imgBase)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+
+// 内部で使用: XML:<book>:<PageSizes> を解析
+ActiBook.prototype._analyzePageSizes = function (book) {
+  if (!/<PageSizes>(.*?)<\/PageSizes>/.test (book)) {
+    return this._p ('<PageSizes> が見つかりません。');
+  }
+  var pagesizes = RegExp.$1;
+
+  var ps_zoom = null;
+  var ps_w = 0;
+  var ps_h = 0;
+  var ps_err = false;
+
+  function pagesize (s, zoom, w, h) {
+    println ('zoom=' + zoom + ' w=' + w + ' h=' + h);
+    w = parseFloat (w);
+    h = parseFloat (h);
+
+    // 後にある方が必ず大きいサイズのはず
+    if ((ps_w < w) && (ps_h < h)) {
+      ps_zoom = zoom;
+      ps_w = w;
+      ps_h = h;
+    }
+    else {
+      // 後にある方が小さい場合は未確認の為エラーにする
+      ps_err = true;
+    }
+
+    return '';
+  }
+  var ps_re = /<PageSize\s+zoom="([\d.]+)"\s+w="([\d.]+)"\s+h="([\d.]+)"\s*\/>/g;
+  pagesizes.replace (ps_re, pagesize);
+
+  if (ps_err) {
+    return this._p ('対応していない <PageSizes> の構造です。');
+  }
+  if (ps_zoom == null) {
+    return this._p ('有効な <PageSize> が見つかりません。');
+  }
+  this._psZoom = ps_zoom;
+
+  return true;
+};
+
+
+// 内部で使用: XML:<book> を解析
+ActiBook.prototype._analyzeBook = function (xml) {
+  var nb = this.nameBuilder;
+
+  if (!/<book>(.*?)<\/book>/.test (xml)) {
+    return this._p ('<book> が見つかりません。');
+  }
+  var book = RegExp.$1;
+
+  if (!/<name>\s*(.*?)\s*<\/name>/.test (book)) {
+    return this._p ('<name> が見つかりません。');
+  }
+  nb.name = (new Utf8 (RegExp.$1)).decodeCharRef ();
+
+  if (!/<total>(\d+)<\/total>/.test (book)) {
+    http.capture ();
+    return this._p ('<total> が見つかりません。');
+  }
+  nb.pages = parseInt (RegExp.$1);
+
+  return this._analyzePageSizes (book) && this._analyzePages (book);
+};
+
+
+// 内部で使用: XML ファイルを読み込んで解析
+ActiBook.prototype._analyzeXml = function () {
+  var http = this.http;
+
+  var book_xml = this.url + 'books/db/book.xml';
+  if (!http.get (book_xml)) {
+    return this._httpError ();
+  }
+
+  if (!this._analyzeBook (http.data)) {
+    http.capture ();
+    return this.UNKNOWN;
+  }
+
+  return this.OK;
+};
+
+
+// 内部で使用: NameBuilder オブジェクトの設定
+ActiBook.prototype._setupNameBuilder = function () {
+  var nb = this.nameBuilder;
+  if (!nb) {
+    // 指定されていなければダミーオブジェクトを用意
+    nb = this.nameBuilder = { };
+  }
+
+  // ファイル名の生成に使える情報
+  nb.name = null;  // 作品名
+  nb.pages = 0;    // 全ページ数
+  nb.p = 0;        // ページ番号
+
+  if (typeof nb.definePPZ == 'function') {
+    nb.definePPZ (this.pageOrigin);
+  }
+};
+
+
+// データを解析してダウンロードリストを作成する
+ActiBook.prototype.get = function (url) {
+  this.list = [ ];
+  this.http = new Http ();
+  this.url = url;
+
+  this._setupNameBuilder ();
+
+  return this._analyzeXml ();
+};
+
+
+}) ()
+
+
+// EOF

@@ -1,0 +1,53 @@
+common\domparser\xml.dms
+
+
+DOMParser/XML の擬似的な実装です。
+完全な実装ではありません。
+
+まだ仕様が確定していません。
+バージョンアップに伴い仕様が変更される可能性があります。
+
+動作テストが不十分です。
+
+
+使用方法
+========
+
+  var text = '<foo><bar /></foo>';
+  var type = 'text/xml';
+
+  common_load ('domparser\xml');
+
+  var domparser = new DOMParser ();
+  var document;
+
+  try {
+    document = domparser.parseFromString (text, type);
+
+    var e = document.getElementsByTagName ('bar');
+  }
+  finally {
+    if (document) {
+      document.destroy ();
+    }
+  }
+
+詳しくは common\domparser\core.txt を参照して下さい。
+
+
+仕様・制限事項
+==============
+
+・内部で DOMXml オブジェクトを定義して使用しています。
+
+・パースに非常に時間がかかります。
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]

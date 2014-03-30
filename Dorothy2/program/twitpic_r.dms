@@ -1,0 +1,252 @@
+//Dorothy2
+//caption=twitpic_r
+//version=20140331.0
+//hint=Twitpic 別バージョン
+//match=^http://(www\.|web\d+\.)?twitpic\.com/[0-9a-z]+
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2011,2012,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'http', 'namebuilder', 'utf8');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: false,
+      NoTitle: 'no-title',
+      NoTitleFilename: false
+    },
+    Filename: {
+      Photo:        'twitpic_%ID%',
+      PhotoNoTitle: 'twitpic_%ID%',
+      Video:        'twitpic_%ID%',
+      VideoNoTitle: 'twitpic_%ID%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+// full 画像の URL を取得する
+function get_full_img_url (cid) {
+  // View full size ページの HTML を取得
+  var url = 'http://twitpic.com/' + cid + '/full';
+  var http = new Http ();
+  if (!http.get (url)) {
+    http.retry_or_die ();
+    return null;
+  }
+
+  if (!/<div\s+id="media-full">(.*?)<\/div>/.test (http.data)) {
+    http.die ('<div id="media-full"> が見つかりません。');
+  }
+  var html = RegExp.$1;
+
+  if (!/<img\s+src="(https?:\/\/[^"]+)"/.test (html)) {
+    http.die ('full 画像の URL が見つかりません。');
+  }
+  return RegExp.$1;
+}
+
+
+// 画像または動画をダウンロード
+function dl_cid (cid) {
+  nb.id = cid;
+
+  // 画像・動画表示ページ（large）の HTML を取得
+  var url = 'http://twitpic.com/' + cid;
+  var http = new Http ();
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  var content_url, content_type;
+  var title = null;
+
+  // Twitter ID、ユーザー名 を探す
+  var id_re = /<div\s+id="infobar-user-info"\s+class="right">\s*<h2>([^<]+)<\/h2>\s*<h4>\s*<a\s+href="\/photos\/([^"]+)">/;
+  if (id_re.test (http.data)) {
+    nb.twitter_id = RegExp.$2;
+    nb.user_name = (new Utf8 (RegExp.$1)).decodeCharRef ();
+  }
+
+  // 題名を探す
+  if (/<meta\s+property="og:title"\s+content="([^"]+)"/.test (http.data)) {
+    title = (new Utf8 (RegExp.$1)).decodeCharRef ();
+  }
+
+  // データの URL を探す
+  if (/<img\s+src="(https?:)?([^"]+)"[^>]*>\s*<\/div>\s*<div\s+id="media-caption">/.test (http.data)) {
+    // <div id="media-caption"> の手前に <img> があれば画像
+    content_url = 'http:' + RegExp.$2;
+    content_type = 'Photo';
+
+    if (/\/photos\/full\//.test (content_url)) {
+      // 小さい画像は full 画像が直接表示される
+    }
+    else if (/\/photos\/large\//.test (content_url)) {
+      // 縮小されていれば View full size ページから取得
+      content_url = get_full_img_url (cid);
+      if (content_url == null) {
+        return;
+      }
+    }
+    else {
+      http.die ('画像の URL が未知の形式です。');
+    }
+  }
+  else if (/<source\s+src="(https?:)?([^"]+)"\s+type='([^']*)'>/.test (http.data)) {
+    // 動画
+    content_url = 'http:' + RegExp.$2;
+    content_type = 'Video';
+
+    println ('動画形式: ' + RegExp.$3);
+  }
+  else {
+    http.die ('画像または動画の URL が見つかりません。');
+  }
+
+  // 題名の有無
+  nb.title = title || ini.General.NoTitle;
+  if (title == null && ini.General.NoTitleFilename) {
+    content_type += 'NoTitle';
+  }
+
+  // ダウンロード情報を設定
+  Dorothy.fileName = nb.assemble (ini.Filename [content_type], content_url);
+
+  urlinfo.url = content_url;
+  headers.Host = (new URL (content_url)).host;
+  headers.Referer = url;
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// ユーザーページを解析してリストに追加
+//  true: 次のページあり  false: 次のページなし
+function dl_user_p (list, http) {
+  var start_len = list.length;
+
+  function add_list (s, p) {
+    list.push ({ Url: 'http://twitpic.com/' + p });
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/<div\s+class="user-photo[^>]*>\s*<a\s+href="\/(\w+)">/g, add_list);
+
+  if (start_len == list.length) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+
+  // 次のページへのリンクを探す
+  if (/<a\s+href="\?page=\d+">Next<\/a>/.test (http.data)) {
+    return true;
+  }
+  if (/<a\s+href="\?page=\d+"\s+class="active">\d+<\/a>\s*<\/p>/.test (http.data)) {
+    return false;
+  }
+  http.die ('次のページへのリンクが見つかりません。');
+}
+
+
+// ユーザーページの画像と動画をダウンロード
+function dl_user (url) {
+  var list = [ ];
+
+  // 1ページ目を処理
+  var http = new Http (url);
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+  var next = dl_user_p (list, http);
+
+  var p = /[?&]page=(\d+)/.test (url);  // ページ指定はあるか？
+
+  // ページ指定がなければ2ページ目以降を処理
+  if (!p) {
+    url += /\?/.test (url) ? '&page=' : '?page=';
+
+    for (var page = 2; next; ++page) {
+      if (!http.get (url + page)) {
+        return http.retry_or_die ();
+      }
+      next = dl_user_p (list, http);
+    }
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
+  // ファイル名の生成に使える情報
+  nb.twitter_id = null;  // Twitter ID
+  nb.user_name = null;   // ユーザー名
+  nb.id = null;          // コンテンツID
+  nb.title = null;       // 題名
+
+
+  // http://twitpic.com/abc123 という形式の URL からコンテンツIDを取り出す
+  // 引数はパス名（先頭の / は除く、上記の例であれば abc123）
+  // コンテンツIDではないパターンもあるが、完結に判別できないので考慮しない仕様とする
+  // 例: http://twitpic.com/tag → 画像
+  //     http://twitpic.com/tag/full → 画像（フルサイズ）
+  //     http://twitpic.com/tag/fullsize → タグ検索結果
+  //     この場合は http://twitpic.com/tag の画像をダウンロードする
+  function get_cid_from_url (path) {
+    return /^([0-9a-z]+)([?#\/].*)?$/.test (path) ? RegExp.$1 : null;
+  }
+
+  // ドメインは多数あるのでヘッダの match= にまかせ、以下の処理ではパスだけを見る
+  // twitpic.com www.twitpic.com web1.twitpic.com
+  var path = (new URL (urlinfo.url)).path.slice (1);
+
+  if (/^photos\/([0-9a-zA-Z_]{1,15})([?#].*)?$/.test (path)) {
+    // ユーザーの HTML ページ
+    nb.twitter_id = RegExp.$1;
+    dl_user ('http://twitpic.com/' + path);
+    return;
+  }
+  else if ((cid = get_cid_from_url (path)) != null) {
+    // 写真または動画の HTML ページ
+    dl_cid (cid);
+    return;
+  }
+
+  println ('未対応の URL です。');
+  return;
+}
+
+
+// EOF

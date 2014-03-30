@@ -1,0 +1,145 @@
+//Dorothy2
+//caption=Dキャラめ～る。
+//version=20140331.0
+//hint=購読者限定壁紙
+//match=^http://www\.dmm\.co\.jp/(dc|digital/nijigen)/mlmg_present/
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2011,2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'http', 'namebuilder');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: false
+    },
+    Filename: {
+      Wallpaper:     'dmm20%YYMMDD%_wallpaper',
+      Wallpaper_mem: 'dmm20%YYMMDD%_wallpaper_mem'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+// ZIP ファイルの URL を返す
+function get_zip_url (ymd, member_only) {
+  var u = 'http://p.dmm.com/p/dchara/mlmg_present/' + ymd + '/wallpaper';
+  u += member_only ? '_mem.zip' : '.zip';
+
+  return new URL (u);
+}
+
+
+// ページ内の通常版と会員限定版をダウンロードする
+//  ページ URL に含まれる日付とファイル URL に含まれる日付が異なる場合があるので
+//  必ず HTML ページの内容を読み取る。
+//  例: http://www.dmm.co.jp/digital/nijigen/mlmg_present/110922/page_23_html/=/ch_navi=/
+//      ↓
+//      http://p.dmm.com/p/dchara/mlmg_present/110923/wallpaper.zip
+function dl_page (url) {
+  // Http() でリダイレクト許可しているので不要
+  // .url = url.replace (/\/_jloff=1\/.*$/, '/');
+
+  var http = new Http ({ autoRedirect: true });
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+  // charset=EUC-JP
+
+
+  // ダウンロードリンクを探してファイルの URL の日付を抽出する
+  // 見つからなければ HTML ページの URL の日付でダウンロードを試みる
+  var ymd = url.replace (/^.*\/(\d{6})\/.*$/, '$1');
+
+  var a_re = /href="http:\/\/www\.dmm\.co\.jp\/transfer\/-\/dchara\/=\/mlmg_present=(\d{6})_wallpaper\/"/;
+  if (a_re.test (http.data)) {
+    // ダウンロードリンクあり
+    ymd = RegExp.$1;  // '110923'
+  }
+  else {
+    // ダウンロードリンクなし
+    // 「ダウンロード配布は終了しました。」または将来 HTML が変更された場合。
+
+    println ('HTML ページ内からダウンロードリンクが見つかりません。');
+    println ('URL を推測してダウンロードを試みます。');
+  }
+
+  nb.yy = ymd.substr (0, 2);
+  nb.mm = ymd.substr (2, 2);
+  nb.dd = ymd.substr (4, 2);
+
+
+  // 会員限定版を追加ダウンロードする
+  var u = get_zip_url (ymd, true);
+  var filename = nb.assemble (ini.Filename ['Wallpaper_mem'], u.url);
+
+  var list = [ { Url: u.url, Filename: filename } ];
+  additem.send (list) || exit ();
+
+
+  // 通常版をダウンロードする
+  u = get_zip_url (ymd, false);
+  urlinfo.url = u.url;
+  headers.Host = u.host;
+  headers.Referer = '';
+
+  Dorothy.fileName = nb.assemble (ini.Filename ['Wallpaper'], u.url);
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
+  // ファイル名の生成に使える情報
+  nb.yy = null;  // 年
+  nb.mm = null;  // 月
+  nb.dd = null;  // 日
+
+  nb.name = null;  // 作者名（URL に含まれるローマ字）
+
+  nb.YYMMDD = function () { return this.yy + this.mm + this.dd; };
+
+
+  var url = urlinfo.url;
+
+  if (/^http:\/\/www\.dmm\.co\.jp\/(dc|digital\/nijigen)\/mlmg_present\/\d{6}\/page_([^\/]+)[._]html\//.test (url)) {
+    // HTML ページ
+    nb.name = RegExp.$1;
+    dl_page (url);
+    return;
+  }
+
+  println ('未対応の URL です。');
+  return;
+}
+
+
+// EOF

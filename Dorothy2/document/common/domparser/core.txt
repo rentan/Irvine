@@ -1,0 +1,82 @@
+common\domparser\core.dms
+
+
+DOMParser の擬似的な実装です。
+完全な実装ではありません。
+
+まだ仕様が確定していません。
+バージョンアップに伴い仕様が変更される可能性があります。
+
+動作テストが不十分です。
+
+
+使用方法
+========
+
+common\domparser\xml.dms などから読み込まれます。
+詳しくはそちらを参照して下さい。
+
+なお、document を確保した後にそのまま手放すと、スクリプト終了時に
+  EInvalidPointer: Invalid pointer operation
+というエラーが発生してスクリプトが異常終了します。
+(DMonkey のガベージコレクタ関係の不具合?)
+
+デストラクタとして .destroy() というメソッドを定義してあるので、
+document が不要になった時点で必ず呼び出して下さい。
+
+
+DOMParser オブジェクトのプロパティ
+==================================
+
+なし
+
+
+DOMParser オブジェクトのメソッド
+================================
+
+コンストラクタ
+new DOMParser ()
+  戻り値 ... DOMParser インスタンス
+
+  DOMParser インスタンスを作成して返す。
+
+parseFromString (str, type)
+  str ... string: テキスト
+  type ... string: Content-Type
+
+  str で指定された文字列を、type で指定された形式と見なしてパースします。
+
+
+Node オブジェクトのプロパティ
+=============================
+
+ELEMENT_NODE
+TEXT_NODE
+PROCESSING_INSTRUCTION_NODE
+COMMENT_NODE
+DOCUMENT_NODE
+DOCUMENT_TYPE_NODE
+DOCUMENT_FRAGMENT_NODE
+
+
+仕様・制限事項
+==============
+
+・内部で下記のオブジェクトを定義して使用しています。
+
+NamedNodeMap
+Document
+Element
+Text
+ProcessingInstruction
+Comment
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]

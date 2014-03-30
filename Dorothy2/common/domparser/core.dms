@@ -1,0 +1,383 @@
+//Dorothy2
+//caption=DOMParser/core
+//version=20140331.0
+//hint=new DOMParser()
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+
+//------------------------------- DOMParser --------------------------------
+
+
+// コンストラクタ
+void function DOMParser () {
+};
+
+
+// 内部で使用: 対応形式の一覧
+DOMParser.prototype._types = [ ];
+
+
+// 内部で使用: 対応形式を追加する
+DOMParser.prototype._add = function (name, re, f) {
+  this._types.push ({ name: name, re: re, f: f });
+};
+
+
+// 文字列をパースする
+DOMParser.prototype.parseFromString = function (str, type) {
+  for (var i = 0; i < this._types.length; ++i) {
+    var handler = this._types [i];
+    if (handler.re.test (type)) {
+      return handler.f (str);
+    }
+  }
+
+  throw 'DOMParser: 対応していないContent-Typeです: ' + type;
+};
+
+
+//---------------------------------- Node ----------------------------------
+
+
+Node = { };
+
+Node._defineNodeType = function (p) {
+  p.ELEMENT_NODE = 1;
+  p.TEXT_NODE = 3;
+  p.PROCESSING_INSTRUCTION_NODE = 7;
+  p.COMMENT_NODE = 8;
+  p.DOCUMENT_NODE = 9;
+  p.DOCUMENT_TYPE_NODE = 10;
+  p.DOCUMENT_FRAGMENT_NODE = 11;
+};
+
+Node._defineNodeType (Node);
+
+
+//------------------------------ NamedNodeMap ------------------------------
+
+// コンストラクタ
+void function NamedNodeMap () {
+};
+
+
+NamedNodeMap.prototype.length = 0;
+
+
+NamedNodeMap.prototype.setNamedItem = function (node) {
+  var name = node.name;
+
+  if (!/^(length|item|[gs]etNamedItem|constructor|get(Event|Key|Method|Propertie)s|has(Ke|OwnPropert)y|removeKey|toString|valueOf)$/.test (name)) {
+    this [name] = node;
+  }
+
+  var len = this.length;
+  for (var i = 0; i < len; ++i) {
+    // 同名のノードが既にあれば置き換え
+    if (this [i].name == name) {
+      var old = this [i];
+      this [i] = node;
+      return old;
+    }
+  }
+
+  // 追加
+  this [this.length++] = node;
+  return null;
+};
+
+NamedNodeMap.prototype.item = function (index) {
+  return (index < this.length) ? this [index] : null;
+};
+
+NamedNodeMap.prototype.getNamedItem = function (name) {
+  var len = this.length;
+  for (var i = 0; i < len; ++i) {
+    if (this [i].name == name) {
+      return this [i];
+    }
+  }
+
+  return null;
+};
+
+
+//-------------------------------- Document --------------------------------
+
+
+// コンストラクタ
+void function Document () {
+  this.childNodes = { length: 0 };
+};
+
+
+(function (p) {
+  Node._defineNodeType (p);
+  p.nodeType = p.DOCUMENT_NODE;
+  p.nodeName = '#document';
+
+  p.parentNode = null;
+  p.firstChild = p.lastChild = null;
+
+  p.documentElement = null;
+}) (Document.prototype);
+
+
+// スクリプト終了時に EInvalidPointer: Invalid pointer operation
+// が発生する症状の防止用。
+Document.prototype.destroy = function () {
+  for (var i = this.childNodes.length; --i >= 0;) {
+    this.childNodes [i].destroy ();
+    this.childNodes.removeKey (i);
+  }
+
+  var props = this.getProperties ();
+  for (var key in props) {
+    this.removeKey (key);
+  }
+};
+
+
+Document.prototype.appendChild = function (child) {
+  var childNodes = this.childNodes;
+
+  var prev = this.lastChild;
+  if (prev) {
+    prev.nextSibling = child;
+    child.previousSibling = prev;
+  }
+  else {
+    this.firstChild = child;
+  }
+
+  this.lastChild = childNodes [childNodes.length++] = child;
+  child.parentNode = this;
+
+  return child;
+};
+
+
+Document.prototype.hasChildNodes = function () {
+  return childNodes.length > 0;
+};
+
+
+Document.prototype._getElement = function (key, value) {
+  var childNodes = this.childNodes;
+  var len = childNodes.length;
+
+  for (var i = 0; i < len; ++i) {
+    var e = childNodes [i];
+    if (e.nodeType != e.ELEMENT_NODE) {
+      continue;
+    }
+
+    if (e [key] == value) {
+      return e;
+    }
+
+    var found = e._getElement (key, value);
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+};
+
+
+Document.prototype._getElements = function (founds, key, value) {
+  var childNodes = this.childNodes;
+  var len = childNodes.length;
+
+  for (var i = 0; i < len; ++i) {
+    var e = childNodes [i];
+    if (e.nodeType != e.ELEMENT_NODE) {
+      continue;
+    }
+
+    if (e [key] == value) {
+      founds [founds.length++] = e;
+    }
+
+    e._getElements (founds, key, value);
+  }
+
+  return founds;
+};
+
+
+Document.prototype.getElementById = function (id) {
+  return this._getElement ('id', id);
+};
+
+Document.prototype.getElementsByName = function (name) {
+  return this._getElements ({ length: 0 }, 'name', name);
+};
+
+Document.prototype.getElementsByTagName = function (tagName) {
+  return this._getElements ({ length: 0 }, 'tagName', tagName);
+};
+
+Document.prototype.getElementsByClassName = function (className) {
+  return this._getElements ({ length: 0 }, 'className', className);
+};
+
+
+//-------------------------------- Element ---------------------------------
+
+
+// コンストラクタ
+void function Element (tagName) {
+  this.nodeName = this.tagName = tagName;
+
+  this.attributes = new NamedNodeMap ();
+  this.childNodes = { length: 0 };
+};
+
+
+(function (p, d) {
+  Node._defineNodeType (p);
+  p.nodeType = p.ELEMENT_NODE;
+
+  // getElement 系で参照するので必ず定義しておくこと
+  p.id = p.name = p.className = '';
+
+  p.nodeValue = null;
+
+  p.parentNode = null;
+  p.firstChild = p.lastChild = null;
+
+  p.previousSibling = p.nextSibling = null;
+
+  var methods = [
+    'destroy',
+    'appendChild',
+    'hasChildNodes',
+    '_getElement',
+    '_getElements',
+    'getElementById',
+    'getElementsByName',
+    'getElementsByTagName',
+    'getElementsByClassName'
+  ];
+  for (var i = 0; i < methods.length; ++i) {
+    var k = methods [i];
+    p [k] = d [k];
+  }
+}) (Element.prototype, Document.prototype);
+
+
+Element.prototype.getAttribute = function (name) {
+  var attr = this.attributes.getNamedItem (name.toLowerCase ());
+  return attr && attr.value;
+};
+
+
+Element.prototype.hasAttribute = function (name) {
+  return this.attributes.getNamedItem (name.toLowerCase ()) != null;
+};
+
+
+Element.prototype.setAttribute = function (name, value) {
+  var name = name.toLowerCase ();
+  this.attributes.setNamedItem ({ name: name, value: value });
+
+  if (/^(id|name|class)$/.test (name)) {
+    this [(name == 'class') ? 'className' : name] = value;
+  }
+};
+
+
+//---------------------------------- Text ----------------------------------
+
+
+// コンストラクタ
+void function Text (text) {
+  this.nodeValue = text;
+};
+
+
+(function (p) {
+  Node._defineNodeType (p);
+  p.nodeType = p.TEXT_NODE;
+  p.nodeName = '#text';
+
+  p.parentNode = null;
+
+  p.previousSibling = p.nextSibling = null;
+
+  p.destroy = function () { };
+}) (Text.prototype);
+
+
+
+//------------------------- ProcessingInstruction --------------------------
+
+
+// コンストラクタ
+void function ProcessingInstruction (target, data) {
+  this.nodeName = this.target = target;
+  this.data = data;
+};
+
+
+(function (p) {
+  Node._defineNodeType (p);
+  p.nodeType = p.PROCESSING_INSTRUCTION_NODE;
+
+  p.parentNode = null;
+
+  p.previousSibling = p.nextSibling = null;
+
+  p.destroy = function () { };
+}) (ProcessingInstruction.prototype);
+
+
+//-------------------------------- Comment ---------------------------------
+
+
+// コンストラクタ
+void function Comment () {
+};
+
+
+(function (p) {
+  Node._defineNodeType (p);
+  p.nodeType = p.COMMENT_NODE;
+  p.nodeName = '#comment';
+
+  p.parentNode = null;
+
+  p.previousSibling = p.nextSibling = null;
+
+  p.destroy = function () { };
+}) (Comment.prototype);
+
+
+}) ()
+
+
+// EOF

@@ -1,0 +1,282 @@
+//Dorothy2
+//caption=rentan 詰め合わせ
+//version=20140331.0
+//hint=
+//match=^http://(www\.enterbrain\.co\.jp/fb/pc/(14gallery/14images|20omake/wallpaper)|websunday\.net/download/wallpaper|sundaygx\.com/members/[^/]+/download/wall_p|www\.microsoft\.com/taiwan/silverlight|supersonico\.jp/mobile/dl|img\.toranoana\.jp/popup_img18|(ftp|download)\.vector\.co\.jp)/
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+
+//---------------------- 下請け ----------------------//
+
+
+// 処理ルーチンテーブル
+var sites = [ ];
+
+// 処理ルーチン登録
+//  url_re = 対応URL ... 'example.com' or 'http://example.com/dir' or /^http:\/\/example\.com\//
+//  func = 処理ルーチン
+function set_site (url_re, func) {
+  if (typeof url_re == 'string' && !/^https?:/.test (url_re)) {
+    // ドメイン名だけなら http://～/ を追加する
+    url_re = 'http://' + url_re + '/';
+  }
+
+  sites.push ({ url_re: url_re, func: func });
+}
+
+
+// 登録された情報から //match= 行の記述を生成する
+function make_site_match () {
+  var list = [];
+  var last_slash = true;
+
+  for (var i = 0; i < sites.length; ++i) {
+    var url_re = sites [i].url_re;
+
+    if (typeof url_re == 'string') {
+      url_re = url_re.replace (/^http:\/\//, '').replace (/\./g, '\\.');
+      // DMonkey の replace はエスケープ記号を解釈するので二重に必要
+    }
+    else {
+      url_re = url_re.toString ().replace (/^\/\^http:\/\/(.*)\/$/, '$1');
+    }
+
+    last_slash = last_slash && /\/$/.test (url_re);
+
+    list.push (url_re);
+  }
+
+  if (last_slash) {
+    for (var i = 0; i < list.length; ++i) {
+      list [i] = list [i].slice (0, -1);
+    }
+  }
+
+  return '^http://(' + list.join ('|') + ')' + (last_slash ? '/' : '');
+}
+
+
+// ホストに対応したルーチンを探す
+function get_site_func (url) {
+  var func_list = [];
+
+  for (var i = 0; i < sites.length; ++i) {
+    var url_re = sites [i].url_re;
+
+    if (typeof url_re == 'string') {
+      // 文字列型なら先頭部分を比較
+      if (url.slice (0, url_re.length) == url_re) {
+        func_list.push (sites [i].func);
+      }
+    }
+    else {
+      // 正規表現で比較
+      if (url_re.test (url)) {
+        func_list.push (sites [i].func);
+      }
+    }
+  }
+
+  return func_list;
+}
+
+
+// ホストに対応したルーチンを呼び出す
+//  戻り値: true=成功 false=非対応URL 'error'=失敗
+function call_site_func (url) {
+  var func_list = get_site_func (url);
+
+  for (var i = 0; i < func_list.length; ++i) {
+    var r = (func_list [i]) (url);
+
+    if (r != false) {
+      // 成功か失敗なら完了
+      return r;
+    }
+
+    // 非対応 URL だったなら次の対応ルーチンへ
+  }
+
+  // 対応ルーチンが一つもなかった
+  return false;
+}
+
+
+//---------------------- .html → .jpg 各種 ----------------------//
+
+// 末尾の .html を .jpg に置換してダウンロードする
+function html_to_jpg (url) {
+  urlinfo.url = url.replace (/\.html$/, '.jpg');
+  Dorothy.fileName = (new URL (urlinfo.url)).filename;
+
+  headers.Cookie = '';
+  headers.Referer = url;
+
+  return true;
+}
+
+
+// ファミ通文庫 FB Online 壁紙
+set_site (/^http:\/\/www\.enterbrain\.co\.jp\/fb\/pc\/(14gallery\/14images|20omake\/wallpaper)\//, html_to_jpg);
+
+// WEBサンデー ダウンロード・スタジオ
+set_site (/^http:\/\/websunday\.net\/download\/wallpaper\//, html_to_jpg);
+
+// 小学館コミック -サンデーGENE-X-
+set_site (/^http:\/\/sundaygx\.com\/members\/[^\/]+\/download\/wall_p\//, html_to_jpg);
+
+
+//---------------------- i-bbs ----------------------//
+
+function ibbs (url) {
+  if (!url.match (/\?id=([^&]+)&file=(.*)$/)) {
+    return false;
+  }
+
+  headers.Cookie = '';
+  headers.Referer = url;
+
+  urlinfo.url = 'http://image.i-bbs.sijex.net/bbs/' + RegExp.$1 + '/' + RegExp.$2;
+
+  Dorothy.fileName = RegExp.$2;
+
+  return true;
+}
+//set_site ('http://i-bbs.sijex.net/imageDisp.jsp', ibbs);
+
+
+function ibbs_image (url) {
+  headers.Cookie = '';
+  headers.Referer = 'http://i-bbs.sijex.net/' + (url.match (/\/bbs\/([^\/]+)\//) ? 'imageBoard.jsp?id=' + RegExp.$1 : '');
+
+  return true;
+}
+//set_site ('http://image.i-bbs.sijex.net/bbs/', ibbs_image);
+
+
+//---------------------- Microsoft 台湾 Silverlight 藍澤光 壁紙 ----------------------//
+
+function microsoft_tw (url) {
+  if (url.match (/^(.*\/)desktop(_[a-z])_(\d+x\d+)\.htm$/)) {
+    urlinfo.url = RegExp.$1 + 'images/' + RegExp.$3.toUpperCase () + RegExp.$2 + '.jpg';
+  }
+  else if (url.match (/^(.*\/)(wallpaper_.*)\.htm$/)) {
+    urlinfo.url = RegExp.$1 + 'images/' + RegExp.$2 + '.jpg';
+  }
+  else {
+    return null;
+  }
+
+  headers.Cookie = '';
+  headers.Referer = url;
+
+  Dorothy.fileName = (new URL (urlinfo.url)).filename;
+
+  return true;
+}
+set_site ('http://www.microsoft.com/taiwan/silverlight/', microsoft_tw);
+
+
+//---------------------- すーぱーそに子公式モバイルサイト ----------------------//
+
+function supersonico_mobile (url) {
+  if (!/^(http:\/\/supersonico\.jp\/mobile\/dl\/)wp_(.*)\.php$/.test (url)) {
+    return null;
+  }
+  url = RegExp.$1 + 'img/' + RegExp.$2 + '.jpg';
+
+  urlinfo.url = url;
+  Dorothy.fileName = (new URL (url)).filename;
+
+  return true;
+}
+set_site ('http://supersonico.jp/mobile/dl/', supersonico_mobile);
+
+
+//---------------------- とらのあな サンプル画像 18禁 ----------------------//
+
+function toranoana_18 (url) {
+  headers.Cookie = 'afg=0';
+  headers.Referer = '';
+
+  return true;
+}
+set_site ('http://img.toranoana.jp/popup_img18/', toranoana_18);
+
+
+//---------------------- Vector ----------------------//
+
+function vector (url) {
+  headers.Cookie = '';
+  headers.Referer = '';
+
+  urlinfo.url = url.replace (/^http:\/\/download\./, 'http://ftp.');
+  headers.Host = 'ftp.vector.co.jp';
+
+  return true;
+}
+set_site (/^http:\/\/(ftp|download)\.vector\.co\.jp\//, vector);
+
+
+function my_vector (url) {
+  if (!url.match (/(\/pack\/[^?]+)(\?.*)?$/)) {
+    return null;
+  }
+  url = 'http://ftp.vector.co.jp' + RegExp.$1;
+
+  return vector (url);
+}
+//set_site ('http://my.vector.co.jp/servlet/System.FileDownload/download/', my_vector);
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  // setting\rentan_pack.set から読み込まれて呼び出された場合
+  if (typeof MAKE_SITE_MATCH == 'boolean') {
+    // //match= パターンを生成して返す
+    return make_site_match ();
+  }
+
+
+  var r = call_site_func (urlinfo.url);
+
+  if (r == true) {
+    // 成功
+  }
+  else if (r == false) {
+    // 非対応URL 次のmatchを行う
+    Dorothy.cancel = true;
+  }
+  else if (r == 'error') {
+    // 失敗
+    retry ();
+  }
+
+  return;
+}
+
+
+// EOF

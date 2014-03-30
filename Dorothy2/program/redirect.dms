@@ -1,0 +1,1043 @@
+//Dorothy2
+//caption=URL転送サービス
+//version=20140331.0
+//hint=
+//match=^https?://((bit\.ly|ilix\.in|ime\.nu|jump\.2ch\.net|lix\.in|pinktower\.com|t\.co|wk\.tk)/.|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|baberepublic\.com|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|fapoff\.com|filesonthe\.net|freean\.us|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|placepictures\.com|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|youfap\.me|yyv\.co|zff\.co|zxxo\.net|linkbucks\.com)([/?#].*)?$)
+//author=rentan
+//path=program
+//priority=710
+//end
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem');
+
+  // 設定ファイルの読み込み
+  var defaultIni = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      ReQueue: true,
+      Max: 32
+    },
+    Site: {
+      AdfLy: false,
+      BitLy: true,
+      Blogsys: false,
+      Fc2In: false,
+      GooGl: false,
+      IlixIn: true,
+      ImeNu: true,
+      JMp: false,
+      Jbbs: false,
+      Jump2ch: true,
+      Linkbucks: true,
+      LixIn: true,
+      OwLy: false,
+      PTl: false,
+      Pinktower: true,
+      TCo: true,
+      Tinyurl: false,
+      TobetoBe: false,
+      WkTk: true,
+      Ybbs: false
+    }
+  };
+  var ini = defaultIni;
+
+
+//-------------------- UrlRedirector --------------------//
+
+common_load ('http');
+
+
+// コンストラクタ
+void function UrlRedirector (ds, obj) {
+  if (nameOf (this) != 'UrlRedirector') {
+    alert ('new なしで UrlRedirector() が呼ばれました。');
+    exit ();
+  }
+
+  this.urls = [ ];
+  this.initDisableList (ds);
+
+  if (obj && obj.hasKey ('Max')) {
+    this.loopMax = obj.Max;
+  }
+};
+
+
+// .resolve()/.resolveAll() の戻り値
+UrlRedirector.prototype.OK = 0;
+UrlRedirector.prototype.NG = 1;
+UrlRedirector.prototype.RETRY = 2;
+UrlRedirector.prototype.UNKNOWN = 3;
+UrlRedirector.prototype.MIS = 4;
+UrlRedirector.prototype.EXIT = 5;
+
+
+UrlRedirector.prototype.comment = '';
+UrlRedirector.prototype.http = null;
+
+// .resolveAll() の回数制限
+UrlRedirector.prototype.loopMax = 32;
+
+
+// 無効にするサイトを記録する
+UrlRedirector.prototype.initDisableList = function (ds) {
+  var dl = this.disableList = { };
+
+  if (!ds) {
+    return;
+  }
+
+  for (var key in ds) {
+    if (!ds [key]) {
+      dl [key] = true;
+    }
+  }
+};
+
+
+// 登録された情報から //match= 行の記述を生成する
+UrlRedirector.prototype.buildMatch = function () {
+  var hostList = [ ];
+  var reList = [ ];
+
+  var list = this.resolverList;
+  for (var key in list) {
+    if (this.disableList.hasKey (key)) {
+      continue;
+    }
+
+    var o = list [key];
+
+    if (o.hasKey ('host')) {
+      hostList.push (o.host);
+    }
+    else {
+      var re = o.re.toString ().replace (/^\/\^http(s\??)?:\/\/(.*)\/$/, '$2');
+      reList.push (re);
+    }
+  }
+
+  if (hostList.length) {
+    hostList = hostList.sort (function (a, b) { return a.localeCompare (b); });
+
+    // DMonkey の replace はエスケープ記号を解釈するので二重に必要
+    hostList = '(' + hostList.join ('|').replace (/\./g, '\\.') + ')/.';
+
+    // ホスト名のみのサイトを先頭に挿入
+    reList.unshift (hostList);
+  }
+
+  return reList.length ? '^https?://(' + reList.join ('|') + ')' : '!no-match!';
+};
+
+
+// URL に対応した処理関数を探す
+UrlRedirector.prototype.getResolver = function (url) {
+  var urlHost = (new URL (url)).host;
+
+  var list = this.resolverList;
+  for (var key in list) {
+    if (this.disableList.hasKey (key)) {
+      continue;
+    }
+
+    var o = list [key];
+
+    if (o.hasKey ('host')) {
+      if (urlHost == o.host) {
+        return o.f;
+      }
+    }
+    else {
+      if (o.re.test (url)) {
+        return o.f;
+      }
+    }
+  }
+
+  return null;
+};
+
+
+// 内部で使用: メッセージを表示&commentに保存
+UrlRedirector.prototype._error = function (status, s) {
+  println (s);
+  this.comment = s;
+  return status;
+};
+
+UrlRedirector.prototype.ng = function (s) {
+  return this._error (this.NG, s);
+};
+
+UrlRedirector.prototype.unknown = function (s) {
+  return this._error (this.UNKNOWN, s);
+};
+
+
+// Http オブジェクトを再確保して規定時間待機
+UrlRedirector.prototype.wait = function () {
+  this.http = new Http ();
+
+  var waitMs = 3000;
+  sleep (waitMs);
+};
+
+
+// URL オブジェクトからパス部分を取り出す
+UrlRedirector.prototype.getPath = function (u) {
+  return u.path.slice (1).replace (/[?#].*$/, '');
+};
+
+
+// HTTP アクセスでエラーした場合の戻り値の選択
+UrlRedirector.prototype.httpError = function (h) {
+  var http = h || this.http;
+  var c = http && http.code;
+
+  if (c) {
+    this.comment = http.statusLine;
+  }
+
+  return (c == 0 || c == 503) ? this.RETRY : this.NG;
+};
+
+
+// .resolve/.resolveAll() の戻り値に応じて終了処理
+UrlRedirector.prototype.end = function (r) {
+  if (r == this.RETRY) {
+    return retry ();
+  }
+  if (r != this.OK && r != this.MIS) {
+    exit ();
+  }
+};
+
+
+// URL の転送先を取得する(1段のみ)
+UrlRedirector.prototype.resolve = function (url) {
+  this.urls = [ ];
+  this.comment = '';
+  this.http = new Http ();
+
+  var f = this.getResolver (url);
+  if (!f) {
+    return this.MIS;
+  }
+
+  var u = new URL (url);
+  return f.call (this, u, this.getPath (u));
+};
+
+
+// URL の転送先を取得する(多段対応)
+UrlRedirector.prototype.resolveAll = function (url) {
+  var urls = [ url ];
+
+  var max = this.loopMax;
+  for (var i = 0; i < max; ++i) {
+    var r = this.resolve (urls [0]);
+
+    if (r != this.OK) {
+      if (i && r == this.MIS) {
+        // 転送先が転送サイトでない場合はその URL を返す(正常終了)
+        this.urls = urls;
+        r = this.OK;
+      }
+      return r;
+    }
+
+    urls = this.urls;
+    if (urls.length > 1) {
+      // 転送先が複数 URL ならこれ以上処理せずに返す
+      return r;
+    }
+  }
+
+  if (max > 1) {
+    this.comment = 'UrlRedirector: 転送回数が超過したため処理を打ち切ります。';
+  }
+  return this.OK;
+};
+
+
+// 転送先 URL を追加して正常終了
+UrlRedirector.prototype.add = function (url) {
+  this.urls.push (url);
+  return this.OK;
+};
+
+
+// Location: レスポンスヘッダを返す
+UrlRedirector.prototype.getLocation = function (u, path) {
+  if (!path) {
+    return this.MIS;
+  }
+
+  var loc = this.http.getLocation (u.url);
+
+  return loc ? this.add (loc) : this.httpError ();
+};
+
+
+// adf.ly
+UrlRedirector.prototype.adfly = function (u, path) {
+  function ysmm (s) {
+    var a = '', T = '';
+
+    for (var i = 0; i < s.length; ++i) {
+      if (i % 2 == 0) {
+        a += s [i];
+      }
+      else {
+        T = s [i] + T;
+      }
+    }
+
+    return Base64.decode (a + T).slice (2);
+  }
+
+  if (!path) {
+    return this.MIS;
+  }
+  if (/^go\//.test (path)) {
+    return this.getLocation (u, path);
+  }
+
+  var http = this.http;
+  if (!http.get (u.url)) {
+    return this.httpError ();
+  }
+  if (/var\s+ysmm\s*=\s*'([^']+)';/.test (http.data)) {
+    return this.add (ysmm (RegExp.$1));
+  }
+
+  if (/var\s+zzz\s*=\s*'([^']+)';/.test (http.data)) {
+    var s = RegExp.$1;
+    if (s == 'http://adf.ly/skip.php') {
+      return this.unknown ('adf.ly: 対応していない形式です。');
+    }
+    return this.add (s);
+  }
+
+  if (/var\s+url\s*=\s*'\/(go\/[^']+)';/.test (http.data)) {
+    u = new URL ('http://adf.ly/' + RegExp.$1);
+    http.removeRequestHeader ('Cookie');
+    return this.getLocation (u, this.getPath (u));
+  }
+
+  return this.unknown ('adf.ly: 転送先URLが見つかりません。');
+};
+
+
+// linkbucks の対応 URL 正規表現
+// 参考: http://userscripts.org/scripts/show/118033
+UrlRedirector.prototype.linkbucksRe = (function () {
+  var domains = [
+    'allanalpass.com',
+    'amy.gs',
+    'any.gs',
+    'baberepublic.com',
+    'cash4files.com',
+    'deb.gs',
+    'drstickyfingers.com',
+    'dyo.gs',
+    'fapoff.com',
+    'filesonthe.net',
+    'freean.us',
+    'galleries.bz',
+    'goneviral.com',
+    'hornywood.tv',
+    'linkbabes.com',
+    'linkgalleries.net',
+    'linkseer.net',
+    'megaline.co',
+    'miniurls.co',
+    'picbucks.com',
+    'picturesetc.net',
+    'placepictures.com',
+    'poontown.net',
+    'qqc.co',
+    'qvvo.com',
+    'realfiles.net',
+    'rqq.co',
+    'seriousdeals.net',
+    'seriousfiles.com',
+    'seriousurls.com',
+    'sexpalace.gs',
+    'theseblogs.com',
+    'thesefiles.com',
+    'theseforums.com',
+    'thosegalleries.com',
+    'tinybucks.net',
+    'tinylinks.co',
+    'tnabucks.com',
+    'tubeviral.com',
+    'uberpicz.com',
+    'ubervidz.com',
+    'ubucks.net',
+    'ugalleries.net',
+    'ultrafiles.net',
+    'urlbeat.net',
+    'urlpulse.net',
+    'whackyvidz.com',
+    'youfap.me',
+    'yyv.co',
+    'zff.co',
+    'zxxo.net',
+
+    'linkbucks.com'
+  ].join ('|').replace (/\./g, '\\.');
+
+  return new RegExp ('^http://[0-9a-zA-Z]+\.(' + domains + ')([/?#].*)?$');
+}) ();
+
+
+// loadTargetUrl
+
+// linkbucks
+UrlRedirector.prototype.linkbucks = function (u, path) {
+
+  function isAuthKeyExpr (s) {
+    return s.replace (/^'|'\s*\+\s*'|'$/g, '') == 'AuthKey';
+  }
+  function isInitLbjsExpr (s) {
+    return s.replace (/^'|'\s*\+\s*'|'$/g, '') == 'initLbjs';
+  }
+
+  function findScript (http) {
+    var m = /<script[^>]*>.*?<\/script>/g.exec (http.data) || [ ];
+
+    for (var i = 0; i < m.length; ++i) {
+      var s = m [i];
+      if (/^\s*var f = window\[([^\]]+)\];/m.test (s) && isInitLbjsExpr (RegExp.$1)) {
+        return s.replace (/\sf\('.',.*$/, '');
+      }
+    }
+    return null;
+  }
+
+  function scan (http) {
+    var script = findScript (http);
+    if (!script) {
+      return this.unknown ('linkbucks: 未対応のスクリプトです。');
+    }
+
+    if (!/Token\s*:\s*'([^']+)'/.test (script)) {
+      return this.unknown ('linkbucks: Token がありません。');
+    }
+    var Token = RegExp.$1;
+
+    if (!/Countdown\s*:\s*(\d+)/.test (script)) {
+      return this.unknown ('linkbucks: Countdown がありません。');
+    }
+    var waitSec = RegExp.$1;
+
+    var AuthKey = 0.0;
+    function calc (s, p1, p2, p3, p4) {
+      if (isAuthKeyExpr (p1)) {
+        if (p2 && isAuthKeyExpr (p3)) {
+          AuthKey += parseFloat (p4);
+        }
+        else {
+          AuthKey = parseFloat (p4);
+        }
+      }
+      return '';
+    }
+
+    script.replace (/^\s*params\[([^\]]+)\] = (params\[([^\]]+)\]\s*\+\s*)?(\d+);/gm, calc);
+
+    var rand = Math.floor (89999999 * Math.random() + 10000000);
+    var url = '/scripts/generated/key.js?t=' + Token + '&' + rand;
+    if (!http.getXhr (url)) {
+      return this.httpError ();
+    }
+
+    println ('linkbucks: wait ' + waitSec + 'sec');
+    sleep (parseInt (waitSec) * 1000);
+
+    url = '/intermission/loadTargetUrl?t=' + Token + '&aK=' + AuthKey;
+    if (!http.getXhr (url)) {
+      return this.httpError ();
+    }
+
+    if (!/"Success":true/.test (http.data)) {
+      return this.ng ('linkbucks: loadTargetUrl 失敗。');
+    }
+    if (!/"Url":"([^"]+)"/.test (http.data)) {
+      return this.unknown ('linkbucks: Url がありません。');
+    }
+    return this.add (RegExp.$1);
+  }
+
+
+  var retryMax = 3;
+  for (var i = 0; i < retryMax; ++i) {
+    if (i) {
+      this.wait ();
+    }
+
+    var http = this.http;
+    if (http.get (u.url)) {
+      return scan (http);
+    }
+
+    var verify = u.url + '/verify/url/';
+    if (http.code == 302 && http.location == verify) {
+      continue;
+    }
+
+    var broken = 'http://your-dns-is-broken-let-me-help.www.linkbucksdns.com';
+    broken += u.path;
+    if (http.code == 307 && http.location == broken) {
+      u = new URL (http.location);
+      i = 0;
+      continue;
+    }
+
+    return this.httpError ();
+  }
+
+  // 規定回数 get しても毎回認証画面に飛ばされてしまった場合
+  return this.ng ('linkbucks: 認証画面が解除されませんでした。');
+};
+
+
+// ilix.in
+UrlRedirector.prototype.ilixin = function (u, path) {
+  if (!/^[0-9a-z]+$/i.test (path)) {
+    return this.MIS;
+  }
+
+
+  common_load ('htmlform');
+
+
+  // ilix.in の CAPTCHA 処理
+  var ilixCaptcha = { provider: 'ilix.in' };
+  var capHttp = null;
+
+  // 初期化
+  ilixCaptcha.init = function (p, o) {
+    this.textareaName = 'captcha';
+    return true;
+  };
+
+  // フォーム解析 & 初期化
+  ilixCaptcha.analyzeForm = function (p, form) {
+    return this.init (p.provider, { });
+  };
+
+  // 入力
+  ilixCaptcha.input = function (p, hta_opt) {
+    // 画像サイズ 200x70
+    hta_opt.width = 360;
+    hta_opt.height = 180;
+
+    for (;;) {
+      var img = capHttp.clone ();
+
+      // 画像をダウンロード
+      if (!img.get ('/captcha2/captcha.php')) {
+        return false;
+      }
+
+      // 入力
+      hta_opt.image = img.data;
+      var code = this.inputText (hta_opt);
+      println ('code--->' + code);
+
+      if (code == this.cancelCommand || code == null) {
+        // キャンセル終了
+        return false;
+      }
+
+      if (code == this.reloadCommand) {
+        // 画像更新
+        continue;
+      }
+
+      // とりあえず入力コード確定
+      // ここではコードが正しいか判定できないので、間違っている可能性がある
+      this.textareaValue = code;
+      break;
+    }
+
+    return true;
+  };
+
+  // CAPTCHA なしなら false、ありなら入力して true を返す
+  function inputCaptcha (http, form) {
+    var captchaForm = form.getElementById ('captcha-form');
+    if (!captchaForm) {
+      return false;
+    }
+
+    common_load ('jcaptcha');
+
+    var cap = new JCaptcha ();
+    cap.register (ilixCaptcha);
+
+    capHttp = http;
+
+    if (!cap.analyzeForm (form)) {
+      http.capture ();
+      http.die ('CAPTCHA コードが見つかりません。');
+    }
+    if (!cap.inputForm (form)) {
+      exit ();
+    }
+
+    return true;
+  }
+
+
+  function unknown (s) {
+    return this.unknown ('ilix.in: ' + s);
+  }
+
+
+  var http = this.http;
+  if (!http.get (u.url)) {
+    return this.httpError ();
+  }
+
+  var form = (new HtmlForms (http)).getFormByName ('frm');
+  if (!form) {
+    return unknown ('<form name="frm"> がありません。');
+  }
+
+  var src;
+  for (;;) {
+    var submit = form.getElementByName ('consubmit');
+    if (!submit) {
+      return unknown ('<input name="consubmit"> がありません。');
+    }
+
+    // Captcha Off のリンクの場合でも、CAPTCHA が表示されることがある?
+    var captcha = inputCaptcha (http, form);
+
+    // 今のことろ待機しなくても平気
+    // http://ilix.in/js_css/js1.js  seconds = 10;
+    // Win32.sleep (seconds);
+
+    if (!http.exec (form.submit (submit))) {
+      return this.httpError ();
+    }
+
+    form = (new HtmlForms (http)).getFormByName ('frm');
+    if (form) {
+      if (captcha) {
+        println ('CAPTCHA不正解。');
+        continue;
+      }
+
+      return unknown ('フォームが再表示されました。');
+    }
+
+    // <script language='javascript' src='encrypt.php'></script>
+    if (!/<script[^>]*src='([^']+)'/.test (http.data)) {
+      http.capture ();
+      return unknown ("<script src='...'> がありません。");
+    }
+    src = RegExp.$1;
+
+    // 成功
+    break;
+  }
+
+  if (!http.get (src)) {
+    return this.httpError ();
+  }
+
+  var html = unescape (http.data);
+  if (!/<iframe\s+name="ifram"\s+src="([^"]+)"/.test (html)) {
+    http.capture ();
+    return unknown ('<iframe name="ifram"> がありません。');
+  }
+  var url = RegExp.$1;
+
+  return this.add (url);
+};
+
+
+// lix.in
+//  http://lix.in/-dce570  http://lix.in/-de6c11
+//  http://lix.in/-d3bdb4  http://lix.in/-d6caf6
+UrlRedirector.prototype.lixin = function (u, path) {
+  common_load ('htmlform', 'utf8', 'jinput');
+
+  if (/^((abuse|ano|dl|more|webmaster)\.php)?([?#].*)?$/.test (path)) {
+    return this.MIS;
+  }
+
+
+  // CAPTCHA 入力
+  function inputCaptcha (http, form) {
+    var capt = form.getElementByName ('capt');
+    if (!capt) {
+      return this.unknown ('lix.in: <input name="capt"> が見つかりません。');
+    }
+
+    if (!/<img[^>]*\ssrc="(captcha_img\.php[^"]+)"/.test (form.outerHTML)) {
+      return this.unknown ('lix.in: CAPTCHA 画像が見つかりません。');
+    }
+    var imgUrl = RegExp.$1;
+
+    var img = http.clone ();
+    if (!img.get (imgUrl)) {
+      return this.httpError (img);
+    }
+
+    var htaOpt = {
+      title: Dorothy.matchFile + ' lix.in',
+      width: 360,
+      height: 210,
+      image: img.data
+    };
+
+    var t = (new JInput ()).inputText (htaOpt);
+    if (t == null) {
+      return this.EXIT;
+    }
+
+    capt.value = t = t.trim ();
+    println ('code-->' + t);
+    return this.OK;
+  }
+
+  // <iframe src="..."> を抽出
+  function iframe (http) {
+    if (/<iframe[^>]*\ssrc="([^"]+)"/.test (http.data)) {
+      var s = RegExp.$1.trim ();
+      return this.add (new Utf8 (s).decodeCharRef ().toUTF8 ());
+    }
+
+    http.capture ();
+    return this.unknown ('lix.in: 未対応のページ内容です。');
+  }
+
+
+  var http = this.http;
+
+  // CAPTCHA 入力済みの Cookie があれば再入力不要なので読み込む
+  var icm = new IrvineCookieManager ();
+  var cookie = icm.getCookie (u.host);
+  http.setRequestHeader ('Cookie', cookie);
+
+  if (!http.get (u.url)) {
+    return this.httpError ();
+  }
+  var forms = new HtmlForms (http);
+
+  var r, form;
+  for (var capt = false;; capt = true) {
+    // CAPTCHA があれば正解するまで繰り返す
+    form = forms.getFormByElementName ('capt');
+    if (!form) {
+      break;
+    }
+    if (capt) {
+      println ('lix.in: CAPTCHA 不正解。');
+    }
+
+    r = inputCaptcha (http, form);
+    if (r != this.OK) {
+      return r;
+    }
+
+    if (!http.exec (form.submit ())) {
+      return this.httpError ();
+    }
+    forms = new HtmlForms (http);
+  }
+
+  if (capt) {
+    // 次回の CAPTCHA 入力を省くために Cookie を保存
+    icm.setCookie (u.host, http.getRequestHeader ('Cookie'));
+  }
+
+  // CAPTCHA なしの場合は Continue ボタンをクリック
+  form = forms.getFormByElementName ('tiny');
+  var submit = form && form.getElementByType ('submit');
+  if (submit && /^continue\s*$/.test (submit.value)) {
+    if (!http.exec (form.submit (submit))) {
+      return this.httpError ();
+    }
+    forms = new HtmlForms (http);
+  }
+
+  var multi = forms.getFormsByElementName ('in');
+  if (multi) {
+    // 複数リンク
+    for (var i = 0; i < multi.length; ++i) {
+      var f = multi [i];
+      submit = f.getElementByType ('submit');
+
+      var h = http.clone ();
+      if (!h.exec (f.submit (submit))) {
+        return this.httpError (h);
+      }
+
+      r = iframe (h);
+      if (r != this.OK) {
+        return r;
+      }
+    }
+
+    return this.OK;
+  }
+
+  // 単独リンク
+  return iframe (http);
+};
+
+
+// サイトごとの処理関数を登録
+UrlRedirector.prototype.resolverList = (function () {
+  var list = { };
+
+  var ur = UrlRedirector.prototype;
+
+
+  list.BitLy = { host: 'bit.ly', f: ur.getLocation };
+  list.Fc2In = { host: 'fc2.in', f: ur.getLocation };
+  list.GooGl = { host: 'goo.gl', f: ur.getLocation };
+  list.JMp = { host: 'j.mp', f: ur.getLocation };
+  list.Tinyurl = { host: 'tinyurl.com', f: ur.getLocation };
+
+
+  list.AdfLy = { host: 'adf.ly', f: ur.adfly };
+
+
+  list.Blogsys = { host: 'extlink.blogsys.jp', f: function (u, path) {
+    return /^\?u=(http.*)/.test (u.query) ? this.add (unescape (RegExp.$1)) : this.MIS;
+  }};
+
+
+  list.IlixIn = { host: 'ilix.in', f: ur.ilixin };
+
+
+  list.ImeNu = { host: 'ime.nu', f: function (u, path) {
+    return path ? this.add ('http://' + u.path.slice (1)) : this.MIS;
+  }};
+  list.Pinktower = { host: 'pinktower.com', f: list.ImeNu.f };
+
+
+  list.Jbbs = { host: 'jbbs.livedoor.jp', f: function (u, path) {
+    return /^\/bbs\/link\.cgi\?url=(http.+)/.test (u.path) ? this.add (RegExp.$1) : this.MIS;
+  }};
+
+
+  list.Jump2ch = { host: 'jump.2ch.net', f: function (u, path) {
+    return /^\/\?(.+)$/.test (u.path) ? this.add ('http://' + RegExp.$1) : this.MIS;
+  }};
+
+
+  list.Linkbucks = { re: ur.linkbucksRe, f: ur.linkbucks };
+
+
+  list.LixIn = { host: 'lix.in', f: ur.lixin };
+
+
+  list.OwLy = { host: 'ow.ly', f: function (u, path) {
+    return /^(d|i|user|url|privacy|copyright|terms)?([\/?#].*)?$/.test (path) ?
+      this.MIS : this.getLocation (u, path);
+  }};
+
+
+  list.PTl = { host: 'p.tl', f: function (u, path) {
+    // クッションページを外す
+    u = new URL (u.url.replace (/[!?#].*$/, ''));
+    return this.getLocation (u, this.getPath (u));
+  }};
+
+
+  list.TCo = { host: 't.co', f: function (u, path) {
+    if (!path || /^static(\/.*)?$/.test (path)) {
+      return this.MIS;
+    }
+
+    var http = this.http;
+    // リファラが空だと 200 OK で HTML が返ってきてしまう。
+    http.setRequestHeader ('Referer', 'http://t.co/');
+    var loc = http.getLocation (u.url);
+
+    var t = '<title>警告</title>'.toUTF8 ();
+    if (!loc && http.code == 200 && http.data.indexOf (t) != -1) {
+      return this.ng ('t.co: 転送先URLが安全ではない可能性があります。');
+    }
+
+    return loc ? this.add (loc) : this.httpError ();
+  }};
+
+
+  list.TobetoBe = { host: 'tobeto.be', f: function (u, path) {
+    if (!path || /^(analyze|images|info|javascripts|signin|stylesheets)(\/.*)?$/.test (path)) {
+      return this.MIS;
+    }
+
+    // クッションページ ... ページを読み込んでスクレイピング
+    var http = this.http;
+    if (/^url\/./.test (path)) {
+      if (!http.get (u.url)) {
+        return this.httpError ();
+      }
+
+      if (/<div\s+class="capture">\s*<a\s+href="([^"]+)"/.test (http.data)) {
+        return this.add (RegExp.$1);
+      }
+
+      return this.unknown ('tobeto.be: 転送先URLが見つかりません。');
+    }
+
+    // 短縮 URL ... Location: ヘッダを見る
+    //  短縮 URL の移動先が tobeto.be のクッションページの場合もある
+    return this.getLocation (u, path);
+  }};
+
+
+  list.WkTk = { host: 'wk.tk', f: function (u, path) {
+    return /^(static|urls|service|fr)?([\/?#].*)?$/.test (path) ?
+      this.MIS : this.getLocation (u, path);
+  }};
+
+
+  // https:// ftp:// などは正しく処理できないがサイト側の仕様通り
+  // ws2 以降は需要があれば対応
+  list.Ybbs = { host: 'ws1.y-bbs.net', f: function (u, path) {
+    return /^\/junction\.cgi\?(http:\/\/)?(.+)/.test (u.path) ?
+      this.add ('http://' + RegExp.$2) : this.MIS;
+  }};
+
+
+  return list;
+}) ();
+
+
+//-------------------- 下請け --------------------//
+
+
+function reQueue (req, iniAddItem, list) {
+  if (req || list.length > 1) {
+    // 転送先の URL を追加して、現在のアイテムは削除する
+    (new AddItem (iniAddItem)).send (list) || exit ();
+    Util.remove_this ();
+    return;
+  }
+
+  // 現在のアイテムを書き換える
+  var url = list [0].Url;
+  headers.Referer = '';
+  headers.Cookie = '';
+  headers.Host = (new URL (url)).host;
+  urlinfo.url = url;
+}
+
+
+//-------------------- DOA --------------------//
+
+
+function doaConstructor (ur) {
+  this.urlRedirector = ur;
+
+  this.main = function (url) {
+    var ur = this.urlRedirector;
+    var r = ur.resolveAll (url);
+    var urls = ur.urls;
+
+    var st = DOA_LK;
+    if (r == ur.OK) {
+      if (urls.length == 1) {
+        DOA.link = urls [0];
+      }
+      else {
+        st = DOA_LS;
+        for (var i = 0; i < urls.length; ++i) {
+          DOA_item_add (urls [i]);
+        }
+      }
+    }
+    else if (r == ur.RETRY) {
+      st = DOA_BS;
+    }
+    else if (r == ur.MIS) {
+      st = DOA_UK;
+    }
+    else {  // ur.NG .UNKNOWN .EXIT
+      st = DOA_NG;
+      DOA.comment = ur.comment;
+    }
+
+    DOA.status = st;
+  };
+
+  this._ = function () {
+    this.urlRedirector = null;
+  };
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var ur = new UrlRedirector (ini.Site, { Max: ini.General.Max });
+
+  // DOA.dms からの実行
+  if (Util.isDOA) {
+    return doaConstructor (ur);
+  }
+
+  // setting\redirect.set から読み込まれて呼び出された場合
+  if (typeof MAKE_SITE_MATCH == 'boolean') {
+    // //match= パターンを生成して返す
+    return ur.buildMatch ();
+  }
+
+
+  var url = urlinfo.url;
+  var r = ur.resolveAll (url);
+  if (r != ur.OK) {
+    return ur.end (r);
+  }
+
+  var list = [ ];
+  for (var i = 0; i < ur.urls.length; ++i) {
+    var u = ur.urls [i];
+    println ('転送先: ' + u);
+
+    // 万が一同じ URL に転送されると無限ループするので念のため確認
+    if (u == url) {
+      println ('同じURLに転送されました。');
+      exit ();
+    }
+
+    list.push ({ Url: u, Comment: item.comment || url });
+  }
+
+  reQueue (ini.General.ReQueue, ini.AddItem, list);
+}
+
+
+// EOF

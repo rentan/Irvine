@@ -1,0 +1,332 @@
+//Dorothy2
+//caption=AddItem
+//version=20140331.0
+//hint=new AddItem ()
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+
+// コンストラクタ
+void function AddItem (opt_cfg) {
+  if (nameOf (this) != 'AddItem') {
+    alert ('new なしで AddItem() が呼ばれました。');
+    exit ();
+  }
+
+
+  // 動作モード初期化
+  var cfg = opt_cfg || { };
+
+  var keys = [ 'Mode', 'Queue', 'Listname' ];
+  for (var i = 0; i < keys.length; ++i) {
+    var key = keys [i];
+
+    var v = cfg.hasKey (key) ? cfg [key] : this.iniTemplate [key];
+    if (typeof v == 'string' || nameOf (v) == 'String') {
+      v = v.trim ();
+    }
+
+    this [key.toLowerCase ()] = v;
+  }
+};
+
+
+// プロパティ初期値
+AddItem.prototype.savedListPath = null;
+
+
+// 設定初期値(Util.ini_load 用の型指定)
+//  使用法
+//  var ini = Util.ini_load ({ AddItem: AddItem.prototype.iniTemplate });
+//  var listdl = new AddItem (ini.AddItem);
+//  Util.ini_load で設定ファイルを読み込む場合のみ意味がある。
+AddItem.prototype.iniTemplate = {
+  Mode: '',
+  Queue: '',
+  Listname: ''
+};
+
+
+// 内部で使用: アイテム文字列のキー名
+//  Irvine のソースコード options.pas の function EncodeQueueItemData() 準拠
+AddItem.prototype._itemdataKeys = [
+  'Url',
+  'Folder',
+  'Filename',
+  'Referer',
+  'Cookie',
+  'Check',
+  'SplitCount',
+  'Authorization',
+  'UserId',
+  'Password',
+  'RegistDate',
+  'Success',
+  'Comment',
+  'FileSize',
+  'DLSize',
+  'Error',
+  'DownloadedFilename',
+  'SuccessDate',
+  'Queue'
+];
+
+
+// 内部で使用: ircom.exe を実行する
+AddItem.prototype._callIrcom = function (cmd) {
+  common_load ('exec');
+
+  var ircom = (new File (WScript.FullName)).extractPath () + 'ircom.exe';
+  return Exec (ircom, cmd) == 0;
+};
+
+
+// 内部で使用: Irvine リスト形式のテキストデータを作る
+AddItem.prototype._makeList = function (list, strip_tab) {
+  var slist = new Strings ();
+
+  var key_len = this._itemdataKeys.length;
+
+  for (var i = 0; i < list.length; ++i) {
+    var obj = list [i];
+    var s = '';
+
+    for (var k = 0; k < key_len; ++k) {
+      var key = this._itemdataKeys [k];
+
+      var t = obj.hasKey (key) ? obj [key] : '';
+      s += t.replace (/[\t\r\n]/g, ' ') + "\t";
+    }
+
+    if (strip_tab) {
+      s = s.replace (/\t+$/, '');
+    }
+
+    slist.add (s);
+  }
+
+  return slist;
+};
+
+
+// 内部で使用: AddQueueItem を呼び出すスクリプトファイルを生成して実行する
+AddItem.prototype._callAddQueueItem = function (list, queue) {
+  common_load ('exec');
+
+  var tmpdir = new Directory (Dorothy.temp);
+  tmpdir.exists () || tmpdir.make ();
+  var jsfile = tmpdir.path + Dorothy.matchFile + '.tmp';
+
+
+  var sl = new Strings ();
+  sl.add ('// †自動生成されたファイルです。');
+
+  // DataText のリスト
+  sl.add ('var list = [');
+  var c = ' "';
+  var slist = this._makeList (list, true);  // 末尾のタブは削除
+  for (var i = 0; i < slist.length; ++i) {
+    var t = slist [i].replace (/\\/g, '\\\\').replace (/"/g, '\\"');
+    sl.add (c + t + '"');
+    c = ',"';  // 2行目からは頭に , をつける
+  }
+  sl.add ('];');
+
+  // キューフォルダ名
+  sl.add ('var queue = "' + queue.replace (/"/g, '_') + '";');
+
+  // 処理コード
+  sl.add ("var api = new ActiveXObject ('Irvine.Api');");
+  sl.add ('for (var i = 0; i < list.length; ++i) {');
+  sl.add ('  api.AddQueueItem (queue, list [i]);');
+  sl.add ('}');
+
+  // ファイルに保存
+  sl.add ('// EOF');
+  sl.saveToFile (jsfile);
+
+
+  // wscript.exe を実行
+  var r = Exec ('wscript', '//E:JScript', '"' + jsfile + '"');
+
+  // ファイルを削除
+  if (debug) {
+    println ('AddItem._callAddQueueItem: 一時ファイルを残します。', jsfile);
+  }
+  else {
+    (new File (jsfile)).remove ();
+  }
+
+  return r == 0;
+};
+
+
+// 内部で使用: キューフォルダ名が正しいか調べる
+AddItem.prototype._isValidQueueName = function (queue, func) {
+
+  // キューフォルダの指定は / からはじまること
+  if (queue == '' || queue [0] != '/') {
+    println ('AddItem.' + func + ': キューフォルダの指定が正しくありません: ' + queue);
+    return false;
+  }
+
+  return true;
+};
+
+
+// 内部で使用: AddQueueItem で Irvine に登録する(queue= で指定したキューフォルダ)
+AddItem.prototype._optionQueue = function (list) {
+  common_load ('rutil');
+  var q = Util.get_option ('queue');
+
+  if (!q) {
+    println ('AddItem._optionQueue: フォルダ設定またはアイテム設定でqueue=が指定されていません。');
+    return false;
+  }
+
+  if (!this._isValidQueueName (q, '_optionQueue')) {
+    return false;
+  }
+
+  return this._callAddQueueItem (list, q);
+};
+
+
+// 内部で使用: AddQueueItem で Irvine に登録する
+AddItem.prototype._addQueueItem = function (list) {
+
+  // キューフォルダ無指定ならカレントキューにする
+  //  空文字列だと ircom による API の呼び出しがエラーになるので、
+  //  何かしら設定する必要がある
+  var q = this.queue || optiondata.CurrentQueue;
+
+  if (!this._isValidQueueName (q, '_addQueueItem')) {
+    return false;
+  }
+
+  return this._callAddQueueItem (list, q);
+};
+
+
+// 内部で使用: Irvine リスト形式のテキストデータをファイルに保存する
+AddItem.prototype._saveList = function (list) {
+
+  // 自動判別でリストとして判定される為に1行にタブが12個必要なので
+  // 文末のタブは削除しないこと
+  var slist = this._makeList (list);
+
+  var f = this.listname;
+  if (!f) {
+    // 無指定なら userPath にプログラム名で保存
+    f = Dorothy.userPath + Dorothy.matchFile + '.irv';
+  }
+  else if (!/^[a-z]:/.test (f)) {
+    // フルパスでなければ Dorothy.userPath フォルダに保存
+    f = Dorothy.userPath + f;
+  }
+
+  // 拡張子を補完
+  if (!/\.irv$/i.test (f)) {
+    f += '.irv';
+  }
+
+  this.savedListPath = null;
+
+  // ファイルに保存する
+  try {
+    slist.saveToFile (f);
+  }
+  catch (e) {
+    println ('AddItem._saveList: リストファイルの保存に失敗しました: ' + f);
+    return false;
+  }
+
+  this.savedListPath = f;
+  return true;
+};
+
+
+// 内部で使用: Import で Irvine に登録する
+AddItem.prototype._import = function (list) {
+  if (!this._saveList (list)) {
+    return false;
+  }
+
+  // リストをインポートさせる
+  var cmd = '-object Irvine.Api -method Import "' + this.savedListPath + '"';
+  return this._callIrcom (cmd);
+};
+
+
+// リストを Irvine に登録する
+AddItem.prototype.send = function (list) {
+
+  if (nameOf (list) == 'Object') {
+    // オブジェクトなら配列化
+    list = [ list ];
+  }
+
+  if (list.length == 0) {
+    // 空配列なら成功と見なして終了
+    return true;
+  }
+
+  // 動作モードごとに処理呼び出し
+  var m = (this.mode || 'auto').toLowerCase ();
+
+  if (m == 'auto') {
+    // 現在は Import モードを使う意味がないので、常に AddQueueItem モード
+    m = 'addqueueitem';
+  }
+
+  var mutex = new Mutex ('Dorothy2.AddItem');
+  try {
+    mutex.lock ();
+
+    if (m == 'addqueueitem') {
+      return this._addQueueItem (list);
+    }
+    if (m == 'optionqueue') {
+      return this._optionQueue (list);
+    }
+    if (m == 'import') {
+      return this._import (list);
+    }
+    if (m == 'savelist') {
+      return this._saveList (list);
+    }
+  }
+  finally {
+    mutex.unlock ();
+  }
+
+  println ('AddItem.send: 未対応の動作モードです: ' + m);
+  return false;
+};
+
+
+}) ()
+
+
+// EOF

@@ -1,0 +1,1220 @@
+//Dorothy2
+//caption=YouTube/動画情報
+//version=20140331.0
+//hint=
+//match=^https?://(www\.)?youtube\.com/(watch\?v=|v/|embed/).
+//author=rentan
+//path=program
+//priority=510
+//end
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'http', 'namebuilder', 'utf8');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: true,
+      HandOver: false,
+      AskExec: true,
+      SortReverse: true,
+      GetFileSize: true,
+      SeparateFileSize: true
+    },
+    Download: {
+      Download: false,
+      Priority: '102,101,100,85,84,83,82,78,59,46,45,44,43,38,37,36,35,34,22,18,17,5'
+    },
+    Filename: {
+      VideoInfo: '%TITLE% yt_%ID%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//-------------------------------- YouTube ---------------------------------
+
+common_load ('http');
+
+
+// コンストラクタ
+void function YouTubeVideo () {
+  if (nameOf (this) != 'YouTubeVideo') {
+    alert ('new なしで YouTubeVideo() が呼ばれました。');
+    exit ();
+  }
+};
+
+
+// プロパティ初期値
+YouTubeVideo.prototype.id = null;
+YouTubeVideo.prototype.url = null;
+YouTubeVideo.prototype.rental = false;
+YouTubeVideo.prototype.stereo3d = false;
+YouTubeVideo.prototype.isRTMP = false;
+YouTubeVideo.prototype.author = '';
+YouTubeVideo.prototype.title = '';
+YouTubeVideo.prototype.time = '';
+YouTubeVideo.prototype.comment = '';
+
+YouTubeVideo.prototype.http = null;
+
+YouTubeVideo.prototype.assetsjs = null;
+YouTubeVideo.prototype.decipherPattern = null;
+
+YouTubeVideo.prototype.userAgent = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
+YouTubeVideo.prototype.flashUrl = '';
+
+// 内部で使用
+YouTubeVideo.prototype._debug = false;
+YouTubeVideo.prototype._topUrl = 'http://www.youtube.com/';
+
+
+// .get() の戻り値
+YouTubeVideo.prototype.OK = 0;
+YouTubeVideo.prototype.NG = 1;
+YouTubeVideo.prototype.RETRY = 2;
+YouTubeVideo.prototype.UNKNOWN = 3;
+YouTubeVideo.prototype.MIS = 4;
+
+
+// .get() の戻り値に応じて終了処理
+YouTubeVideo.prototype.end = function (r) {
+  if (r == this.RETRY) {
+    return retry ();
+  }
+  if (r != this.OK && r != this.MIS) {
+    exit ();
+  }
+};
+
+
+// 内部で使用: HTTP アクセスでエラーした場合の戻り値の選択
+YouTubeVideo.prototype._httpError = function () {
+  var http = this.http;
+
+  var c = http && http.code;
+  if (c) {
+    this.comment = http.statusLine;
+  }
+
+  return (c == 0 || c == 503) ? this.RETRY : this.NG;
+};
+
+
+// 内部で使用: メッセージ表示&commentに保存
+YouTubeVideo.prototype._p = function (s) {
+  println (this.comment = nameOf (this) + ': ' + s);
+  return false;
+};
+
+
+// 内部で使用: Strings をファイルに保存する
+YouTubeVideo.prototype._saveToFile = function (type, sl) {
+  var args = {
+    filename: Dorothy.matchFile + '_' + type + '_' + this.id + '.txt',
+    data: sl.text
+  };
+
+  return (new Http ()).saveFile (args);
+};
+
+
+// videoInfo: 指定した変数を返す
+YouTubeVideo.prototype.getVideoInfo = function (key) {
+  var vi = this.videoInfo;
+
+  for (var i = 0; i < vi.length; ++i) {
+    if (vi [i].key == key) {
+      return vi [i].value;
+    }
+  }
+
+  return null;
+};
+
+
+// videoInfo: Strings に変換
+YouTubeVideo.prototype.videoInfoToStrings = function () {
+  var vi = this.videoInfo;
+  var sl = new Strings ();
+
+  for (var i = 0; i < vi.length; ++i) {
+    sl.add (vi [i].key + '=' + vi [i].value);
+  }
+
+  return sl;
+};
+
+
+// 内部で使用: videoInfo: 復号
+YouTubeVideo.prototype._decodeVideoInfo = function (html) {
+  var vi = this.videoInfo = [ ];
+
+  if (!/<script>var\s+ytplayer([^<]+)/.test (html)) {
+    return this._p ('<script>var ytplayer が見つかりません。');
+  }
+  html = RegExp.$1;
+
+  var keys = [
+    { key: 'fmt_list' },
+    { key: 'url_encoded_fmt_stream_map' },
+    { key: 'ypc_video_rental_bar_text' },
+    { key: 'length_seconds', num: true },
+    { key: 'url' },
+    { key: 'keywords' }
+  ];
+
+  for (var i = 0; i < keys.length; ++i) {
+    var k = keys [i].key;
+
+    var q = keys [i].hasKey ('num') ? '(\d+)' : '"([^"]+)"';
+    var re = new RegExp ('"' + k + '"\s*:\s*' + q);
+
+    if (re.test (html)) {
+      var v = re.$1.replace (/\\\//g, '/').replace (/\\u0026/g, '&');
+      vi.push ({ key: k, value: v });
+    }
+  }
+
+  return true;
+};
+
+
+// 内部で使用: ファイル名生成用の情報を抽出する
+YouTubeVideo.prototype._getVideoSpec = function (html) {
+  if (!/<a\s+href="\/(user|channel)\/[^"]+"\s+class="[^"]*yt-user-name[^"]*"[^>]*>([^<]+)/.test (html)) {
+    return this._p ('投稿者名が見つかりません。');
+  }
+  this.author = RegExp.$2;
+
+  if (!/<meta\s+name="title"\s+content="([^"]+)"/.test (html)) {
+    return this._p ('タイトルが見つかりません。');
+  }
+  this.title = RegExp.$1;
+
+  var s = this.getVideoInfo ('length_seconds');
+  if (!s) {
+    return this._p ('length_seconds が見つかりません。');
+  }
+  var d = new Date (s * 1000);
+  d.format = 'nn:ss';
+  this.time = d.toString ();
+
+  // ついでに Flash ファイルのアドレスを抽出
+  s = this.getVideoInfo ('url');
+  if (s) {
+    this.flashUrl = s;
+  }
+  else {
+    // 必須の情報ではないので、見つからなくても構わない
+    this._p ('Flash url が見つかりません。');
+  }
+
+  return true;
+};
+
+
+// adaptiveFmts: Strings に変換
+YouTubeVideo.prototype.adaptiveFmtsToStrings = function () {
+  return this._streamMapToStrings (this.adaptiveFmts);
+};
+
+
+// adaptive_fmts から指定した itag を返す
+YouTubeVideo.prototype.getAdaptiveFmts = function (itag) {
+  var af = this.adaptiveFmts;
+
+  for (var i = 0; i < af.length; ++i) {
+    if (af [i].itag == itag) {
+      return af [i];
+    }
+  }
+
+  return null;
+};
+
+
+// 内部で使用: adaptive_fmts 復号
+//   ytplayer.config.args.adaptive_fmts.split(/,/).map(function(s){return decodeURIComponent(s.replace(/\+/g,' ').replace(/&/g,'\n&'));}).join('\n\n')
+YouTubeVideo.prototype._decodeAdaptiveFmts = function (html) {
+  var k = 'adaptive_fmts';
+
+  if (!/"adaptive_fmts"\s*:\s*"([^"]*)/.test (html)) {
+    // RTMP 動画にはない
+    this._p (k + ' が見つかりません。');
+    return true;
+  }
+  html = RegExp.$1.split (/,/);
+
+
+  for (var i = 0; i < html.length; ++i) {
+    var a = this._decodeStreamMap2 (html [i].replace (/\\u0026/g, '&'), k);
+    if (!a) {
+      return false;
+    }
+    this.adaptiveFmts.push (a);
+  }
+
+  if (this._debug) {
+    this._saveToFile ('af', this.adaptiveFmtsToStrings ());
+  }
+
+  return true;
+};
+
+
+// 内部で使用: 視聴ページの HTML を読み込んで解析する
+YouTubeVideo.prototype._getVideoInfo = function () {
+  var h = this.http;
+  h.setRequestHeader ('User-Agent', this.userAgent);
+
+  if (!h.get (this.url)) {
+    if (h.code == 302 && /\/verify_age/.test (h.location)) {
+      this._p ('この動画はログインが必要です。');
+    }
+    return this._httpError ();
+  }
+
+  if (!this._decodeVideoInfo (h.data)) {
+    return this.UNKNOWN;
+  }
+  if (!this._getVideoSpec (h.data)) {
+    return this.UNKNOWN;
+  }
+  if (!this._decodeAdaptiveFmts (h.data)) {
+    return this.UNKNOWN;
+  }
+
+  if (this._debug) {
+    this._saveToFile ('vi', this.videoInfoToStrings ());
+  }
+
+  if (/(^|,)yt3d:enable=true(,|$)/.test (this.getVideoInfo ('keywords'))) {
+    this.stereo3d = true;
+  }
+
+  if (this.getVideoInfo ('ypc_video_rental_bar_text')) {
+    this.rental = true;
+  }
+
+  return this.OK;
+};
+
+
+// fmtList: 指定したフォーマットを返す
+YouTubeVideo.prototype.getFmtList = function (itag) {
+  var fl = this.fmtList;
+
+  for (var i = 0; i < fl.length; ++i) {
+    if (itag == fl [i].itag) {
+      return fl [i];
+    }
+  }
+
+  return null;
+};
+
+
+// fmtList: Strings に変換
+YouTubeVideo.prototype.fmtListToStrings = function () {
+  var fl = this.fmtList;
+  var sl = new Strings ();
+
+  for (var i = 0; i < fl.length; ++i) {
+    sl.add (fl [i].itag + '=' + fl [i].text);
+  }
+
+  return sl;
+};
+
+
+// 内部で使用: fmtList: 復号
+YouTubeVideo.prototype._decodeFmtList = function () {
+  var s = this.getVideoInfo ('fmt_list');
+  if (!s) {
+    return this._p ('fmt_list が見つかりません。');
+  }
+
+  s = s.split (/,/);
+  var fl = this.fmtList;
+
+  for (var i = 0; i < s.length; ++i) {
+    var t = s [i];
+
+    if (!/^(\d+)\/(\d+x\d+)\/(\d+)\/(\d+)\/(\d+)$/.test (t)) {
+      return this._p ('fmt_list が未対応の形式です。');
+    }
+    var itag = RegExp.$1;
+    var reso = RegExp.$2;
+
+    fl.push ({ itag: itag, resolution: reso, text: t });
+  }
+
+  if (this._debug) {
+    this._saveToFile ('fl', this.fmtListToStrings ());
+  }
+
+  return true;
+};
+
+
+// 内部で使用: streamMap/adaptiveFmts を Strings に変換
+YouTubeVideo.prototype._streamMapToStrings = function (sm) {
+  var sl = new Strings ();
+
+  for (var i = 0; i < sm.length; ++i) {
+    var m = sm [i];
+
+    if (i) {
+      sl.add ('');
+    }
+    sl.add ('[' + m.itag + ']');
+    for (k = 0; k < m.length; ++k) {
+      sl.add (m [k].key + '=' + m [k].value);
+    }
+  }
+
+  return sl;
+};
+
+
+// streamMap: Strings に変換
+YouTubeVideo.prototype.streamMapToStrings = function () {
+  return this._streamMapToStrings (this.streamMap);
+};
+
+
+// 内部で使用: url_encoded_fmt_stream_map(内部)から指定した値を返す
+YouTubeVideo.prototype._getStreamMap2 = function (key) {
+  for (var i = 0; i < this.length; ++i) {
+    if (this [i].key == key) {
+      return this [i].value;
+    }
+  }
+
+  return null;
+};
+
+
+// url_encoded_fmt_stream_map から指定した itag を返す
+YouTubeVideo.prototype.getStreamMap = function (itag) {
+  var sm = this.streamMap;
+
+  for (var i = 0; i < sm.length; ++i) {
+    if (sm [i].itag == itag) {
+      return sm [i];
+    }
+  }
+
+  return null;
+};
+
+
+// 内部で使用: url_encoded_fmt_stream_map 復号(内部)
+YouTubeVideo.prototype._decodeStreamMap2 = function (text, k) {
+  text = text.split (/&/);
+
+  var m = [ ];
+  m.get = this._getStreamMap2;
+
+  for (var i = 0; i < text.length; ++i) {
+    var t = text [i];
+
+    if (!/^([^=]+)=(.*)$/.test (t)) {
+      return this._p (k + ' が未対応の形式です。');
+    }
+    var k = RegExp.$1;
+    var v = decodeURI (RegExp.$2).replace (/\+/g, ' ');
+
+    m.push ({ key: k, value: v });
+  }
+
+  var itag = m.get ('itag');
+  if (!itag) {
+    return this._p ('itag が見つかりません。');
+  }
+  if (!/^\d+$/.test (itag)) {
+    return this._p ('itag が数値ではありません。');
+  }
+  m.itag = parseInt (itag);
+
+  return m;
+};
+
+
+// 内部で使用: url_encoded_fmt_stream_map 復号
+YouTubeVideo.prototype._decodeStreamMap = function () {
+  var k = 'url_encoded_fmt_stream_map';
+  var s = this.getVideoInfo (k);
+  if (!s) {
+    return this._p (k + ' が見つかりません。');
+  }
+
+  s = s.split (/,/);
+
+  for (var i = 0; i < s.length; ++i) {
+    var m = this._decodeStreamMap2 (s [i], k);
+    if (!m) {
+      return false;
+    }
+    this.streamMap.push (m);
+  }
+
+  if (this._debug) {
+    this._saveToFile ('sm', this.streamMapToStrings ());
+  }
+
+  return true;
+};
+
+
+// 内部で使用: Download YouTube Videos as MP4 の DECODE_RULE を
+// youtube.dms 用の decipher_pattern に変換する
+YouTubeVideo.prototype._makeDecipherPattern = function () {
+  var arr;
+  for (var len in this._decodeRules) {
+    arr = this._decodeRules [len];
+    if (arr) {
+      break;
+    }
+  }
+  if (!arr) {
+    return false;
+  }
+
+  var s = '';
+  for (var i = 0; i < arr.length; ++i) {
+    var n = arr [i];
+    if (n > 0) {
+      s += 's' + n;
+    }
+    else if (n < 0) {
+      s += 'c' + (-n);
+    }
+    else {
+      s += 'r';
+    }
+  }
+
+  return s;
+};
+
+
+// 下記ソフトウェアのコードを使用
+//
+// @name Download YouTube Videos as MP4
+// @homepageURL http://userscripts.org/scripts/show/25105
+// @author Gantt
+// @version 1.7.9
+// @date 2013-08-27
+// @license MIT License
+//
+// findSignatureCode() の移植に必要な作業
+// - '～' 形式の文字列内に \ があれば "～" に変更する。
+//   - その文字列内に " があれば \" に変更する。
+// - regCode の (.+) を ([^}]+) に変更する。
+// - 正規表現検索が遅いので高速化した方がよい。
+
+
+YouTubeVideo.prototype._findSignatureCode = function (html) {
+  var DECODE_RULE = this._decodeRules;
+  var isSignatureCodeUpdated = false;
+
+  var scriptURL = '';
+  var STORAGE_URL = '';
+  var STORAGE_CODE = '';
+  function setPref () { }
+
+  function findMatch (text, regexp) {
+      var matches = text.match (regexp);
+      return (matches) ? RegExp.$1 : null;
+  }
+
+  function isInteger (n) {
+    return typeof n == 'number' && parseInt (n) == n;
+  }
+
+  function fastMatch (text, regexp) {
+    if (/^\/((\\\.|[ a-z])+)/i.test (regexp)) {
+      var n = text.indexOf (RegExp.$1.replace (/\\/g, ''));
+      if (0 < n) {
+        text = text.slice (n);
+      }
+    }
+    return findMatch (text, regexp);
+  }
+
+  function findSignatureCode(sourceCode) {
+    var functionName=fastMatch(sourceCode, /\.signature\s*=\s*(\w+)\(\w+\)/);
+    if (functionName==null) return setPref(STORAGE_CODE, 'error');
+    var regCode=new RegExp('function '+functionName+
+    "\\s*\\(\\w+\\)\\s*\\{\\w+=\\w+\\.split\\(\"\"\\);([^}]+);return \\w+\\.join");
+    var functionCode=fastMatch(sourceCode, regCode);
+    if (functionCode==null) return setPref(STORAGE_CODE, 'error');
+    var regSlice=new RegExp("slice\\s*\\(\\s*(.+)\\s*\\)");
+    var regSwap=new RegExp("\\w+\\s*\\(\\s*\\w+\\s*,\\s*([0-9]+)\\s*\\)");
+    var regInline=new RegExp("\\w+\\[0\\]\\s*=\\s*\\w+\\[([0-9]+)\\s*%\\s*\\w+\\.length\\]");
+    var functionCodePieces=functionCode.split(';');
+    var decodeArray=[], signatureLength=81;
+    for (var i=0; i<functionCodePieces.length; i++) {
+      functionCodePieces[i]=functionCodePieces[i].trim();
+      if (functionCodePieces[i].length==0) {
+      } else if (functionCodePieces[i].indexOf('slice') >= 0) { // slice
+        var slice=findMatch(functionCodePieces[i], regSlice);
+        slice=parseInt(slice, 10);
+        if (isInteger(slice)){
+          decodeArray.push(-slice);
+          signatureLength+=slice;
+        } else return setPref(STORAGE_CODE, 'error');
+      } else if (functionCodePieces[i].indexOf('reverse') >= 0) {
+        decodeArray.push(0);
+      } else if (functionCodePieces[i].indexOf('[0]') >= 0) {
+          if (i+2<functionCodePieces.length &&
+          functionCodePieces[i+1].indexOf('.length') >= 0 &&
+          functionCodePieces[i+1].indexOf('[0]') >= 0) {
+            var inline=findMatch(functionCodePieces[i+1], regInline);
+            inline=parseInt(inline, 10);
+            decodeArray.push(inline);
+            i+=2;
+          } else return setPref(STORAGE_CODE, 'error');
+      } else if (functionCodePieces[i].indexOf(',') >= 0) {
+        var swap=findMatch(functionCodePieces[i], regSwap);
+        swap=parseInt(swap, 10);
+        if (isInteger(swap)){
+          decodeArray.push(swap);
+        } else return setPref(STORAGE_CODE, 'error');
+      } else return setPref(STORAGE_CODE, 'error');
+    }
+
+    if (decodeArray) {
+      setPref(STORAGE_URL, scriptURL);
+      setPref(STORAGE_CODE, decodeArray.toString());
+      DECODE_RULE[signatureLength]=decodeArray;
+      isSignatureCodeUpdated=true; // updated signature
+    }
+  }
+
+
+  print_debug ('signature 復号器の解析を開始します。');
+  // var tc = Win32.getTickCount ();
+  findSignatureCode (html);
+  // tc = Win32.getTickCount () - tc;
+  // alert (tc + ' ms');
+
+  if (!isSignatureCodeUpdated) {
+    return this._p ('signature 復号器の解析に失敗しました。');
+  }
+
+  return true;
+};
+
+
+// 内部で使用: signature を復号する
+YouTubeVideo.prototype._decryptSignature = function (sig) {
+  var DECODE_RULE = this._decodeRules;
+
+  function isString (s) { return true; }
+
+  function isInteger (n) {
+    return typeof n == 'number' && parseInt (n) == n;
+  }
+
+  function decryptSignature(sig) {
+    function swap(a,b){var c=a[0];a[0]=a[b%a.length];a[b]=c;return a;};
+    function decode(sig, arr) { // encoded decryption
+      if (!isString(sig)) return null;
+      var sigA=sig.match(/./g);
+      for (var i=0;i<arr.length;i++) {
+        var act=arr[i];
+        if (!isInteger(act)) return null;
+        sigA=(act>0)?swap(sigA, act):((act==0)?sigA.reverse():sigA.slice(-act));
+      }
+      var result=sigA.join('');
+      return (result.length==81)?result:sig;
+    }
+
+    if (sig==null) return '';
+    var arr=DECODE_RULE[sig.length];
+    if (arr) {
+      var sig2=decode(sig, arr);
+      if (sig2 && sig2.length==81) return sig2;
+    }
+    return sig;
+  }
+
+  return decryptSignature (sig);
+};
+
+
+// 内部で使用: assets.js の値を取得する
+YouTubeVideo.prototype._getAssetsJs = function (h) {
+// "js": "\/\/s.ytimg.com\/yts\/jsbin\/html5player-vflhdWW8S.js"
+
+  if (!/"js"\s*:\s*"((https?:)?\\\/\\\/s.ytimg.com\\\/[^"]+)"/.test (h.data)) {
+    return this._p ('"js": "..." が見つかりません。');
+  }
+  this.assetsjs = h.expandUrl (RegExp.$1.replace (/\\/g, ''));
+
+  return true;
+};
+
+
+// 内部で使用: signature 復号器を取得する
+YouTubeVideo.prototype._fetchSignatureScript = function () {
+  var h = this.http;
+
+  if (!this._getAssetsJs (h)) {
+    return this.UNKNOWN;
+  }
+  if (!h.get (this.assetsjs)) {
+    return this._httpError ();
+  }
+  if (!this._findSignatureCode (h.data)) {
+    return this.UNKNOWN;
+  }
+
+  this.decipherPattern = this._makeDecipherPattern ();
+
+  return this.OK;
+};
+
+
+// 内部で使用: 動画ファイルの URL を求める
+YouTubeVideo.prototype._buildVideoUrl = function (m) {
+  var url = m.get ('url');
+  if (!url) {
+    return null;
+  }
+
+  var sig = m.get ('sig'); // || m.get ('signature');
+  var s = m.get ('s');
+  if (!sig && s) {
+    sig = this._decryptSignature (s);
+  }
+  if (sig) {
+    url += '&signature=' + sig;
+  }
+
+  if (!/[?&]ratebypass=/.test (url)) {
+    url += '&ratebypass=yes';
+  }
+
+  return url;
+};
+
+
+// 内部で使用: .formats[] の中身を作成
+YouTubeVideo.prototype._buildFmt = function (m) {
+  var fmt = {
+    itag: m.itag,
+    audioOnly: false,
+    videoOnly: false,
+    audioAndVideo: true,
+    isRTMP: false,
+    stereo3d: false
+  };
+
+  // fmt_list から得られる情報
+  var fl = this.getFmtList (m.itag);
+  if (fl) {
+    fmt.fmt_list = fl.text;
+    fmt.resolution = fl.resolution;
+  }
+  else {
+    fmt.fmt_list = fmt.resolution = '(missing fmt)';
+  }
+
+  // url_encoded_fmt_stream_map から得られる情報
+  fmt.stream_map = m;
+  fmt.url = this._buildVideoUrl (m);
+
+  if (!fmt.url && m.get ('conn')) {
+    fmt.isRTMP = true;
+  }
+
+  if (m.get ('stereo3d') == '1') {
+    fmt.stereo3d = true;
+  }
+
+  // 保存する場合の拡張子
+  var type = (m.get ('type') || '').replace (/;.*$/, '');
+  var tbl = {
+    'video/mp4': '.mp4',
+    'video/webm': '.webm',
+    'video/3gpp': '.3gpp',
+    'video/x-flv': '.flv'
+  };
+  fmt.ext = tbl.hasKey (type) ? tbl [type] : '';
+
+  this.formats.push (fmt);
+};
+
+
+// 内部で使用: .formats[] の中身を作成 adaptive_fmts
+YouTubeVideo.prototype._buildAdaptiveFmt = function (m) {
+  var type = (m.get ('type') || '').replace (/;.*$/, '');
+  var fmt = {
+    itag: m.itag,
+    audioOnly: /^audio\//.test (type),
+    videoOnly: /^video\//.test (type),
+    audioAndVideo: false,
+    isRTMP: false,
+    stereo3d: false
+  };
+
+  fmt.resolution = m.get ('size') || (fmt.audioOnly ? '(audio only)' : '(missing size)');
+
+  fmt.adaptive_fmts = m;
+  fmt.url = m.get ('url');
+
+  // 保存する場合の拡張子
+  var tbl = {
+    'video/mp4': '.m4v',
+    'audio/mp4': '.m4a'
+  };
+  fmt.ext = tbl.hasKey (type) ? tbl [type] : '';
+
+  this.formats.push (fmt);
+};
+
+
+// 内部で使用: .formats[] を作成
+YouTubeVideo.prototype._buildFormats = function () {
+  var sm = this.streamMap;
+  var len = sm.length;
+  for (var i = 0; i < len; ++i) {
+    this._buildFmt (sm [i]);
+  }
+
+  var af = this.adaptiveFmts;
+  len = af.length;
+  for (i = 0; i < len; ++i) {
+    this._buildAdaptiveFmt (af [i]);
+  }
+};
+
+
+// 動画の各種情報を取得する
+YouTubeVideo.prototype.get = function (url) {
+  this.videoInfo = [ ];
+  this.fmtList = [ ];
+  this.streamMap = [ ];
+  this.adaptiveFmts = [ ];
+  this.formats = [ ];
+  this.comment = '';
+
+  this._decodeRules = [ ];
+
+  var h = this.http = new Http ();
+  h.gunzip = true;
+  h.setRequestHeader ('Accept-Encoding', 'gzip');
+
+
+  // 引数の URL から動画番号を抽出して、URL を正規化
+  if (!/^https?:\/\/(www\.)?youtu(\.be\/|be\.com\/(watch\?v=|v\/|embed\/))([^?&#]+)/.test (url)) {
+    this._p ('未対応の URL です。');
+    return this.MIS;
+  }
+  this.id = RegExp.lastParen;
+  this.url = this._topUrl + 'watch?v=' + this.id;
+
+
+  var ok = this.OK;
+
+  var r = this._getVideoInfo ();
+  if (r != ok) {
+    return r;
+  }
+  if (this.rental) {
+    // 有料動画はエラー扱い
+    this._p ('有料動画です。');
+    return this.NG;
+  }
+  if (!this._decodeFmtList () || !this._decodeStreamMap ()) {
+    return this.UNKNOWN;
+  }
+  r = this._fetchSignatureScript ();
+  if (r != ok) {
+    return r;
+  }
+
+  this._buildFormats ();
+
+  return ok;
+};
+
+
+// formats 配列をソートして返す
+YouTubeVideo.prototype.sort = function (reverse) {
+  function sort_fmt (a, b) {
+    return a.itag - b.itag;
+  }
+
+  this.formats.sort (sort_fmt);
+  if (reverse) {
+    this.formats.reverse ();
+  }
+
+  return this.formats;
+};
+
+
+YouTubeVideo.prototype.getFmtItem = function (itag) {
+  itag = parseInt (itag);
+
+  for (var i = 0; i < this.formats.length; ++i) {
+    if (this.formats [i].itag == itag) {
+      return this.formats [i];
+    }
+  }
+
+  return null;
+};
+
+
+// 数字に3桁ずつ空白を挿入
+YouTubeVideo.prototype.separateNumber = function (n, sep) {
+  if (sep && /^\d+$/.test (n)) {
+    return format ('%.n', parseFloat (n)).replace (/,/g, ' ');
+  }
+
+  return n;
+};
+
+
+// ファイルサイズを調べて文字列で返す
+YouTubeVideo.prototype.getFileSize = function (fmt, sep) {
+  if (!fmt.hasKey ('itag') || !fmt.hasKey ('url')) {
+    // itag で指定された
+    fmt = this.getFmtItem (fmt);
+    if (!fmt) {
+      return 'missing fmt';
+    }
+  }
+
+  if (!fmt.url) {
+    return 'missing URL';
+  }
+
+  var http = new Http ({ autoRedirect: true });
+  http.setFlashHeader ();
+  if (this.flashUrl) {
+    http.setRequestHeader ('Referer', this.flashUrl);
+  }
+
+  if (!http.head (fmt.url)) {
+    // エラーならステータスを返す
+    return http.statusLine;
+  }
+
+  var clen = http.getResponseHeader ('content-length');
+  if (!clen) {
+    return 'missing Content-Length';
+  }
+
+  return this.separateNumber (clen, sep);
+};
+
+
+// 既知の itag の一覧
+YouTubeVideo.prototype.knownItags = [
+  264,248,247,246,245,244,243,242,172,171,
+  160,141,140,139,138,137,136,135,134,133,
+  102,101,100,85,84,83,82,
+  78,59,46,45,44,43,38,37,36,35,34,22,18,17,5
+];
+
+
+// 動画情報をテキスト化
+YouTubeVideo.prototype.toText = function (opt) {
+  var opt = opt || { };
+  var getfs = opt.hasKey ('getFileSize') && opt.getFileSize;
+  var sep = opt.hasKey ('separateFileSize') && opt.separateFileSize;
+
+  var sl = new Strings ();
+
+  function fmtListToText () {
+    var sm = [ ], af = [ ];
+    var newFmt = [ ];
+
+    var known = new RegExp ('^(' + this.knownItags.join ('|') + ')$');
+
+    var len = this.formats.length;
+    for (var i = 0; i < len; ++i) {
+      var f = this.formats [i];
+      var itag = f.itag;
+
+      if (f.hasKey ('stream_map')) {
+        sm.push (itag);
+      }
+      else if (f.hasKey ('adaptive_fmts')) {
+        af.push (itag);
+      }
+
+      if (!known.test (itag.toString ())) {
+        newFmt.push (itag);
+      }
+    }
+    sl.add ('AdaptiveFmts=' + af.join (','));
+    sl.add ('Formats=' + sm.join (','));
+
+    if (newFmt.length) {
+      sl.add ('NewFormat=' + newFmt.join (','));
+    }
+  }
+
+  function fmtToText () {
+
+    var len = this.formats.length;
+    for (var i = 0; i < len; ++i) {
+      var f = this.formats [i];
+
+      sl.add ('[itag_' + f.itag + ']');
+
+      var m = f.hasKey ('stream_map') ? f.stream_map :
+              f.hasKey ('adaptive_fmts') ? f.adaptive_fmts : [ ];
+
+      for (var h = 0; h < m.length; ++h) {
+        var kv = m [h];
+
+        if (kv.key != 'url') {
+          sl.add (kv.key + '=' + kv.value);
+        }
+      }
+
+      if (f.hasKey ('resolution')) {
+        sl.add ('Resolution=' + f.resolution);
+      }
+
+      if (f.hasKey ('url') && f.url) {
+        sl.add ('Url=' + f.url);
+
+        if (getfs) {
+          var fs = this.getFileSize (f, sep);
+          sl.add ('Filesize=' + fs);
+        }
+      }
+
+      sl.add ('');
+    }
+  }
+
+  sl.add ('[YouTubeVideo]');
+  sl.add ('Url=' + this.url);
+  sl.add ('Id=' + this.id);
+  sl.add ('Stereo3d=' + this.stereo3d);
+  fmtListToText ();
+  sl.add ('DecipherPattern=' + this.decipherPattern);
+  sl.add ('Title=' + this.title);
+  sl.add ('Author=' + this.author);
+  sl.add ('Time=' + this.time);
+  sl.add ('');
+
+  fmtToText ();
+
+  return sl.text;
+};
+
+
+//--------------------------------- 下請け ---------------------------------
+
+
+// ダウンロードする itag を決定する
+function selectFmt (video, priority) {
+  priority = priority.trim ().split (/\s*,\s*|\s+/);
+
+  var not3d = !video.stereo3d;
+
+  var pLen = priority.length;
+  for (var pIdx = 0; pIdx < pLen; ++pIdx) {
+    function err (s) {
+      return priority [pIdx] + ': ' + s;
+    }
+
+    var itag = priority [pIdx];
+    var itag2 = null;
+
+    if (/^(\d+)\+(\d+)$/.test (itag)) {
+      // 248+172 のような映像・音声別ファイルの双方指定
+      itag = RegExp.$1;
+      itag2 = parseInt (RegExp.$2);
+    }
+    else if (!/^\d+$/.test (itag)) {
+      return { errMsg: err ('itag の指定が正しくありません。') };
+    }
+    itag = parseInt (itag);
+
+    var fmt = video.getFmtItem (itag);
+    if (!fmt) {
+      continue;
+    }
+
+    // 3D動画でないのに stereo3d=1 なら無視する(自動変換機能による擬似3D動画)
+    if (not3d && fmt.stereo3d) {
+      print_debug (err ('自動変換3D動画のため無視します。'));
+      continue;
+    }
+
+    if (itag2 == null) {
+      // itag 単独指定で見つかったら終了
+      return { fmt: fmt, fmt2: null };
+    }
+
+    // 双方指定
+
+    if (fmt.audioAndVideo) {
+      return { errMsg: err ('指定した itag が MPEG-DASH 形式ではありません。') };
+    }
+
+    var fmt2 = video.getFmtItem (itag2);
+    if (!fmt2) {
+      print_debug (err ('指定した追加 itag のファイルがありません。'));
+      continue;
+    }
+
+    if (fmt2.audioAndVideo) {
+      return { errMsg: err ('指定した追加 itag が MPEG-DASH 形式ではありません。') };
+    }
+
+    if (fmt.audioOnly == fmt2.audioOnly) {
+      // 音声+音声、映像+映像の双方指定はできない
+      return { errMsg: err ('指定した追加 itag が同じ形式です。') };
+    }
+
+    // 双方指定で映像、音声形式正しく見つかった
+    return { fmt: fmt, fmt2: fmt2 };
+  }
+
+  return { errMsg: '指定した itag のファイルがありません。' };
+}
+
+
+// 現在のアイテムで動画ファイルをダウンロードする
+function downloadVideo (filename, video, priority) {
+  var fmts = selectFmt (video, priority);
+
+  if (fmts.hasKey ('errMsg')) {
+    println (fmts.errMsg);
+    exit ();
+  }
+
+  var fmt = fmts.fmt;
+  var fmt2 = fmts.fmt2;
+
+  if (fmt.isRTMP || (fmt2 && fmt2.isRTMP)) {
+    println ('RTMP 形式の動画はダウンロードできません。');
+    exit ();
+  }
+  if (!fmt.url || (fmt2 && !fmt2.url)) {
+    println ('ファイルの URL が取得できませんでした。');
+    exit ();
+  }
+
+
+  // ダウンロード情報を設定
+  println ('itag=' + fmt.itag + ' をダウンロードします。');
+
+  Dorothy.fileName = filename + fmt.ext;
+
+  urlinfo.url = fmt.url;
+  headers.Host = (new URL (fmt.url)).host;
+  headers.Cookie = '';
+  headers.Referer = video.flashUrl;
+  headers ['Accept-Language'] = 'ja';
+
+
+  // 追加ダウンロード
+  if (fmt2) {
+    println ('itag=' + fmt2.itag + ' を追加ダウンロードします。');
+
+    var list = [{ Url: fmt2.url, Filename: filename + fmt2.ext }];
+    additem.send (list) || exit ();
+  }
+}
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  if (ini.General.AskExec) {
+    var c = Global.confirm (Dorothy.matchFile + ' を実行します。');
+    if (!c) {
+      return;
+    }
+  }
+
+  var additem = new AddItem (ini.AddItem);
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
+  // ファイル名の生成に使える情報
+  nb.author = null;  // ユーザー名
+  nb.id = null;      // 動画番号
+  nb.time = null;    // 再生時間
+  nb.title = null;   // 題名
+
+
+  var video = new YouTubeVideo ();
+  var r = video.get (urlinfo.url);
+  if (r != video.OK) {
+    return video.end (r);
+  }
+  video.sort (ini.General.SortReverse);
+
+  var opt = {
+    getFileSize: ini.General.GetFileSize,
+    separateFileSize: ini.General.SeparateFileSize
+  };
+  var text = video.toText (opt);
+
+
+  // 保存ファイル名
+  nb.id = video.id;
+  nb.author = (new Utf8 (video.author)).decodeCharRef ();
+  nb.title = (new Utf8 (video.title)).decodeCharRef ();
+  nb.time = video.time;
+
+  var filename = nb.assemble (ini.Filename.VideoInfo, '.txt');
+
+  // ファイルに書き出す
+  var sf = (new Http ()).saveFile ({ filename: filename, data: text });
+  if (!sf.success) {
+    println ('ファイルの書き込みに失敗しました。');
+    exit ();
+  }
+  println ('動画情報を保存しました。');
+
+
+  // 簡易ダウンロード
+  if (ini.Download.Download) {
+    var vfile = filename.replace (/\.txt$/, '');
+    return downloadVideo (vfile, video, ini.Download.Priority);
+  }
+
+  // 終了
+  if (ini.General.HandOver == false) {
+    Util.remove_this ();
+  }
+}
+
+
+// EOF

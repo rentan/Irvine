@@ -1,0 +1,285 @@
+//Dorothy2
+//caption=medimo.tv
+//version=20140331.0
+//hint=
+//match=^http://medimo.tv/sp/
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2012,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'http');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      DownloadSize: '640x960,960x800,960x854,1080x960,1600x1280'
+    },
+    UserAgent: {
+      UserAgent_640x960: 'Mozilla/5.0 (iPhone; CPU iPhone OS 5_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9B179 Safari/7534.48.3',
+      UserAgent_960x800: 'Mozilla/5.0 (Linux; U; Android 2.2; ja-jp; SC-02B Build/FROYO) AppleWebKit/533.1(KHTML, like Gecko) Version/4.0 Mobile Safari/533.1',
+      UserAgent_960x854: 'Mozilla/5.0 (Linux; U; Android 1.6; ja-jp; SonyEricssonSO-01B Build/R1EA018) AppleWebKit/528.5+ (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1',
+      UserAgent_1080x960: 'Mozilla/5.0 (Linux; U; Android 2.3.3; ja-jp; SH-12C Build/S5050) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1',
+      UserAgent_1600x1280: 'Mozilla/5.0 (Linux; U; Android 2.3.6; ja-jp; SC-05D Build/GINGERBREAD) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1',
+
+// dl_sp_images() で使用する設定
+// dl_image() では、iPhone 5 の専用サイズは無し(640x960 が返ってくる)
+      UserAgent_iPhone5: 'Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+// 1920x480 の謎画像になる
+//  UserAgent_960x480: 'Mozilla/5.0 (Linux; U; Android 1.6; ja-jp; SH-10B Build/S7023) AppleWebKit/528.5+ (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1',
+//  UserAgent_960x480: 'Mozilla/5.0 (Linux; U; Android 1.6; ja-jp; IS01 Build/S6191) AppleWebKit/528.5+ (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1',
+
+
+//-------------------- 下請け処理 --------------------//
+
+
+// ページを移動して画像をダウンロード
+function dl_image (page_url, size) {
+  page_url = page_url.replace (/\?!.*$/, '');
+  size = size.trim ();
+
+
+  var ua_var = 'UserAgent_' + size;
+  if (!ini.UserAgent.hasKey (ua_var)) {
+    println ('[UserAgent] ' + ua_var + 'が設定されていません。');
+    exit ();
+  }
+  var ua = ini.UserAgent [ua_var];
+
+  var http = new Http ();
+  http.setRequestHeader ('User-Agent', ua);
+
+  if (headers.Referer != '') {
+    // Cookie 取得のためリンク元を読み込み
+    http.get (headers.Referer) || http.retry_or_die ();
+  }
+
+  var img_url = null;
+
+  var loop_max = 5;
+  for (var i = 0; i < loop_max; ++i) {
+    function fix_url (url) {
+      return url.replace (/\/\.\//g, '/').replace (/&amp;/g, '&');
+    }
+
+    // ページを取得
+    if (!http.get (page_url)) {
+      if (http.code == 302) {
+        var loc = http.location;
+
+        // http://medimo.tv/sp/mgincentive/***/
+        if (/^http:\/\/medimo\.tv\/sp\/image\//.test (loc)) {
+          page_url = loc;
+          continue;
+        }
+
+        println ('Location: ' + loc);
+        if (loc == 'http://medimo.tv/m/'
+         || loc == 'http://medimo.tv/sp/not_permit.html') {
+          http.die ('非対応の User-Agent です。');
+        }
+      }
+
+      return http.retry_or_die ();
+    }
+
+    // http://medimo.tv/sp/image/1990002218/download/?c_id=1&tkn_***=***
+    if (/<img\s+src="(http:\/\/medimo\.tv\/sp\/\.\/image\/[^"]+)"/.test (http.data)) {
+      // ダウンロードすべき画像 URL が見つかった
+      img_url = fix_url (RegExp.$1);
+      break;
+    }
+
+    // http://medimo.tv/sp/image/1990002218/?key=bwy4w7
+    // http://medimo.tv/sp/image/1990002218/confirm/?c_id=1
+    if (/<a\s+class="btnTypeA"\s+href="(http:\/\/medimo\.tv\/sp\/(\.\/)?image\/[^"]+)">/.test (http.data)) {
+      page_url = fix_url (RegExp.$1);
+      continue;
+    }
+
+    // 「戻る」リンクを拾ってしまうので、class="btnTypeA" の後に調べること
+    // http://medimo.tv/sp/bunkoj_voteresult/?key=bwy4w7
+    if (/<a\s+href="(http:\/\/medimo\.tv\/sp\/(.\/)?image\/[^"]+)">/.test (http.data)) {
+      page_url = fix_url (RegExp.$1);
+      continue;
+    }
+
+    break;
+  }
+
+  if (img_url == null) {
+    if (/<div\s+class="error_msg">\s*(.+?)\s*<\/div>/.test (http.data)) {
+      // お使いの端末に対応しているファイルがありません
+      var msg = RegExp.$1.fromUTF8toSJIS ();
+      http.die (msg);
+    }
+
+    // 不明なエラー
+    http.capture ();
+    http.die ('リンクが見つかりません。');
+  }
+
+
+  // 成功
+  var u = new URL (img_url);
+  var f = u.filename.replace (/^(.*)\./, function (s, p1) {
+    return p1 + '_' + size + '.';
+  });
+  Dorothy.fileName = f;
+
+  urlinfo.url = img_url;
+  headers.Referer = page_url;
+  headers ['User-Agent'] = ua;
+
+  headers.Cookie = (u.host == (new URL (http.baseUrl)).host) ?
+      http.getRequestHeader ('Cookie') : '';
+}
+
+
+// 全てのサイズの画像をダウンロード
+function dl_all_size (url) {
+  var dlsz = ini.General.DownloadSize.trim ();
+  dlsz = dlsz.replace (/[\s,]+/g, ',').replace (/^,|,$/g, '').split (',');
+
+  if (dlsz.length == 0) {
+    println ('ダウンロードするサイズの指定がありません。');
+    exit ();
+  }
+
+
+  var list = [ ];
+
+  for (var i = 0; i < dlsz.length; ++i) {
+    var size = dlsz [i];
+    var ua_var = 'UserAgent_' + size;
+
+    if (!ini.UserAgent.hasKey (ua_var)) {
+      println ('[UserAgent] ' + ua_var + 'が設定されていません。');
+      exit ();
+    }
+
+    // URL の重複避けを兼ねてサイズ指定
+    var u = url + '?!' + size;
+
+    var item = { Url: u };
+    if (headers.Referer != '') {
+      item.Referer = headers.Referer;
+    }
+    list.push (item);
+  }
+
+  if (list.length == 1) {
+    // 1個だけなら直接ダウンロードする
+    dl_image (url, dlsz [0]);
+    return;
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// iPhone5 用の間違いリンクを修正
+//  リトライ不可なエラーの場合は呼び出し元に戻らない
+function fix_iphone5_url (url) {
+  // URL が正しい場合は何でも平気だが、間違っている場合に
+  // Location: の値が違ってくるので iPhone 5 に設定しておく。
+  headers ['User-Agent'] = ini.UserAgent.UserAgent_iPhone5;
+
+  var http = new Http ();
+  if (http.head (url)) {
+    // ファイルが存在するならOK
+    return url;
+  }
+
+  if (http.code == 302 && http.location == 'http://medimo.tv/sp/404.html') {
+
+    var new_url = url.replace (/\/iphone5_/, '/iPhone5_');
+    if (new_url != url) {
+      println ('URL を修正して再試行します。');
+
+      http = new Http ();
+      if (http.head (new_url)) {
+        println ('修正した URL でダウンロードします。');
+        return new_url;
+      }
+    }
+  }
+
+  if (http.code == 0 || http.code == 503) {
+    return retry ();
+  }
+
+  // 指定された URL でも修正した URL でも 200 OK にならなかった
+  http.die ('リンクが間違っている可能性があります。');
+}
+
+
+// /sp/images/～ の画像をダウンロード
+function dl_sp_images (url) {
+  url = fix_iphone5_url (url);
+  if (!url) {
+    return;
+  }
+
+  urlinfo.url = url;
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+
+  var url = urlinfo.url;
+  var path = (new URL (url)).path.slice (1);
+
+  if (/^sp\/images\//.test (path)) {
+    // 画像ファイル
+    dl_sp_images (url);
+    return;
+  }
+  if (/^sp\/500\.html/.test (path)) {
+    // エラーで転送された
+    println ('エラー発生時の URL のため停止します。');
+    exit ();
+  }
+  if (/\?!([^,#]+)$/.test (path)) {
+    // サイズ指定あり
+    var size = RegExp.$1;
+    dl_image (url, size);
+    return;
+  }
+
+  // サイズ指定なし
+  dl_all_size (url);
+  return;
+}
+
+
+// EOF

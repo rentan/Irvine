@@ -1,0 +1,131 @@
+common\namebuilder.dms
+
+
+ファイル名生成用のオブジェクトです。
+
+
+使用方法
+========
+
+  common_load ('namebuilder');
+  var nb = new NameBuilder ();
+  nb.id = 'ab12';
+  nb.title = 'foobar';
+  Dorothy.fileName = nb.assemble ('%TITLE% - %ID%', url);
+
+
+NameBuilder オブジェクトのプロパティ
+====================================
+
+プロパティを設定するとファイル名変数として変換対象になります。
+
+プロパティ名は全て大文字か、全て小文字のみ(数字も可)で、大文字の方が
+優先されます。ただしファイル名変数として記述する時は全て大文字のみです。
+  '%TITLE%' と書くと .TITLE または .title が参照されますが、%title%
+  はエラーになります。
+
+プロパティの値に数値、Utf8 オブジェクトを設定するとファイル名生成時に
+自動的に文字列に変換されます。また関数を設定すると、その関数を呼び出した
+戻り値を、必要なら文字列に変換した上で変数として使用します。
+
+
+NameBuilder オブジェクトのメソッド
+==================================
+
+コンストラクタ
+new NameBuilder (opt)
+  opt ... object: プロパティ指定値(省略可)
+  戻り値 ... NameBuilder インスタンス
+
+  NameBuilder インスタンスを作成して返す。
+
+  例:
+  var nb = new NameBuilder ({ zen2han: true });
+
+  オプションに ymdhms: true を指定すると、プロパティ yyyy mm dd
+  hh mi ss が設定される(値は全て null)。また、メソッド YY が設定
+  される(yyyy から下2桁を取り出す)。
+
+normalize (s)
+  s ... string: ファイル名(Shift_JIS)
+  戻り値 ... string
+
+  ファイル名に使用できない文字を変換して返す。
+
+trim (s)
+  s ... string: ファイル名(Shift_JIS)
+  戻り値 ... string
+
+  ファイル名中の不適切な空白記号を除去して返す。
+
+setYmdhms (t)
+  t ... string: 日時
+  戻り値 ... boolean
+
+  日時表記を解釈して各プロパティ(yyyy mm dd hh mi ss)に代入する。
+  成功したら true、失敗したら false を返す。
+
+definePPZ (origin)
+  origin ... number: 開始ページ番号
+  戻り値 ... なし
+
+  NameBuilder.P() および NameBuilder.PZ() 関数を定義する。
+
+zeroPadding (n, max, offset) {
+  n ... number: 変換する数値
+  max ... number: 最大桁数を表す数値
+  offset ... number: n と max に加算される数値(省略可)
+  戻り値 ... string
+
+  offset が指定された場合は、まず n と max に加算されて以下の計算
+  が行われる。
+
+  max を10進数文字列に変換した場合の桁数に合わせて、n をゼロ詰めの
+  10進数文字列に変換して返す。
+
+assemble (fmt, ext)
+  fmt ... string: ファイル名形式
+  ext ... string: 拡張子
+  戻り値 ... string
+
+  fmt で指定したファイル名形式に従ってファイル名を生成する。ext
+  で指定した文字列が末尾に繋げられる。ext に URL を指定した場合は
+  拡張子部分を抽出した上でファイル名に繋げられる。
+
+contentTypeToExt (ctype)
+  ctype ... string: Content-Type の値
+  戻り値 ... string
+
+  Content-Type に対応する拡張子を返す。文字列の代わりに Http
+  オブジェクトを渡すと、レスポンスヘッダの content-type の値を参照する。
+
+contentToExt (data)
+  data ... string: データ
+  戻り値 ... string
+
+  データ内容に対応する拡張子を返す。文字列の代わりに Http オブジェクト
+  を渡すと data プロパティの値を参照する。
+
+
+仕様・制限事項
+==============
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
+
+2013-09-27  version 3.0
+  definePPZ(): 新規。
+
+2012-11-19  version 2.0
+  zeroPadding(): 新規。
+
+2012-07-11  version 1.0
+  新規作成。
+
+
+[EOF]

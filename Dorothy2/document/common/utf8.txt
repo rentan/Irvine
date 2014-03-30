@@ -1,0 +1,154 @@
+common\utf8.dms
+common\utf8_charref.dms
+
+
+HTML の実体参照を含む UTF-8 文字列を Shift_JIS へ変換するオブジェクトです。
+
+
+使用方法
+========
+
+  common_load ('utf8');  // 'utf8' は全て小文字
+  var utf8 = new Utf8 ('string');
+
+
+Utf8 オブジェクトのプロパティ
+=============================
+
+なし。
+
+
+Utf8 オブジェクトのメソッド
+===========================
+
+コンストラクタ
+new Utf8 (s)
+  s ... string: UTF-8 形式の文字列
+  戻り値 ... Utf8 インスタンス
+
+  Utf8 インスタンスを作成し、s で初期化して返す。
+
+  例: var utf8 = new Utf8 ('string');
+
+
+clone ()
+  戻り値  ... Utf8 インスタンス
+
+  Utf8 インスタンスを複製して返す。
+
+
+toUTF8 ()
+  戻り値 ... sring
+
+  UTF-8 形式の文字列を返す。
+
+  String オブジェクトにある match() や trim() といったメソッドに相当する
+  ものは、Utf8 にはないので .toUTF8() で文字列型に変換してから使う。
+
+  .toString() では '[Object Utf8]' が返ってしまうので注意。
+
+
+fromUnicode (u)
+  u ... number: Unicode コードポイント
+  戻り値 ... string
+
+  u で指定した Unicode コードポイントを UTF-8 形式の文字列に変換して返す。
+  ※Utf8 オブジェクトではなく string オブジェクト。
+
+  Utf8 インスタンスを確保していない場合、DMonkey では Utf8.fromUnicode (～)
+  という呼び出し方が出来ないので、代わりに以下の方法を用いる。
+    Utf8.prototype.fromUnicode (～)
+    (new Utf8 ()).fromUnicode (～)
+
+
+removeTags ()
+  戻り値 ... Utf8 インスタンス
+
+  HTML のタグ（< から > までの範囲）を全て削除し、新しい Utf8 インスタンス
+  として返す。
+
+
+decodeCharRef ()
+  戻り値 ... Utf8 インスタンス
+
+  文字参照をデコードし、新しい Utf8 インスタンスとして返す。
+
+
+unescape ()
+  戻り値 ... Utf8 インスタンス
+
+  JavaScirpt 形式の \ エスケープをデコードし、新しい Utf8 インスタンス
+  として返す。
+
+
+toSJIS ()
+  戻り値 ... string
+
+  UTF-8 から Shift_JIS に変換し、文字列として返す。
+
+
+仕様・制限事項
+==============
+
+・utf8_charref.dms のデータは以下のファイルから生成しています。
+  http://www.w3.org/TR/html5/entities.json
+  http://www.w3.org/TR/html5/named-character-references.html (リンク元)
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
+
+  Windows XP 対策を削除。
+
+2014-02-27  version 8.1
+  ._toSJIS(): Windows XP の API の不具合対策として、WideCharToMultiByte()
+  のバッファを多めに確保するようにした。
+    thanks to http://toro.2ch.net/test/read.cgi/win/1371715233/918
+
+2014-01-02  version 8.0
+  .decodeCharRef(): &nbsp; を U+0020 ではなく U+00A0 に変換するようにした。
+
+  .unescape(): 新規メソッド。
+
+  インデントを2スペースに変更。
+
+2013-08-22  version 7.0
+  _u2sTable: 変換テーブルを ASCII/Unicode 形式から Shift_JIS 形式に変更。
+  簡体字、繁体字の変換データを追加。
+
+  toSJIS(): Win32 API による変換を一括ではなく随時行うようにした。
+  結合できない濁点、半濁点の結合文字が化けないようにした。
+
+  utf8_charref.dms: ファイルサイズ削減。
+
+2013-03-07  version 6.0
+  toSJIS(): U+10000 以上の文字(UTF-8 で 0xF0 以上から始まる4バイト文字)
+  で無限ループで処理が終わらなくなる不具合を修正。
+    thanks to http://toro.2ch.net/test/read.cgi/win/1348568425/551-552
+
+2012-12-05  version 5.0
+  toSJIS(): 1バイト文字を多バイト文字に変換すると文字列末尾が変換され
+  ないことがある不具合を修正('\\' が '＼\' になっていた)。
+
+2012-12-04  version 4.0
+  utf8.dms: common_load ('utf8') 以外の方法で読み込まれた場合は警告を
+  表示するようにした。
+
+2012-11-25  version 3.0
+  utf8_charref.dms: 元データを JSON データに変更して作り直し。
+  _normTable, _charRefTable: データ構造を変更。
+
+2012-07-11  version 2.0
+  fromUnicode(): ドキュメントに prototype を使った呼び出し方を加筆。
+  decodeCharRef(): 数字を含む文字実体参照をデコード出来なかった不具合を修正。
+  _normTable: 変換データを追加。
+
+2012-03-29  version 1.0
+  新規作成。
+
+
+[EOF]

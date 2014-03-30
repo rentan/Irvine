@@ -1,0 +1,82 @@
+common\exec.dms
+
+
+子プロセスを実行するオブジェクトです。
+
+
+使用方法
+========
+
+  common_load ('exec');
+
+  var stat;
+
+  var ex = new Exec ();
+  try {
+    stat = ex.exec ('explorer.exe', '', Dorothy.temp);
+  }
+  catch (e) {
+    stat = -1;
+  }
+
+または簡易形式で
+
+  commono_load ('exec');
+  var stat = Exec ('explorer.exe');
+
+
+Exec オブジェクトのプロパティ
+=============================
+
+仕様が固まっていないため省略。
+
+
+Exec オブジェクトのメソッド
+===========================
+
+コンストラクタ
+new Exec ()
+  戻り値 ... Exec インスタンス
+
+  Exec インスタンスを作成して返す。
+
+exec (app, cmd, dir)
+  app ... string: プログラムのパス
+  cmd ... string: コマンドライン引数
+  dir ... string: 実行時のカレントフォルダ
+  戻り値 ... number: プログラムの終了コード
+
+  プログラムを実行して終了コードを返します。実行に失敗した場合は
+  例外が発生します。
+
+簡易実行モード
+Exec (app, cmd, ...)
+  app ... string: プログラムのパス
+  cmd ... string: コマンドライン引数(省略可、複数指定可)
+  戻り値 ... number: プログラムの終了コード
+
+  Exec() を new 演算子なしで呼び出すと、プログラムを直接実行して
+  終了コードを返します。実行に失敗した場合は -1 が返ります。
+
+  cmd の後に引数を指定すると cmd にスペースで連結されてプログラム
+  に渡されます。
+
+  カレントフォルダは Dorothy.temp になります。
+
+
+仕様・制限事項
+==============
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
+
+2014-01-10  version 1.0
+  新規作成。
+
+
+[EOF]

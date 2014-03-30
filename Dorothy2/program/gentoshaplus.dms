@@ -1,0 +1,271 @@
+//Dorothy2
+//caption=幻冬舎plus
+//version=20140331.0
+//hint=野武士のグルメ
+//match=^http://www\.gentosha\.jp/articles/-/\d+$
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'namebuilder');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: true,
+      PageOrigin: 1
+    },
+    Filename: {
+      Book:  '%SERIES% %VOL% %TITLE% p%PZ%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//------------------------------ GentoshaPlus ------------------------------
+
+
+common_load ('http', 'utf8');
+
+
+// コンストラクタ
+void function GentoshaPlus () {
+  this.nameBuildre = { };
+};
+
+
+// プロパティ初期値
+GentoshaPlus.prototype.comment = '';
+GentoshaPlus.prototype.http = null;
+GentoshaPlus.prototype.url = null;
+GentoshaPlus.prototype.list = [ ];
+
+
+// NameBuilder パラメータ
+GentoshaPlus.prototype.nameFormat = '%TITLE% p%PZ%';
+GentoshaPlus.prototype.pageOrigin = 1;
+
+
+// 内部で使用: メッセージを表示して false を返す
+GentoshaPlus.prototype._p = function (msg) {
+  println ('GentoshaPlus: ' + msg);
+  return false;
+};
+
+
+// .get() の戻り値
+GentoshaPlus.prototype.OK = 0;
+GentoshaPlus.prototype.NG = 1;
+GentoshaPlus.prototype.RETRY = 2;
+GentoshaPlus.prototype.UNKNOWN = 3;
+GentoshaPlus.prototype.MIS = 4;
+
+
+// .get() の戻り値に応じて終了処理
+GentoshaPlus.prototype.end = function (r) {
+  if (r == this.RETRY) {
+    return retry ();
+  }
+  if (r != this.OK && r != this.MIS) {
+    exit ();
+  }
+};
+
+
+// 内部で使用: HTTP アクセスでエラーした場合の戻り値の選択
+GentoshaPlus.prototype._httpError = function () {
+  var http = this.http;
+
+  var c = http && http.code;
+  if (c) {
+    this.comment = http.statusLine;
+  }
+
+  return (c == 0 || c == 503) ? this.RETRY : this.NG;
+};
+
+
+// 内部で使用: メッセージ表示&commentに保存
+GentoshaPlus.prototype._p = function (s) {
+  println (this.comment = nameOf (this) + ': ' + s);
+  return false;
+};
+
+
+// 内部で使用: ファイル名を設定
+GentoshaPlus.prototype._setFilename = function () {
+  var nb = this.nameBuilder;
+  var list = this.list;
+  var len = nb.pages = list.length;
+
+  if (typeof nb.assemble != 'function') {
+    return;
+  }
+
+  for (var i = 0; i < len; ++i) {
+    nb.p = i;
+    list [i].Filename = nb.assemble (this.nameFormat, list [i].Url);
+  }
+};
+
+
+// 内部で使用: 記事の情報を抽出する
+GentoshaPlus.prototype._getArticleInfo = function (http) {
+  var nb = this.nameBuilder;
+
+  if (!/<div\s+id="series"[^>]*>\s*<span>([^<]+)/.test (http.data)) {
+    return this._p ('<div id="series"> が見つかりません。');
+  }
+  nb.series = (new Utf8 (RegExp.$1)).decodeCharRef ();
+
+  if (!/<h2>([^<]+)/.test (http.data)) {
+    return this._p ('<h2> が見つかりません。');
+  }
+  nb.vol = (new Utf8 (RegExp.$1)).decodeCharRef ();
+
+  if (!/<h1>([^<]+)/.test (http.data)) {
+    return this._p ('<h1> が見つかりません。');
+  }
+  nb.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
+
+  return true;
+};
+
+
+// 内部で使用: ページ内の画像を抽出
+GentoshaPlus.prototype._extractImage = function (http) {
+  if (!/<div\s+id="article-body"[^>]*>(.*)<!--\s*\/article-body/.test (http.data)) {
+    return this._p ('<div id="article-body"> が見つかりません。');
+  }
+  var html = RegExp.$1;
+
+  var list = this.list;
+  var startLen = list.length;
+
+  function add (s, p1) {
+    list.push ({ Url: http.expandUrl (p1) });
+    return '';
+  }
+  html.replace (/<img[^>]*\ssrc="(\/mwimgs\/[^"]+)"/g, add);
+
+  if (list.length == startLen) {
+    return this._p ('画像が見つかりません。');
+  }
+
+  return true;
+};
+
+
+// 内部で使用: ページを読み込んで解析
+GentoshaPlus.prototype._analyze = function () {
+  var http = this.http;
+
+  for (var url = this.url, first = true;;) {
+    if (!http.get (url)) {
+      return this._httpError ();
+    }
+
+    // 最初のページから各種情報を抽出
+    if (first) {
+      if (!this._getArticleInfo (http)) {
+        return this.UNKNOWN;
+      }
+      first = false;
+    }
+
+    if (!this._extractImage (http)) {
+      return this.UNKNOWN;
+    }
+
+    if (/<li\s+class="next(\s[^"]*)?">\s*<a\s+href="(\/articles\/[^"]+)"/.test (http.data)) {
+      // 次のページあり
+      url = RegExp.$2;
+      continue;
+    }
+    if (/<li\s+class="current">\s*\d+\s*<\/li>\s*<\/ul>/.test (http.data)) {
+      break;
+      // 次のページなし
+    }
+
+    this._p ('次のページへのリンクが見つかりません。');
+    return this.UNKNOWN;
+  }
+
+  // 画像枚数が確定したらファイル名生成
+  this._setFilename ();
+
+  return this.OK;
+};
+
+
+// 内部で使用: NameBuilder オブジェクトの設定
+GentoshaPlus.prototype._setupNameBuilder = function () {
+  var nb = this.nameBuilder;
+
+  // ファイル名の生成に使える情報
+  nb.series = null;	// シリーズ名
+  nb.vol = null;	// 第何回
+  nb.title = null;	// タイトル
+  nb.pages = 0;		// 全ページ数
+  nb.p = 0;		// ページ番号
+
+  if (typeof nb.definePPZ == 'function') {
+    nb.definePPZ (this.pageOrigin);
+  }
+};
+
+
+// データを解析してダウンロードリストを作成する
+GentoshaPlus.prototype.get = function (url) {
+  this.list = [ ];
+  this.http = new Http ();
+  this.url = url;
+
+  this._setupNameBuilder ();
+
+  return this._analyze ();
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  var url = urlinfo.url;
+
+  var book = new GentoshaPlus ();
+  book.nameBuilder = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+  book.nameFormat = ini.Filename ['Book'];
+  book.pageOrigin = ini.General.PageOrigin;
+
+  var r = book.get (url);
+  if (r != book.OK) {
+    return book.end (r);
+  }
+
+  (new AddItem (ini.AddItem)).send (book.list) || exit ();
+  Util.remove_this ();
+}
+
+
+// EOF

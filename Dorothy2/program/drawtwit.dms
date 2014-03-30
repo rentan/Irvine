@@ -1,0 +1,248 @@
+//Dorothy2
+//caption=drawTwit
+//version=20140331.0
+//hint=
+//match=^http://drawtwit\.com/.
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2012,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'http', 'namebuilder', 'utf8');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: false,
+      DownloadAnm: false
+    },
+    Filename: {
+      Illust: 'drawtwit_%ID%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+// 暗号化された jsel_anm パラメータを URL に復号する
+function retipos_ezdecode (jsel_anm) {
+  function string_split_nul (s) {
+    var array = [ ];
+    for (var i = 0; i < s.length; ++i) {
+      array [i] = s [i];
+    }
+    return array;
+  }
+  function compare (a, b) {
+    return a.charCodeAt (0) - b.charCodeAt (0);
+  }
+
+  var tmp_a = jsel_anm.split ('!', 2);
+  var n = parseInt (tmp_a [0]);
+  var tmp_s = decodeURIComponent (tmp_a [1]);
+  var left = tmp_s.substr (0, n);
+  var right = tmp_s.substr (n);
+  var map = string_split_nul (left).sort (compare);
+  var result = string_split_nul (right);
+
+  for (var i = 0; i < left.length; ++i) {
+    var ch = left.charAt (i);
+    var j = right.indexOf (ch);
+
+    while (j >= 0) {
+      result [j] = map [i];
+      j = right.indexOf (ch, (j + 1));
+    }
+  }
+
+  return result.join ('');
+}
+
+
+// イラスト
+function dl_illust (url, http) {
+
+  // Twitter ID とユーザー名を抽出
+  if (/<p\s+class="title2"><a\s+href="\/(\w+)\/">([^<]+)<\/a>/.test (http.data)) {
+    nb.twitter_id = RegExp.$1;
+    nb.user_name = (new Utf8 (RegExp.$2)).decodeCharRef ();
+  }
+
+  // イラスト ID
+  if (!/^http:\/\/drawtwit\.com\/(\w+).*$/.test (url)) {
+    http.die ('URL に画像 ID が含まれていません。');
+  }
+  nb.id = RegExp.$1;
+
+  // 画像を抽出
+  var tpelement_re = /<a\s+[^>]*name="tpelement"\s+jsel_img="([^"]+)"\s+[^>]*jsel_anm="([^"]+)"/;
+  if (!tpelement_re.test (http.data)) {
+    http.die ('tpelement が見つかりません。');
+  }
+  var img_url = RegExp.$1;
+  var jsel_anm = RegExp.$2;
+
+  // コメントは省略されることがありファイル名の部品として使えないので、抽出しない。
+  // 要望があれば対応。
+
+
+  // 再生用データ（anm ファイル）をダウンロードする場合はキューに追加
+  if (ini.General.DownloadAnm == true) {
+    var anm_url = retipos_ezdecode (jsel_anm);
+    var t = nb.assemble (ini.Filename.Illust, anm_url);
+
+    var list = [ { Url: anm_url, Filename: t } ];
+    additem.send (list) || exit ();
+  }
+
+
+  // 現在のアイテムを画像ファイルのダウンロード情報で上書き
+  Dorothy.fileName = nb.assemble (ini.Filename.Illust, img_url);
+
+  urlinfo.url = img_url;
+  headers.Host = (new URL (img_url)).host;
+  headers.Referer = url;
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// ユーザーページを解析してリストに追加
+//  true: 次のページあり  false: 次のページなし
+function dl_user_p (list, http) {
+  var start_len = list.length;
+
+  function add_list (s, p) {
+    list.push ({ Url: 'http://drawtwit.com/' + p });
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/<a\s+name="([^"]+)"><\/a>/g, add_list);
+
+  if (start_len == list.length) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+
+  // 次のページへのリンクを探す
+  // Older ≫ のリンクが常に有効なので、現在のページがリストの最後かどうかを見る
+  if (/<a\s+href="\?page=\d+"><strong>\d+<\/strong><\/a><\/li><(li|\/ul)/.test (http.data)) {
+    return (RegExp.$1 == 'li');
+  }
+  http.die ('次のページへのリンクが見つかりません。');
+}
+
+
+// ユーザーページの作品をダウンロード
+function dl_user (url, http) {
+  var list = [ ];
+
+  // 1ページ目を処理（HTML は取得済み）
+  var next = dl_user_p (list, http);
+
+  var p = /[?&]page=\d+/.test (url);  // ページ指定はあるか？
+
+  // ページ指定がなければ2ページ目以降を処理
+  if (!p) {
+    url += /\?/.test (url) ? '&page=' : '?page=';
+
+    for (var page = 2; next; ++page) {
+      if (!http.get (url + page)) {
+        return http.retry_or_die ();
+      }
+      next = dl_user_p (list, http);
+    }
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
+  // ファイル名の生成に使える情報
+  nb.twitter_id = null;  // Twitter ID
+  nb.user_name = null;   // Twitter ユーザー名
+  nb.id = null;          // イラスト番号
+
+
+  var url = urlinfo.url;
+
+  // フラグメント識別子指定時はそのIDの画像をダウンロード（パス名部分は無視）
+  if (/#(\w+)$/.test (url)) {
+    url = 'http://drawtwit.com/' + RegExp.$1;
+  }
+  url = url.replace (/#.*$/, '');  // それ以外のフラグメント識別子を削除
+
+  if (!/^http:\/\/drawtwit\.com\/\w+(\/|\/\?.*)?$/.test (url)) {
+    println ('未対応の URL です。');
+    return;
+  }
+
+  // 指定された URL の種類が分からないので、まず HTML を取得してみる。
+  //  ユーザーページ
+  //  末尾の / を省略したユーザーページ（/ 付きに転送される）
+  //  イラストページ
+  //  末尾に余計な / が付いたイラストページ（そのまま参照できる）
+  var http = new Http ();
+  http.get (url);
+  if (http.code == 301) {
+    // リダイレクトを処理
+    url = http.getResponseHeader ('location') || '';
+
+    if (!/^http:\/\/drawtwit\.com\/\w+\/?$/.test (url)) {
+      println ('転送先が未対応の URL です。');
+      return;
+    }
+
+    // 転送先を取得
+    http.get (url);
+  }
+  if (http.code != 200) {
+    return http.retry_or_die ();
+  }
+
+  // HTML によって振り分け
+  //  ユーザーページ  <p class="title2">なもりのお絵かき</p>
+  //  イラストページ  <p class="title2"><a href="/_namori_/">なもり</a>のお絵かき</p>
+
+  if (/<p\s+class="title2"><a\shref=/.test (http.data)) {
+    // イラスト
+    dl_illust (url, http);
+    return;
+  }
+
+  // イラスト一覧
+  dl_user (url, http);
+  return;
+}
+
+
+// EOF

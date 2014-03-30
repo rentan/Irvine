@@ -1,0 +1,1012 @@
+//Dorothy2
+//caption=Http
+//version=20140331.0
+//hint=new Http ()
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+
+//---------------------------------- Zlib ----------------------------------
+
+
+// コンストラクタ
+void function Zlib () {
+  if (nameOf (this) != 'Zlib') {
+    Zlib.prototype._fatal ('new なしで Zlib() が呼ばれました。');
+  }
+
+  this._loadDll ();
+  this.z_stream = this._newZStream ();
+};
+
+
+// 定数
+Zlib.prototype.ZLIB_VERSION = "1.2.8";  // new StringBuffer ('1.2.8');
+
+// Allowed flush values
+Zlib.prototype.Z_NO_FLUSH = 0;
+Zlib.prototype.Z_PARTIAL_FLUSH = 1;
+Zlib.prototype.Z_SYNC_FLUSH = 2;
+Zlib.prototype.Z_FULL_FLUSH = 3;
+Zlib.prototype.Z_FINISH = 4;
+Zlib.prototype.Z_BLOCK = 5;
+Zlib.prototype.Z_TREES = 6;
+
+// Return codes for the compression/decompression functions.
+Zlib.prototype.Z_OK = 0;
+Zlib.prototype.Z_STREAM_END = 1;
+Zlib.prototype.Z_NEED_DICT = 2;
+Zlib.prototype.Z_ERRNO = -1;
+Zlib.prototype.Z_STREAM_ERROR = -2;
+Zlib.prototype.Z_DATA_ERROR = -3;
+Zlib.prototype.Z_MEM_ERROR = -4;
+Zlib.prototype.Z_BUF_ERROR = -5;
+Zlib.prototype.Z_VERSION_ERROR = -6;
+
+
+// 内部で使用: zlib1.dll
+Zlib.prototype._dll = null;
+
+
+// 内部で使用: エラー表示
+Zlib.prototype._fatal = function (s) {
+  alert ('Zlib: ' + s);
+  exit ();
+};
+
+Zlib.prototype._p = function (s) {
+  println ('Zlib: ' + s);
+  return false;
+};
+
+
+// 内部で使用: zlib1.dll をロード
+Zlib.prototype._loadDll = function () {
+  if (this._dll) {
+    // ロード済み
+    return;
+  }
+
+  var dll = Dorothy.path + 'bin\zlib1.dll';
+  if (!(new File (dll)).exists ()) {
+    this._fatal ("DLL がありません。\n\n" + dll);
+  }
+
+  var d = new DynaCall ();
+  d.register (dll, 'zlibVersion', 'r=s');
+  d.register (dll, 'inflateInit2_', 'i=susu', 'r=t');
+  d.register (dll, 'inflate', 'i=susu', 'r=t');
+  d.register (dll, 'inflateEnd', 'i=ssu', 'r=t');
+
+  // 全インスタンス共通で使う
+  Zlib.prototype._dll = d;
+
+  if (debug) {
+    this._p ('zlib1.dll version ' + this.zlibVersion ());
+  }
+};
+
+
+// 内部で使用: z_stream 構造体を確保する
+Zlib.prototype._newZStream = function () {
+  return new Struct (
+    'next_in:s',
+    'avail_in:u',
+    'total_in:l',
+    'next_out:s',
+    'avail_out:u',
+    'total_out:l',
+    'msg:s',
+    'state:s',
+    'zalloc:p',
+    'zfree:p',
+    'opaque:p',
+    'data_type:u',
+    'adler:l',
+    'reserved:l'
+  );
+};
+
+
+// const char* zlibVersion (void);
+Zlib.prototype.zlibVersion = function () {
+  return this._dll.zlibVersion ();
+};
+
+
+// int inflateInit2_ (z_streamp strm, int windowBits, const char *version, int stream_size);
+// int inflateInit2 (z_streamp strm, int windowBits);
+Zlib.prototype.inflateInit2 = function (windowBits) {
+  return this._dll.inflateInit2_ (this.z_stream, windowBits, this.ZLIB_VERSION, this.z_stream.sizeOf ());
+};
+
+
+// int inflate (z_streamp strm, int flush);
+Zlib.prototype.inflate = function (flush) {
+  return this._dll.inflate (this.z_stream, flush);
+};
+
+
+// int inflateEnd (z_streamp strm);
+Zlib.prototype.inflateEnd = function () {
+  return this._dll.inflateEnd (this.z_stream);
+};
+
+
+
+//---------------------------------- Http ----------------------------------
+
+
+// コンストラクタ
+void function Http (opt) {
+  if (nameOf (this) != 'Http') {
+    alert ('new なしで Http() が呼ばれました。');
+    exit ();
+  }
+
+  // プロキシ
+  this.proxy = urlinfo.proxy;
+
+  // リクエストヘッダ
+  this.requestHeader = {
+    'Accept-Language': 'ja',
+    'User-Agent': headers ['User-Agent']
+  };
+
+  // レスポンスヘッダ
+  //  this.responseHeader = (new HTTP ()).responseHeader;
+  //  ↑ここまですることはないと思うので空オブジェクト。
+  //  リクエスト成功前に .cookie .code .text .version にアクセスしないこと
+  this.responseHeader = { };
+
+  // 指定値によるプロパティ上書き
+  if (typeof opt == 'object') {
+    for (var key in opt) {
+      if (/^(proxy|autoRedirect|verbose|gunzip|captureFilename)$/.test (key)) {
+        this [key] = opt [key];
+      }
+      else {
+        this._p ('未対応のプロパティ名です: ' + key);
+      }
+    }
+  }
+};
+
+
+// プロパティ初期値
+
+// HTTP または HTTPS オブジェクト
+Http.prototype.http = null;
+Http.prototype._isHttps = false;
+
+// 自動転送
+Http.prototype.autoRedirect = false;
+
+// 表示モード  0(or false):何も表示しない  1(or true):通常  2:詳細
+Http.prototype.verbose = 1;
+
+// Content-Encoding: gzip の自動展開
+//   Accept-Encoding: gzip は自動送信しないので、必要なら呼び出し側で書き込むこと
+Http.prototype.gunzip = false;
+
+// .capture() 引数省略時に使用するファイル名
+Http.prototype.captureFilename = Dorothy.matchFile + '_html.txt';
+
+// 相対 URL の際に基準となる前回の URL(getXhr/postXhr では更新されない)
+Http.prototype.baseUrl = null;
+
+// 前回の URL(getXhr/postXhr でも更新される)
+Http.prototype.previousUrl = null;
+
+// ステータス行、ステータスコード
+Http.prototype.statusLine = '';
+Http.prototype.code = 0;
+
+// レスポンスボディ
+Http.prototype.data = '';
+
+// 転送系ステータスの際の Location: ヘッダの値
+Http.prototype.location = null;
+
+
+// 内部で使用: エラー表示
+Http.prototype._p = function (s) {
+  println ('Http: ' + s);
+  return false;
+};
+
+
+// オブジェクトを複製する
+Http.prototype.clone = function () {
+  var newobj = new Http ();
+
+  var prop = this.getProperties ();
+  while (prop.length) {
+    var key = prop.shift ();
+    if (key == 'requestHeader' || key == 'responseHeader') {
+      continue;
+    }
+    if (this.hasOwnProperty (key)) {
+      newobj [key] = this [key];
+    }
+  }
+
+  for (key in this.requestHeader) {
+    newobj.requestHeader [key] = this.requestHeader [key];
+  }
+
+  for (key in this.responseHeader) {
+    newobj.responseHeader [key] = this.responseHeader [key];
+  }
+  prop = [ 'cookie', 'code', 'text', 'version' ];
+  while (prop.length) {
+    key = prop.shift ();
+    if (!this.responseHeader.hasOwnProperty (key)) {
+      continue;
+    }
+    newobj.responseHeader [key] = this.responseHeader [key];
+
+    // cookie のみ Cookie オブジェクトのため特別扱い
+    //  複写ではなく参照なので注意
+    if (key == 'cookie') {
+      var cookie = this._getResponseHeader ('cookie');
+      if (cookie && nameOf (cookie) == 'Cookie') {
+        newobj.responseHeader.cookie = cookie;
+      }
+    }
+  }
+
+  return newobj;
+};
+
+
+// リクエストヘッダを削除する
+Http.prototype.removeRequestHeader = function (name) {
+  this.requestHeader.removeKey (name);
+};
+
+
+// リクエストヘッダを設定する
+Http.prototype.setRequestHeader = function (name, value) {
+  if (isUndefined (value) || isNull (value)) {
+    this.removeRequestHeader (name);
+    return;
+  }
+
+  this.requestHeader [name] = value.toString ();
+};
+
+
+// リクエストヘッダを取得する
+Http.prototype.getRequestHeader = function (name) {
+  if (this.requestHeader.hasKey (name)) {
+    return this.requestHeader [name];
+  }
+  return null;
+};
+
+
+// Flash Player のリクエストヘッダを削除する
+Http.prototype.removeFlashHeader = function () {
+  this.removeRequestHeader ('x-flash-version');
+};
+
+
+// Flash Player のリクエストヘッダを設定する
+//  http://www.adobe.com/jp/software/flash/about/
+Http.prototype.setFlashHeader = function (v) {
+  var ua = this.getRequestHeader ('User-Agent');
+
+  if (!v) {
+    // Internet Explorer
+    if (ua.indexOf ('Trident/') != -1) {
+      v = '12,0,0,38';
+    }
+  }
+
+  if (v) {
+    this.setRequestHeader ('x-flash-version', v);
+  }
+};
+
+
+// レスポンスヘッダを削除する
+Http.prototype.removeResponseHeader = function (name) {
+  this.responseHeader.removeKey (name.toLowerCase ());
+};
+
+
+// 内部で使用: レスポンスヘッダを取得する(小文字で指定すること)
+Http.prototype._getResponseHeader = function (name) {
+  var rh = this.responseHeader;
+  return rh.hasKey (name) ? rh [name] : null;
+};
+
+// レスポンスヘッダを取得する
+//  cookie は Cookie オブジェクトを返す。
+Http.prototype.getResponseHeader = function (name) {
+  name = name.toLowerCase ();
+  var rh = this.responseHeader;
+  return rh.hasKey (name) ? rh [name] : null;
+};
+
+
+// 相対 URL を絶対 URL に正規化する
+Http.prototype.expandUrl = function (rel, opt_base) {
+  rel = rel.toString ();
+
+  if (/^https?:\/\//.test (rel)) {
+    // 絶対 URL ならそのまま返す
+    return rel;
+  }
+
+  var url = opt_base || this.baseUrl;
+
+  if (!/^https?:\/\//.test (url)) {
+    // 相対 URL なのに基準 URL が指定されていなければエラー
+    return null;
+  }
+
+  var u = new URL (url);
+
+  if (rel.charAt (0) == '/') {
+    if (rel.charAt (1) == '/') {
+      // href='//example.com/'
+      return u.protocol + ':' + rel;
+    }
+    // href='/index.html'
+    return u.protocol + '://' + u.host + rel;
+  }
+
+  // 先頭にある ../ ./ を全て処理
+  var path = u.path.replace (/#.*$/, '').replace (/(\?.*)$/, '');
+  var q = RegExp.$1;
+
+  for (;;) {
+    if (rel.slice (0, 3) == '../') {
+      path = path.replace (/\/([^\/]*\/)?[^\/]*$/, '/');
+      q = '';
+      rel = rel.slice (3);
+      continue;
+    }
+
+    if (rel.slice (0, 2) == './') {
+      path = path.replace (/[^\/]+$/, '');
+      q = '';
+      rel = rel.slice (2);
+      continue;
+    }
+
+    break;
+  }
+
+  var c = rel.charAt (0);
+  if (c == '?') {
+    q = '';
+  }
+  else if (c != '' && c != '#') {
+    path = path.replace (/[^\/]+$/, '');
+    q = '';
+  }
+
+  return u.protocol + '://' + u.host + path + q + rel;
+};
+
+
+// 内部で使用: ステータスコードが転送を指示する値か
+Http.prototype._isRedirect = function (code) {
+  if (code == 301     // Moved Permanently
+   || code == 302     // Found
+   || code == 303     // See Other
+   || code == 307) {  // Temporary Redirect
+    return true;
+  }
+
+  return false;
+};
+
+
+// 内部で使用: ステータス行を再構築
+Http.prototype._buildStatusLine = function () {
+  var rh = this.responseHeader;
+
+  var t = 'HTTP/' + rh.version + ' ' + rh.code.toString ();
+  if (rh.text) {
+    t += ' ' + rh.text;
+  }
+  this.statusLine = t;
+};
+
+
+// 内部で使用: ステータスコードを表示
+//  引数は HTTP オブジェクト
+Http.prototype._printStatus = function () {
+  println (this.statusLine);
+
+  var h = this.http;
+  var rh = h.responseHeader;
+
+  if (this._isRedirect (rh.code)) {
+    // 転送系ステータスなら、転送先 URL を表示
+    println ('---> Location: ' + this._getResponseHeader ('location'));
+  }
+};
+
+
+// 内部で使用: レスポンスボディが圧縮されていたら展開する
+Http.prototype._gunzip = function () {
+  var e = this._getResponseHeader ('content-encoding');
+  if (e == 'gzip' || e == 'deflate') {
+    try {
+      this.data = this.inflate (this.data);
+      this.removeResponseHeader ('content-encoding');
+    }
+    catch (e) {
+      return this._p ('inflate 失敗: ' + e);
+    }
+  }
+
+  return true;
+};
+
+
+// 内部で使用: レスポンスボディを読み込む（chunk はデコードする）
+Http.prototype._readResponseBody = function () {
+  var h = this.http;
+
+  if (this._isHttps || this._getResponseHeader ('transfer-encoding') != 'chunked') {
+    return h.read ();
+  }
+
+  // chunked
+  (this.verbose >= 2) && println ('decode chunk');
+
+  var data = '';
+  for (;;) {
+    var chunk_size = h.readln ().trim ();
+    // pixiv で "\n1000" になることがあるので空白文字を除去
+
+    if (!/^([0-9a-f]+)/i.test (chunk_size)) {
+      throw '不正なチャンクサイズ: ' + chunk_size;
+    }
+    chunk_size = parseInt ('0x' + RegExp.$1);
+    if (chunk_size == 0) {
+      break;    // 終了
+    }
+
+    data += h.read (chunk_size);  // サイズ分だけ読み込む
+
+    h.readln ();  // CRLF を読み捨てる
+  }
+
+  return data;
+};
+
+
+// 内部で使用: リクエスト実行
+Http.prototype._doRequest = function (method, url, opt) {
+  opt = opt || { };
+  var postdata = (opt.hasKey ('postdata') && (typeof opt.postdata != 'undefined'))
+      ? opt.postdata : '';
+  var getlocation = opt.hasKey ('getlocation') ? opt.getlocation : false;
+  var xmlhttprequest = opt.hasKey ('xmlhttprequest') ? opt.xmlhttprequest : false;
+
+  var autoredir = this.autoRedirect;
+  if (autoredir == 'once') {
+    // 今回のみ自動転送あり
+    autoredir = true;
+    this.autoRedirect = false;
+  }
+
+
+  // リクエスト～レスポンス処理
+  //  完了時 null、再実行が必要な場合(転送)はその URL を返す
+  //  HTTP または HTTPS オブジェクトを返す
+  //  転送する場合はその URL を返す(string 型)
+  function req_res (url) {
+    var urlobj = new URL (url);
+
+    // HTTP / HTTPS オブジェクトを初期化
+    this._isHttps = (urlobj.protocol == 'https');
+
+    var h = this.http = this._isHttps ? new HTTPS () : new HTTP ();
+    h.debug = debug;    // Dorothy2A.dms
+    h.version = folderdata.HttpVersion ? '1.1' : '1.0';
+    h.timeout = folderdata.HttpTimeout;
+    h.proxy = this.proxy;
+
+    var rh = this.responseHeader = h.responseHeader;
+    this.data = '';
+
+
+    // 前回アクセスとホスト名が違うなら、Cookie を送信しない
+    //  違うホストに独自に用意した Cookie を送りたい場合は別の new Http() を使うこと
+    if (this.previousUrl) {
+      if (urlobj.host != (new URL (this.previousUrl)).host) {
+        this.removeRequestHeader ('Cookie');
+      }
+    }
+
+    // HTTPS から HTTP へのリンクは、Referer を送信しない
+    var ref_url = this.getRequestHeader ('Referer');
+    if (ref_url && (new URL (ref_url)).protocol == 'https' && !this._isHttps) {
+      this.removeRequestHeader ('Referer');
+    }
+
+    // リクエストヘッダ
+    for (var key in this.requestHeader) {
+      h.requestHeader [key] = this.requestHeader [key];
+    }
+    if (xmlhttprequest) {
+      h.requestHeader ['x-requested-with'] = 'XMLHttpRequest';
+    }
+
+    // 最後にアクセスした URL を記録
+    if (!xmlhttprequest) {
+      this.baseUrl = url;
+    }
+    this.previousUrl = url;
+
+
+    try {
+      h.request (method, url, postdata);
+    }
+    catch (e) {
+      this.verbose && println ('リクエスト送信エラー: ' + e);
+
+      // リクエストでエラーになった場合はレスポンスは取得しない
+      h.disconnect ();
+      return null;
+    }
+
+    try {
+      h.response ();
+    }
+    catch (e) {
+      // 404 Not Found などの場合でも ESocketError になるので
+      // エラー内容は表示しない（後でステータスコードを表示する）
+      // this.verbose && println ('レスポンス取得エラー: ' + e);
+    }
+
+    try {
+      this.data = (method == 'HEAD') ? '' : this._readResponseBody ();
+    }
+    catch (e) {
+      this.verbose && println ('レスポンスボディ読み込みエラー: ' + e);
+    }
+
+    h.disconnect ();
+
+    // 次回アクセス用にリクエストヘッダを書き換える
+    var cookie = new Cookie ();
+    cookie.parse ('', this.getRequestHeader ('Cookie') || '');
+    cookie.parse ('', rh.cookie.data);
+    this.setRequestHeader ('Cookie', cookie.data);
+
+
+    // 転送先取得モードか、自動転送なしならこの時点で完了
+    if (getlocation || !autoredir) {
+      return null;
+    }
+
+    // 転送系ステータスでなければ完了
+    if (!this._isRedirect (rh.code)) {
+      return null;
+    }
+
+    var loc = this._getResponseHeader ('location');
+    if (!loc) {
+      this._p ('Location: ヘッダがありません。');
+      return null;
+    }
+
+    if (this.verbose >= 2) {
+      this._buildStatusLine ();
+      this._printStatus ();
+    }
+
+    // 転送先 URL を返す(相対 URL の可能性あり)
+    return loc;
+
+  } // endfunc
+
+
+  // リクエストを送信してレスポンスを得る
+  for (;;) {
+    // 相対 URL を絶対 URL に正規化
+    //  エラーの場合はそのまま続行してソケットエラーにする
+    url = this.expandUrl (url) || url.toString ();
+
+    this.verbose && println (method + ' ' + url);
+    (this.verbose >= 2) && println (postdata);
+
+    var nextUrl = req_res (url);
+    if (!nextUrl) {
+      break;
+    }
+
+    url = nextUrl;
+
+    // POST からのリダイレクト後は GET にする
+    if (method == 'POST') {
+      method = 'HEAD';
+      postdata = '';
+    }
+  }
+
+
+  // レスポンスの処理
+  var rh = this.responseHeader;
+  this.code = rh.code;
+
+  // 200 OK なら成功、.getLocation() からの呼び出しなら転送系なら成功
+  var is_redir = this._isRedirect (this.code);
+  var success = getlocation ? is_redir : (this.code == 200);
+
+  // location プロパティを設定
+  this.location = this._getResponseHeader ('location');
+
+
+  // ステータス表示
+  this._buildStatusLine ();
+  if (this.code != 0) {
+    if (this.verbose >= 2 || !success) {
+      this._printStatus ();
+    }
+  }
+
+
+  if (!xmlhttprequest && !is_redir) {
+    // 次回アクセス用にリクエストヘッダを書き換える
+    this.setRequestHeader ('Referer', url);
+  }
+
+  if (this.gunzip) {
+    // レスポンスボディが圧縮されていたら展開する
+    if (!this._gunzip ()) {
+      success = false;
+    }
+  }
+
+  return success;
+};
+
+
+// 内部で使用: リクエスト実行、レスポンスヘッダ取得
+Http.prototype._doRequest2 = function (header, method, url, opt) {
+  if (this._doRequest (method, url, opt)) {
+    var rh = this._getResponseHeader (header);
+    if (rh) {
+      print_debug (header + ': ' + rh);
+      return rh;
+    }
+  }
+
+  return null;
+};
+
+
+// HTTP GET
+Http.prototype.get = function (url) {
+  return this._doRequest ('GET', url);
+};
+
+
+// HTTP GET (XMLHttpRequest)
+Http.prototype.getXhr = function (url) {
+  return this._doRequest ('GET', url, { xmlhttprequest: true });
+};
+
+
+// HTTP POST
+Http.prototype.post = function (url, postdata) {
+  return this._doRequest ('POST', url, { postdata: postdata });
+};
+
+
+// HTTP POST (XMLHttpRequest)
+Http.prototype.postXhr = function (url, postdata) {
+  return this._doRequest ('POST', url, { postdata: postdata, xmlhttprequest: true });
+};
+
+
+// HTTP HEAD
+Http.prototype.head = function (url) {
+  return this._doRequest ('HEAD', url);
+};
+
+
+// HTTP GET/POST/HEAD + Location: ヘッダ取得
+Http.prototype.getLocation = function (url) {
+  return this._doRequest2 ('location', 'GET', url, { getlocation: true });
+};
+
+Http.prototype.postLocation = function (url, postdata) {
+  return this._doRequest2 ('location', 'POST', url, { getlocation: true, postdata: postdata });
+};
+
+Http.prototype.headLocation = function (url) {
+  return this._doRequest2 ('location', 'HEAD', url, { getlocation: true });
+};
+
+
+// HTTP GET/POST/HEAD + Content-Type: ヘッダ取得
+Http.prototype.getContentType = function (url) {
+  return this._doRequest2 ('content-type', 'GET', url);
+};
+
+Http.prototype.postContentType = function (url, postdata) {
+  return this._doRequest2 ('content-type', 'POST', url, { postdata: postdata });
+};
+
+Http.prototype.headContentType = function (url) {
+  return this._doRequest2 ('content-type', 'HEAD', url);
+};
+
+
+// HTTP GET or POST
+Http.prototype.exec = function (obj) {
+  if (typeof obj != 'object') {
+    throw 'Http.exec(): 引数がオブジェクト型ではありません: ' + typeof obj;
+  }
+
+  var method = (obj.hasKey ('method') && /^\s*post\s*$/i.test (obj.method))
+      ? 'POST' : 'GET';
+  var url = obj.hasKey ('url') ? obj.url : '';
+  var postdata = obj.hasKey ('postdata') ? obj.postdata : '';
+
+  return this._doRequest (method, url, { postdata: postdata });
+};
+
+
+// 可変引数の文字列を表示して retry() または exit()
+Http.prototype.retry_or_die = function () {
+  for (var i = 0; i < arguments.length; ++i) {
+    println (arguments [i]);
+  }
+
+  if (this.code == 0 || this.code == 503) {
+    return retry ();
+  }
+
+  exit ();
+};
+
+
+// 可変引数の文字列を表示して exit()
+Http.prototype.die = function () {
+  for (var i = 0; i < arguments.length; ++i) {
+    println (arguments [i]);
+  }
+
+  exit ();
+};
+
+
+// レスポンスボディから UTF-8 の BOM を削除する
+//  charset は見ないので呼び出し側で UTF-8 であることを確認すること
+Http.prototype.removeUtf8Bom = function () {
+  var sb = new StringBuffer (this.data);
+
+  if (sb.charCodeAt (0) == 0xef
+   && sb.charCodeAt (1) == 0xbb
+   && sb.charCodeAt (2) == 0xbf) {
+    this.data = sb.delete (0, 3).toString ();
+    return true;
+  }
+
+  return false;
+};
+
+
+// 内部で使用: 保存フォルダ名を取得する
+Http.prototype.getSaveFolder = function () {
+  var abs = /^[a-z]:/i;
+
+  var ip = item.folder;
+  if (ip && abs.test (ip)) {
+    // アイテム設定が絶対パス
+    return ip;
+  }
+
+  var fp = folderdata.Folder;
+  if (fp && abs.test (fp)) {
+    // フォルダ設定が絶対パス
+    return (new Directory (fp)).path + ip;
+  }
+
+  var ini = new Ini ((new irvinePath ()).queue + 'queue.ini');
+  var qp = ini.read ('queue', 'folder', '');
+  return new Directory (qp + fp).path + ip;
+};
+
+
+// 内部で使用: 重複しないファイル名を生成する
+Http.prototype._uniqFilename = function (path, rename) {
+  var file = new File (path);
+  if (!file.exists ()) {
+    return file;
+  }
+
+  var base = file.changeExt ('');
+  var ext = file.extractExt ();
+
+  var left = '(', right = ')', n = 1;
+  if (rename && /^(.*?)(\d+)(.*)$/.test (rename)) {
+    left = RegExp.$1;
+    right = RegExp.$3;
+    n = parseInt (RegExp.$2);
+  }
+  base += left;
+  ext = right + ext;
+
+  for (var i = 0; i < 1000; ++i) {
+    file = new File (base + (i + n) + ext);
+    if (!file.exists ()) {
+      return file;
+    }
+  }
+
+  throw 'unique filename error';
+};
+
+
+// 文字列をファイルに保存する
+Http.prototype.saveFile = function (args) {
+  var result = { success: false, filename: null, error: null };
+
+  var file;
+  try {
+    // 保存フォルダ
+    var dir = new Directory (this.getSaveFolder ());
+    if (!dir.exists ()) {
+      dir.make ();
+    }
+
+    // ファイル
+    var path = dir.includePathDelimiter () + args.filename;
+    file = this._uniqFilename (path, args.hasKey ('rename') ? args.rename : '');
+  }
+  catch (e) {
+    result.error = e;
+    return result;
+  }
+
+  // 書き込み
+  println ('saveFile: ' + file.path);
+  try {
+    file.open ('w');
+    file.write (args.data);
+  }
+  catch (e) {
+    result.error = e;
+    return result;
+  }
+  finally {
+    file.close ();
+  }
+
+  result.filename = file.path;
+  result.success = true;
+  return result;
+};
+
+
+// レスポンスボディをファイルに保存する
+Http.prototype.capture = function (filename) {
+  var f = filename || this.captureFilename;
+  return this.saveFile ({ filename: f, data: this.data });
+};
+
+
+// レスポンスヘッダとレスポンスボディをテキスト化
+Http.prototype.dumpResponse = function (n) {
+  var s = new Strings ();
+
+  // ステータス行
+  s.add (this.statusLine);
+  s.add ();
+
+  // レスポンスヘッダ
+  var rh = this.responseHeader;
+  for (var key in rh) {
+    s.add (key + ': ' + rh [key]);
+  }
+  key = 'cookie';
+  if (rh.hasKey (key)) {
+    s.add (key + ': ' + rh [key]);
+  }
+  s.add ();
+
+  // レスポンスボディのサイズ
+  var sb = new StringBuffer (this.data);
+  s.add (sb.length + ' bytes');
+
+  // 16進ダンプ
+  n = Math.min (parseInt (n), sb.length, 256);
+
+  if (n > 0) {
+    var x = '-'.multiply (16 * 3 - 1);
+    for (var i = 0; i < n; ++i) {
+      if ((i & 0xf) == 0) {
+        s.add (x.trimRight ());
+        x = '';
+      }
+      x += format ('%.2x ', sb.charCodeAt (i));
+    }
+    if (x) {
+      s.add (x.trimRight ());
+    }
+  }
+
+  return s.text;
+};
+
+
+// deflate 圧縮されたデータを展開(inflate)する
+Http.prototype.inflate = function (s) {
+  var BUFFER_SIZE = 256 * 1024;
+
+  var insb = new StringBuffer (s);
+  var outsb = new StringBuffer (BUFFER_SIZE);
+
+  var z = new Zlib ();
+  var r = z.inflateInit2 (15 + 16);  // +16: gzip ヘッダを解釈する
+  if (r != z.Z_OK) {
+    throw '' + z.z_stream.msg;
+  }
+
+  z.z_stream.next_in = insb;
+  z.z_stream.avail_in = insb.length;
+
+  var data = '';
+  try {
+    do {
+      z.z_stream.next_out = outsb;
+      z.z_stream.avail_out = outsb.length;
+      r = z.inflate (z.Z_NO_FLUSH);
+
+      if (r != z.Z_OK && r != z.Z_STREAM_END) {
+        throw '' + z.z_stream.msg;
+      }
+
+      data += outsb.substr (0, outsb.length - z.z_stream.avail_out);
+    } while (r == z.Z_OK);
+  }
+  finally {
+    r = z.inflateEnd ();
+  }
+
+  if (r != z.Z_OK) {
+    throw '' + z.z_stream.msg;
+  }
+
+  return data;
+};
+
+
+}) ();
+
+
+// EOF

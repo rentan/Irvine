@@ -1,0 +1,17 @@
+//Dorothy2
+//caption=nicovideo_r ópê›íË
+//version=20140331.0
+//hint=
+//match=
+//author=rentan
+//path=setting
+//priority=
+//end
+function () {
+  common_load ('rutil');
+
+  Util.ini_copy_edit ();
+}
+
+
+// EOF

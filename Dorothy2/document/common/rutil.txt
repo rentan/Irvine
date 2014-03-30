@@ -1,0 +1,51 @@
+common\rutil.dms
+
+
+各種ユーティリティ関数用のオブジェクトです。
+
+
+使用方法
+========
+
+静的なオブジェクトとして定義されているため、直接 Util オブジェクトの
+プロパティやメソッドを参照して下さい。
+
+読み込み時に Dorothy2 本体のバージョン検査が行われます。
+DOA からは使用できません。
+
+
+Util オブジェクトのプロパティ
+=============================
+
+isDOA ... boolean
+  常に false です。
+
+
+ActiBook オブジェクトのメソッド
+===============================
+
+remove_this ()
+ini_load (def_dat, ini_file)
+ini_save (dat, ini_file)
+ini_copy_edit ()
+get_option (key)
+
+詳細は省略。
+
+
+仕様・制限事項
+==============
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  GNU GPL v3 or later を適用。
+  ドキュメント作成。
+
+2012-07-11  version 1.0
+  新規作成。
+
+
+[EOF]

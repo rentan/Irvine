@@ -1,0 +1,92 @@
+//Dorothy2
+//caption=Yahoo!ブログ画像
+//version=20140331.0
+//hint=
+//match=^http://blogs\.yahoo\.co\.jp/[^/?#]+/GALLERY/show_image\.html
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'http', 'namebuilder');
+
+
+//---------------------- 下請け ----------------------//
+
+
+// show_image.html
+function dl_showimage (url) {
+  var http = new Http ();
+
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  // 画像 URL を抽出
+  if (!/<div\s+class="imgMain"[^>]*>(.*?)<\/div>/.test (http.data)) {
+    http.capture ();
+    http.die ('<div class="imgMain"> が見つかりません。');
+  }
+  var html = RegExp.$1;
+
+  if (!/<img[^>]*\ssrc="(http:\/\/[^"]+)"/.test (html)) {
+    http.capture ();
+    http.die ('<img src="..."> が見つかりません。');
+  }
+  var img = RegExp.$1;
+
+  // 2014年1月ごろまでと同じファイル名形式に変更する
+  if (!/\/folder\/(\d+)\/\d+\/(\d+)\/img_(\d+)\?/.test (img)) {
+    http.capture ();
+    http.die ('未対応の画像URLです。');
+  }
+  var filename = 'img_' + RegExp.$1 + '_' + RegExp.$2 + '_' + RegExp.$3;
+
+  // Content-type から拡張子を調べる
+  if (!http.head (img)) {
+    return http.retry_or_die ();
+  }
+  var ext = (new NameBuilder ()).contentTypeToExt (http);
+  if (!ext) {
+    exit ();
+  }
+
+  // 成功
+  Dorothy.fileName = filename + ext;
+
+  urlinfo.url = img;
+  headers.Host = (new URL (img)).host;
+  headers.Referer = url;
+  headers.Cookie = '';
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var url = urlinfo.url;
+
+  return dl_showimage (url);
+}
+
+
+// EOF

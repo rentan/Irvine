@@ -1,0 +1,168 @@
+//Dorothy2
+//caption=JInput
+//version=20140331.0
+//hint=new JInput ()
+//match=
+//author=rentan
+//path=common
+//addition=common\jinput.hta
+//end
+
+/*
+Copyright (C) 2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+
+// コンストラクタ
+void function JInput () {
+  if (nameOf (this) != 'JInput') {
+    alert ('new なしで JInput() が呼ばれました。');
+    exit ();
+  }
+};
+
+
+// プロパティ初期値
+JInput.prototype.text = null;
+
+
+// 内部で使用: エラーメッセージを表示して false を返す
+JInput.prototype._err = function (func, msg) {
+  println ('JInput.' + func + ': ' + msg);
+  return false;
+};
+
+
+// 内部で使用: コマンドライン作成
+// 戻り値: {
+//  cmdline: コマンドライン文字列,
+//  result: File オブジェクト(jinput.txt),
+//  image: File オブジェクト または null,
+//  // 以下は省略あり
+//  image_data: 画像データ文字列
+// }
+JInput.prototype._makeCmdline = function (tmpdir, args) {
+  var files = { image: null };
+
+  function make_arg (key, value) {
+    var s = '/' + key + ':' + value;
+    if (/\s|'/.test (s)) {
+      s = '"' + s + '"';
+    }
+    return ' ' + s;
+  }
+
+  function add_image (data) {
+    files.image = new File (tmpdir.path + 'jinput');
+    files.image_data = v;
+
+    return files.image.path;
+  }
+
+  // HTA ファイルはフルパスで指定すること
+  var hta_path = Dorothy.path + 'common\jinput.hta';
+  files.cmdline = '"' + hta_path + '"';
+
+  files.result = new File (tmpdir.path + 'jinput.txt');
+  files.cmdline += make_arg ('o', files.result.path);
+
+  args = (nameOf (args) == 'Array') ? args : [ args || { } ];
+  for (var aIdx = 0; aIdx < args.length; ++aIdx) {
+    var hta_opt = args [aIdx];
+    for (key in hta_opt) {
+      var values = hta_opt [key];
+      values = (nameOf (values) == 'Array') ? values : [ values ];
+
+      for (var vIdx = 0; vIdx < values.length; ++vIdx) {
+        var v = values [vIdx];
+        if (key == 'image') {
+          v = add_image (v);
+        }
+        files.cmdline += make_arg (key, v);
+      }
+    }
+  }
+
+  return files;
+};
+
+
+// ダイアログを表示してテキスト入力を行う
+JInput.prototype.inputText = function (args) {
+  common_load ('exec');
+
+  this.text = null;
+
+  var tmpdir = new Directory (Dorothy.temp);
+  tmpdir.exists () || tmpdir.make ();
+
+  var files = this._makeCmdline (tmpdir, args);
+  var result = files.result;
+  var image = files.image;
+
+  var mutex = new Mutex ('Dorothy2.JInput');
+  try {
+    mutex.lock ();
+
+    // 画像データをファイルに保存
+    if (image) {
+      image.open ('w');
+      image.write (files.image_data);
+      image.close ();
+    }
+
+    // テキストファイルがあれば削除
+    if (result.exists ()) {
+      result.remove ();
+    }
+
+    // HTA 呼び出し
+    Exec ('mshta', files.cmdline);
+    // 実行失敗チェックは省略
+
+    // テキストファイルを読み込んで削除
+    if (result.exists ()) {
+      result.open ('r');
+
+      var t = result.read ();
+      this.text = (t.charAt (0) == '=') ? t.slice (1) : null;
+
+      result.close ();
+      result.remove ();
+    }
+    else {
+      this._err ('inputText', 'ファイルがありません: ' + result.path);
+    }
+
+    // 画像ファイルを削除
+    if (image && image.exists ()) {
+      image.remove ();
+    }
+  }
+  finally {
+    mutex.unlock ();
+  }
+
+  return this.text;
+};
+
+
+}) ()
+
+
+// EOF

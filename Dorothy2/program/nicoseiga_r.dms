@@ -1,0 +1,773 @@
+//Dorothy2
+//caption=ニコニコ静画_r
+//version=20140331.0
+//hint=ニコニコ静画 別バージョン
+//match=^http://(seiga\.nicovideo\.jp|lohas\.nicoseiga\.jp/thumb)/.
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2011,2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'browsercookie', 'http', 'namebuilder', 'utf8');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    Cookie: BrowserCookie.prototype.iniTemplate,
+    General: {
+      Zen2Han: false,
+      PageOrigin: 0,
+      DownloadDrm: false
+    },
+    Filename: {
+      Illust:  'seiga_%ID%',
+      Illust2: 'seiga_%ID%',
+      Manga: 'seiga_mg%ID%_p%P%',
+      Theme: 'seiga_sg%BBS_ID%_%BBS_NO%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+var cookie_cache = null;
+var cookie_cache_host = null;
+
+// Http オブジェクトを初期化する
+function new_http (url) {
+  var host = (new URL (url)).host;
+
+  // 初回または違うホストなら Cookie を読み込む
+  if (cookie_cache == null || cookie_cache_host != host) {
+    var o = {
+      host: host.replace (/^seiga\./, '.'),
+      name: 'user_session'
+    };
+    var user_session = bcookie.import (o) || '';
+
+    var cookie = new Cookie ();
+    cookie.parse ('', user_session);
+    cookie.parse ('', 'accept_fetish_warning=1');
+
+    cookie_cache = cookie.data;
+    cookie_cache_host = host;
+
+    print_debug ('Cookie: ' + cookie_cache);
+  }
+
+
+  var http = new Http ();
+  http.setRequestHeader ('Cookie', cookie_cache);
+
+  // メソッド追加: ログインしていなければエラー終了する
+  http.loggedin_or_die = function () {
+    if (/<li\s+[^>]*class="siteHeaderLogin"/.test (this.data)) {
+      this.die ('ログインが必要です。');
+    }
+  };
+
+  return http;
+}
+
+
+//--------------------- イラスト ---------------------//
+
+
+// ユーザーページを解析してリストに追加
+//  true: 次のページあり  false: 次のページなし
+function dl_user_p (list, http) {
+  var start_len = list.length;
+
+  function add_list (s, p) {
+    list.push ({ Url: http.expandUrl (p) });
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/<a\s+href="(\/seiga\/im\d+)"[^>]*>\s*<span\s+class="thum/g, add_list);
+
+  if (start_len == list.length) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+
+  // 次のページへのリンクを探す
+  if (/<li\s+class="next"/.test (http.data)) {
+    return true;
+  }
+  if (/<li\s+class="next\s+disabled"/.test (http.data)) {
+    return false;
+  }
+  http.die ('次のページへのリンクが見つかりません。');
+}
+
+
+// ユーザーページの作品をダウンロード
+function dl_user (url) {
+  // URL に target= がなければ target=illust_all を付け加える
+  if (!/[?&]target=/.test (url)) {
+    url += (/\?/.test (url) ? '&' : '?') + 'target=illust_all';
+  }
+
+  var list = [ ];
+
+  // 1ページ目を処理
+  var http = new_http (url);
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  // ログインしていなくてもリンクの取得までは出来るが、どうせダウンロードに
+  // 失敗するのでここでエラーにしておく
+  http.loggedin_or_die ();
+
+  var next = dl_user_p (list, http);
+
+  var p = /[?&]page=(\d+)/.test (url);  // ページ指定はあるか？
+
+  // ページ指定がなければ2ページ目以降を処理
+  if (!p) {
+    url += /\?/.test (url) ? '&page=' : '?page=';
+
+    for (var page = 2; next; ++page) {
+      if (!http.get (url + page)) {
+        return http.retry_or_die ();
+      }
+      next = dl_user_p (list, http);
+    }
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// div#ko_watchlist_header の中身が空、 div#ko_watchlist_info が存在しない
+// というページがある。条件不明。
+// im361006 im401549 im730220
+
+// イラストの各種情報を取得する
+function get_spec_from_illust_page (http) {
+  // ユーザー ID、ニックネーム を探す
+  if (!/<a\s+href="\/user\/illust\/(\d+)[^"]*"[^>]*>\s*<span[^>]*>([^<]+)/.test (http.data)) {
+    http.die ('作者名が見つかりません。');
+  }
+  nb.user_id = RegExp.$1;
+  nb.nickname = (new Utf8 (RegExp.$2)).decodeCharRef ();
+
+  // タイトルを探す
+  if (!/<li\s+class="active"\s+itemscope[^>]*>\s*<span[^>]*>([^<]+)/.test (http.data)) {
+    http.die ('作品タイトルが見つかりません。');
+  }
+  nb.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
+}
+
+
+// 2013-11-28 現在のサーバ仕様
+//
+// ニコニコ静画
+//   閲覧ページからリンク <a href="/image/source/\d+" ...>
+//   リダイレクト先 http://lohas.nicoseiga.jp/o/～ HTMLページ
+//   タグで画像埋め込み <img src="/priv/～" ...>
+//
+// ニコニコ春画 (リニューアルされておらず従来の仕様のまま)
+//   閲覧ページからリンク <a href="/image/source?id=\d+" ...>
+//   リダイレクト先 http://lohas.nicoseiga.jp/priv/～ 画像ファイル
+
+// イラスト
+function dl_illust (illust_id) {
+  var html_url = 'http://seiga.nicovideo.jp/seiga/im' + illust_id;
+
+  var http = new_http (html_url);
+  if (!http.get (html_url)) {
+    return http.retry_or_die ();
+  }
+  http.loggedin_or_die ();
+
+  nb.id = illust_id;
+  get_spec_from_illust_page (http);
+
+  // 春画は source?id= 形式だが source/ でもアクセスできる
+  var img_url = 'http://seiga.nicovideo.jp/image/source/' + illust_id;
+
+  img_url = http.getLocation (img_url);
+  if (!img_url) {
+    if (http.code == 200) {
+      println ('元のサイズへ転送されませんでした。');
+    }
+    return http.retry_or_die ();
+  }
+
+  if (/^(http:\/\/lohas\.nicoseiga\.jp\/)o(\/.*)$/.test (img_url)) {
+    // ニコニコ静画
+    html_url = img_url;
+    img_url = RegExp.$1 + 'priv' + RegExp.$2;
+  }
+  else if (!/^http:\/\/lohas\.nicoseiga\.jp\/priv\//.test (img_url)) {
+    http.die ('未対応の転送先です: ' + img_url);
+  }
+
+
+  // 拡張子を調べる
+  http = new Http ();
+  var ext = http.head (img_url) && nb.contentTypeToExt (http);
+  if (!ext) {
+    return http.retry_or_die ();
+  }
+
+  Dorothy.fileName = nb.assemble (ini.Filename ['Illust'], ext);
+
+  // ダウンロード情報を設定
+  urlinfo.url = img_url;
+  headers.Host = (new URL (img_url)).host;
+  headers.Cookie = '';
+  headers.Referer = html_url;
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+//----------------------- お題 -----------------------//
+
+
+// リダイレクトを解決
+function track_redirect (url) {
+  var http = new_http (url);
+
+  for (;;) {
+    http.get (url);
+
+    if (http.code == 200) {
+      // 転送先がなんであれ、ログインしていないと告知ページが表示されるので
+      // ログインしているか調べる
+      http.loggedin_or_die ();
+
+      // ログイン中で 200 なら、外部サイトへのリンク表示ページ
+      if (/<a\s+class="url"\s+href="(https?:\/\/[^"]+)"/.test (http.data)) {
+        return RegExp.$1;
+      }
+
+      http.die ('外部サイトへのリンクが見つかりません。');
+    }
+    if (http.code == 302) {
+      url = http.location;
+      if (url == null) {
+        http.die ('転送先が取得できません。');
+      }
+
+      if (/^http:\/\/seiga\.nicovideo\.jp\/image\/redirect\?id=\d+/.test (url)) {
+        // 更に転送
+        // 多分お題の特定の投稿への転送のみ
+        continue;
+      }
+
+      // ニコニコ静画のイラスト
+      // お題の投稿画像
+      // お題の特定の投稿
+      // ニコニコ静画以外の nicovideo.jp 画像（大百科のお絵カキコなど）
+      return url;
+    }
+
+    // HTTP get エラー
+    break;
+  }
+
+  http.retry_or_die ();
+  return null;
+}
+
+
+// お題の画像をダウンロード登録（リストに入れる）
+//  ここでは転送の解決と拡張子の補完をせず、次回 dl_illust2() で処理する時に任せる
+function add_bbs_image (list, quoted_image) {
+  var url = 'http://seiga.nicovideo.jp/image/source?id=' + nb.id;
+
+  // dl_illust2() から呼ばれた場合はファイル名を生成する必要はないが、面倒なので常に実行
+  // 画像の形式が分からないため、拡張子は設定しない
+  var f = nb.assemble (ini.Filename ['Theme']);
+
+  list.push ({ Url: url, Filename: f });
+}
+
+// http://seiga.nicovideo.jp/bbs/sg\d+
+//  1-20
+// http://seiga.nicovideo.jp/bbs/sg\d+/*
+//  全体表示
+// http://seiga.nicovideo.jp/bbs/sg\d+/l\d+
+//  最新n件
+// http://seiga.nicovideo.jp/bbs/sg\d/\d
+//  nだけ1件
+// http://seiga.nicovideo.jp/bbs/sg\d/\d-
+//  nから20件
+
+// 外部リンクのサンプル
+// http://seiga.nicovideo.jp/bbs/sg21982/2
+// http://seiga.nicovideo.jp/bbs/sg21982/118 (not found)
+// http://seiga.nicovideo.jp/bbs/sg20844/1-
+// 多重引用
+// http://seiga.nicovideo.jp/bbs/sg3693/43
+
+// お題のページから画像を抽出して配列で返す
+//  エラーの場合は null を返す。画像が見つからなかったら空配列を返す。
+function analyze_theme (url) {
+  var http = new_http (url);
+  if (!http.get (url)) {
+    http.retry_or_die ();
+    return null;
+  }
+  http.loggedin_or_die ();
+
+
+  // お題IDとタイトルを探す
+  if (/<a\s+class="fc_drk"\s+href="\/watch\/sg(\d+)">([^<]*)\s*<\/a>/.test (http.data)) {
+    nb.bbs_id = RegExp.$1;
+    nb.title = (new Utf8 (RegExp.$2)).decodeCharRef ();
+  }
+
+  var list = [];
+
+  function add_list (s, bbs_no, quote_html, illust_id) {
+    nb.bbs_no = bbs_no;
+    nb.id = illust_id;
+
+    add_bbs_image (list, quote_html != '');
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  var re = /<div\sclass="res_number\s+l">\s*(\d+)\s*<\/div>\s*<\/div>\s*<div[^>]*>[^<]*(<a\s+href="\/image\/source\?id=\d+">[^<]*<\/a><br>\s*)?<a\s+id="[^"]*"\s+href="\/image\/source\?id=(\d+)"/g;
+  http.data.replace (re, add_list);
+
+  return list;
+}
+
+// お題
+//  自分用メモ: 使用者がいるのでお題関係の機能を削除しないこと。
+function dl_theme (url) {
+  if (/^(http:\/\/seiga\.nicovideo\.jp\/bbs\/sg\d+)\/?$/.test (url)) {
+    // 全件表示として取得
+    url = RegExp.$1 + '/*';
+  }
+  else if (/^(http:\/\/seiga\.nicovideo\.jp\/bbs\/sg\d+).*#(\d+)/.test (url)) {
+    // フラグメント識別子があればその番号の画像だけ取得
+    url = RegExp.$1 + '/' + RegExp.$2;
+  }
+
+  var list = analyze_theme (url);
+  if (list == null) {
+    return retry ();
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// テスト用
+// http://seiga.nicovideo.jp/image/source?id=580
+// http://seiga.nicovideo.jp/image/source?id=1071468
+// http://seiga.nicovideo.jp/image/source?id=1071476
+
+// 画像orクッションページへのリダイレクトまたはサムネイル画像（お題の可能性あり）
+function dl_illust2 (illust_id) {
+  var url = 'http://seiga.nicovideo.jp/image/source/' + illust_id;
+
+  // イラスト番号
+  nb.id = illust_id;
+
+  // 現在の illust_id で先にファイル名を決定しておく
+  var filename = item.filename;
+  if (filename == '') {
+    // %ID% のみ使用可
+    filename = nb.assemble (ini.Filename ['Illust2']);
+  }
+
+  // 転送を解決する
+  for (;;) {
+    url = track_redirect (url);
+    if (url == null) {
+      return retry ();
+    }
+
+    if (/^http:\/\/seiga\.nicovideo\.jp\/bbs\/sg\d+\/\d+$/.test (url)) {
+      // ニコニコ静画のお題の特定の投稿
+      // ここで nb.id が破壊されるので事前にファイル名を生成しておくこと
+      var list = analyze_theme (url);
+      if (list.length != 1) {
+        println ((list.length == 0) ? '画像が見つかりません。'
+                                    : '複数の画像が検出されました。');
+        exit ();
+      }
+      url = list [0].Url;
+      continue;
+    }
+
+    // ニコニコ大百科のお絵カキコに対応するなら、ここで HTML の読み込みと
+    // 画像 URL の抽出処理が必要。
+
+    // お題以外に転送されたら最終コンテンツ取得できたので完了
+    break;
+  }
+
+  // ニコニコ静画
+  if (/^(http:\/\/lohas\.nicoseiga\.jp\/)o(\/.*)$/.test (url)) {
+    url = RegExp.$1 + 'priv' + RegExp.$2;
+  }
+
+  // 拡張子を取得する
+  var http = new Http ();
+  if (/^http:\/\/lohas\.nicoseiga\.jp\/priv\/\d+/.test (url)) {
+    var ext = http.head (url) && nb.contentTypeToExt (http);
+    if (!ext) {
+      return http.retry_or_die ();
+    }
+  }
+  else {
+    // HEAD で Content-Type が取れればそれを使う
+    var ext = http.head (url) ? nb.contentTypeToExt (http) : null;
+    if (ext == null) {
+      // だめだったら URL から拡張子を検出する（不正確）
+      ext = /\.([a-z0-9]+)([?&#].*)?$/.test (url) ? RegExp.$1 : '';
+    }
+  }
+
+  // ニコニコ静画のイラスト、お題の投稿画像、外部サイトのファイルなど
+  //  ドメイン名が違うため Cookie は設定しない
+  //  ニコニコ静画内の画像であっても、イラストか投稿画像か分からないため Referer もなし
+  urlinfo.url = url;
+  headers.Host = (new URL (url)).host;
+  headers.Cookie = '';
+  headers.Referer = '';
+  headers ['Accept-Language'] = 'ja';
+
+  item.filename = '';
+  Dorothy.fileName = filename + ext;
+}
+
+
+//---------------------- マンガ ----------------------//
+
+
+// マンガのページから各種情報を取得する
+function get_spec_from_manga_page (http) {
+  // ユーザーID
+  if (/<a\s+href="\/manga\/list\?user_id=(\d+)"[^>]*>/.test (http.data)) {
+    nb.user_id = RegExp.$1;
+  }
+  else if (/<div\s+class="official_link"[^>]*>\s*<a\s+href="\/manga\/official\/([^&?#]+)/.test (http.data)) {
+    // 公式マンガでユーザーIDがないものは代わりの識別子を使用する
+    nb.user_id = RegExp.$1;
+  }
+  else {
+    http.die ('ユーザーIDが見つかりません。');
+  }
+
+  // 作者名
+  var author = [ ];
+  function authrep (s, p1) {
+    author.push (p1);
+    return '';
+  }
+
+  http.data.replace (/<span\s+class="author_name"[^>]*>([^<]+)/g, authrep);
+
+  if (!author.length) {
+    http.die ('作者名が見つかりません。');
+  }
+  nb.nickname = (new Utf8 (author.join (' '))).decodeCharRef ();
+
+  // コンテントタイトル
+  if (!/<span\s+class="content_title"[^>]*>([^<]+)/.test (http.data)) {
+    http.die ('作品タイトルが見つかりません。');
+  }
+  nb.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
+
+  // エピソードタイトル
+  if (!/<span\s+class="episode_title"[^>]*>\s*<a[^>]*>([^<]+)/.test (http.data)) {
+    http.die ('エピソードタイトルが見つかりません。');
+  }
+  nb.episode = (new Utf8 (RegExp.$1)).decodeCharRef ();
+}
+
+
+// マンガのプレイヤー URL を取得する
+function get_manga_player_url (http) {
+  var ver = '201301231600';
+
+  if (/player_ver\s*=\s*'([^']+)';/.test (http.data)) {
+    ver = RegExp.$1;
+  }
+  else {
+    println ('player_ver が見つかりません。規定値を使用します。');
+  }
+
+  return http.expandUrl ('/swf/MangaPlayer.swf?' + ver);
+}
+
+
+// マンガ エピソード(Flash Player 型)
+function dl_manga_flv (http) {
+  var url = '/api/theme/data?theme%5Fid=' + nb.id;
+
+  http.setRequestHeader ('Referer', get_manga_player_url (http));
+  http.setFlashHeader ();
+
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  if (!ini.General.DownloadDrm && http.data.indexOf ('<source_url>http://drm.') != -1) {
+    http.die ('DRM によって保護された作品のため終了します。');
+  }
+
+
+  var list = [ ];
+
+  function add_list (s, p) {
+    list.push ({ Url: p });
+    return '';
+  }
+
+  http.data.replace (/<source_url>(http:\/\/[^<]+)<\/source_url>/g, add_list);
+
+  return list;
+}
+
+
+// マンガ エピソード(スクロール型)
+function dl_manga_scroll (http) {
+  // 画像 URL を探す
+  //  ここで得られるのは http://lohas.nicoseiga.jp/thumb/\d+p? だが、
+  //  dl_illust2 で原寸画像の URL に差し替えられてダウンロードされる
+
+  var list = [ ];
+
+  function add_list (s, p) {
+    list.push ({ Url: p });
+    return '';
+  }
+
+  http.data.replace (/data-original="(http:\/\/[^"]+)"/g, add_list);
+
+  return list;
+}
+
+
+// マンガ エピソード
+function dl_manga_episode (url) {
+  var http = new_http (url);
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+  http.loggedin_or_die ();
+
+  if (/^\/watch\/mg(\d+)/.test ((new URL (url)).path)) {
+    nb.id = RegExp.$1;
+  }
+
+  get_spec_from_manga_page (http);
+
+  if (!/var\s+bookmark_max\s*=\s*'(\d+)'/.test (http.data)) {
+    http.die ('var bookmark_max が見つかりません。');
+  }
+  var bmmax = parseInt (RegExp.$1);
+
+
+  var list = /<div\s+id="player"/.test (http.data) ?
+      dl_manga_flv (http) : dl_manga_scroll (http);
+  // ここで http が破壊されるので、以後は http.data を参照しないこと
+
+  if (list.length == 0) {
+    http.die ('ダウンロード対象が見つかりません。');
+  }
+
+
+  // 念のため画像の数を確認
+  if (bmmax != list.length) {
+    http.die ('画像 URL を正しく取得できませんでした。');
+  }
+
+  nb.pages = list.length;
+
+
+  // ファイル名を設定する
+  for (var i = 0; i < list.length; ++i) {
+    nb.p = i;
+    list [i].Filename = nb.assemble (ini.Filename ['Manga']);
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// マンガ 作品ページ
+function dl_manga_list (url) {
+  var http = new Http ();
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  var list = [ ];
+
+  function add_list (s, p) {
+    list.push ({ Url: http.expandUrl (p) });
+    return '';
+  }
+
+  http.data.replace (/<div\s+class="title"[^>]*>\s*<a\s+href="(\/watch\/mg\d+[^"]*)"/g, add_list);
+
+  if (list.length == 0) {
+    http.die ('ダウンロード対象が見つかりません。');
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// マンガ 作者ページ
+function dl_manga_user (url) {
+  var http = new Http ();
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  var list = [ ];
+
+  function add_list (s, p) {
+    list.push ({ Url: http.expandUrl (p) });
+    return '';
+  }
+
+  http.data.replace (/<div\s+class="title"[^>]*>\s*<a\s+href="(\/comic\/\d+[^"]*)"/g, add_list);
+
+  if (list.length == 0) {
+    http.die ('ダウンロード対象が見つかりません。');
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+//---------------------- 下請け ----------------------//
+
+
+// NameBuilder 初期化
+function new_namebuilder (iniobj) {
+  var nb = new NameBuilder (iniobj);
+
+  // ファイル名の生成に使える情報
+  nb.user_id = null;   // ユーザー ID
+  nb.nickname = null;  // ニックネーム
+  nb.id = null;        // イラスト番号 ソース上では image_id
+  nb.title = null;     // タイトル
+
+  // マンガ
+  nb.episode = null;  // エピソードタイトル
+  nb.pages = 0;       // 全ページ数
+  nb.p = 0;           // ページ番号
+
+  nb.definePPZ (ini.General.PageOrigin);
+
+  // お題
+  nb.bbs_id = null;  // ID
+  nb.bbs_no = null;  // 画像番号（1～)
+
+  return nb;
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+  var bcookie = new BrowserCookie (ini.Cookie);
+  var nb = new_namebuilder ({ zen2han: ini.General.Zen2Han });
+
+
+  var u = new URL (urlinfo.url);
+  var path = /^seiga\.nicovideo\.jp$/.test (u.host) ? u.path.replace (/^\/+/, '') : '';
+
+  if (/^user\/illust\/\d+/.test (path)) {
+    // イラスト一覧
+    dl_user (u.url);
+    return;
+  }
+  if (/^user\/watch\/(\d+)/.test (path)) {
+    // ユーザースライドショー
+    dl_user (u.expand ('/user/illust/' + RegExp.$1));
+    return;
+  }
+  if (/^seiga\/im(\d+)/.test (path)) {
+    // イラスト
+    dl_illust (RegExp.$1);
+    return;
+  }
+  if (/^image\/source(\/|\?id=)(\d+)/.test (path)) {
+    // 画像orクッションページへのリダイレクト（お題の可能性あり）
+    dl_illust2 (RegExp.$2);
+    return;
+  }
+  if (/^http:\/\/lohas\.nicoseiga\.jp\/+thumb\/(\d+)/.test (u.url)) {
+    // サムネイル画像（お題の可能性あり）
+    dl_illust2 (RegExp.$1);
+    return;
+  }
+
+  if (/^manga\/list\?user_id=\d+/.test (path)) {
+    // マンガ 作者ページ
+    dl_manga_user (u.url);
+    return;
+  }
+  if (/^comic\/\d+\/?(\?.*)?$/.test (path)) {
+    // マンガ 作品ページ
+    dl_manga_list (u.url);
+    return;
+  }
+  if (/^watch\/mg\d+/.test (path)) {
+    // マンガ エピソード
+    dl_manga_episode (u.url);
+    return;
+  }
+
+
+  if (/^bbs\/sg\d+/.test (path)) {
+    // お題
+    dl_theme (u.url);
+    return;
+  }
+  if (/^watch\/(sg\d+)/.test (path)) {
+    // お題 スライドショー
+    dl_theme (u.expand ('/bbs/' + RegExp.$1));
+    return;
+  }
+
+
+  println ('未対応の URL です。');
+  return;
+}
+
+
+// EOF

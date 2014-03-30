@@ -1,0 +1,253 @@
+//Dorothy2
+//caption=ぽこぽこ
+//version=20140331.0
+//hint=
+//match=^http://www\.poco2\.jp/viewer/play\.php\?partid=.
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'namebuilder');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: true,
+      PageOrigin: 1
+    },
+    Filename: {
+      Book:  '%TITLE% %STORY% p%PZ%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//------------------------------- Poco2Viewer ------------------------------
+
+
+  common_load ('http', 'utf8');
+
+
+// コンストラクタ
+void function Poco2Viewer () {
+  if (nameOf (this) != 'Poco2Viewer') {
+    alert ('new なしで Poco2Viewer() が呼ばれました。');
+    exit ();
+  }
+
+  this.list = [ ];
+  this.nameBuilder = { };
+};
+
+
+// プロパティ初期値
+Poco2Viewer.prototype.comment = '';
+Poco2Viewer.prototype.http = null;
+
+
+// NameBuilder パラメータ
+Poco2Viewer.prototype.nameFormat = '%NAME% p%PZ%';
+Poco2Viewer.prototype.pageOrigin = 1;
+
+
+// .get() の戻り値
+Poco2Viewer.prototype.OK = 0;
+Poco2Viewer.prototype.NG = 1;
+Poco2Viewer.prototype.RETRY = 2;
+Poco2Viewer.prototype.UNKNOWN = 3;
+Poco2Viewer.prototype.MIS = 4;
+
+
+// .get() の戻り値に応じて終了処理
+Poco2Viewer.prototype.end = function (r) {
+  if (r == this.RETRY) {
+    return retry ();
+  }
+  if (r != this.OK && r != this.MIS) {
+    exit ();
+  }
+};
+
+
+// 内部で使用: HTTP アクセスでエラーした場合の戻り値の選択
+Poco2Viewer.prototype._httpError = function () {
+  var http = this.http;
+
+  var c = http && http.code;
+  if (c) {
+    this.comment = http.statusLine;
+  }
+
+  return (c == 0 || c == 503) ? this.RETRY : this.NG;
+};
+
+
+// 内部で使用: メッセージ表示&commentに保存
+Poco2Viewer.prototype._p = function (s) {
+  println (this.comment = nameOf (this) + ': ' + s);
+  return false;
+};
+
+
+// 内部で使用: XML:<DATA>:<Page> を解析
+Poco2Viewer.prototype._analyzePage = function (page) {
+  if (!/\simage="([^"]+)"/.test (page)) {
+    return this._p ('image="..." が見つかりません。');
+  }
+  var image = RegExp.$1;
+
+  var o = { Url: image };
+
+  // NameBuilder オブジェクトが指定されていればファイル名を生成
+  var nb = this.nameBuilder;
+  if (typeof nb.assemble == 'function') {
+    nb.p = this.list.length;
+    o.Filename = nb.assemble (this.nameFormat, image);
+  }
+
+  this.list.push (o);
+  return true;
+};
+
+
+// 内部で使用: XML:<DATA> を解析
+Poco2Viewer.prototype._analyzeData = function (data) {
+  // <File author="～" title="～" story="～" >
+  if (!/<File(\s[^>]*)>/.test (http.data)) {
+    return this._p ('<File> が見つかりません。');
+  }
+  var file = RegExp.$1;
+
+  var nb = this.nameBuilder;
+
+  file.replace (/\s+(\S+)="([^"]*)"/g, function (s, k, v) {
+    if (/^(author|title|story)$/.test (k)) {
+      nb [k] = new Utf8 (v);
+    }
+  });
+
+  var atr = [ 'author', 'title', 'story' ];
+  for (var i = 0; i < atr.length; ++i) {
+    var k = atr [i];
+    if (nb [k] == null) {
+      return this._p (k + '="..." が見つかりません。');
+    }
+  }
+
+  // <Page image="...">
+  var page = http.data.match (/<Page\s[^>]*>/g);
+  if (!page) {
+    return this._p ('<Page> が見つかりません。');
+  }
+
+  var pageLen = nb.pages = page.length;
+  if (999 < pageLen) {
+    return this._p ('<Page> の数が異常です。');
+  }
+
+  for (var i = 0; i < pageLen; ++i) {
+    if (!this._analyzePage (page [i])) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+
+// 内部で使用: XML ファイルを読み込んで解析
+Poco2Viewer.prototype._analyzeXml = function (load_php, postdata) {
+  var http = this.http;
+
+  // XML ファイルを読み込む
+  http.setFlashHeader ();
+  if (!http.post (load_php, postdata)) {
+    return this._httpError ();
+  }
+
+  if (!this._analyzeData (http.data)) {
+    http.capture ();
+    return this.UNKNOWN;
+  }
+
+  return this.OK;
+};
+
+
+// 内部で使用: NameBuilder オブジェクトの設定
+Poco2Viewer.prototype._setupNameBuilder = function () {
+  var nb = this.nameBuilder;
+
+  // ファイル名の生成に使える情報
+  nb.title = null;   // 作品名
+  nb.story = null;   // 話数
+  nb.author = null;  // 著者名
+
+  nb.pages = 0;  // 全ページ数
+  nb.p = 0;      // ページ番号
+
+  if (typeof nb.definePPZ == 'function') {
+    nb.definePPZ (this.pageOrigin);
+  }
+};
+
+
+// データを解析してダウンロードリストを作成する
+Poco2Viewer.prototype.get = function (url) {
+  this.list = [ ];
+  this.http = new Http ();
+
+  this._setupNameBuilder ();
+
+  // XML ファイルの URL
+  if (!/^(http:\/\/[^\/]+\/)[^#]*[?&](partid=[^&#]+)/.test (url)) {
+    this._p ('未対応の URL です。');
+    return this.MIS;
+  }
+  var load_php = RegExp.$1 + 'viewerset/common/load.php';
+  var postdata = RegExp.$2;
+
+  return this._analyzeXml (load_php, postdata);
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  var book = new Poco2Viewer ();
+  book.nameBuilder = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+  book.nameFormat = ini.Filename ['Book'];
+  book.pageOrigin = ini.General.PageOrigin;
+
+  var r = book.get (urlinfo.url);
+  if (r != book.OK) {
+    return book.end (r);
+  }
+
+  (new AddItem (ini.AddItem)).send (book.list) || exit ();
+  Util.remove_this ();
+}
+
+
+// EOF

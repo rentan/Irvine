@@ -1,0 +1,148 @@
+//Dorothy2
+//caption=dengekionline.com
+//version=20140331.0
+//hint=
+//match=^http://dengekionline\.com\/elem\/(\d+/){4}
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil');
+
+  // 設定ファイルの読み込み
+  var defaultIni = {
+    General: {
+    }
+  };
+  var ini = defaultIni;
+
+
+//------------------------------ DengekiOnline -----------------------------
+
+common_load ('http');
+
+
+// コンストラクタ
+void function DengekiOnline () {
+  if (nameOf (this) != 'DengekiOnline') {
+    alert ('new なしで DengekiOnline() が呼ばれました。');
+    exit ();
+  }
+
+  this.urls = [ ];
+};
+
+
+DengekiOnline.prototype.http = null;
+DengekiOnline.prototype.comment = '';
+
+
+// .get() の戻り値
+DengekiOnline.prototype.OK = 0;
+DengekiOnline.prototype.NG = 1;
+DengekiOnline.prototype.RETRY = 2;
+DengekiOnline.prototype.UNKNOWN = 3;
+
+
+// 内部で使用: メッセージを表示&commentに保存
+DengekiOnline.prototype._error = function (status, s) {
+  println (s);
+  this.comment = s;
+  return status;
+};
+
+DengekiOnline.prototype.ng = function (s) {
+  return this._error (this.NG, s);
+};
+
+DengekiOnline.prototype.unknown = function (s) {
+  return this._error (this.UNKNOWN, s);
+};
+
+
+// HTTP アクセスでエラーした場合の戻り値の選択
+DengekiOnline.prototype.httpError = function () {
+  var http = this.http;
+
+  var c = http && http.code;
+  if (c) {
+    this.comment = http.statusLine;
+  }
+
+  return (c == 0 || c == 503) ? this.RETRY : this.NG;
+};
+
+
+// 転送先 URL を追加して正常終了
+DengekiOnline.prototype.add = function (url) {
+  this.urls.push (url);
+  return this.OK;
+};
+
+
+// 画像 URL を取得する
+DengekiOnline.prototype.get = function (url) {
+  this.urls = [ ];
+
+  if (/^(http:\/\/[^\/]+\/elem\/\d+\/\d+\/)\d+\/\d+\/[^#]*#eid((\d{3})\d+)$/.test (url)) {
+    url = RegExp.$1 + RegExp.$3 + '/' + RegExp.$2 + '/';
+  }
+
+  var http = this.http = new Http ();
+  if (!http.get (url)) {
+    return this.httpError ();
+  }
+
+  if (!/ImageOrgFile\s*=\s*Array\s*\(\s*"([^"]+)\"/.test (http.data)) {
+    return this.unknown ('ImageOrgFile が見つかりません。');
+  }
+  url = http.expandUrl (RegExp.$1);
+
+  if (!url) {
+    return this.unknown ('画像URLが正しく抽出できませんでした。');
+  }
+
+  return this.add (url);
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  var den = new DengekiOnline ();
+  var r = den.get (urlinfo.url);
+  if (r != den.OK) {
+    return den.end (r);
+  }
+
+  var url = den.urls [0];
+  Dorothy.fileName = (new URL (url)).filename;
+
+  headers.Referer = '';
+  headers.Cookie = '';
+  headers.Host = (new URL (url)).host;
+  urlinfo.url = url;
+}
+
+
+// EOF

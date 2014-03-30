@@ -1,0 +1,379 @@
+//Dorothy2
+//caption=Circle.ms
+//version=20140331.0
+//hint=
+//match=^https?://(c\d+\.circle\.ms/(pics|oc/Circle(Profile|Images))|circle\.ms\/emesStore\/emesStoreDetail)\.aspx
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2011,2012,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'http', 'namebuilder', 'utf8');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: false,
+      PageOrigin: 0
+    },
+    Filename: {
+      Illust: 'circlems_%PCODE%',
+      Emes: 'circlems_emes_%CWID%_p%EMES_P%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+// HTML から各種情報を取得する
+function get_spec_from_html (utf8) {
+  var tr = utf8.match (/<tr>\s*<td class="td-left">.*?<\/td>\s*<td class="td-right">.*?<\/td>\s*<\/tr>/g);
+  if (!tr) {
+    return;
+  }
+
+  var re = /<td class="td-left">\s*(.*?)\s*<\/td>\s*<td class="td-right">\s*(.*?)\s*<\/td>/;
+
+  var map = {
+    'サークル名': 'circle_name',
+    'サークル名 カナ': 'circle_kana',
+    '代表者名': 'represent',
+    '作家・制作者': 'author',
+
+    'タイトル日本語': 'title_jp',
+    '作家名日本語': 'author_jp',
+    'ページ数': 'emes_pages'
+  };
+
+  for (var i = 0; i < tr.length; ++i) {
+    if (!re.test (tr [i])) {
+      continue;
+    }
+    var k = RegExp.$1;
+    var v = RegExp.$2;
+
+    k = (new Utf8 (k)).removeTags ().decodeCharRef ().toSJIS ().trim ();
+    if (map.hasKey (k)) {
+      k = map [k];
+      v = (new Utf8 (v)).removeTags ().decodeCharRef ().toSJIS ().trim ();
+
+      if (k == 'emes_pages') {
+        v = parseInt (v);
+      }
+      nb [k] = v;
+    }
+  }
+}
+
+
+// 画像をダウンロード
+function dl_image (url, circle_id, pcode) {
+  nb.circle_id = circle_id;
+  nb.pcode = pcode;
+
+  if (/^(\d+)-(\d+)-(\d+)$/.test (nb.pcode)) {
+    nb.pcode1 = RegExp.$1;
+    nb.pcode2 = RegExp.$2;
+    nb.pcode3 = RegExp.$3;
+  }
+
+  var base_url = (new URL (url)).expand ('/');
+
+  var http = new Http ();
+
+  // ファイル名に未取得の情報が必要なら HTML ページから取得する
+  if (/%(CIRCLE_NAME|CIRCLE_KANA|REPRESENT|AUTHOR2?)%/.test (ini.Filename.Illust)) {
+    if (!http.get (base_url + 'oc/CircleProfile.aspx')) {
+      return http.retry_or_die ();
+    }
+    get_spec_from_html (http.data);
+  }
+
+
+  // 実際にダウンロードする URL は ～.aspx?～&PTHUMB=false
+  url = url.replace (/&PTHUMB=[^&]*/g, '') + '&PTHUMB=false';
+
+  // リファラを偽装
+  var referer = base_url + 'oc/CircleImages.aspx';
+
+
+  // 原寸画像を読み込んで画像形式を調べて拡張子を求める
+  //  Range: ヘッダは無視されるので部分ダウンロードは出来ない。
+  //  Content-Type: はどの形式でも常に image/jpeg なので判別には使えない。
+  //  例: https://c10005174.circle.ms/pics.aspx?PCODE=1286370-20-1&PTHUMB=false
+
+  http.setRequestHeader ('Referer', referer);
+  var ext = http.get (url) ? nb.contentToExt (http) : null;
+  if (ext == null) {
+    return http.retry_or_die ();
+  }
+
+
+  // ダウンロード情報を設定
+  Dorothy.fileName = nb.assemble (ini.Filename.Illust, ext);
+
+  urlinfo.url = url;
+  headers.Referer = referer;
+  headers.Cookie = '';
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// サークルイメージギャラリーのページを解析してリストに追加
+//  true: 次のページあり  false: 次のページなし
+function dl_gallery_p (list, http) {
+  var start_len = list.length;
+
+  var u = new URL (http.baseUrl);
+
+  function add_list (s, p) {
+    u.path = p;
+    list.push ({ Url: u.url });
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/<a\s+href="(\/pics\.aspx\?PCODE=[^&"]+&PTHUMB=false)"/g, add_list);
+
+  if (start_len == list.length) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+
+  // 次のページへのリンクを探す
+  if (/<a\s+href="\/oc\/CircleImages\.aspx\?[^"]*">(>|&gt;)<\/a>/.test (http.data)) {
+    return true;
+  }
+  if (/<a\s+disabled="disabled">(>|&gt;)<\/a>/.test (http.data)) {
+    return false;
+  }
+  http.die ('次のページへのリンクが見つかりません。');
+}
+
+
+// サークルイメージギャラリーの作品をダウンロード
+function dl_gallery (url) {
+  var list = [ ];
+
+  // 1ページ目を処理
+  var http = new Http ();
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+  var next = dl_gallery_p (list, http);
+
+  var p = /[?&]page=(\d+)/.test (url);  // ページ指定はあるか？
+
+  // ページ指定がなければ2ページ目以降を処理
+  if (!p) {
+    url += /\?/.test (url) ? '&page=' : '?page=';
+
+    for (var page = 2; next ; ++page) {
+      if (!http.get (url + page)) {
+        return http.retry_or_die ();
+      }
+      next = dl_gallery_p (list, http);
+    }
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// myBookreader の画像をリスト化
+//  true: 次のページあり  false: 次のページなし
+function dl_mybookreader (list, http) {
+
+  function add_list (s, p) {
+    list.push ({ Url: p });
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/<img\s+id="lv_emesRead_ctrl\d*_ctl\d*_left_page"\s+src="(https?:\/\/[^"]*)"/g, add_list);
+
+
+  // 次のページへのリンクを探す
+  if (/<a\s+href="\/ps\/emes\/myBookreader\.aspx\?CWID=[^"]*">(>|&gt;)<\/a>/.test (http.data)) {
+    return true;
+  }
+  if (/<a\s+disabled="disabled">(>|&gt;)<\/a>/.test (http.data)) {
+    return false;
+  }
+  http.die ('次のページへのリンクが見つかりません。');
+}
+
+
+// emesStore 作品をダウンロードする
+function dl_emes (url) {
+
+  // 作品詳細の HTML ページを読み込む
+  var http = new Http ();
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  // emesStore の作品閲覧にはログインが必要
+  if (/<a\s+id="ucHeader_ctl00_LoginView1_login"/.test (http.data)) {
+    http.die ('ログインが必要です。');
+  }
+
+
+  // 「作品を読む」ボタンを探す
+  //  https://p***.circle.ms/ps/emes/myBookreader.aspx?CWID=***
+  //  検索結果から辿ると &EGENRE=00&page=9 のようなクエリが末尾につく場合がある
+  var read_re = /window\.open\s*\(&#39;(https?:\/\/p\d+\.circle\.ms\/ps\/emes\/myBookreader\.aspx\?CWID=(\d+))(&.*)?'/;
+
+  if (read_re.test (http.data)) {
+    url = RegExp.$1;
+    nb.cwid = RegExp.$2;
+  }
+  else if (/<input\s+type="submit"\s+name="listview\$ctrl0\$ctl01"/.test (http.data)) {
+    // 「カートに入れる」ボタンしかなかった
+    http.die ('有料作品はダウンロード出来ません。');
+
+    // 購入済みならダウンロード出来るかも？（未確認）
+    // ちなみに未購入で myBookreader の URL を推測してアクセスしてもエラーになる
+  }
+  else {
+    http.die ('「作品を読む」ボタンが見つかりません。');
+  }
+
+
+  // 各種情報を抽出する
+  get_spec_from_html (http.data);
+
+  // サークル番号
+  if (/href="https?:\/\/c(\d+)\.circle\.ms\/oc\/CircleProfile\.aspx"/.test (http.data)) {
+    nb.circle_id = RegExp.$1;
+  }
+
+  // 処理ループにページ数は不要だが、%EMES_PAGES% のために必要
+  if (nb.emes_pages == 0) {
+    http.die ('emes: ページ数が見つかりません。');
+  }
+
+
+  // Http() の仕様上、別ドメインに Cookie を持ち越せないので作り直し
+  http = new Http ();
+
+  // 各 HTML ページを処理する
+  var list = [ ];
+
+  var next = true;
+  for (var page = 1; next ; ++page) {
+    var p = (page == 1) ? '' : '&page=' + page;
+
+    if (!http.get (url + p)) {
+      http.retry_or_die ();
+    }
+    next = dl_mybookreader (list, http);
+  }
+
+  // 詳細ページで取得したページ数と各ページから抽出した画像数を比較する
+  if (list.length != nb.emes_pages) {
+    var lp = list.length.toString () + '/' + nb.emes_pages.toString ();
+
+    http.die ('emes: 全てのデータを抽出できませんでした: (' + lp + ')');
+  }
+
+
+  // 保存ファイル名を決定
+  for (var i = 0; i < list.length; ++i) {
+    nb.emes_p = i;
+    list [i].Filename = nb.assemble (ini.Filename.Emes, list [i].Url);
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
+  // ファイル名の生成に使える情報
+  nb.circle_id = null;    // サークルID
+  nb.circle_name = null;  // サークル名
+  nb.circle_kana = null;  // サークル名 カナ
+  nb.represent = null;    // 代表者名
+  nb.author = null;       // 作家・制作者
+
+  nb.pcode = null;   // PCODE 番号
+  nb.pcode1 = null;  // 1164616-20-1
+  nb.pcode2 = null;  // ~~~~~~~ ~~ ~
+  nb.pcode3 = null;  // pcode1  2  3
+
+  nb.cwid = null;       // emes コンテンツ番号
+  nb.title_jp = null;   // emes タイトル日本語
+  nb.author_jp = null;  // emes 作家名日本語
+
+  nb.emes_pages = 0;  // emes 全ページ数
+  nb.emes_p = 0;      // emes ページ番号
+
+  nb.AUTHOR2 = function () {
+    return this.author || this.represent;
+  };
+  nb.EMES_P = function () {
+    return this.emes_p + ini.General.PageOrigin;
+  };
+  nb.EMES_PZ = function () {
+    return this.zeroPadding (this.emes_p, this.emes_pages - 1, ini.General.PageOrigin);
+  };
+
+
+  var url = urlinfo.url.replace (/^http:/i, 'https:');
+
+  if (/^https:\/\/c(\d+)\.circle\.ms\/pics\.aspx\?PCODE=([^&]+)/.test (url)) {
+    // 画像
+    dl_image (url, RegExp.$1, RegExp.$2);
+    return;
+  }
+  if (/^(https:\/\/c\d+\.circle\.ms\/oc\/)CircleProfile\.aspx([?#].*)?$/.test (url)) {
+    // プロフィールのページはサークルイメージギャラリーとして処理
+    dl_gallery (RegExp.$1 + 'CircleImages.aspx');
+    return;
+  }
+  if (/^https:\/\/c\d+\.circle\.ms\/oc\/CircleImages\.aspx([?#].*)?$/.test (url)) {
+    // サークルイメージギャラリーの HTML ページ
+    dl_gallery (url);
+    return;
+  }
+  if (/^https:\/\/circle\.ms\/emesStore\/emesStoreDetail\.aspx\?CWID=\d+/.test (url)) {
+    // emesStore 作品詳細
+    dl_emes (url);
+    return;
+  }
+
+  println ('未対応の URL です。');
+  return;
+}
+
+
+// EOF

@@ -1,0 +1,182 @@
+//Dorothy2
+//caption=Exec
+//version=20140331.0
+//hint=new Exec()
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+
+// コンストラクタ
+void function Exec () {
+  if (nameOf (this) != 'Exec') {
+    // 簡易実行モード
+    var ex = new Exec ();
+    var cmd = arguments.slice (1).join (' ');
+
+    try {
+      return ex.exec (arguments [0], cmd, Dorothy.temp);
+    }
+    catch (e) {
+      return -1;
+    }
+  }
+};
+
+
+// 定数
+(function (p) {
+  p.SW_HIDE = 0;
+  p.SW_SHOW = 5;
+  p.INFINITE = 0xffffffff;
+  p.NORMAL_PRIORITY_CLASS = 0x20;
+
+  // 規定値
+  p.wShowWindow = p.SW_HIDE;
+  p.dwMilliseconds = p.INFINITE;
+  p.dwCreationFlags = p.NORMAL_PRIORITY_CLASS;
+}) (Exec.prototype);
+
+
+// 内部で使用: エラーメッセージを表示して false を返す
+Exec.prototype._p = function (msg) {
+  println ('Exec: ' + msg);
+  return false;
+};
+
+
+// 内部で使用: kernel32.dll
+Exec.prototype._dll = (function () {
+  var d = new DynaCall ();
+  d.register ('kernel32.dll', 'CreateProcessA', 'f=s', 'i=ssssblssss', 'r=b');
+  d.register ('kernel32.dll', 'CloseHandle', 'f=s', 'i=h', 'r=l');
+  d.register ('kernel32.dll', 'WaitForSingleObject', 'f=s', 'i=hl', 'r=l');
+  d.register ('kernel32.dll', 'GetExitCodeProcess', 'f=s', 'i=hs', 'r=b');
+
+  return d;
+}) ();
+
+
+// http://msdn.microsoft.com/ja-jp/library/ms686331.aspx
+Exec.prototype._createStartupInfo = function () {
+  var si = new Struct (
+    'cb:l',
+    'lpReserved:s',
+    'lpDesktop:s',
+    'lpTitle:s',
+    'dwX:l',
+    'dwY:l',
+    'dwXSize:l',
+    'dwYSize:l',
+    'dwXCountChars:l',
+    'dwYCountChars:l',
+    'dwFillAttributes:l',
+    'dwFlags:l',
+    'wShowWindow:t',
+    'cbReserved2:t',
+    'lpReserved2:s',
+    'hStdInput:h',
+    'hStdOutput:h',
+    'hStdError:h'
+  );
+  si.cb = si.sizeOf ();
+
+  si.dwFlags = 0x1;  // STARTF_USESHOWWINDOW;
+  si.wShowWindow = this.wShowWindow;
+
+  return si;
+};
+
+
+// http://msdn.microsoft.com/ja-jp/library/ms684873.aspx
+Exec.prototype._createProcessInfo = function () {
+  return new Struct (
+    'hProcess:h',
+    'hThread:h',
+    'dwProcessId:l',
+    'dwThreadId:l'
+  );
+};
+
+
+// 内部で使用: WaitForSingleObject の戻り値を文字列化
+Exec.prototype._waitToString = function (r) {
+  var w = {
+    0: 'WAIT_OBJECT_0',
+    0x80: 'WAIT_ABANDONED',
+    0x102: 'WAIT_TIMEOUT',
+    0xffffffff: 'WAIT_FAILED'
+  };
+
+  return w.hasKey (r) ? w [r] : '未知のエラー';
+};
+
+
+// プログラムを実行する
+Exec.prototype.exec = function (app, cmd, dir) {
+  var dll = this._dll;
+  var si = this._createStartupInfo ();
+  var pi = this._createProcessInfo ();
+  var exitcode = new Struct ('code:l');
+  var e;
+
+  this._p (app + ' ' + cmd);
+
+  var r = dll.CreateProcessA (null, '"' + app + '" ' + cmd,
+    null, null, false, this.dwCreationFlags, null, dir, si, pi);
+  if (r == 0) {
+    this._p (e = 'CreateProcessA error');
+    throw e;
+  }
+
+  try {
+    r = dll.WaitForSingleObject (pi.hProcess, this.dwMilliseconds);
+
+    var WAIT_OBJECT_0 = 0;
+    if (r != WAIT_OBJECT_0) {
+      this._p (e = this._waitToString (r));
+      throw e;
+    }
+
+    if (dll.GetExitCodeProcess (pi.hProcess, exitcode) == 0) {
+      this._p (e = 'GetExitCodeProcess error');
+      throw e;
+    }
+  }
+  finally {
+    dll.CloseHandle (pi.hThread);
+    dll.CloseHandle (pi.hProcess);
+  }
+
+  r = exitcode.code;
+  if (debug) {
+    this._p ('exitcode = ' + r);
+  }
+  return r;
+};
+
+
+}) ()
+
+
+// EOF
