@@ -10,7 +10,7 @@ Web ブラウザから Cookie を読み込むためのオブジェクトです�
 
 
 対応ブラウザ
-  IE              Internet Explorer 保護モード自動認識
+  IE              Internet Explorer 保護モード自動識別
   IE_protected    IE 保護モード有効
   IE_unprotected  IE 保護モード無効
   Firefox         Mozilla Firefox
@@ -104,14 +104,10 @@ getChromeCookiePath ()
 
 ・Chrome、CEF の Cookie ファイルは version 7 のみ対応しています。
 
-・Chrome ではブラウザが保持している Cookie がファイルに保存されるまで
-  多少時間がかかることがあるようです。
-
 ・Chrome と CEF は Cookie ファイルの指定方法が違うだけです。
 
-・Windows XP は IE7 以降の保護モードに対応していませんが、API のエントリ
-  は存在し、常に失敗するようです。そのため Browser=IE では OS の判別を
-  せず API を呼び出しています(失敗するので IE_unprotected として動作)。
+・Chrome ではブラウザが保持している Cookie がファイルに保存されるまで
+  多少時間がかかることがあるようです。
 
 ・セッションオンリー Cookie はファイルに保存されないと思われるので、
   ブラウザでのログイン時に「次回から自動的にログイン」といったチェック
@@ -125,6 +121,15 @@ getChromeCookiePath ()
 
 変更履歴
 ========
+
+2014-04-03  version 20140403.0  rentan at rentan.org
+  BrowserCookie._sql(): Cookie ファイルにデータが一つもない時に正しく
+  エラー処理しない不具合を修正。
+  第3引数(カラムのデータ種別の配列)を必須に変更。
+
+  BrowserCookie.import*(): debug 有効時、取得した Cookie を表示する。
+
+  BrowserCookie: エラー処理を整理。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。

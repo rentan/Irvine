@@ -22,7 +22,9 @@ common\domparser\xml.dms などから読み込まれます。
 (DMonkey のガベージコレクタ関係の不具合?)
 
 デストラクタとして .destroy() というメソッドを定義してあるので、
-document が不要になった時点で必ず呼び出して下さい。
+document が不要になった時点で必ず呼び出し、かつ document への
+参照も削除して下さい(document への参照が残っていると exit()
+で終了した時に EInvalidPointer が発生します)。
 
 
 DOMParser オブジェクトのプロパティ

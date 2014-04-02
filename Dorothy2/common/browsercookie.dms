@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=BrowserCookie
-//version=20140331.0
+//version=20140403.0
 //hint=new BrowserCookie ()
 //match=
 //author=rentan
@@ -42,7 +42,7 @@ void function bcSQLite3 () {
 
 // sqlite3.dll の必要バージョン
 bcSQLite3.prototype.minVersion = 3008000;  // 必須
-bcSQLite3.prototype.recVersion = 3008000;  // 推奨
+bcSQLite3.prototype.recVersion = 3008004;  // 推奨
 
 
 // Result Codes
@@ -229,8 +229,7 @@ bcSQLite3.prototype.column_blob = function (pstmt, icol) {
 // コンストラクタ
 void function BrowserCookie (opt_cfg) {
   if (nameOf (this) != 'BrowserCookie') {
-    alert ('new なしで BrowserCookie() が呼ばれました。');
-    exit ();
+    BrowserCookie.prototype._fatal ('new なしで BrowserCookie() が呼ばれました。');
   }
 
 
@@ -254,10 +253,11 @@ void function BrowserCookie (opt_cfg) {
   }
 };
 
-// コンストラクタで設定されるプロパティ
-//  browser  firefoxcookie  chromecookie  cefcookie
 // _browser _firefoxcookie _chromecookie _cefcookie
-
+//   browsercookie.ini から読み込まれて設定される
+//   (省略時は _loadCommonIni にハードコードされた値)
+// browser  firefoxcookie  chromecookie  cefcookie
+//   コンストラクタの引数で設定される(省略時は iniTemplate の値)
 
 // プロパティ初期値
 BrowserCookie.prototype.maxSize = 4200;
@@ -280,20 +280,39 @@ BrowserCookie.prototype._dll = (function () {
 }) ();
 
 
-// 内部で使用: エラーメッセージを表示して null を返す(ブラウザ種別つき)
-BrowserCookie.prototype._err = function (browser, msg) {
-  var head = browser ? 'BrowserCookie[' + browser + ']: ' : 'BrowserCookie: ';
-  println (head + msg);
+// 内部で使用: エラーメッセージを表示して false を返す
+BrowserCookie.prototype._p = function (s) {
+  println ('BrowserCookie: ' + s);
+  return false;
+};
 
+
+// 内部で使用: エラーメッセージを表示して null を返す
+BrowserCookie.prototype._null = function (s) {
+  this._p (s);
   return null;
 };
 
 
-// 内部で使用: エラーメッセージを表示して false を返す
-BrowserCookie.prototype._p = function (msg) {
-  println ('BrowserCookie: ' + msg);
+// 内部で使用: エラーを表示してスクリプトを終了
+BrowserCookie.prototype._fatal = function (s) {
+  alert ('BrowserCookie: ' + s);
+  exit ();
+};
 
-  return false;
+
+BrowserCookie.prototype._noCookie = function () {
+  return this._null ('Cookie がありません。');
+};
+
+
+// 内部で使用: 引数で指定した Cookie を返す
+//  debug 時のみ Cookie の値を表示する
+BrowserCookie.prototype._printCookie = function (s) {
+  if (debug) {
+    this._p ('Cookie: ' + s);
+  }
+  return s;
 };
 
 
@@ -398,13 +417,11 @@ BrowserCookie.prototype._sqlColumn = function (db, stmt, icol, type) {
 
 
 // 内部で使用: SQL を実行する
-BrowserCookie.prototype._sql = function (cookie_file, sql, columnTypes) {
-  var types = columnTypes || [ 'text' ];
+BrowserCookie.prototype._sql = function (cookie_file, sql, types) {
 
   cookie_file = new File (cookie_file);
   if (!cookie_file.exists ()) {
-    this._p ('Cookie ファイルがありません: ' + cookie_file.path);
-    return null;
+    return this._null ('Cookie ファイルがありません: ' + cookie_file.path);
   }
 
   var db = new bcSQLite3 ();
@@ -441,7 +458,7 @@ BrowserCookie.prototype._sql = function (cookie_file, sql, columnTypes) {
     this._p ('value = ' + values.join (', '));
   }
 
-  return columnTypes ? values : values [0];
+  return (values.length == types.length) ? values : null;
 };
 
 
@@ -475,11 +492,9 @@ BrowserCookie.prototype._validateTarget = function (obj) {
 };
 
 
-// IE から Cookie を読み込む(保護モード有効) 下請け
-BrowserCookie.prototype._importIEprotected = function (url, name) {
-
-  // IEGetProtectedModeCookie による IE 保護モード Cookie の読み込み
-  // http://msdn.microsoft.com/en-us/library/cc196998.aspx
+// IEGetProtectedModeCookie による IE 保護モード Cookie の読み込み
+// http://msdn.microsoft.com/en-us/library/cc196998.aspx
+BrowserCookie.prototype._IEGetProtectedModeCookie = function (url, name) {
 
   // フラグ
   var flag = 0x2000;  // INTERNET_COOKIE_HTTPONLY
@@ -506,6 +521,22 @@ BrowserCookie.prototype._importIEprotected = function (url, name) {
 };
 
 
+// IE から Cookie を読み込む(保護モード有効) 下請け
+BrowserCookie.prototype._importIEprotected = function (obj) {
+
+  var cookies = [ ];
+  for (var i = 0; i < obj.name.length; ++i) {
+    var c = this._IEGetProtectedModeCookie (obj.url, obj.name [i]);
+    if (!c) {
+      return this._noCookie ();
+    }
+    cookies.push (c);
+  }
+
+  return this._printCookie (cookies.join (';'));
+};
+
+
 // IE から Cookie を読み込む(保護モード有効)
 BrowserCookie.prototype.importIEprotected = function (obj) {
   this._p ('IE 保護モード有効');
@@ -515,21 +546,12 @@ BrowserCookie.prototype.importIEprotected = function (obj) {
     return null;
   }
 
-  var cookies = [ ];
-  for (var i = 0; i < obj.name.length; ++i) {
-    var c = this._importIEprotected (obj.url, obj.name [i]);
-    if (!c) {
-      return null;
-    }
-    cookies.push (c);
-  }
-
-  return cookies.join (';');
+  return this._importIEprotected (obj);
 };
 
 
-// IE から Cookie を読み込む(保護モード無効) 下請け
-BrowserCookie.prototype._importIEunprotected = function (url, name) {
+// InternetGetCookieEx
+BrowserCookie.prototype._InternetGetCookieEx = function (url, name) {
 
   // フラグ
   var flag = 0x2000;  // INTERNET_COOKIE_HTTPONLY
@@ -552,6 +574,22 @@ BrowserCookie.prototype._importIEunprotected = function (url, name) {
 };
 
 
+// IE から Cookie を読み込む(保護モード無効) 下請け
+BrowserCookie.prototype._importIEunprotected = function (obj) {
+
+  var cookies = [ ];
+  for (var i = 0; i < obj.name.length; ++i) {
+    var c = this._InternetGetCookieEx (obj.url, obj.name [i]);
+    if (!c) {
+      return this._noCookie ();
+    }
+    cookies.push (c);
+  }
+
+  return this._printCookie (cookies.join (';'));
+};
+
+
 // IE から Cookie を読み込む(保護モード無効)
 BrowserCookie.prototype.importIEunprotected = function (obj) {
   this._p ('IE 保護モード無効');
@@ -561,20 +599,11 @@ BrowserCookie.prototype.importIEunprotected = function (obj) {
     return null;
   }
 
-  var cookies = [ ];
-  for (var i = 0; i < obj.name.length; ++i) {
-    var c = this._importIEunprotected (obj.url, obj.name [i]);
-    if (!c) {
-      return null;
-    }
-    cookies.push (c);
-  }
-
-  return cookies.join (';');
+  return this._importIEunprotected (obj);
 };
 
 
-// IE から Cookie を読み込む(保護モード自動認識)
+// IE から Cookie を読み込む(保護モード自動識別)
 BrowserCookie.prototype.importIE = function (obj) {
   obj = this._validateTarget (obj);
   if (!obj) {
@@ -582,30 +611,21 @@ BrowserCookie.prototype.importIE = function (obj) {
   }
 
   // 保護モード有効で開く URL か調べる
-  var p = (this._dll.IEIsProtectedModeURL (obj.url) == 0);
-  this._p ('IE 保護モード自動認識: 保護モード' + (p ? '有効' : '無効'));
+  var p = this._dll.IEIsProtectedModeURL (obj.url);
 
-  p = p ? this._importIEprotected : this._importIEunprotected;
-
-  var cookies = [ ];
-  for (var i = 0; i < obj.name.length; ++i) {
-    var c = p.call (this, obj.url, obj.name [i]);
-    if (!c) {
-      return null;
-    }
-    cookies.push (c);
+  if (p == 0) {  // S_OK
+    this._p ('IE 自動識別: 保護モード有効');
+    return this._importIEprotected (obj);
   }
 
-  return cookies.join (';');
+  this._p ('IE 自動識別: 保護モード無効');
+  return this._importIEunprotected (obj);
 };
 
 
 // Firefox の Cookie ファイルのパスを調べる
 //  存在するかどうかは調べない
 BrowserCookie.prototype.getFirefoxCookiePath = function () {
-  function err (s) {
-    return this._err ('Firefox', s);
-  }
 
   // デフォルトプロファイルのセクション名を返す
   // 複数のプロファイルがありどこにも Defalut=1 がないケースはあり得るが
@@ -630,23 +650,23 @@ BrowserCookie.prototype.getFirefoxCookiePath = function () {
 
   var appdata = this.getShellFolder ('AppData');
   if (!appdata) {
-    return err ('AppData のパスが取得できませんでした。');
+    return this._null ('AppData のパスが取得できませんでした。');
   }
 
   var prof = new File (appdata + '\Mozilla\Firefox\profiles.ini');
   if (!prof.exists ()) {
-    return err ('profiles.ini がありません。');
+    return this._null ('profiles.ini がありません。');
   }
 
   var ini = new Ini (prof.path);
   var sec = getDefaultSection (ini);
   if (!sec) {
-    return err ('profiles.ini にデフォルトプロファイルがありません。');
+    return this._null ('profiles.ini にデフォルトプロファイルがありません。');
   }
 
   var path = ini.read (sec, 'Path', null);
   if (!path) {
-    return err ('profiles.ini のデフォルトプロファイルに Path がありません。');
+    return this._null ('profiles.ini のデフォルトプロファイルに Path がありません。');
   }
   path = path.replace (/\//g, '\');
 
@@ -666,9 +686,7 @@ BrowserCookie.prototype.importFirefox = function (obj) {
   if (cookie_file.toLowerCase () == 'auto') {
     cookie_file = this.getFirefoxCookiePath ();
   }
-  if (debug) {
-    this._p (cookie_file);
-  }
+  print_debug (cookie_file);
 
   obj = this._validateTarget (obj);
   if (!obj || !cookie_file) {
@@ -676,10 +694,10 @@ BrowserCookie.prototype.importFirefox = function (obj) {
   }
 
   if (obj.name.length > 1) {
-    this._err ('Firefox', '複数キーは未対応です。');
-    exit ();
+    this._fatal ('複数キーは未対応です。');
   }
 
+  var columnTypes = [ 'text' ];
   var sql =
 "SELECT value FROM moz_cookies" +
 " WHERE host = '" + obj.host +
@@ -687,9 +705,12 @@ BrowserCookie.prototype.importFirefox = function (obj) {
 "' and path = '" + obj.path +
 "';";
 
-  var cookie = this._sql (cookie_file, sql);
+  var cookie = this._sql (cookie_file, sql, columnTypes);
+  if (!cookie) {
+    return this._noCookie ();
+  }
 
-  return cookie && (obj.name [0] + '=' + cookie);
+  return this._printCookie (obj.name [0] + '=' + cookie [0]);
 };
 
 
@@ -699,7 +720,7 @@ BrowserCookie.prototype.importFirefox = function (obj) {
 BrowserCookie.prototype.getChromeCookiePath = function () {
   var appdata = this.getShellFolder ('Local AppData');
   if (!appdata) {
-    return this._err ('Chrome', 'Local AppData のパスが取得できませんでした。');
+    return this._null ('Local AppData のパスが取得できませんでした。');
   }
 
   var file = new File (appdata + '\Google\Chrome\User Data\Default\Cookies');
@@ -755,8 +776,7 @@ BrowserCookie.prototype._importChrome = function (cookie_file, obj) {
   }
 
   if (obj.name.length > 1) {
-    this._err ('Chrome', '複数キーは未対応です。');
-    exit ();
+    this._fatal ('複数キーは未対応です。');
   }
 
   var columnTypes = [ 'text', 'blob' ];
@@ -769,7 +789,7 @@ BrowserCookie.prototype._importChrome = function (cookie_file, obj) {
 
   var cookies = this._sql (cookie_file, sql, columnTypes);
   if (!cookies) {
-    return null;
+    return this._noCookie ();
   }
 
   var cookie = cookies [0];
@@ -780,12 +800,11 @@ BrowserCookie.prototype._importChrome = function (cookie_file, obj) {
       cookie = this._cryptUnprotectData (encrypted).text;
     }
     catch (e) {
-      this._p (e);
-      return null;
+      return this._null (e);
     }
   }
 
-  return obj.name [0] + '=' + cookie;
+  return this._printCookie (obj.name [0] + '=' + cookie);
 };
 
 
@@ -809,10 +828,10 @@ BrowserCookie.prototype.importCef = function (obj) {
 
   var cookie_file = this.cefcookie.trim () || this._cefcookie;
   if (cookie_file.toLowerCase () == 'auto') {
-    return this._err ('CEF', 'Cookie ファイルに Auto は指定できません。');
+    return this._null ('Cookie ファイルに Auto は指定できません。');
   }
   if (!cookie_file) {
-    return this._err ('CEF', 'Cookie ファイルが指定されていません。');
+    return this._null ('Cookie ファイルが指定されていません。');
   }
 
   return this._importChrome (cookie_file, obj);
@@ -837,7 +856,7 @@ BrowserCookie.prototype.import = function (obj) {
     return this [map [b]].apply (this, arguments);
   }
 
-  return this._err (browser, '未対応のブラウザ名です。');
+  return this._null ('未対応のブラウザ名です: ' + browser);
 };
 
 

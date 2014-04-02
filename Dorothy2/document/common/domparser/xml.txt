@@ -29,6 +29,7 @@ DOMParser/XML の擬似的な実装です。
   finally {
     if (document) {
       document.destroy ();
+      document = null;
     }
   }
 
