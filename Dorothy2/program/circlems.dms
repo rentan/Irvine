@@ -1,8 +1,8 @@
 //Dorothy2
 //caption=Circle.ms
-//version=20140331.0
+//version=20140408.0
 //hint=
-//match=^https?://(c\d+\.circle\.ms/(pics|oc/Circle(Profile|Images))|circle\.ms\/emesStore\/emesStoreDetail)\.aspx
+//match=^https?://(c\d+\.circle\.ms/(pics|oc/Circle(Profile|Images))
 //author=rentan
 //path=program
 //priority=500
@@ -37,8 +37,7 @@ function () {
       PageOrigin: 0
     },
     Filename: {
-      Illust: 'circlems_%PCODE%',
-      Emes: 'circlems_emes_%CWID%_p%EMES_P%'
+      Illust: 'circlems_%PCODE%'
     }
   };
   var ini = Util.ini_load (default_ini);
@@ -63,8 +62,7 @@ function get_spec_from_html (utf8) {
     '作家・制作者': 'author',
 
     'タイトル日本語': 'title_jp',
-    '作家名日本語': 'author_jp',
-    'ページ数': 'emes_pages'
+    '作家名日本語': 'author_jp'
   };
 
   for (var i = 0; i < tr.length; ++i) {
@@ -79,9 +77,6 @@ function get_spec_from_html (utf8) {
       k = map [k];
       v = (new Utf8 (v)).removeTags ().decodeCharRef ().toSJIS ().trim ();
 
-      if (k == 'emes_pages') {
-        v = parseInt (v);
-      }
       nb [k] = v;
     }
   }
@@ -203,115 +198,6 @@ function dl_gallery (url) {
 }
 
 
-// myBookreader の画像をリスト化
-//  true: 次のページあり  false: 次のページなし
-function dl_mybookreader (list, http) {
-
-  function add_list (s, p) {
-    list.push ({ Url: p });
-    return '';
-  }
-
-  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
-  http.data.replace (/<img\s+id="lv_emesRead_ctrl\d*_ctl\d*_left_page"\s+src="(https?:\/\/[^"]*)"/g, add_list);
-
-
-  // 次のページへのリンクを探す
-  if (/<a\s+href="\/ps\/emes\/myBookreader\.aspx\?CWID=[^"]*">(>|&gt;)<\/a>/.test (http.data)) {
-    return true;
-  }
-  if (/<a\s+disabled="disabled">(>|&gt;)<\/a>/.test (http.data)) {
-    return false;
-  }
-  http.die ('次のページへのリンクが見つかりません。');
-}
-
-
-// emesStore 作品をダウンロードする
-function dl_emes (url) {
-
-  // 作品詳細の HTML ページを読み込む
-  var http = new Http ();
-  if (!http.get (url)) {
-    return http.retry_or_die ();
-  }
-
-  // emesStore の作品閲覧にはログインが必要
-  if (/<a\s+id="ucHeader_ctl00_LoginView1_login"/.test (http.data)) {
-    http.die ('ログインが必要です。');
-  }
-
-
-  // 「作品を読む」ボタンを探す
-  //  https://p***.circle.ms/ps/emes/myBookreader.aspx?CWID=***
-  //  検索結果から辿ると &EGENRE=00&page=9 のようなクエリが末尾につく場合がある
-  var read_re = /window\.open\s*\(&#39;(https?:\/\/p\d+\.circle\.ms\/ps\/emes\/myBookreader\.aspx\?CWID=(\d+))(&.*)?'/;
-
-  if (read_re.test (http.data)) {
-    url = RegExp.$1;
-    nb.cwid = RegExp.$2;
-  }
-  else if (/<input\s+type="submit"\s+name="listview\$ctrl0\$ctl01"/.test (http.data)) {
-    // 「カートに入れる」ボタンしかなかった
-    http.die ('有料作品はダウンロード出来ません。');
-
-    // 購入済みならダウンロード出来るかも？（未確認）
-    // ちなみに未購入で myBookreader の URL を推測してアクセスしてもエラーになる
-  }
-  else {
-    http.die ('「作品を読む」ボタンが見つかりません。');
-  }
-
-
-  // 各種情報を抽出する
-  get_spec_from_html (http.data);
-
-  // サークル番号
-  if (/href="https?:\/\/c(\d+)\.circle\.ms\/oc\/CircleProfile\.aspx"/.test (http.data)) {
-    nb.circle_id = RegExp.$1;
-  }
-
-  // 処理ループにページ数は不要だが、%EMES_PAGES% のために必要
-  if (nb.emes_pages == 0) {
-    http.die ('emes: ページ数が見つかりません。');
-  }
-
-
-  // Http() の仕様上、別ドメインに Cookie を持ち越せないので作り直し
-  http = new Http ();
-
-  // 各 HTML ページを処理する
-  var list = [ ];
-
-  var next = true;
-  for (var page = 1; next ; ++page) {
-    var p = (page == 1) ? '' : '&page=' + page;
-
-    if (!http.get (url + p)) {
-      http.retry_or_die ();
-    }
-    next = dl_mybookreader (list, http);
-  }
-
-  // 詳細ページで取得したページ数と各ページから抽出した画像数を比較する
-  if (list.length != nb.emes_pages) {
-    var lp = list.length.toString () + '/' + nb.emes_pages.toString ();
-
-    http.die ('emes: 全てのデータを抽出できませんでした: (' + lp + ')');
-  }
-
-
-  // 保存ファイル名を決定
-  for (var i = 0; i < list.length; ++i) {
-    nb.emes_p = i;
-    list [i].Filename = nb.assemble (ini.Filename.Emes, list [i].Url);
-  }
-
-  additem.send (list) || exit ();
-  Util.remove_this ();
-}
-
-
 //-------------------- メイン処理 --------------------//
 
 
@@ -330,21 +216,8 @@ function dl_emes (url) {
   nb.pcode2 = null;  // ~~~~~~~ ~~ ~
   nb.pcode3 = null;  // pcode1  2  3
 
-  nb.cwid = null;       // emes コンテンツ番号
-  nb.title_jp = null;   // emes タイトル日本語
-  nb.author_jp = null;  // emes 作家名日本語
-
-  nb.emes_pages = 0;  // emes 全ページ数
-  nb.emes_p = 0;      // emes ページ番号
-
   nb.AUTHOR2 = function () {
     return this.author || this.represent;
-  };
-  nb.EMES_P = function () {
-    return this.emes_p + ini.General.PageOrigin;
-  };
-  nb.EMES_PZ = function () {
-    return this.zeroPadding (this.emes_p, this.emes_pages - 1, ini.General.PageOrigin);
   };
 
 
@@ -363,11 +236,6 @@ function dl_emes (url) {
   if (/^https:\/\/c\d+\.circle\.ms\/oc\/CircleImages\.aspx([?#].*)?$/.test (url)) {
     // サークルイメージギャラリーの HTML ページ
     dl_gallery (url);
-    return;
-  }
-  if (/^https:\/\/circle\.ms\/emesStore\/emesStoreDetail\.aspx\?CWID=\d+/.test (url)) {
-    // emesStore 作品詳細
-    dl_emes (url);
     return;
   }
 
