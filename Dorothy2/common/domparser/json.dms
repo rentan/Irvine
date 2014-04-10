@@ -1,0 +1,359 @@
+//Dorothy2
+//caption=DOMParser/JSON
+//version=20140331.0
+//hint=
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+common_load ('domparser\core', 'utf8');
+
+
+//--------------------------------- DOMJson --------------------------------
+// https://tools.ietf.org/html/rfc4627
+
+
+// コンストラクタ
+void function DOMJson (text) {
+  this.document = new Document ();
+
+  try {
+    this._parse (text);
+  }
+  catch (e) {
+    this.document.destroy ();
+    throw e;
+  }
+};
+
+
+DOMJson.prototype._throw = function (e, src) {
+  throw 'JSON: ' + e + ' at ' + src.index;
+};
+
+
+// 空白を飛ばす
+// ws = *( %x20 / %x09 / %x0A / %x0D )
+DOMJson.prototype._skipBlank = function (src) {
+  for (var i = src.index; i < src.length; ++i) {
+    var cc = src.charCodeAt (i);
+    if (cc != 0x20 && cc != 0x0a && cc != 0x0d && cc != 0x09) {
+      break;
+    }
+  }
+
+  src.index = i;
+};
+
+
+// array をパースする
+DOMJson.prototype._parseArray = function (src) {
+  // 開始の [
+  ++src.index;
+  this._skipBlank (src);
+
+  var array = new Element ('array');
+
+  if (src.index < src.length && src.charCodeAt (src.index) == 0x5d) {
+    // [ ] 空配列
+    ++src.index;
+    return array;
+  }
+
+  while (src.index < src.length) {
+    array.appendChild (this._parseValue (src));
+    this._skipBlank (src);
+
+    if (src.length <= src.index) {
+      break;
+    }
+    var cc = src.charCodeAt (src.index++);
+    if (cc == 0x2c) {
+      // , 次の値が必ずある
+      this._skipBlank (src);
+      continue;
+    }
+    if (cc == 0x5d) {
+      // ] 終了
+      return array;
+    }
+
+    --src.index;
+    this._throw ('配列の値が連続している', src);
+  }
+
+  this._throw ('配列が閉じていない', src);  // テキスト末尾に到達
+};
+
+
+// object をパースする
+DOMJson.prototype._parseObject = function (src) {
+  // 開始の {
+  ++src.index;
+  this._skipBlank (src);
+
+  var obj = new Element ('object');
+
+  if (src.index < src.length && src.charCodeAt (src.index) == 0x7d) {
+    // { } 空オブジェクト
+    ++src.index;
+    return obj;
+  }
+
+  while (src.index < src.length) {
+    if (src.charCodeAt (src.index) != 0x22) {
+      this._throw ('オブジェクトのメンバー名が文字列でない', src);
+    }
+    var name = this._parseString (src);
+
+    this._skipBlank (src);
+    if (src.length <= src.index || src.charCodeAt (src.index) != 0x3a) {
+      this._throw ('オブジェクトのメンバー名の直後が:でない', src);
+    }
+    ++src.index;
+    this._skipBlank (src);
+
+    var value = this._parseValue (src);
+    value.name = name;
+    obj.appendChild (value);
+
+    this._skipBlank (src);
+
+    if (src.length <= src.index) {
+      break;
+    }
+    var cc = src.charCodeAt (src.index++);
+    if (cc == 0x2c) {
+      // , 次の値が必ずある
+      this._skipBlank (src);
+      continue;
+    }
+    if (cc == 0x7d) {
+      // } 終了
+      return obj;
+    }
+
+    --src.index;
+    this._throw ('オブジェクトの値が連続している', src);
+  }
+
+  this._throw ('オブジェクトが閉じていない', src);  // テキスト末尾に到達
+};
+
+
+// string をパースする
+// 他と違って DOM オブジェクトではなく文字列で返す
+DOMJson.prototype._parseString = function (src) {
+  // 開始の "
+  var startPos = ++src.index;
+
+  while (src.index < src.length) {
+    var quotPos = src.indexOf ('"', src.index);
+    var escPos = src.indexOf ('\', src.index);
+
+    if (quotPos == -1) {
+      // " が無ければ閉じていない
+      break;
+    }
+    // " があっても \" かも知れないので、まだ未確定
+
+    if (escPos == -1 || quotPos < escPos) {
+      // " より手前に \ が無ければ、その " が終端
+      src.index = quotPos + 1;
+
+      var s = src.substring (startPos, quotPos);
+      return (new Utf8 (s)).unescape ().toUTF8 ();
+    }
+
+    // escPos < quotPos
+    // \ の直後の1バイト(u の場合は更に4桁16進数)を飛ばす
+    // 手抜きで直後の文字を検証していない
+    src.index = escPos + 2;
+
+    // ↑
+    // テキスト末尾が \ だった場合に src.length より大きくなるが
+    // すぐにループ脱出して補正されるので構わない
+  }
+
+  src.index = src.length;
+  this._throw ('文字列が閉じていない', src);  // テキスト末尾に到達
+};
+
+
+// number をパースする
+// number = [ minus ] int [ frac ] [ exp ]
+DOMJson.prototype._parseNumber = function (src) {
+
+  function seekToDigitsEnd (errMes) {
+    var len = src.length;
+    for (var i = src.index; i < len; ++i) {
+      cc = src.charCodeAt (i);
+      if (cc < 0x30 || 0x39 < cc) {
+        break;
+      }
+    }
+
+    if (src.index == i) {
+      this._throw (errMes, src);
+    }
+
+    src.index = i;
+  }
+
+  function seekToNumberEnd () {
+    // 符号 - のみ
+    if (src.charCodeAt (src.index) == 0x2d) {
+      ++src.index;
+    }
+
+    // 整数部
+    seekToDigitsEnd ('-の直後に数字がない');
+
+    if (src.length <= src.index) {
+      return;
+    }
+    var cc = src.charCodeAt (src.index);
+
+    if (cc == 0x2e) {
+      // 小数点+小数部
+      ++src.index;
+      seekToDigitsEnd ('小数部の数字がない');
+    }
+
+    if (src.length <= src.index) {
+      return;
+    }
+    cc = src.charCodeAt (src.index);
+
+    if ((cc | 0x20) == 0x65) {
+      // 指数部
+      if (src.index < src.length) {
+        cc = src.charCodeAt (src.index);
+        if (cc == 0x2b || cc == 0x2d) {
+          // 指数部の符号
+          ++src.index;
+        }
+      }
+      seekToDigitsEnd ('指数部の数字がない');
+    }
+  }
+
+  var start = src.index;
+  seekToNumberEnd ();
+  var num = parseFloat (src.substring (start, src.index));
+
+  var e = new Element ('number');
+  e.nodeValue = num;
+  return e;
+};
+
+
+// value をパースする
+// value = false / null / true / object / array / number / string
+DOMJson.prototype._parseValue = function (src) {
+  if (src.length <= src.index) {
+    this._throw ('テキスト末尾に到達', src);
+  }
+
+  var cc = src.charCodeAt (src.index);
+  if (cc == 0x5b) {
+    return this._parseArray (src);
+  }
+  if (cc == 0x7b) {
+    return this._parseObject (src);
+  }
+  if (cc == 0x22) {
+    var e = new Element ('string');
+    e.nodeValue = this._parseString (src);
+    return e;
+  }
+  if (cc == 0x2d || (0x30 <= cc && cc <= 0x39)) {
+    return this._parseNumber (src);
+  }
+
+
+  // 連続する英字の文字数
+  var len = src.length;
+  for (var i = src.index; i < len; ++i) {
+    cc = src.charCodeAt (i);
+    if (cc < 0x61 || 0x7a < cc) {
+      break;
+    }
+  }
+
+  var s = src.substring (src.index, i);
+  var value;
+  if (s == 'null') {
+    value = null;
+  }
+  else if (s == 'true') {
+    value = true;
+  }
+  else if (s == 'false') {
+    value = false;
+  }
+  else {
+    this._throw ('不正なリテラル', src);
+  }
+  src.index = i;
+
+  var e = new Element (s);
+  e.nodeValue = value;
+  return e;
+};
+
+
+// JSON をパースする
+DOMJson.prototype._parse = function (text) {
+  var src = new StringBuffer (text);
+  src.index = 0;
+
+  this._skipBlank (src);
+  var prev = { index: src.index };
+
+  var element = this._parseValue (src);
+  if (!/^(object|array)$/.test (element.nodeName)) {
+    this._throw ('ルート要素が{}/[]ではない', prev);
+  }
+
+  this._skipBlank (src);
+  if (src.index < src.length) {
+    this._throw ('ルート要素が単独の{}/[]ではない', src);
+  }
+
+  this.document.appendChild (element);
+};
+
+
+// DOMParser に登録
+DOMParser.prototype._add (
+   'JSON',
+   /^application\/json$/,
+   function (str) { return new DOMJson (str).document; }
+);
+
+
+}) ()
+
+
+// EOF

@@ -1,0 +1,165 @@
+common\browsercookie.dms
+
+
+Web ブラウザから Cookie を読み込むためのオブジェクトです。
+
+まだ仕様が確定していません。
+バージョンアップに伴い仕様が変更される可能性があります。
+
+動作テストが不十分です。
+
+
+対応ブラウザ
+  IE              Internet Explorer 保護モード自動識別
+  IE_protected    IE 保護モード有効
+  IE_unprotected  IE 保護モード無効
+  Firefox         Mozilla Firefox
+  Chrome          Google Chrome
+  CEF             Chromium Embedded Framework ベースのブラウザ
+
+
+使用方法(一般ユーザ向け)
+========================
+
+Firefox、Chrome、CEF の Cookie を読み込む場合は、下記サイトから
+sqlite3.dll をダウンロードして Dorothy2\bin フォルダに置いて下さい。
+  http://www.sqlite.org/
+
+初回使用時に以下のファイルに共通設定を規定値で保存するので、必要なら
+適宜変更して下さい。
+  Dorothy2\user\browsercookie.ini
+
+個別設定に対応しているスクリプトでは、各スクリプト側の設定でも変更
+出来ます。
+
+Browser=
+  ブラウザの種類、冒頭の対応ブラウザ参照。
+
+FirefoxCookie=
+  Firefox の Cookie ファイルのパス。Auto の場合は自動取得。
+
+ChromeCookie=
+  Google Chrome の Cookie ファイルのパス。Auto の場合は自動取得。
+
+CefCookie=
+  CEF の Cookie ファイルのパス。Browser=CEF の場合は、個別設定か
+  共通設定で必ず指定する必要があります。
+
+
+使用方法(スクリプト作成者向け)
+==============================
+
+  common_load ('browsercookie');
+  var bcookie = new BrowserCookie ();
+  var o = {
+    host: '.example.com',
+    name: 'session_id'
+  };
+  var cookie = bcookie.import (o);
+
+
+BrowserCookie オブジェクトのプロパティ
+======================================
+
+browser ... string
+firefoxcookie ... string
+chromecookie ... string
+cefcookie ... string
+maxSize ... number
+iniTemplate ... object
+
+詳細は省略。
+
+
+BrowserCookie オブジェクトのメソッド
+====================================
+
+コンストラクタ
+new BrowserCookie (opt)
+  opt ... object: プロパティ指定値(省略可)
+  戻り値 ... BrowserCookie インスタンス
+
+  BrowserCookie インスタンスを作成して返す。
+
+import (obj)
+importIE (obj)
+importIEprotected (obj)
+importIEunprotected (obj)
+importFirefox (obj)
+importChrome (obj)
+importCef (obj)
+
+getShellFolder (name)
+
+getFirefoxCookiePath ()
+getChromeCookiePath ()
+
+詳細は省略。
+
+
+仕様・制限事項
+==============
+
+・内部で bcSQLite3 オブジェクトを定義して使用しています。
+
+・Chrome、CEF の Cookie ファイルは version 7 のみ対応しています。
+
+・Chrome と CEF は Cookie ファイルの指定方法が違うだけです。
+
+・Chrome ではブラウザが保持している Cookie がファイルに保存されるまで
+  多少時間がかかることがあるようです。
+
+・セッションオンリー Cookie はファイルに保存されないと思われるので、
+  ブラウザでのログイン時に「次回から自動的にログイン」といったチェック
+  を入れる必要があるかも知れません。
+
+・レジストリ HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\
+  Shell Folders\Cookies の値が正しくないなどの理由で、Firefox と Chrome
+  の自動取得が失敗するかも知れません。その場合は Cookie ファイルのパス
+  を手動で指定して下さい。
+
+
+変更履歴
+========
+
+2014-04-03  version 20140403.0  rentan at rentan.org
+  BrowserCookie._sql(): Cookie ファイルにデータが一つもない時に正しく
+  エラー処理しない不具合を修正。
+  第3引数(カラムのデータ種別の配列)を必須に変更。
+
+  BrowserCookie.import*(): debug 有効時、取得した Cookie を表示する。
+
+  BrowserCookie: エラー処理を整理。
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
+
+2014-02-27  version 4.0
+  Firefox で profiles.ini を読んでプロファイルを調べるようにした。
+
+  Google Chrome 33 で Cookie ファイルの形式が version 7 に変更
+  されたのに対応。
+
+  sqlite3.dll が古い場合は推奨バージョンを表示するようにした。
+  (ただし現時点では必要バージョンと同じ 3.8.0 にしてあるので
+   表示されることはありません。)
+
+2013-12-08  version 3.1
+  共通設定ファイルの雛形にコメントを追加。
+
+2013-09-27  version 3.0
+  Firefox/Chrome の Cookie ファイルをコピーせず直接開くようにした。
+  インデントを2スペースに変更。
+
+2013-03-07  version 2.0
+  BrowserCookie.prototype._sql: エラー表示の関数名を間違えていた
+  不具合を修正。
+
+  デバッグモードでなくても常にブラウザ種別を表示するようにした。
+
+2012-11-19  version 1.0
+  新規作成。
+
+
+[EOF]

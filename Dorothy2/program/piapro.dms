@@ -1,0 +1,676 @@
+//Dorothy2
+//caption=ピアプロ
+//version=20140331.0
+//hint=
+//match=^http://piapro\.jp/(t/|content/|my_page/|collabo/|content_list/|[a-zA-Z][_0-9a-zA-Z]{3,24})
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2011,2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'browsercookie', 'htmlform', 'http', 'namebuilder');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    Cookie: BrowserCookie.prototype.iniTemplate,
+    General: {
+      Zen2Han: false,
+      Rename: true,
+      BookmarkAdd: false,
+      DownloadData: true
+    },
+    Filename: {
+      Audio: 'piapro_%SHORT_ID%_%TITLE%',
+      Illust: 'piapro_%SHORT_ID%_%TITLE%',
+      Text: 'piapro_%SHORT_ID%_%TITLE%',
+      Model3d: 'piapro_%SHORT_ID%_%TITLE%',
+      Sub: 'piapro_%SHORT_ID%_%TITLE%_%SUB_ID%_%SUB_TITLE%',
+      CollaboAudio: 'piapro_%SHORT_ID%_%TITLE%',
+      CollaboIllust: 'piapro_%SHORT_ID%_%TITLE%',
+      CollaboText: 'piapro_%SHORT_ID%_%TITLE%',
+      CollaboModel3d: 'piapro_%SHORT_ID%_%TITLE%',
+      CollaboSub: 'piapro_%SHORT_ID%_%TITLE%_%SUB_ID%_%SUB_TITLE%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+// content_type_id=*** をファイル名形式を取得するためのキー名に変換する
+function get_content_type1 (ctype_id) {
+  var tbl = {
+    '1': 'Text',
+    '2': 'Audio',
+    '4': 'Illust',
+    '5': 'Model3d'
+  };
+
+  if (tbl.hasKey (ctype_id)) {
+    return tbl [ctype_id];
+  }
+
+  println ('未対応の content_type_id です: ' + ctype_id);
+  exit ();
+}
+
+// view=content_*** をファイル名形式を取得するためのキー名に変換する
+function get_content_type2 (view) {
+  var tbl = {
+    'content_text':  'Text',
+    'content_audio': 'Audio',
+    'content_image': 'Illust',
+    'content_3dm':   'Model3d'
+  };
+
+  if (tbl.hasKey (view)) {
+    return tbl [view];
+  }
+
+  println ('未対応の content_type です: ' + view);
+  exit ();
+}
+
+
+// ダウンロード時の年月日時分を返す
+function make_dl_date () {
+  var d = new Date ();
+
+  var year = d.getYear ().toString ();
+  var month = ('0' + (d.getMonth () + 1).toString ()).slice (-2);
+  var date = ('0' + d.getDate ().toString ()).slice (-2);
+
+  var hour = d.getHours ();
+  var minute = d.getMinutes ();
+
+  return year + month + date + hour + minute;
+}
+
+
+// Http オブジェクトを初期化する
+function new_http (url) {
+  var o = {
+    host: (new URL (url)).host,
+    name: 'piapror'
+  };
+  var cookie = bcookie.import (o) || '';
+  print_debug ('Cookie: ' + cookie);
+
+  var http = new Http ();
+  http.setRequestHeader ('Cookie', cookie);
+
+  // メソッド追加: ログインしていなければエラー終了する
+  http.loggedin_or_die = function () {
+    if (!/<a\s+href="http:\/\/piapro\.jp\/logout\//.test (this.data)) {
+      this.die ('ログインが必要です。');
+    }
+  };
+
+  return http;
+}
+
+
+// デバッグ用 取得データを表示
+function dl_content_debug_print (url, ctype) {
+  var my_debug = false;
+
+  if (my_debug || debug) {
+    println ('URL = ' + url);
+    println ('content_type = ' + ctype);
+
+    var fmt = [
+      'collabo_id = %COLLABO_ID%',
+      'collabo_name = %COLLABO_NAME%',
+      'piapro_id = %PIAPRO_ID%',
+      'nickname = %NICKNAME%',
+      'id = %ID%',
+      'short_id = %SHORT_ID%',
+      'title = %TITLE%',
+      'y-m-d h:m:s = %YYYY%-%MM%-%DD% %HH%:%MI%:%SS%'
+    ];
+    for (var i = 0; i < fmt.length; ++i) {
+      println (nb.assemble (fmt [i]));
+    }
+  }
+}
+
+// データフォルダのサンプル
+// http://piapro.jp/t/9RTO
+// http://piapro.jp/t/1KBa
+
+// データフォルダの関連ファイルをダウンロードする
+function download_data (cookie, url, http) {
+  var content_type = (nb.collabo_id ? 'Collabo' : '') + 'Sub';
+
+  var list = [ ];
+  var err = false;
+
+  function add (s, sub_ttl, sub_url, sub_id) {
+    if (err) {
+      return '';
+    }
+
+    nb.sub_title = (new Utf8 (sub_ttl)).decodeCharRef ();
+    nb.sub_id = sub_id;
+
+    sub_url = http.expandUrl (sub_url.replace (/&amp;/g, '&'));
+
+    var item = {
+      Url: sub_url,
+      Referer: url,
+      Cookie: cookie
+    };
+
+    if (ini.General.Rename == true) {
+      // 拡張子を調べてファイル名を生成
+      var h = new Http ();
+      h.setRequestHeader ('Cookie', cookie);
+      h.setRequestHeader ('Referer', http.baseUrl);
+
+      var ext = h.head (sub_url) ? nb.contentTypeToExt (h) : null;
+      if (ext == null) {
+        h.retry_or_die ();
+        err = true;
+        return '';
+      }
+
+      item.Filename = nb.assemble (ini.Filename [content_type], ext);
+    }
+
+    list.push (item);
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  var re = />([^<]+)<\/p>\s*<a\s+href="(\/download\/\?id=[^&"]+&amp;view=content_file&amp;sub_id=(\d+))"/g;
+  http.data.replace (re, add);
+
+  if (err) {
+    return false;
+  }
+
+  additem.send (list) || exit ();
+  return true;
+}
+
+
+// 「前のバージョン」があるサンプル
+// http://piapro.jp/t/UOHG
+
+// コラボメンバーのみダウンロード可能
+// http://piapro.jp/t/ERWB
+
+// 作品の HTML ページ
+function dl_content (url) {
+  var http = new_http (url);
+  var cookie = http.getRequestHeader ('Cookie');
+
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+  http.loggedin_or_die ();
+
+
+  // コラボID、コラボ名
+  if (/<h2>\s*<a\s+href="\/collabo\/\?view=collabo&amp;id=(\d+)">([^<]+)<\/a>\s*<\/h2>/.test (http.data)) {
+    nb.collabo_id = RegExp.$1;
+    nb.collabo_name = (new Utf8 (RegExp.$2)).decodeCharRef ();
+  }
+
+  // ピアプロID、ニックネーム
+  if (!/<div\s+class="dtl_by_name"[^>]*>\s*<a\s+href="\/([^"]+)">([^<]+)<\/a>/.test (http.data)) {
+    http.die ('ピアプロIDが見つかりません。');
+  }
+  nb.piapro_id = RegExp.$1;
+  nb.nickname = (new Utf8 (RegExp.$2)).decodeCharRef ();
+
+  // 作品ID
+  if (!/<input\s+type="hidden"\s+name="id"\s+value="([^"]+)">/.test (http.data)) {
+    http.die ('作品IDが見つかりません。');
+  }
+  nb.id = RegExp.$1;
+
+  // 短縮ID
+  if (!/<a\s+id="_link_download_bookmark"\s+href="\/t\/([^"]+)"/.test (http.data)) {
+    http.die ('短縮IDが見つかりません。');
+  }
+  nb.short_id = RegExp.$1;
+
+  // タイトル
+  if (!/<h1\s+class="dtl_title"[^>]*>&nbsp;([^<]+)<\/h1>/.test (http.data)) {
+    http.die ('タイトルが見つかりません。');
+  }
+  nb.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
+
+  // 投稿日時
+  var re = new RegExp ('<p>投稿日時：<span>\s*([^<]+)'.toUTF8 ());
+  if (!re.test (http.data) || !nb.setYmdhms (RegExp.$1 + ':00')) {
+    http.die ('投稿日時が見つかりません。');
+  }
+  nb.ss = 'XX';
+
+
+  // ダウンロード URL
+  var form = (new HtmlForms (http)).getFormById ('_form_download_bookmark');
+  if (!form) {
+    // ダウンロードフォームが見つからない(HTML が変更された可能性もある)
+    // 例: http://piapro.jp/content/4sst5ppjssl5z75a
+
+    println ('<form id="_form_download_bookmark"> が見つかりません。');
+    println ('ダウンロードが許可されていない可能性があります。');
+    exit ();
+  }
+
+  // ブックマークせずにダウンロードする細工
+  if (ini.General.BookmarkAdd != true) {
+    // <input type="hidden" name="mode" value="bookmarkadd"> を送信しない
+    if (form.removeElementsByName ('mode') == null) {
+      http.die ('<input name="mode"> が見つかりません。');
+    }
+  }
+
+  // Irvine の仕様上、アイテムの HTTP メソッドを POST に変更することは
+  // 出来ないので、GET でダウンロードする。
+  form.method = 'GET';
+  var dl_url = http.expandUrl (form.submit ().url);
+
+  if (!/^http:\/\/piapro\.jp\//.test (dl_url)) {
+    http.die ('未対応のダウンロード URL です: ' + dl_url);
+  }
+
+
+  // データ形式(ファイル名生成用)
+  if (!/content_type_id:\s*'(\d+)'/.test (http.data)) {
+    http.die ('content_type_id が見つかりません。');
+  }
+  var content_type = get_content_type1 (RegExp.$1);
+
+  if (nb.collabo_id) {
+    content_type = 'Collabo' + content_type;
+  }
+
+  // ブラウザでダウンロードした際にファイル名に付けられるタイムスタンプは
+  // レスポンスヘッダの Content-Disposition と Content-Type に含まれており
+  // OnHttpRequest() では取得できないので、自前で生成する。
+  // 2012-03-26 拡張子を調べる際にヘッダを取得するようにしたので
+  // そちらから読み取ることが出来るようになったが、面倒なのでそのまま。
+  nb.dl_date = make_dl_date ();
+
+  dl_content_debug_print (dl_url, content_type);
+
+
+  if (ini.General.DownloadData == true) {
+    // データフォルダの関連ファイルをダウンロード
+    if (!download_data (cookie, url, http)) {
+      return retry ();
+    }
+
+    // もし「前のバージョンも全てダウンロードする」機能を付けるなら
+    // 前のバージョンのページでは関連ファイルをダウンロードしないようにすること。
+  }
+
+
+  // 拡張子を調べてファイル名を生成
+  if (ini.General.Rename == true) {
+    if (!http.head (dl_url)) {
+      return http.retry_or_die ();
+    }
+
+    var ctype = http.getResponseHeader ('content-type');
+    if (/^text\/html/.test (ctype)) {
+      // このコンテンツはコラボのメンバーにのみダウンロードが許可されています
+      http.die ('ダウンロードできないコンテンツです: Content-Type: ' + ctype.slice (0, 200));
+    }
+
+    var ext = nb.contentTypeToExt (http);
+    if (!ext) {
+      exit ();
+    }
+
+    Dorothy.fileName = nb.assemble (ini.Filename [content_type], ext);
+  }
+
+
+  urlinfo.url = dl_url;
+  headers.Host = (new URL (dl_url)).host;
+  headers.Cookie = cookie;
+  headers.Referer = url;
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// 投稿作品の検索結果を解析してリストに追加
+//  true: 次のページあり  false: 次のページなし
+function OLD_dl_content_list_p (list, http) {
+  var start_len = list.length;
+
+  function add_list (s, p1) {
+    list.push ({ Url: 'http://piapro.jp/' + p1 });
+    return '';
+  }
+
+  // &view=(image|3dm)
+  var re = /<a\s+class="thum_btn"\s+href="\/(t\/[-_0-9a-zA-Z]+)"/g;
+  if (/[?&]view=(audio|text)/.test (http.previousUrl)) {
+    re = /<td\s+class="title\s+wordbreak">\s*<span\s[^>]*>\s*&nbsp;\s*<\/span>\s*<a\s+href="\/(t\/[-_0-9a-zA-Z]+)"/g;
+  }
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (re, add_list);
+
+  if (start_len == list.length) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+
+  // 次のページへのリンクを探す
+  if (/<li\s+class="jmp\s+page_navi_sp"><a\s+href=[^>]+>NEXT&nbsp;&gt;&gt;\s*<\/a>/.test (http.data)) {
+    return true;
+  }
+  if (/<span\s+class="dum\s+page_navi_sp">NEXT&nbsp;&gt;&gt;\s*<\/span>/.test (http.data)) {
+    return false;
+  }
+  if (/<\/script>\s*<\/div>\s*<div\s+class="mt20\s+txt_r">/.test (http.data)) {
+    // 作品数が35以下で1ページだけの場合
+    // </script> は広告の末尾なので広告配信システムの変更でマッチしなくなる
+    // 可能性が高いが、他にやりようがないので。
+    return false;
+  }
+  http.die ('次のページへのリンクが見つかりません。');
+}
+
+
+// ユーザーページまたはコラボページ 投稿作品 → オンガクorイラストorテキストor3Dモデル
+function OLD_dl_content_list (url) {
+  var list = [ ];
+
+  // 1ページ目を処理
+  var http = new_http (url);
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  // ログインしていなくてもリンクの取得までは出来るが、どうせダウンロードに
+  // 失敗するのでここでエラーにしておく
+  http.loggedin_or_die ();
+
+  var next = dl_content_list_p (list, http);
+
+  var p = /[?&]start_rec=\d+/.test (url);  // 開始位置の指定はあるか？
+
+  // 開始位置の指定がなければ2ページ目以降を処理
+  if (!p) {
+    url += /\?/.test (url) ? '&start_rec=' : '?start_rec=';
+
+    while (next) {
+      if (!http.get (url + list.length)) {
+        return http.retry_or_die ();
+      }
+      next = dl_content_list_p (list, http);
+    }
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// ユーザーページまたはコラボページ 投稿作品
+function OLD_dl_userpage (url) {
+  var http = new_http (url);
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  // ログインしていなくてもリンクの取得までは出来るが、どうせダウンロードに
+  // 失敗するのでここでエラーにしておく
+  http.loggedin_or_die ();
+
+
+  // 「...」をもっと見る のリンクを抽出する
+  var view_list = [];
+
+  function add (s, p1, p2) {
+    view_list.push (p1);
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  var re = /<div\s+class="name"[^>]*>\s*<span\s+class="[^"]*">\s*<a\s+href="(http:\/\/piapro\.jp\/content_list\/\?pid=[a-zA-Z][_0-9a-zA-Z]{3,24}&view=[^"]+)">/g;
+  if (/^http:\/\/piapro\.jp\/collabo\//.test (url)) {
+    re = /<div\s+class="name"[^>]*>\s*<span\s+class="[^"]*">\s*<a\s+href="(http:\/\/piapro\.jp\/content_list\/\?view=[^&"]+&collabo_id=\d+)">/g;
+  }
+  else if (/^http:\/\/piapro\.jp\/collabo_list\//.test (url)) {
+    re = /<div\s+class="name"[^>]*>\s*<span\s+class="[^"]*">\s*<a\s+href="(http:\/\/piapro\.jp\/collabo_list\/\?pid=[a-zA-Z][_0-9a-zA-Z]{3,24}&view=[^"]+)">/g;
+  }
+  http.data.replace (re, add);
+
+  if (view_list.length == 0) {
+    // HTML 構造が変更された可能性があるのでエラーで残す
+    http.die ('「...」をもっと見る のリンクが見つかりません。');
+  }
+
+
+  // 抽出したリンクそれぞれを解析
+  var list = [ ];
+
+  for (var i = 0; i < view_list.length; ++i) {
+    url = view_list [i];
+    print_debug ('「～～」をもっと見る をダウンロード: ' + url);
+
+    var cate_list = [ ];
+
+    // 1ページ目を処理
+    http.removeRequestHeader ('Referer');
+    if (!http.get (url)) {
+      return http.retry_or_die ();
+    }
+    var next = dl_content_list_p (cate_list, http);
+
+    // 2ページ目以降を処理
+    url += /\?/.test (url) ? '&start_rec=' : '?start_rec=';
+
+    while (next) {
+      if (!http.get (url + cate_list.length)) {
+        return http.retry_or_die ();
+      }
+      next = dl_content_list_p (cate_list, http);
+    }
+
+    list = list.concat (cate_list);
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// 投稿作品の検索結果を解析してリストに追加
+//  true: 次のページあり  false: 次のページなし
+function dl_list_p (list, http) {
+  var start_len = list.length;
+
+  function add_list (s, p1, p2, p3, url) {
+    list.push ({ Url: http.expandUrl (url) });
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  var re = /<((td|div)\s+class="title">\s*<a|a\s+class="i_(image|text)")\s+href="(\/t\/[^"]+)"/g;
+  http.data.replace (re, add_list);
+
+  if (start_len == list.length) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+
+  // 次のページへのリンクを探す
+  if (/<li><a\s+href=[^>]+>NEXT&nbsp;&gt;&gt;<\/a>/.test (http.data)) {
+    return true;
+  }
+  if (/<li><span\s+class="invalid">NEXT&nbsp;&gt;&gt;<\/span>/.test (http.data)) {
+    return false;
+  }
+  if (!/<div\s+class="[^"]*paging/.test (http.data)) {
+    // 作品数が35以下で1ページだけの場合
+    // 厳密な判定が難しいので簡易検査、HTML の変更には弱い
+    return false;
+  }
+  http.die ('次のページへのリンクが見つかりません。');
+}
+
+
+// 投稿作品をリストに追加
+function dl_list (url) {
+  // ページ番号が &start_rec= と &page= のどちらかの形式か
+  var path = (new URL (url)).path.slice (1);
+  var start_rec = /^(my_page\/|content_list\/[^#]*[?&]pid=)/.test (path);
+
+  var list = [ ];
+
+  // 1ページ目を処理
+  var http = new_http (url);
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  // ログインしていなくてもリンクの取得までは出来るが、どうせダウンロードに
+  // 失敗するのでここでエラーにしておく
+  http.loggedin_or_die ();
+
+  var next = dl_list_p (list, http);
+
+
+  // ページ指定はあるか？
+  var p = (start_rec ? /[?&]start_rec=\d+/ : /[?&]page=\d+/).test (url);
+
+  // ページ指定がなければ2ページ目以降を処理
+  if (!p) {
+    url += /\?/.test (url) ? '&' : '?';
+    url += start_rec ? 'start_rec=' : 'page=';
+
+    for (var page = 2; next; ++page) {
+      if (!http.get (url + (start_rec ? list.length : page))) {
+        return http.retry_or_die ();
+      }
+      next = dl_list_p (list, http);
+    }
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// ユーザーページ コラボ活動
+function dl_collabo_list (url) {
+  if (/^[^#]*[?&]view=[^&#]/.test (url)) {
+    // コラボあて投稿
+    return dl_list (url);
+  }
+
+  println ('コラボ活動トップページは処理できません。');
+  exit ();
+}
+
+
+// ファイルまたは関連データ
+//  Cookie の設定のみ行う。
+//  id から掲載ページに遡ればファイル名の生成も可能だが、そこまでする必要は
+//  ないと思うので実装せず。
+function dl_download (url, id, sub_id) {
+  if (!headers.Cookie) {
+    // Cookie がなければ設定
+    var http = new_http (url);
+    headers.Cookie = http.getRequestHeader ('Cookie');
+  }
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+  var bcookie = new BrowserCookie (ini.Cookie);
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han, ymdhms: true });
+
+  // ファイル名の生成に使える情報
+  nb.collabo_id = null;    // コラボ ID
+  nb.collabo_name = null;  // コラボ名
+  nb.piapro_id = null;     // ピアプロ ID
+  nb.nickname = null;      // ニックネーム
+
+  nb.id = null;        // 作品 ID
+  nb.short_id = null;  // 作品短縮 ID
+  nb.title = null;     // 作品タイトル
+
+  nb.sub_id = null;     // 関連ファイルの番号
+  nb.sub_title = null;  // 関連ファイルのタイトル
+
+  nb.dl_date = null;  // ダウンロード日時
+
+
+  var url = urlinfo.url;
+  var path = (new URL (url)).path.slice (1);
+
+  if (/^([a-zA-Z][_0-9a-zA-Z]{3,24})([?#].*)?$/.test (path)) {
+    // ユーザーページ トップ
+    return dl_list ('http://piapro.jp/my_page/?view=content&pid=' + RegExp.$1);
+  }
+  if (/^my_page\/[^#]*[?&]view=content([&#]|$)/.test (path)) {
+    // ユーザーページ 投稿作品をもっと見る
+    return dl_list (url);
+  }
+  if (/^content_list\//.test (path)) {
+    // ユーザーページまたはコラボページ オンガクorイラストorテキストor3Dモデル
+    return dl_list (url);
+  }
+  if (/^collabo_list\//.test (path)) {
+    // ユーザーページ コラボ活動
+    return dl_collabo_list (url);
+  }
+  if (/^collabo\/[^#]*[?&]view=content([&#]|$)/.test (path)) {
+    // コラボページ 投稿作品をもっと見る
+    return dl_list (url);
+  }
+  if (/^collabo\/[^#]*[?&]id=([^&#]+)([&#]|$)/.test (path)) {
+    // コラボページ トップ
+    return dl_list ('http://piapro.jp/collabo/?view=content&id=' + RegExp.$1);
+  }
+  if (/^content\/[0-9a-zA-Z]{16}([?#].*)?$/.test (path)
+   || /^t\/[-_0-9a-zA-Z]+(\/\d{14})?([?#].*)?$/.test (path)) {
+    // 作品の HTML ページ
+    return dl_content (url);
+  }
+  if (/^download\//.test (path)) {
+    // ファイルまたは関連データ
+    var id = /[?&]id=([^&#]+)/.test (path) ? RegExp.$1 : '';
+    var sub_id = /[?&]id=([^&#]+)/.test (path) ? RegExp.$1 : '';
+    return dl_download (url, id, sub_id);
+  }
+
+  println ('未対応の URL です。');
+  return;
+}
+
+
+// EOF

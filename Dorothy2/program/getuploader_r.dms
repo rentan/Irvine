@@ -1,0 +1,410 @@
+//Dorothy2
+//caption=getuploader_r
+//version=20140331.0
+//hint=getuploader.com 別バージョン
+//match=^http://u[^/.]+\.getuploader\.com/[^/]+/download/\d+
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'http', 'htmlform', 'namebuilder');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: false,
+      Timestamp: true,
+      Touch: 'C:\gnupack\app\cygwin\cygwin\bin\touch.exe'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+// 閲覧パスワード自動指定
+function autoSecAuthPassword (url) {
+
+  // サンプル
+  // if (/^http:\/\/u*\.getuploader\.com\/***\//.test (url)) {
+  //   return '***';
+  // }
+
+  if (/^http:\/\/ux\.getuploader\.com\/SJ33h6BaDwVLqm5S1FgaHk3pYxDBWHVbkaBG2MKv5hMkDwi8ro1wXEADGjYKXuIoyUxhMAq0K2cVmQ0bj0i9USlcLsd16xxR6NVL1CAHW1Is1XEkmIYlGt9q45RrgWXx\//.test (url)) {
+    return 'lUrPvXBI756jTWvJj3FT6jYo';
+  }
+
+  return '';
+}
+
+
+// ダウンロードパスワード自動指定
+function autoPassword (url) {
+
+  // Irvine Uploader
+  if (/^http:\/\/u1\.getuploader\.com\/irvn\/download\/(\d+)/.test (url)) {
+    var n = RegExp.$1;
+
+    if (/^(222|302|340|359|500)$/.test (n)) {
+      return 'Irvine';
+    }
+    if (/^(11|35)$/.test (n)) {
+      return 'irvine';
+    }
+  }
+
+  if (/^http:\/\/ux\.getuploader\.com\/SJ33h6BaDwVLqm5S1FgaHk3pYxDBWHVbkaBG2MKv5hMkDwi8ro1wXEADGjYKXuIoyUxhMAq0K2cVmQ0bj0i9USlcLsd16xxR6NVL1CAHW1Is1XEkmIYlGt9q45RrgWXx\//.test (url)) {
+    return 'kyoqiiCgeMMb79skvUpRmFO1';
+  }
+
+  return '';
+}
+
+
+// JInput用パラメータを生成する
+function makeHtaOpt (url, extra) {
+  var o = {
+    title: Dorothy.matchFile,
+    width: 500,
+    height: 190,
+    p: [ url.replace (/^https?:\/\//, '') ]
+  };
+
+  if (extra) {
+    o.p.push (extra);
+  }
+
+  return o;
+};
+
+
+// パスワードを入力する
+function inputPassword (hta_opt, mode) {
+  common_load ('jinput');
+
+  hta_opt.p.push (mode);
+
+  var t = (new JInput ()).inputText (hta_opt);
+  if (t == null) {
+    exit ();
+  }
+
+  return t;
+}
+
+
+// 確認フォームがあれば入力して返す
+function inputLoginForm (http, o) {
+  var form = (new HtmlForms (http)).getFormById ('loginform');
+  if (!form) {
+    return null;
+  }
+
+  var q = form.getElementByName ('q');
+  if (!q) {
+    http.capture ();
+    http.die ('<input name="q"> が見つかりません。');
+  }
+
+  // 年齢確認
+  if (q.value == 'age_confirmation') {
+    if (++o.age > 1) {
+      http.die ('年齢確認フォームが' + o.age + '回繰り返されました。');
+    }
+
+    return form;
+  }
+
+  // 閲覧パスワード
+  if (q.value == 'security_auth') {
+    var pw = form.getElementById ('password');
+    if (!pw) {
+      http.capture ();
+      http.die ('<input id="password"> が見つかりません。');
+    }
+
+    if (o.sec_password) {
+      pw.value = o.sec_password;
+      o.sec_password = '';
+    }
+    else {
+      var hta_opt = makeHtaOpt (http.baseUrl);
+      pw.value = inputPassword (hta_opt, '閲覧パスワード');
+    }
+    println ('閲覧パスワード--->' + pw.value);
+
+    ++o.sec;
+    return form;
+  }
+
+  http.capture ();
+  http.die ('未対応の確認フォームです。');
+}
+
+
+// ダウンロードページを取得する(閲覧パスワード入力、年齢確認処理)
+//  成功なら Http オブジェクト、リトライ可能な失敗なら false を返す。
+//  リトライで改善しないエラーの場合は終了する。
+function getDownloadPage (url) {
+  var http = new Http ();
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  var o = { age: 0, sec: 0, sec_password: autoSecAuthPassword (url) };
+
+  for (;;) {
+    var form = inputLoginForm (http, o);
+    if (!form) {
+      // 認証なし
+      break;
+    }
+
+    if (!http.exec (form.submit ())) {
+      return http.retry_or_die ();
+    }
+  }
+
+  return http;
+}
+
+
+// ダウンロードフォームを取得する
+//  ダウンロードパスワードが必要なら入力してページを再取得する。
+//  成功なら HtmlForm オブジェクト、リトライ可能な失敗なら false を返す。
+//  リトライで改善しないエラーの場合は終了する。
+function getDownloadForm (http, filename, password) {
+  var form;
+
+  for (;;) {
+    var form = (new HtmlForms (http)).getFormByName ('agree');
+    if (!form) {
+      http.capture ();
+      http.die ('<form name="agree"> が見つかりません。');
+    }
+
+    // <input type="password" name="password" />
+    // <input type="submit" value="認証" name="yes" />
+    var pw = form.getElementByName ('password');
+    if (!pw) {
+      // パスワード不要(または入力したパスワードが正解した)
+      break;
+    }
+
+    if (password) {
+      pw.value = password;
+      password = '';
+    }
+    else {
+      var hta_opt = makeHtaOpt (http.baseUrl, 'ファイル名: ' + filename);
+      pw.value = inputPassword (hta_opt, 'ダウンロードパスワード');
+    }
+    println ('DLパスワード--->' + pw.value);
+
+    if (!http.exec (form.submit ())) {
+      return http.retry_or_die ();
+    }
+  }
+
+
+  // 念のためダウンロード可能な状態になったか確認
+  // <input type="hidden" name="token" value="***" />
+  // <input type="submit" value="ダウンロード" name="yes" />
+  var token = form.getElementByName ('token');
+  if (!token) {
+    http.capture ();
+    http.die ('<input name="token"> が見つかりません。');
+  }
+
+  return form;
+}
+
+
+// 指定した文字列より後方を返す
+function getRightContext (http, text) {
+  text = text.toUTF8 ();
+
+  var sb = new StringBuffer (http.data);
+
+  var n = sb.indexOf (text);
+  if (n < 0) {
+    return '';
+  }
+
+  return sb.slice (n + text.sizeOf ()).toString ();
+}
+
+
+// ファイル名を抽出する
+function getFilename (http) {
+  var s = getRightContext (http, '>オリジナル</span>');
+  if (!/^\s*<span\s+class="right">([^<]+)</.test (s)) {
+    http.capture ();
+    http.die ('ファイル名が見つかりません。');
+  }
+
+  return (new Utf8 (RegExp.$1.trim ())).decodeCharRef ();
+}
+
+
+
+// 投稿日時を抽出する
+function getTimestamp (http) {
+  var s = getRightContext (http, '>日時</span>');
+  if (!/^\s*<span\s+class="right">([^<]+)</.test (s)) {
+    http.capture ();
+    http.die ('アップロード日時が見つかりません。');
+  }
+
+  s = RegExp.$1.trim ();
+  if (!/^(\d{4})\/(\d\d)\/(\d\d)\s+(\d\d):(\d\d):(\d\d)$/.test (s)) {
+    http.capture ();
+    http.die ('対応していないアップロード日時の形式です。');
+  }
+
+  return [ RegExp.$1, RegExp.$2, RegExp.$3, RegExp.$4, RegExp.$5, '.', RegExp.$6 ].join ('');
+}
+
+
+// ファイルをダウンロードして保存してタイムスタンプを設定する
+function saveAndTouch (http, dl_file, filename, timestamp) {
+  if (!http.get (dl_file)) {
+    return false;
+  }
+
+  var result = http.capture (filename);
+  if (!result.success) {
+    exit ();
+  }
+  filename = result.filename;
+  var dir = (new File (filename)).extractPath ();
+
+  var q = (filename.indexOf ('"') == -1) ? '"' : "'";
+  var touch = ini.General.Touch;
+  var opt = '-c -t ' + timestamp;
+
+  common_load ('exec');
+  result = Exec (touch, opt, q + filename + q);
+
+  if (result != 0) {
+    println ('コマンド実行失敗。');
+    exit ();
+  }
+
+  return true;
+}
+
+
+// アイテムをキューに追加して自分は削除する
+function requeue (url) {
+  var list = [{ Url: url }];
+  var additem = new AddItem ();
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+  nb.filename = null;
+
+  var url = urlinfo.url;
+
+  if (ini.General.Timestamp) {
+    // ファイル名が指定されていたら取り除いてダウンロード登録し直す
+    if (/^(http:\/\/[^\/]+\/[^\/]+\/download\/\d+)\/[^?#]+(.*)$/.test (url)) {
+      requeue (RegExp.$1 + RegExp.$2);
+      return;
+    }
+  }
+
+  // URL の末尾に ?password=abc 形式でパスワードが指定されていれば抽出する
+  var password = autoPassword (url);
+  if (/^(.*)\?password=(.*)$/.test (url)) {
+    url = RegExp.$1;
+    password = decodeURIComponent (RegExp.$2);
+  }
+
+
+  // ダウンロードページを取得する(閲覧パスワード入力、年齢確認処理)
+  var http = getDownloadPage (url);
+  if (!http) {
+    return retry ();
+  }
+
+  // ファイル名を抽出する
+  nb.filename = getFilename (http);
+  var filename = nb.assemble ('%FILENAME%');
+
+  // 投稿日時を抽出する
+  var timestamp = getTimestamp (http);
+
+  // ダウンロードフォームを取得する
+  var form = getDownloadForm (http, filename, password);
+  if (!form) {
+    return retry ();
+  }
+
+
+  // ダウンロードボタンをクリック
+  if (!http.exec (form.submit ())) {
+    return http.retry_or_die ();
+  }
+
+  if (!/<a\s+href="(http:\/\/[^"]+)"[^>]*>\s*Download\s*Now\s*<\/a>/i.test (http.data)) {
+    http.capture ();
+    http.die ('ダウンロードリンクが見つかりません。');
+  }
+  var dl_file = RegExp.$1;
+
+
+  if (ini.General.Timestamp) {
+    var f = new File (ini.General.Touch);
+    if (!f.exists ()) {
+      println ('touch コマンドが見つかりません: ' + f.path);
+      exit ();
+    }
+
+    if (!saveAndTouch (http, dl_file, filename, timestamp)) {
+      return http.retry_or_die ();
+    }
+    Util.remove_this ();
+    return;
+  }
+
+
+  // タイムスタンプを設定しない場合
+  Dorothy.fileName = filename;
+
+  urlinfo.url = dl_file;
+  headers.Host = (new URL (dl_file)).host;
+  headers.Referer = http.baseUrl;
+  headers.Cookie = '';
+}
+
+
+// EOF

@@ -1,0 +1,513 @@
+//Dorothy2
+//caption=TINAMI
+//version=20140331.0
+//hint=
+//match=^http://www\.tinami\.com/(view/\d+|creator/profile/\d+|search/list\?prof_id=)
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2011,2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'browsercookie', 'htmlform', 'http', 'namebuilder', 'utf8');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    Cookie: BrowserCookie.prototype.iniTemplate,
+    General: {
+      Zen2Han: false,
+      PageOrigin: 0,
+      NovelExt: '.html'
+    },
+    Filename: {
+      Illust: 'tinami_%ID%',
+      Cosplay: 'tinami_%ID%',
+      Model: 'tinami_%ID%_p%P%',
+      Manga: 'tinami_%ID%_p%P%',
+      Novel: 'tinami_%ID%',
+      NovelIllust: 'tinami_%ID%_p%P%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+// ブラウザから Cookie を読み込んでヘッダに設定する
+function import_cookie (http, url) {
+  var o = {
+    host: (new URL (url)).host,
+    name: 'rem2'
+  };
+  var rem2 = bcookie.import (o) || '';
+
+  var cookie = new Cookie ();
+  cookie.parse ('', rem2);
+  cookie.parse ('', 'PermitAgeLevel=5');
+  cookie = cookie.data;
+
+  print_debug ('Cookie: ' + cookie);
+  http.setRequestHeader ('Cookie', cookie);
+}
+
+
+// Http オブジェクトを初期化する
+function new_http (url) {
+  var http = new Http ();
+
+  import_cookie (http, url);
+
+  // メソッド追加: ログインしているか調べる
+  http.is_login = function () {
+    return /<a\s+href="\/logout"/.test (this.data);
+  };
+
+  // メソッド追加: ログインしていなければエラー終了する
+  http.loggedin_or_die = function () {
+    if (!this.is_login ()) {
+      this.die ('ログインが必要です。');
+    }
+  };
+
+  return http;
+}
+
+
+// 漫画の画像 URL と保存ファイル名の一覧を作る
+//  in:  [ 画像URL, ... ]
+//  out: [ { Url: 画像URL, Filename: 保存ファイル名 }, { ... }, ... ]
+function make_manga_list (url_list, content_type, page_url) {
+  nb.pages = url_list.length;
+
+  if (!page_url) {
+    page_url = 'http://www.tinami.com/';
+  }
+
+  var list = [ ];
+  var fmt = ini.Filename [content_type];
+
+  for (var i = 0; i < nb.pages; ++i) {
+    nb.p = i;
+    var u = url_list [i];
+    var f = nb.assemble (fmt, u);
+    list.push ({ Url: u, Filename: f, Referer: page_url });
+  }
+
+  return list;
+}
+
+
+// 漫画をダウンロード
+function dl_content_manga (url, http, content_type) {
+
+  // 画像 URL を取得する
+  var list = [ ];
+
+  function add_list (s, p) {
+    list.push (p);
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/class="nv_body"><img\ssrc="(http:\/\/img\.tinami\.com\/[^"]*)"/g, add_list);
+
+  if (list.length == 0) {
+    http.die ('漫画の画像 URL が見つかりません。');
+  }
+  list = make_manga_list (list, content_type, url);
+
+  if (list.length == 1) {
+    // 1個だけなら自分を書き換えてダウンロード
+    urlinfo.url = list [0].Url;
+    headers.Host = (new URL (urlinfo.url)).host;
+    headers.Referer = list [0].Referer;
+    Dorothy.fileName = list [0].Filename;
+    return;
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// 小説をダウンロード
+function dl_content_novel (url, http, content_type) {
+
+  // 挿絵の画像 URL を取得する
+  var list = [ ];
+
+  function add_list (s, p) {
+    list.push (p);
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/class="nv_image"><img\ssrc="(http:\/\/img\.tinami\.com\/[^"]*)"/g, add_list);
+
+  if (list.length) {
+    // 挿絵があればダウンロード登録
+    list = make_manga_list (list, content_type + 'Illust', url);
+    additem.send (list) || exit ();
+  }
+
+  // 小説本文（現在の HTML ページ）をダウンロードする
+
+  // http://www.tinami.com/view/1234 のように拡張子がない URL なので設定値で補う
+  Dorothy.fileName = nb.assemble (ini.Filename [content_type], ini.General.NovelExt);
+
+  headers.Cookie = '';
+  headers.Referer = '';
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// 原寸画像の表示ページを開くフォームを探す
+function get_ooc_form (http) {
+  var form = (new HtmlForms (http)).getFormById ('open_original_content');
+  if (form == null) {
+    http.die ('<form id="open_original_content"> が見つかりません。');
+  }
+
+  return form;
+}
+
+
+// 原寸画像の URL を取得する
+//  引数で渡した http オブジェクトは破壊される
+function get_full_image (http, form) {
+  if (!form) {
+    form = get_ooc_form (http);
+  }
+
+  // 原寸画像の表示ページを取得する
+  if (!http.exec (form.submit ())) {
+    http.retry_or_die ();
+    return null;
+  }
+
+  if (!/<img\s+src="(http:\/\/img\.tinami\.com\/illust\d*\/[^"]*)"/.test (http.data)) {
+    http.die ('原寸画像の URL が見つかりません。');
+  }
+
+  return RegExp.$1;
+}
+
+
+// イラスト・コスプレをダウンロード
+function dl_content_illust (url, http, content_type) {
+
+  // 原寸画像の閲覧にはログインが必要
+  http.loggedin_or_die ();
+
+  // 画像 URL を取得する
+  var img_url = get_full_image (http);
+  if (img_url == null) {
+    return retry ();
+  }
+
+  Dorothy.fileName = nb.assemble (ini.Filename [content_type], img_url);
+
+  urlinfo.url = img_url;
+  headers.Host = (new URL (img_url)).host;
+  headers.Cookie = '';
+  headers.Referer = url;
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// モデルの画像の sub_id を配列で返す
+function get_model_subid (html) {
+  var list = [ ];
+
+  function add (s, sub_id) {
+    list.push (sub_id);
+  }
+
+  html.replace (/<td\s+[^>]*\ssub_id="([^"]*)"/g, add);
+
+  if (!list.length) {
+    http.die ('<td sub_id="..."> が見つかりません。');
+  }
+
+  return list;
+}
+
+
+// モデルの画像 URL と保存ファイル名の一覧を作る
+//  out: [ { Url: 画像URL, Filename: 保存ファイル名 }, { ... }, ... ]
+function make_model_list (http, content_type) {
+  var sub_id;
+
+  var multi = /<table\s+id="controller_model"[^>]*>(.*)<\/table>/.test (http.data);
+  var html = RegExp.$1;
+
+  if (multi) {
+    sub_id = get_model_subid (html);
+
+    if (sub_id.length == 1) {
+      http.die ('モデルの画像数が判定できませんでした(multi)。');
+    }
+
+    nb.pages = sub_id.length;
+  }
+  else {
+    // sub_id は存在しない(フォームの値そのままで POST する)
+
+    // <div class="image_list"> が1個だけあるはず
+    var m = http.data.match (/class="image_list"/g);
+    if (!m || m.length != 1) {
+      http.die ('モデルの画像数が判定できませんでした(!multi)。');
+    }
+
+    nb.pages = 1;
+  }
+
+  var list = [ ];
+
+  var form = get_ooc_form (http);
+  var fmt = ini.Filename [content_type];
+
+  for (var i = 0; i < nb.pages; ++i) {
+    nb.p = i;
+
+    if (multi && !form.change ('sub_id', sub_id [i])) {
+      http.die ('<input name="sub_id"> が見つかりません。');
+    }
+
+    var u = get_full_image (http.clone (), form);
+    if (u == null) {
+      return null;
+    }
+
+    var f = nb.assemble (fmt, u);
+    list.push ({ Url: u, Filename: f, Referer: http.baseUrl });
+  }
+
+  return list;
+}
+
+
+// モデルをダウンロード
+function dl_content_model (url, http, content_type) {
+
+  // 原寸画像の閲覧にはログインが必要
+  http.loggedin_or_die ();
+
+  var list = make_model_list (http, content_type);
+  if (!list) {
+    return retry ();
+  }
+
+  if (list.length == 1) {
+    // 1個だけなら自分を書き換えてダウンロード
+    urlinfo.url = list [0].Url;
+    headers.Host = (new URL (urlinfo.url)).host;
+    headers.Referer = list [0].Referer;
+    Dorothy.fileName = list [0].Filename;
+    return;
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// 作品形態を調べる
+function get_job (http) {
+  var jobs = {
+    il: 'Illust',
+    mo: 'Model',
+    cp: 'Cosplay',
+    ma: 'Manga',
+    nv: 'Novel'
+  };
+
+  if (!/<img\s+src="\/img\/job\/view\/([a-z][a-z])\.gif">/.test (http.data)) {
+    http.die ('<img src="/img/job/view/??.gif"> が見つかりません。');
+  }
+  var j = RegExp.$1;
+
+  if (jobs.hasKey (j)) {
+    return jobs [j];
+  }
+
+  http.die ('未対応の作品形態です: ' + j);
+}
+
+
+// 作品をダウンロード
+function dl_content (url) {
+  var http = new_http (url);
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+  // 漫画と小説はログイン不要なので、ログイン状態はまだ調べない
+
+
+  // 公開レベルを調べる
+  if (/<div\s+class="fav_only">/.test (http.data)) {
+    http.die ('この作品は、投稿したクリエイターをお気に入りに登録する必要があります。');
+  }
+
+  // クリエイター ID、ペンネームを探す
+  if (/<a\s+href="\/creator\/profile\/(\d+)"><strong>([^<]*)<\/strong>/.test (http.data)) {
+    nb.creator_id = RegExp.$1;
+    nb.pen_name = (new Utf8 (RegExp.$2)).decodeCharRef ();
+  }
+
+  // 作品タイトルを探す
+  if (/<h1><span(\s+class="gold")?>([^<]*)<\/span><\/h1>/.test (http.data)) {
+    nb.title = (new Utf8 (RegExp.$2)).decodeCharRef ();
+  }
+
+  // 作品形態ごとに処理
+  var content_type = get_job (http);
+
+  if (content_type == 'Manga') {
+    return dl_content_manga (url, http, content_type);
+  }
+  if (content_type == 'Novel') {
+    return dl_content_novel (url, http, content_type);
+  }
+  if (content_type == 'Model') {
+    return dl_content_model (url, http, content_type);
+  }
+
+  // 'Illust' 'Cosplay'
+  return dl_content_illust (url, http, content_type);
+}
+
+
+// 作品一覧のページを解析してリストに追加
+//  true: 次のページあり  false: 次のページなし
+function dl_search_list_p (list, http) {
+  var start_len = list.length;
+
+  function add_list (s, p) {
+    list.push ({ Url: 'http://www.tinami.com' + p });
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/<a\shref="(\/view\/\d+)"\s+title="/g, add_list);
+
+  if (start_len == list.length) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+
+  // 次のページへのリンクを探す
+  if (/<span\s+id="next-page"><a href="\/search\/list\?/.test (http.data)) {
+    return true;
+  }
+  if (/<span\s+class="current">\d+<\/span>\s*<span\s+class="pages"><strong>/.test (http.data)) {
+    return false;
+  }
+  http.die ('次のページへのリンクが見つかりません。');
+}
+
+
+// 作品一覧をダウンロード
+function dl_search_list (url) {
+  var list = [ ];
+
+  // 1ページ目を処理
+  var http = new_http (url);
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  // ログインしていなくてもリンクの取得までは出来るが、どうせダウンロードに
+  // 失敗するのでここでエラーにしておく
+  http.loggedin_or_die ();
+
+  var next = dl_search_list_p (list, http);
+
+  var p = /[?&]offset=\d+/.test (url);  // 開始位置の指定はあるか？
+
+  // 開始位置の指定がなければ2ページ目以降を処理
+  if (!p) {
+    if (/\?prof_id=\d+$/.test (url)) {
+      url += '&keyword=&search=&genrekey=&period=';
+    }
+    url += '&offset=';
+
+    while (next) {
+      if (!http.get (url + list.length)) {
+        return http.retry_or_die ();
+      }
+      next = dl_search_list_p (list, http);
+    }
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+  var bcookie = new BrowserCookie (ini.Cookie);
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
+  // ファイル名の生成に使える情報
+  nb.creator_id = null;  // クリエイター ID
+  nb.pen_name = null;    // ペンネーム
+
+  nb.id = null;     // 作品番号
+  nb.title = null;  // 作品タイトル
+
+  nb.pages = 0;  // モデル、漫画の全ページ数
+  nb.p = 0;      // モデル、漫画のページ番号
+
+  nb.definePPZ (ini.General.PageOrigin);
+
+
+  var url = urlinfo.url;
+  var path = (new URL (url)).path.slice (1);
+
+  if (/^view\/(\d+)/.test (path)) {
+    // 作品ページ
+    nb.id = RegExp.$1;
+    dl_content (url);
+    return;
+  }
+  if (/^search\/list\?prof_id=\d+/.test (path)) {
+    // 作品一覧の HTML ページ
+    dl_search_list (url);
+    return;
+  }
+  if (/^creator\/profile\/(\d+)/.test (path)) {
+    // プロフィールの HTML ページなら全作品をダウンロード
+    dl_search_list ('http://www.tinami.com/search/list?prof_id=' + RegExp.$1);
+    return;
+  }
+
+  println ('未対応の URL です。');
+  return;
+}
+
+
+// EOF

@@ -1,0 +1,310 @@
+//Dorothy2
+//caption=Util.*
+//version=20140331.0
+//hint=utility
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+
+// Dorothy2 本体のバージョンチェック
+function DorothyVersionValidator () {
+}
+
+DorothyVersionValidator.prototype._oldVer = function (ver) {
+  var s = WScript.ScriptName;
+
+  return s + " version " + ver + "\n\n" +
+         s + " のバージョンが古すぎます。\n" +
+         "Dorothy2 の最新版を使用して下さい。";
+};
+
+// DOA.dms
+DorothyVersionValidator.prototype.isDOA =
+  (typeof frmDOA == 'object' && nameOf (frmDOA) == 'VCLForm');
+
+DorothyVersionValidator.prototype.validateDoaVersion = function () {
+  if (!Dorothy.hasKey ('doaVersion')) {
+    return "このスクリプトは DOA では使用できません。";
+  }
+
+  if (Dorothy.doaVersion < 0.22) {
+    return this._oldVer (Dorothy.doaVersion);
+  }
+
+  return null;
+};
+
+// Dorothy2set.dms Dorothy2ListMenu.dms
+DorothyVersionValidator.prototype.validateDorothy2setVersion = function () {
+  if (!Dorothy.hasKey ('userPath')) {
+    return "Dorothy.userPath が定義されていません。\n" +
+           "Dorothy2 の最新版を使用して下さい。";
+  }
+
+  return null;
+};
+
+// Dorothy2A.dms
+DorothyVersionValidator.prototype.validateDorothy2aVersion = function () {
+  var ver = parseFloat (Dorothy.version);
+
+  if (!isFinite (ver) || ver < 0.30) {
+    return this._oldVer (Dorothy.version);
+  }
+
+  // フォルダ設定 → HTTP(1) → HTTP メソッドのチェック
+  if (folderdata.HttpMethod) {
+    return urlinfo.url + "\n\n" +
+           "HTTP メソッドが GET 以外のフォルダでは実行できません。\n" +
+           "GET に設定したフォルダで実行して下さい。";
+  }
+
+  // フォルダ設定 → HTTP(2) → User-Agent のチェック
+  if (folderdata.Agent == 'Irvine') {
+    return urlinfo.url + "\n\n" +
+           "User-Agent が Irvine になっています。\n" +
+           "適切な User-Agent に変更して下さい。";
+  }
+
+  return null;
+};
+
+DorothyVersionValidator.prototype.validate = function () {
+  var s;
+
+  if (typeof Dorothy != 'object') {
+    s = "Dorothy2 のバージョンが古すぎます。\n" +
+        "Dorothy2 の最新版を使用して下さい。";
+  }
+  if (this.isDOA) {
+    s = this.validateDoaVersion ();
+  }
+  else if (Dorothy.version == 'xxxx') {
+    s = this.validateDorothy2setVersion ();
+  }
+  else {
+    s = this.validateDorothy2aVersion ();
+  }
+
+  if (s) {
+    println (s);
+    alert (s);
+    exit ();
+  }
+};
+
+
+var dvv = new DorothyVersionValidator ();
+dvv.validate ();
+
+
+// コンテナ
+Util = { };
+
+
+// DOA からの起動かどうか
+Util.isDOA = dvv.isDOA;
+
+
+// 現在のアイテムをダウンロード後に削除させる
+Util.remove_this = function () {
+
+  // Dorothy2B.dms に削除してもらう
+  urlinfo.url = 'http://www.google.com/favicon.ico';
+  Dorothy.fileName = 'remove';
+
+  var n = Dorothy.hasKey ('nulUrl') ? Dorothy.nulUrl : '';
+  if (n) {
+    // 削除不要な特殊な URL が指定されている場合
+    urlinfo.proxy = Dorothy.nulProxy;
+    urlinfo.url = n;
+    Dorothy.fileName = '';
+  }
+
+  headers.Referer = '';
+  headers.Cookie = '';
+  headers.Host = (new URL (urlinfo.url)).host;
+};
+
+
+// .ini ファイルを読み込む
+Util.ini_load = function (def_dat, ini_file) {
+  var r = { };
+
+  // 標準値をコピー
+  if (typeof def_dat == 'object') {
+    for (var sec_name in def_dat) {
+      r [sec_name] = { };
+      var sec = def_dat [sec_name];
+      for (var key_name in sec) {
+        r [sec_name] [key_name] = sec [key_name];
+      }
+    }
+  }
+
+  var ini = new Ini (ini_file || Dorothy.userIniPath);
+
+  // 全セクション名を読み込む
+  var secs = ini.readSections ();
+  for (var i in secs) {
+    var sec_name = secs [i];
+    if (typeof (r [sec_name]) != 'object') {
+      // セクションのオブジェクトがなければ新しく作る
+      r [sec_name] = { };
+    }
+
+    // このセクションの全キー名を読み込む
+    var keys = ini.readSection (sec_name);
+    for (j in keys) {
+      // キーの値を読み込む
+      var key_name = keys [j];
+      var value = ini.read (sec_name, key_name, '');
+
+      if (r [sec_name].hasKey (key_name)) {
+        // 標準値が boolean や number ならその型に変換する
+        var type = typeof (r [sec_name] [key_name]);
+        if (type == 'boolean') {
+          value = (value.trim ().toLowerCase () == 'true');
+        }
+        else if (type == 'number') {
+          value = parseInt (value.trim ());
+          value = isNaN (value) ? 0 : value;
+        }
+      }
+      r [sec_name] [key_name] = value;
+
+      // print_debug ('Util.ini_load: [' + sec_name + ']' + key_name + '=' + value);
+    }
+  }
+
+  return r;
+};
+
+
+// .ini ファイルを書き出す
+Util.ini_save = function (dat, ini_file) {
+  if (typeof dat != 'object') {
+    return;
+  }
+
+  var ini = new Ini (ini_file || Dorothy.userIniPath);
+
+  // 全セクションを書き出す
+  for (var sec_name in dat) {
+    var keys = dat [sec_name];
+    for (var key_name in keys) {
+      var value = keys [key_name].toString ();
+      ini.write (sec_name, key_name, value);
+    }
+  }
+
+  ini.update ();
+};
+
+
+// .ini ファイルをテキストエディタで開く
+//  .ini がない場合は .default.ini からコピーしてから開く
+Util.ini_copy_edit = function () {
+  var ini_path = Dorothy.userIniPath;
+
+
+  // ファイルをテキストエディタで開く
+  function execute_editor (file) {
+    if (Dorothy.hasKey ('edit')) {
+      return Dorothy.edit (file);
+    }
+
+    return Win32.shellExecute ('open', '"notepad.exe"', '"' + file + '"');
+  }
+
+
+  // デフォルト設定をコピーする
+  function copy_default_ini (ini_path) {
+    var def_path = ini_path.replace (/\.ini$/, '.default.ini');
+    var def = new File (def_path);
+
+    if (!def.exists ()) {
+      alert ("デフォルト設定ファイルが見つかりません。\n\n" + def_path);
+      return false;
+    }
+
+    if (new File (ini_path).exists ()) {
+      alert ("設定ファイルが既に存在します。\n\n" + ini_path);
+      return false;
+    }
+
+    def.copyTo (ini_path);
+    alert ("設定ファイルを作成しました。\n\n" + ini_path);
+    return true;
+  }
+
+
+  // .ini ファイルが存在しなければデフォルト設定をコピーする
+  if (!(new File (ini_path)).exists ()) {
+    if (!copy_default_ini (ini_path)) {
+      return;
+    }
+  }
+
+  // .ini ファイルをテキストエディタで開く
+  execute_editor (ini_path);
+};
+
+
+// オプションを取得する
+Util._options = null;
+Util.get_option = function (key) {
+  var o = Util._options;
+
+  // 初回ならオプションを読み込む
+  if (!o) {
+    o = Util._options = [ ];
+
+    function load (s) {
+      s = s.split (/;/);
+      for (var i = 0; i < s.length; ++i) {
+        if (/^([^=]+)\s*=\s*(.*)$/.test (s [i])) {
+          o.push ({ k: RegExp.$1, v: RegExp.$2 });
+        }
+      }
+    }
+
+    load (folderdata.Post);
+    load (item.Comment);
+  }
+
+  for (var i = o.length; --i >= 0;) {
+    if (o [i].k == key) {
+      return o [i].v;
+    }
+  }
+
+  return null;
+};
+
+
+}) ()
+
+
+// EOF

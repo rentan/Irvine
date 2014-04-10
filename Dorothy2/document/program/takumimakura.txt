@@ -1,0 +1,46 @@
+takumimakura.dms
+
+
+匠枕のサンプル画像用のスクリプトです。
+itema.jpg、itemb.jpg、存在する場合は itemsp.jpg を一括でダウンロードします。
+
+
+使用方法
+========
+
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
+
+複数のファイルをダウンロードする場合、新しいアイテムとして Irvine に追加し、
+実行中のアイテムはダミー URL をダウンロードして自動削除します。アイテム追加
+の設定に関しては Dorothy2\document\common\additem.txt を参照して下さい。
+
+
+対応 URL
+========
+
+http://takumimakura.com/catalog/index.php?id=\d+
+
+
+仕様・制限事項
+==============
+
+・フォルダ設定 → HTTP(1) → HTTP メソッドを GET に設定する必要があります。
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
+
+2012-11-19
+  Http.expandUrl() の仕様変更に対応。
+
+2012-07-29
+  初期バージョン。
+
+
+[EOF]

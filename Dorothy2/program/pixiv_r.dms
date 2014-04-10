@@ -1,0 +1,856 @@
+//Dorothy2
+//caption=pixiv_r
+//version=20140331.0
+//hint=pixiv 別バージョン
+//match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?)
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2010,2011,2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'browsercookie', 'http', 'namebuilder', 'utf8');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    Cookie: BrowserCookie.prototype.iniTemplate,
+    General: {
+      Zen2Han: false,
+      PageOrigin: 0,
+      NovelExt: '.html'
+    },
+    Filename: {
+      Illust:  '',  // 省略時は Illust2 を使用
+      Illust2: 'pixiv_%ID%',
+      Manga:  'pixiv_%ID%_p%MANGA_P%',
+      Manga2: 'pixiv_%ID%_p%MANGA_P%',
+      Profile: 'pixiv_profile_%ID%',
+      Bg: 'pixiv_bg_%ID%',
+      Novel: 'pixiv_novel_%ID%',
+      NovelCover: 'pixiv_novel_%ID%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+// ブラウザから Cookie を読み込んでヘッダに設定する
+var cookie_count = 0;
+function import_cookie (http, url) {
+  var dont_import_cookie = false;
+
+  // 動作確認用
+  if (++cookie_count > 1) {
+    alert ('Cookie 読み込み ' + cookie_count + "回目\n\nOK で続行します。");
+  }
+
+  if (dont_import_cookie) {
+    println ('Cookie をブラウザから読み込みません。');
+    return;
+  }
+
+  var o = {
+    host: (new URL (url)).host.replace (/^.*(\.pixiv\.net)$/, '$1'),
+    name: 'PHPSESSID'
+  };
+  var cookie = bcookie.import (o) || '';
+
+  print_debug ('Cookie: ' + cookie);
+  http.setRequestHeader ('Cookie', cookie);
+}
+
+
+// ログインしているか調べる
+function is_login () {
+  if (this.code != 200) {
+    return false;
+  }
+
+  // タイトルやキャプションに pixiv.user.loggedIn = false;
+  // というテキストが設定されている可能性を考慮すること。
+  if (/<script[^>]*>\s*pixiv\.user\.loggedIn\s*=\s*(false|true);/.test (this.data)) {
+    if (RegExp.$1 == 'true') {
+      return true;
+    }
+
+    println ('ログインしていません。');
+    return false;
+  }
+
+  // サイト側 HTML が変更された場合
+  println ('pixiv.user.loggedIn が見つかりません。');
+  return false;
+}
+
+
+// Http.get を実行し、ログインしているか調べる
+//  HTTP 失敗(503) → retry() == false
+//  HTTP 失敗 → exit()
+//  HTTP 成功、非ログイン状態 → exit()
+//  HTTP 成功、ログイン状態 → true
+function get_and_login_check (url) {
+  if (!this.get (url)) {
+    return this.retry_or_die ();
+  }
+
+  if (this.is_login ()) {
+    return true;
+  }
+
+  exit ();
+}
+
+
+// Http オブジェクトを初期化する
+function new_http (url) {
+  var http = new Http ();
+
+  import_cookie (http, url);
+
+  // メソッド追加
+  http.is_login = is_login;
+  http.get_and_login_check = get_and_login_check;
+
+  return http;
+}
+
+
+// ユーザーIDから pixiv ID を取得する
+function get_pixivid_from_userid (user_id) {
+  var url = 'http://www.pixiv.net/stacc/id/' + user_id;
+
+  var http = new Http ();
+  var loc = http.getLocation (url) || '';
+  // 302 Found で http://www.pixiv.net/stacc/(pixiv_id) に転送される
+
+  if (!/\/stacc\/([^\/]+)/.test (loc)) {
+    return http.retry_or_die ('pixiv ID(英数字)を取得出来ませんでした。');
+  }
+  nb.pixiv_id = RegExp.$1;
+
+  return true;
+}
+
+
+// HTML 内から pixiv ID を取得する
+function get_pixivid_from_html (http) {
+  if (/<p\s+class="extra_off">\s*<a\s+href="http:\/\/www\.pixiv\.net\/stacc\/([^"]+)"/.test (http.data)) {
+    // 他人のプロフィールページ
+    nb.pixiv_id = RegExp.$1;
+    return true;
+  }
+
+  if (/<ul\s+class="tabs">(.*?)<\/ul>/.test (http.data)
+   && /<a\s+href="(http:\/\/www\.pixiv\.net)?\/stacc\/([^"]+)">/.test (RegExp.$1)) {
+    // 他人の小説ページ
+    nb.pixiv_id = RegExp.$2;
+    return true;
+  }
+
+  // 自分のプロフィールページ
+  // サイトの HTML が変更されて他人のプロフィールページから
+  // 取得できなかった場合もここにくる。
+
+  println ('ページ内からpixiv ID(英数字)が見つかりません。');
+  return get_pixivid_from_userid (nb.user_id);
+}
+
+
+// HTML 内からプロフィール情報を取得する
+function get_profile_from_html (http) {
+  // ユーザーIDを探す
+  if (!nb.user_id) {
+    if (!/<a\s+href="\/?member\.php\?id=(\d+)"\s+class="user-link"/.test (http.data)) {
+      http.die ('ユーザーID(数値)が見つかりません。');
+    }
+    nb.user_id = RegExp.$1;
+  }
+
+  // pixiv ID を探す
+  if (!nb.pixiv_id) {
+    if (!get_pixivid_from_html (http)) {
+      return false;
+    }
+  }
+
+  // ニックネームを探す
+  if (!/<h1\s+class="user">([^<]+)<\/h1>/.test (http.data)) {
+    http.die ('ニックネームが見つかりません。');
+  }
+  nb.nickname = (new Utf8 (RegExp.$1)).decodeCharRef ();
+
+  return true;
+}
+
+
+// URL からプロフィール情報を取得する
+function get_profile_from_url (url) {
+  http = new Http ();  // Cookie なしで構わない
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  return get_profile_from_html (http);
+}
+
+
+// ユーザーIDからプロフィール情報を取得する
+function get_profile_from_userid (user_id) {
+  var url = 'http://www.pixiv.net/member.php?id=' + user_id;
+
+  return get_profile_from_url (url);
+}
+
+
+// pixiv ID からプロフィール情報を取得する
+function get_profile_from_pixivid (pixiv_id) {
+  var url = url = 'http://www.pixiv.net/stacc/' + pixiv_id;
+
+  return get_profile_from_url (url);
+}
+
+
+// HTML から各種情報を取得する
+function get_spec_from_html (http) {
+  // 題名を探す
+  if (!/<section\s+class="work-info[^>]*>(.*?)<div\s+id="tag-editor">/.test (http.data)) {
+    http.die ('<section class="work-info"> が見つかりません。');
+  }
+  if (!/<h1\s+class="title">([^<]+)<\/h1>/.test (RegExp.$1)) {
+    http.die ('タイトルが見つかりません。');
+  }
+  nb.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
+
+  // 画像 URL、pixiv ID を探す
+  if (!/<img\s+src="(http:\/\/i\d+\.pixiv\.net\/img\d+\/img\/([^\/]+)\/\d+(_[0-9a-f]+)?(_m)?\.[^"]*)"/.test (http.data)) {
+    http.die ('画像 URL が見つかりません。');
+  }
+  var img_url = RegExp.$1;
+  nb.pixiv_id = RegExp.$2;
+
+  if (/<h1\s+class="user">/.test (http.data)) {
+    // 他人のページなのでこのページ内にプロフィールがある
+    if (!get_profile_from_html (http)) {
+      return null;
+    }
+  }
+  else {
+    // 自分のページはプロフィール情報がないので別ページから取得する
+    if (!get_profile_from_pixivid (nb.pixiv_id)) {
+      return null;
+    }
+  }
+
+  // 原寸画像の URL を返す（ただし漫画の場合は存在しない）
+  img_url = img_url.replace (/_m(\.[^\/.]*)$/, '$1');
+
+  return img_url;
+}
+
+
+// illust_id から各種情報を取得する
+//  成功した場合は Http オブジェクト、失敗した場合は null を返す
+function get_spec_from_illustid (illust_id) {
+  var url = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=' + illust_id;
+  var http = new_http (url);
+  if (!http.get_and_login_check (url)) {
+    return retry ();
+  }
+
+  if (!get_spec_from_html (http)) {
+    return null;
+  }
+
+  return http;
+}
+
+
+// 漫画の画像をダウンロードする時のリファラ
+function get_manga_img_referer (page) {
+  return 'http://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=' + nb.id + '&page=' + nb.manga_p;
+}
+
+
+// 漫画の画像が _big 付きかどうかを調べる
+function get_manga_size (url) {
+  url = url.replace (/\?.*$/, '').replace (/\.([^\/.]+)$/, '_big_p0.$1');
+
+  var http = new Http ();
+  http.setRequestHeader ('Referer', get_manga_img_referer ());
+  if (http.head (url)) {
+    // _big ファイルが存在する
+    nb.manga_size = '_big';
+  }
+  else if (http.code == 404) {
+    nb.manga_size = '';
+  }
+  else {
+    return http.retry_or_die ();
+  }
+
+  return true;
+}
+
+
+// <ul class="meta"><li>2012年07月18日 19:21</li><li>825×595</li>
+// <ul class="meta"><li>2012年08月02日 17:34</li><li>漫画 22P</li>
+
+// 漫画のページ数を取得する
+//  mode=medium ページの HTML だけで取得可能
+function get_manga_pages (http) {
+  if (!/<ul\s+class="meta">\s*<li>.*?<\/li>\s*<li>(.*?)<\/li>/.test (http.data)) {
+    http.die ('<ul class="meta"> が見つかりません。');
+  }
+  var t = RegExp.$1;  // \d+×\d+ または 漫画 \d+P
+
+  var re = new RegExp ('^漫画\s+(\d+)P$'.toUTF8 ());
+  if (re.test (t)) {
+    nb.manga_pages = parseInt (RegExp.$1);
+  }
+
+  return true;
+}
+
+
+// 漫画の画像 URL と保存ファイル名の一覧を作る
+//  [ { Url: 画像 URL, Filename: 保存ファイル名 }, { ... }, ... ]
+function make_manga_list (img_url, pages) {
+  var n = img_url.lastIndexOf ('.');
+  var base = img_url.slice (0, n) + nb.manga_size + '_p';
+  var ext = img_url.slice (n);
+
+  var list = [];
+  for (var i = 0; i < pages; ++i) {
+    nb.manga_p = i;
+    var u = base + i.toString () + ext;
+    var f = nb.assemble (ini.Filename ['Manga2'], img_url);
+    list.push ({ Url: u, Filename: f });
+  }
+
+  return list;
+}
+
+
+// 漫画のページを解析して全ての画像をダウンロード
+function dl_manga_p (http) {
+  var img_url = get_spec_from_html (http);
+  if (!img_url || !get_manga_size (img_url)) {
+    return retry ();
+  }
+
+  var list = make_manga_list (img_url, nb.manga_pages);
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// 漫画をダウンロード mode=manga
+function dl_manga (url) {
+  url = url.replace (/mode=manga/, 'mode=medium');
+
+  var http = new_http (url);
+  if (!http.get_and_login_check (url)) {
+    return retry ();
+  }
+
+  if (!get_manga_pages (http)) {
+    return retry ();
+  }
+  if (nb.manga_pages == 0) {
+    http.die ('漫画の URL でイラストが指定されました。');
+  }
+
+  return dl_manga_p (http);
+}
+
+
+// イラストのページを解析して画像をダウンロード
+function dl_illust_p (http, img_specified) {
+  var img_url = get_spec_from_html (http);
+  if (!img_url) {
+    return retry ();
+  }
+
+  // 画像URL指定時は Illust を使用(未設定ならページURL指定時と同様に Illust2)
+  var fmt = (img_specified && ini.Filename ['Illust']) || ini.Filename ['Illust2'];
+  Dorothy.fileName = nb.assemble (fmt, img_url);
+
+  urlinfo.url = img_url;
+  headers.Host = (new URL (img_url)).host;
+  headers.Cookie = '';
+  headers.Referer = http.previousUrl.replace (/mode=medium/, 'mode=big');
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// イラストをダウンロード mode=big
+function dl_illust (url) {
+  url = url.replace (/mode=big/, 'mode=medium');
+
+  var http = new_http (url);
+  if (!http.get_and_login_check (url)) {
+    return retry ();
+  }
+
+  if (!get_manga_pages (http)) {
+    return retry ();
+  }
+  if (nb.manga_pages != 0) {
+    http.die ('イラストの URL で漫画が指定されました。');
+  }
+
+  return dl_illust_p (http);
+}
+
+
+// イラストまたは漫画を判別してダウンロード mode=medium
+function dl_illust_or_manga (url, img_specified) {
+  var http = new_http (url);
+  if (!http.get_and_login_check (url)) {
+    return retry ();
+  }
+
+  if (!get_manga_pages (http)) {
+    return retry ();
+  }
+
+  return (nb.manga_pages == 0) ? dl_illust_p (http, img_specified) : dl_manga_p (http);
+}
+
+
+// 漫画の画像をダウンロード
+function dl_manga_img (url) {
+  /^http:\/\/i\d+\.pixiv\.net\/img\d+\/img\/([^\/]+)\/(\d+)(_[0-9a-f]+)?(_big)?_p(\d+)/.test (url);
+  nb.pixiv_id = RegExp.$1;
+  nb.id = RegExp.$2;
+  nb.manga_size = RegExp.$4;
+  nb.manga_p = parseInt (RegExp.$5);
+
+  // 保存ファイル名が指定されていなければここで決定する
+  if (item.filename == '') {
+    var fmt = ini.Filename ['Manga'];
+
+    // ファイル名に未取得の情報が必要なら HTML ページから取得する
+    if (/%(USER_ID|NICKNAME|TITLE|MANGA_PAGES|MANGA_PZ)%/.test (fmt)) {
+
+      var http = get_spec_from_illustid (nb.id);
+      if (http == null) {
+        return retry ();
+      }
+      if (/%(MANGA_PAGES|MANGA_PZ)%/.test (fmt)) {
+        if (!get_manga_pages (http)) {
+          return retry ();
+        }
+      }
+    }
+
+    Dorothy.fileName = nb.assemble (fmt, url);
+  }
+
+  headers.Referer = get_manga_img_referer ();
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// プロフィール画像または背景画像をダウンロード
+function dl_profile_bg (url) {
+  /^http:\/\/i\d+\.pixiv\.net\/img\d+\/profile\/([^\/]+)\/(bg_)?(\d+)/.test (url);
+  nb.pixiv_id = RegExp.$1;
+  nb.id = RegExp.$3;
+  var img_type = (RegExp.$2 == '') ? 'Profile' : 'Bg';
+
+  // %TITLE% は指定できない仕様なのでなくてもいいけど一応
+  nb.title = '(' + img_type + ')';
+
+  // ファイル名に未取得の情報が必要なら HTML ページから取得する
+  if (/%(USER_ID|NICKNAME)%/.test (ini.Filename [img_type])) {
+    if (!get_profile_from_pixivid (nb.pixiv_id)) {
+      return retry ();
+    }
+  }
+
+  Dorothy.fileName = nb.assemble (ini.Filename [img_type], url);
+
+  headers.Referer = 'http://www.pixiv.net/stacc/' + nb.pixiv_id;
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// イラストの作品一覧のページを解析してリストに追加
+//  true: 次のページあり  false: 次のページなし
+function dl_index_p (list, http) {
+  var start_len = list.length;
+
+  var base = http.expandUrl ('/member_illust.php?mode=medium&illust_id=');
+  function add_list (s, p1, p2) {
+    list.push ({ Url: base + p2 });
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/<a\s+href="\/?member_illust\.php\?mode=medium&(amp;)?illust_id=(\d+)"/g, add_list);
+
+  if (start_len == list.length) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+
+  // 次のページへのリンクを探す
+  if (/<a\s+[^>]*rel="next"/.test (http.data)) {
+    return true;
+  }
+  if (/<li\s+class="current">\d+<\/li><\/ul><span\s+class="next"><\/span>/.test (http.data)) {
+    return false;
+  }
+  if (/<nav\s+class="column-menu">.*?<\/nav>\s*<div>\s*<style/.test (http.data)) {
+    // 作品数が少なくて1ページだけの場合
+    return false;
+  }
+  http.die ('次のページへのリンクが見つかりません。');
+}
+
+
+// イラストの作品一覧をダウンロード
+function dl_index (url) {
+  var list = [ ];
+
+  // 1ページ目を処理
+  var http = new_http (url);
+  if (!http.get_and_login_check (url)) {
+    return retry ();
+  }
+
+  var next = dl_index_p (list, http);
+
+  var p = /[?&]p=\d+/.test (url);  // ページ指定はあるか？
+
+  // ページ指定がなければ2ページ目以降を処理
+  if (!p) {
+    url += /\?/.test (url) ? '&p=' : '?p=';
+
+    for (var page = 2; next; ++page) {
+      if (!http.get_and_login_check (url + page)) {
+        return retry ();
+      }
+      next = dl_index_p (list, http);
+    }
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// 小説ページの HTML から各種情報を取得する
+function get_novel_spec_from_html (http) {
+  if (!/<a\s+href="\?id=\d+&mode=cover"[^>]*>\s*<img\s+src="[^"]*"\s+alt="([^"]+)"/.test (http.data)) {
+    http.die ('タイトルが見つかりません。');
+  }
+  nb.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
+
+  if (/<h1\s+class="user">/.test (http.data)) {
+    // 他人のページなのでこのページ内にプロフィールがある
+    return get_profile_from_html (http);
+  }
+
+  // 自分のページはプロフィール情報がないので別ページから取得する
+  if (!/pixiv\.context\.userId\s*=\s*'(\d+)'/.test (http.data)) {
+    http.die ('ユーザーID(数値)が見つかりません。');
+  }
+  nb.user_id = RegExp.$1;
+  return get_profile_from_userid (nb.user_id);
+}
+
+
+// 小説の表紙画像をダウンロード
+function dl_novel_cover_img (url) {
+  var img_type = 'NovelCover';
+  var novel_url = 'http://www.pixiv.net/novel/show.php?id=' + nb.id;
+
+  var http = new_http (novel_url);
+  if (!http.get_and_login_check (novel_url)) {
+    return retry ();
+  }
+
+  if (!get_novel_spec_from_html (http)) {
+    return retry ();
+  }
+
+  Dorothy.fileName = nb.assemble (ini.Filename [img_type], url);
+
+  headers.Referer = novel_url + '&mode=cover';
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// 小説の表紙画像をダウンロード登録する
+function dl_novel_cover (http) {
+  if (!/<a\s+href="\?id=\d+&mode=cover"[^>]*>\s*<img\s+src="([^"]+)"/.test (http.data)) {
+    http.die ('表紙画像が見つかりません。');
+  }
+  var cover_img = RegExp.$1.replace (/_s\./, '.');
+
+  if (/^http:\/\/source\.pixiv\.net\/source\/novel\//.test (cover_img)) {
+    println ('表紙画像はテンプレートのためダウンロードしません。');
+    return;
+  }
+
+  // ファイル名の変更
+  var filename = nb.assemble (ini.Filename ['NovelCover'], cover_img);
+
+  // ダウンロード登録
+  var list = [ { Url: cover_img, Filename: filename } ];
+  additem.send (list) || exit ();
+}
+
+
+// 小説をダウンロード
+function dl_novel (url) {
+  // HTML ページを取得
+  var http = new_http (url);
+  if (!http.get_and_login_check (url)) {
+    return retry ();
+  }
+
+  if (!get_novel_spec_from_html (http)) {
+    return retry ();
+  }
+
+  // 表紙画像をダウンロード登録
+  dl_novel_cover (http);
+
+
+  // ファイル名の変更
+  Dorothy.fileName = nb.assemble (ini.Filename ['Novel'], ini.General.NovelExt);
+
+  headers ['Cookie'] = http.getRequestHeader ('Cookie');
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// 小説の作品一覧のページを解析してリストに追加
+//  true: 次のページあり  false: 次のページなし
+function dl_novel_index_p (list, http) {
+  var start_len = list.length;
+
+  function add_list (s, p) {
+    list.push ({ Url: http.expandUrl (p) });
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/<a\s+class="title"\s+href="(\/novel\/show\.php\?id=\d+)"/g, add_list);
+
+  if (start_len == list.length) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+
+  // 次のページへのリンクを探す
+  if (/<a\s+[^>]*rel="next"/.test (http.data)) {
+    return true;
+  }
+  if (/<li\s+class="current">\d+<\/li><\/ul><span\s+class="next"><\/span>/.test (http.data)) {
+    return false;
+  }
+  if (/<div\s+class="clear"><\/div><\/div><ul\s+class="novel-items">/.test (http.data)) {
+    // 作品数が少なくて1ページだけの場合
+    return false;
+  }
+  http.die ('次のページへのリンクが見つかりません。');
+}
+
+
+// 小説の作品一覧をダウンロード
+function dl_novel_index (url) {
+  var list = [ ];
+
+  // 1ページ目を処理
+  var http = new_http (url);
+  if (!http.get_and_login_check (url)) {
+    return retry ();
+  }
+
+  var next = dl_novel_index_p (list, http);
+
+  var p = /[?&]p=\d+/.test (url);  // ページ指定はあるか？
+
+  // ページ指定がなければ2ページ目以降を処理
+  if (!p) {
+    url += /\?/.test (url) ? '&p=' : '?p=';
+
+    for (var page = 2; next; ++page) {
+      if (!http.get_and_login_check (url + page)) {
+        return retry ();
+      }
+      next = dl_novel_index_p (list, http);
+    }
+  }
+
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// www.pixiv.net の URL を処理
+function dl_www_pixiv_net (u, path) {
+  var q = /(\?[^#]*)/.test (u.path) ? RegExp.$1 : '';
+
+  if (path == 'member_illust.php') {
+    if (/[?&]illust_id=(\d+)/.test (q)) {
+      nb.id = RegExp.$1;
+    }
+
+    if (/[?&]mode=manga/.test (q)) {
+      // 漫画の HTML ページ
+      dl_manga (u.url);
+      return true;
+    }
+    if (/[?&]mode=big/.test (q)) {
+      // イラストの HTML ページ
+      dl_illust (u.url);
+      return true;
+    }
+    if (/[?&]mode=medium/.test (q)) {
+      // イラストまたは漫画の HTML ページ
+      dl_illust_or_manga (u.url);
+      return true;
+    }
+
+    if (/[?&]id=\d+/.test (q)) {
+      // 作品一覧の HTML ページ
+      dl_index (u.url);
+      return true;
+    }
+  }
+
+  if (path == 'member.php' && /[?&]id=\d+/.test (q)) {
+    // プロフィールの HTML ページは作品一覧として処理
+    dl_index (u.url.replace (/member\.php/, 'member_illust.php'));
+    return true;
+  }
+  if (path == 'novel/show.php' && /[?&]id=(\d+)/.test (q)) {
+    // 小説の HTML ページ
+    nb.id = RegExp.$1;
+    dl_novel (u.url);
+    return true;
+  }
+  if (path == 'novel/member.php' && /[?&]id=\d+/.test (q)) {
+    // 小説の作品一覧の HTML ページ
+    dl_novel_index (u.url);
+    return true;
+  }
+
+  // 未対応の URL
+  return false;
+}
+
+
+// i\d+.pixiv.net の URL を処理
+function dl_ixx_pixiv_net (u, path) {
+  if (/^img\d+\/img\/[^\/]+\/\d+(_[0-9a-f]+)?(_big)?_p\d+/.test (path)) {
+    // 漫画の画像 URL  イラスト画像より先に調べること
+    dl_manga_img (u.url);
+    return true;
+  }
+
+  var illust = /^(img\d+\/img\/[^\/]+|img-inf\/img\/\d{4}(\/\d\d){5})\/(\d+(_[0-9a-f]+)?)/;
+  if (illust.test (path)) {
+    // イラストの画像 URL
+    //  漫画、イラストのサムネイルの可能性あり
+    nb.id = RegExp.$3;
+
+    // HTML ページを取得して処理する
+    var url = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=' + nb.id;
+    dl_illust_or_manga (url, true);
+    return true;
+  }
+
+  if (/^img\d+\/profile\/[^\/]+\/(bg_)?\d+/.test (path)) {
+    // プロフィール画像または背景画像の URL
+    dl_profile_bg (u.url);
+    return true;
+  }
+  if (/^img\d+\/img\/[^\/]+\/novel\/(\d+)/.test (path)) {
+    // 小説の表紙画像 URL
+    nb.id = RegExp.$1;
+    dl_novel_cover_img (u.url);
+    return true;
+  }
+
+  // 未対応の URL
+  return false;
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+  var bcookie = new BrowserCookie (ini.Cookie);
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
+  // ファイル名の生成に使える情報
+  nb.user_id = null;   // ユーザーID (\d+)
+  nb.pixiv_id = null;  // pixiv ID ([a-z0-9][-_a-z]*[a-z0-9])
+  nb.nickname = null;  // ニックネーム
+
+  nb.id = null;     // イラスト番号（背景画像の場合はタイムスタンプ）
+  nb.title = null;  // イラストの題名
+
+  nb.manga_pages = 0;  // 漫画の全ページ数
+  nb.manga_p = 0;      // 漫画のページ番号
+  nb.manga_size = '';  // 漫画のサイズ（空文字列 or '_big'）
+
+  nb.MANGA_P = function () {
+    return this.manga_p + ini.General.PageOrigin;
+  };
+  nb.MANGA_PZ = function () {
+    return this.zeroPadding (this.manga_p, this.manga_pages - 1, ini.General.PageOrigin);
+  };
+
+
+  var u = new URL (urlinfo.url);
+  var path = u.path.replace (/^\/+|[?#].*$/g, '');
+
+  if (u.host == 'www.pixiv.net') {
+    // ウェブサーバ
+    if (dl_www_pixiv_net (u, path)) {
+      return;
+    }
+  }
+  else if (/^i\d+\.pixiv\.net$/.test (u.host)) {
+    // 画像サーバ
+    if (dl_ixx_pixiv_net (u, path)) {
+      return;
+    }
+  }
+
+  println ('未対応の URL です。');
+  return;
+}
+
+
+// EOF

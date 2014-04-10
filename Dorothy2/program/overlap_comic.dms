@@ -1,0 +1,73 @@
+//Dorothy2
+//caption=overlap_comic
+//version=20140331.0
+//hint=オーバーラップ文庫 WEBコミック
+//match=^http://over-lap\.co\.jp/bunko/comic/[^/]+/\d+/$
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'actibook', 'additem', 'namebuilder');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: true,
+      PageOrigin: 1
+    },
+    Filename: {
+      Book:  '%NAME%%VOL% p%PZ%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  var url = urlinfo.url;
+
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+  nb.vol = '';
+  if (/^http:\/\/over-lap\.co\.jp\/bunko\/comic\/IS_sugarhoney\/00([1-3])\//.test (url)) {
+    // 第1～3話は Vol. が入っていないので補完
+    nb.vol = 'Vol.' + RegExp.$1;
+  }
+
+  var book = new ActiBook ();
+  book.nameBuilder = nb;
+  book.nameFormat = ini.Filename ['Book'];
+  book.pageOrigin = ini.General.PageOrigin;
+
+  var r = book.get (url);
+  if (r != book.OK) {
+    return book.end (r);
+  }
+
+  (new AddItem (ini.AddItem)).send (book.list) || exit ();
+  Util.remove_this ();
+}
+
+
+// EOF

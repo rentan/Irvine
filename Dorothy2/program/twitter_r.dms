@@ -1,0 +1,379 @@
+//Dorothy2
+//caption=Twitter_r
+//version=20140331.0
+//hint=
+//match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'namebuilder');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: false
+    },
+    Filename: {
+      Photo: 'twitter_%ID%',
+      Photo2: 'twitter_%ID%_%P%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+// テスト用
+// https://twitter.com/rentan_org/status/314692285487001600
+// https://twitter.com/rentan_org/status/314692615671017472
+// https://twitter.com/rentan_org/media
+
+
+//-------------------------------- Twitter ---------------------------------
+
+
+common_load ('http', 'utf8');
+
+
+// コンストラクタ
+void function Twitter () {
+  this.urls = [ ];
+};
+
+
+Twitter.prototype.comment = '';
+Twitter.prototype.http = null;
+
+// 複数画像ツイートかどうか
+Twitter.prototype.multiPhoto = false;
+
+// NameBuilder パラメータ
+Twitter.prototype.nameFormat = 'twitter_%ID%';
+Twitter.prototype.nameFormat2 = 'twitter_%ID%_%P%';
+Twitter.prototype.pageOrigin = 1;
+
+
+// .getImage() の戻り値
+Twitter.prototype.OK = 0;
+Twitter.prototype.NG = 1;
+Twitter.prototype.RETRY = 2;
+Twitter.prototype.UNKNOWN = 3;
+Twitter.prototype.MIS = 4;
+Twitter.prototype.EXIT = 5;
+
+
+// .get() の戻り値に応じて終了処理
+Twitter.prototype.end = function (r) {
+  if (r == this.RETRY) {
+    return retry ();
+  }
+  if (r != this.OK && r != this.MIS) {
+    exit ();
+  }
+};
+
+
+// 内部で使用: HTTP アクセスでエラーした場合の戻り値の選択
+Twitter.prototype._httpError = function () {
+  var http = this.http;
+
+  var c = http && http.code;
+  if (c) {
+    this.comment = http.statusLine;
+  }
+
+  return (c == 0 || c == 503) ? this.RETRY : this.NG;
+};
+
+
+// 内部で使用: メッセージ表示&commentに保存
+Twitter.prototype._p = function (s) {
+  println (this.comment = nameOf (this) + ': ' + s);
+  return false;
+};
+
+
+Twitter.prototype._unknown = function (s) {
+  this._p (s);
+  return this.UNKNOWN;
+};
+
+
+// 内部で使用: ツイート内の画像URLを抽出する
+Twitter.prototype._analyzeTweetImage = function (http) {
+  var urls = this.urls;
+
+  // 画像表示ページ
+  if (/<img\s+class="large\s+media-slideshow-image"\s[^>]*src="([^"]+)"/.test (http.data)) {
+    urls.push ({ Url: RegExp.$1 });
+  }
+
+  // 単一画像
+  else if (/<a\s+class="media[^"]*"[^>]*\sdata-resolved-url-large="([^"]+)"/.test (http.data)) {
+    urls.push ({ Url: RegExp.$1 });
+  }
+
+  // 複数画像
+  else if (/<div\s+class="multi-photos[^>]*>(.*?)(<\/div>\s*){3}/.test (http.data)) {
+    var html = RegExp.$1;
+
+    var re = /<div\s+class="multi-photo[^>]*data-resolved-url-large="([^"]+)"/g;
+    function add (s, p1) {
+      urls.push ({ Url: p1 });
+      return '';
+    }
+
+    html.replace (re, add);
+    this.multiPhoto = true;
+  }
+
+  if (!urls.length) {
+    http.capture ();
+    return this._p ('画像 URL が見つかりません。');
+  }
+
+  return true;
+};
+
+
+// 内部で使用: ツイートの情報を取得する
+Twitter.prototype._analyzeTweet = function (http) {
+  var nb = this.nameBuilder;
+
+  var path = (new URL (http.baseUrl)).path.slice (1);
+  if (!/^([^\/]+)\/status(es)?\/(\d+)/.test (path)) {
+    return this._p ('未対応の URL です。');
+  }
+  nb.twitter_id = RegExp.$1;
+  nb.id = RegExp.$3;
+
+  if (!/<strong\s+class="fullname[^"]*">\s*([^<]+)\s*</.test (http.data)) {
+    return this._p ('<strong class="fullname ..."> が見つかりません。');
+  }
+  nb.user_name = (new Utf8 (RegExp.$1)).decodeCharRef ();
+
+  var t;
+  if (/<p\s+class="js-tweet-text\s+tweet-text\s*">\s*(.*?)\s*<\/p>/.test (http.data)) {
+    t = RegExp.$1;
+  }
+  else if (/<div\s+class="tweet-text\s+js-tweet-text\s*">\s*(.*?)\s*<\/div>/.test (http.data)) {
+    t = RegExp.$1;
+  }
+  else {
+    return this._p ('ツイート本文が見つかりません。');
+  }
+  nb.title = (new Utf8 (t)).removeTags ().decodeCharRef ();
+
+  return this._analyzeTweetImage (http);
+};
+
+
+// 内部で使用: ファイル名を決定する
+Twitter.prototype._buildFilename = function (fmt) {
+  var urls = this.urls;
+
+  var nb = this.nameBuilder;
+  nb.pages = urls.length;
+
+  for (var i = 0; i < urls.length; ++i) {
+    nb.p = i;
+    var u = urls [i].Url.replace (/:large$/, '');
+    urls [i].Filename = nb.assemble (fmt, u);
+  }
+};
+
+
+// 単一のツイートに含まれる画像を抽出する
+Twitter.prototype.getTweetImage = function (url) {
+
+  function getRetweetOriginalUrl (http) {
+    var tweetUrl = /^https:\/\/twitter\.com\/[^\/]+\/status\/\d+$/;
+
+    if (http.code == 302 && tweetUrl.test (http.location)) {
+      return http.location;
+    }
+    return null;
+  }
+
+  var http = this.http;
+  for (;;) {
+    if (http.get (url)) {
+      // 成功
+      break;
+    }
+
+    var retweet = getRetweetOriginalUrl (http);
+    if (retweet) {
+      // 自分がリツイートした他人の画像ツイート
+      url = retweet;
+      continue;
+    }
+
+    // それ以外なら失敗
+    return this._httpError ();
+  }
+
+  if (!this._analyzeTweet (http)) {
+    return this.UNKNOWN;
+  }
+
+  var fmt = this [this.multiPhoto ? 'nameFormat2' : 'nameFormat'];
+  this._buildFilename (fmt);
+
+  return this.OK;
+};
+
+
+// media/grid の JSON を解析してリストに追加
+//  最後の data-status-id を返す
+Twitter.prototype._analyzeMediaGridJson = function (http, base) {
+  var urls = this.urls;
+  var lastId = null;
+
+  function add (s, p1) {
+    lastId = p1;
+
+    urls.push ({ Url: base + p1 });
+    return '';
+  }
+  http.data.replace (/\sdata-status-id=\\"(\d+)\\"/g, add);
+
+  return lastId;
+};
+
+
+// 画像一覧に含まれる画像を抽出する
+Twitter.prototype.getMediaImage = function (url) {
+  if (!/^(https?:\/\/[^\/]*\/)([^\/]+)\//.test (url)) {
+    return this.NG;
+  }
+  var head = RegExp.$1;
+  var twitterId = RegExp.$2;
+
+  var http = this.http;
+  http.setRequestHeader ('Referer', head + twitterId + '/media');
+
+  var base = head + twitterId + '/status/';
+  var json = head + 'i/profiles/show/' + twitterId + '/media_timeline';
+  var maxId = '';
+
+  for (;;) {
+    if (!http.getXhr (json + maxId)) {
+      return http._httpError ();
+    }
+
+    if (!/"has_more_items"\s*:\s*(true|false)/.test (http.data)) {
+      this._unknown ('has_more_items が見つかりません。');
+    }
+    if (RegExp.$1 == 'false') {
+      break;
+    }
+
+    var lastId = this._analyzeMediaGridJson (http, base);
+    if (!lastId) {
+      this._unknown ('data-status-id が見つかりません。');
+    }
+
+    // 2回目以降は URL に ?max_id=～ をつける
+    maxId = '?max_id=' + lastId;
+  }
+
+  if (!this.urls.length) {
+    this._unknown ('ダウンロード対象が見つかりませんでした。');
+  }
+
+  return this.OK;
+};
+
+
+// 内部で使用: NameBuilder オブジェクトの設定
+Twitter.prototype._setupNameBuilder = function () {
+  var nb = this.nameBuilder;
+
+  // ファイル名の生成に使える情報
+  nb.twitter_id = null;  // Twitter ID
+  nb.user_name = null;   // ユーザー名
+  nb.id = null;          // ツイートのパーマリンクID
+  nb.title = null;       // 本文
+
+  nb.pages = 0;  // 全ページ数
+  nb.p = 0;      // ページ番号
+
+  if (typeof nb.definePPZ == 'function') {
+    nb.definePPZ (this.pageOrigin);
+  }
+};
+
+
+// 画像のURLを取得する
+Twitter.prototype.getImage = function (url) {
+  this._setupNameBuilder ();
+
+  this.urls = [ ];
+  this.http = new Http ();
+  this.multiPhoto = false;
+
+  var path = (new URL (url)).path.slice (1);
+
+  if (/^[^\/]+\/status(es)?\/\d+(\/photo\/\d+(\/large)?)?(#.*)?$/.test (path)) {
+    return this.getTweetImage (url);
+  }
+  if (/^([^\/]+)\/media$/.test (path)) {
+    return this.getMediaImage (url);
+  }
+
+  this._p ('未対応の URL です。');
+  return this.MIS;
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  var twitter = new Twitter ();
+  twitter.nameBuilder = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+  twitter.nameFormat = ini.Filename.Photo;
+  twitter.nameFormat2 = ini.Filename.Photo2;
+
+  var r = twitter.getImage (urlinfo.url);
+  if (r != twitter.OK) {
+    return twitter.end (r);
+  }
+
+  if (twitter.urls.length > 2) {
+    (new AddItem (ini.AddItem)).send (twitter.urls) || exit ();
+    Util.remove_this ();
+    return;
+  }
+
+  var o = twitter.urls [0];
+
+  Dorothy.fileName = o.Filename;
+  headers.Host = (new URL (urlinfo.url = o.Url)).host;
+  headers.Referer = '';
+  headers.Cookie = '';
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// EOF

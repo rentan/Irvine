@@ -1,0 +1,109 @@
+youtube_info.dms
+
+
+YouTube の動画データの情報(コーデックや URL、ファイルサイズ)を取得して
+テキストファイルに保存します。
+
+
+使用方法
+========
+
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
+
+
+対応 URL
+========
+
+https?://(www.)?youtube.com/(watch?v=|v/|embed/).
+
+
+仕様・制限事項
+==============
+
+・RTMP 形式の動画のファイルサイズには対応していません。
+
+
+変更履歴
+========
+
+2014-03-31  version 20140331.0  rentan at rentan.org
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
+
+  起動時に実行するか問い合わせる機能([General] AskExec)を追加。
+
+2013-11-29
+  YouTubeVideo オブジェクトの戻り値の形式を変更。
+  knownItags に 264 を追加。
+  signature の検索を高速化。
+  assets js の相対 URL 化に対応。
+
+  fileSave2() を使わないようにした。
+
+2013-09-13
+  設定項目を追加。
+    [AddItem]
+    Mode=
+    Queue=
+    Listname=
+    [General]
+    GetFileSize=
+    [Download] (あまり動作試験していません)
+    Download=
+    Priority=
+
+  テキストファイルに [YouTubeVideo] セクションを追加。
+  解読情報をログに表示しないようにした。
+
+  adaptive_fmts、3D 動画に対応。
+
+2013-08-28
+  signature 復号器を Download YouTube Videos as MP4 version 1.7.9
+  のものに更新。youtube.dms 用の解読情報を表示するようにした
+  (完璧な結果を保証するものではありません)。
+
+  テキスト化関数を YouTubeVideo オブジェクトのメソッドとして独立化。
+
+  インデントを1タブから2スペースに変更。
+
+2013-07-13
+  大幅に書き換え、サイト側の変更に対応。
+
+2013-04-28
+  Flash のバージョン設定を Http オブジェクトにまかせるようにした。
+
+2013-02-17
+  HTML の変更に対応。
+
+2012-12-04
+  HandOver=true の設定で youtu.be の URL が指定されると2回実行して
+  しまうエンバグを修正。「データを再読込み」が必要です。
+
+  302 は Irvine が処理するのでスクリプト側での対応は必要ないことを
+  すっかり忘れてました……。
+
+2012-11-25
+  youtu.be の短縮 URL に対応。「データを再読込み」が必要です。
+
+2012-11-21
+  user\youtube_info.default.ini の %NAME% を %AUTHOR% に修正。
+
+  https:// に対応(http:// に変更して接続します)。ヘッダを書き換えた
+  ので、動画ダウンロード２設定で「データを再読込み」して下さい。
+
+2012-09-19
+  動画サーバの仕様変更に対応。
+    thanks to http://toro.2ch.net/test/read.cgi/win/1330866405/700
+
+2012-08-02
+  年齢制限つき動画対策として IE の Cookie を読み込む代わりに、Googlebot
+  の User-Agent で接続するようにした。
+    thanks to http://toro.2ch.net/test/read.cgi/win/1330866405/635
+
+2012-07-11
+  初期バージョン。
+
+
+[EOF]

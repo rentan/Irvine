@@ -1,0 +1,866 @@
+//Dorothy2
+//caption=BrowserCookie
+//version=20140403.0
+//hint=new BrowserCookie ()
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+
+//-------------------------------- bcSQLite3 -------------------------------
+
+
+// コンストラクタ
+void function bcSQLite3 () {
+  if (nameOf (this) != 'bcSQLite3') {
+    bcSQLite3.prototype._fatal ('new なしで bcSQLite3() が呼ばれました。');
+  }
+
+  this._loadDll ();
+};
+
+
+// sqlite3.dll の必要バージョン
+bcSQLite3.prototype.minVersion = 3008000;  // 必須
+bcSQLite3.prototype.recVersion = 3008004;  // 推奨
+
+
+// Result Codes
+bcSQLite3.prototype.code = -1;  // 直前の API の戻り値
+
+bcSQLite3.prototype.OK = 0;
+bcSQLite3.prototype.ROW = 100;
+
+
+// プロパティ初期値: 内部で使用
+bcSQLite3.prototype._dll = null;  // sqlite3.dll 呼び出しオブジェクト
+bcSQLite3.prototype._db = null;   // SQLite db handle へのポインタ
+
+
+// 内部で使用: エラーを表示する
+bcSQLite3.prototype._p = function (s) {
+  println ('bcSQLite3: ' + s);
+  return false;
+};
+
+
+// 内部で使用: エラーを表示してスクリプトを終了
+bcSQLite3.prototype._fatal = function (s) {
+  alert ('bcSQLite3: ' + s);
+  exit ();
+};
+
+
+// 内部で使用: sqlite3.dll をロード
+//  IE の Cookie を読み込む指定の場合は使われないので
+//  オブジェクト定義時ではなくインスタンス作成時に読み込む
+bcSQLite3.prototype._loadDll = function () {
+  if (this._dll) {
+    // ロード済み
+    return;
+  }
+
+  var dll = Dorothy.path + 'bin\sqlite3.dll';
+  if (!(new File (dll)).exists ()) {
+    this._fatal ("DLL がありません。\n\n" + dll);
+  }
+
+  var d = new DynaCall ();
+  d.register (dll, 'sqlite3_libversion', 'r=s');
+  d.register (dll, 'sqlite3_libversion_number', 'r=l');
+
+  d.register (dll, 'sqlite3_open_v2', 'i=ssls', 'r=l');
+  d.register (dll, 'sqlite3_close_v2', 'i=p', 'r=l');
+
+  d.register (dll, 'sqlite3_prepare_v2', 'i=pslss', 'r=l');
+  d.register (dll, 'sqlite3_step', 'i=p', 'r=l');
+  d.register (dll, 'sqlite3_finalize', 'i=p', 'r=l');
+
+  d.register (dll, 'sqlite3_column_bytes', 'i=pl', 'r=l');
+  d.register (dll, 'sqlite3_column_text', 'i=pl', 'r=s');
+  d.register (dll, 'sqlite3_column_blob', 'i=pl', 'r=p');
+
+  // 全インスタンス共通で使う
+  bcSQLite3.prototype._dll = d;
+
+  this._validateDllVersion ();
+};
+
+
+// 内部で使用: sqlite3.dll のバージョン検査
+bcSQLite3.prototype._validateDllVersion = function () {
+  var v = this.libversion_number ();
+  if (debug) {
+    this._p ('sqlite3.dll version ' + v);
+  }
+
+  if (v < this.minVersion) {
+    this._fatal ('sqlite3.dll のバージョンが古過ぎます。');
+  }
+  if (v < this.recVersion) {
+    this._p ('sqlite3.dll version ' + this.recVersion + ' 以降を推奨します。');
+  }
+};
+
+
+// DLL のバージョン文字列を取得する
+bcSQLite3.prototype.libversion = function () {
+  var s = this._dll.sqlite3_libversion ();
+
+  return (new String (s)).toString ();
+};
+
+
+// DLL のバージョン番号を取得する
+bcSQLite3.prototype.libversion_number = function () {
+  return this._dll.sqlite3_libversion_number ();
+};
+
+
+// データベースへの接続を開く
+bcSQLite3.prototype.open = function (filename) {
+  if (this._db) {
+    throw '既にデータベースに接続しています。';
+  }
+
+  var flags = 0x00000001;  // SQLITE_OPEN_READONLY
+
+  var pp = new Struct ('pointer:p');
+  this.code = this._dll.sqlite3_open_v2 (filename, pp, flags, null);
+
+  if (this.code == this.OK) {
+    this._db = pp.pointer;
+  }
+
+  return (this.code == this.OK);
+};
+
+
+// データベースへの接続を閉じる
+bcSQLite3.prototype.close = function () {
+  this.code = this._dll.sqlite3_close_v2 (this._db);
+
+  if (this.code == this.OK) {
+    this._db = null;
+  }
+
+  return (this.code == this.OK);
+};
+
+
+// SQL 文をコンパイルして sqlite3_stmt オブジェクトへのポインタを返す
+bcSQLite3.prototype.prepare = function (sql) {
+  if (!this._db) {
+    this._p ('prepare: データベースに接続していません。');
+    return null;
+  }
+
+  var pp = new Struct ('pointer:p');
+  this.code = this._dll.sqlite3_prepare_v2 (this._db, sql, sql.length, pp, null);
+
+  if (this.code != this.OK) {
+    this._p ('prepare: error (' + this.code + '): ' + sql);
+    return null;
+  }
+
+  return pp.pointer;
+};
+
+
+// sqlite3_stmt オブジェクトを閉じる
+bcSQLite3.prototype.finalize = function (pstmt) {
+  this.code = this._dll.sqlite3_finalize (pstmt);
+
+  return (this.code == this.OK);
+};
+
+
+// SQL 評価
+bcSQLite3.prototype.step = function (pstmt) {
+  this.code = this._dll.sqlite3_step (pstmt);
+
+  return (this.code == this.ROW);
+};
+
+
+// 結果取り出し
+bcSQLite3.prototype.column_bytes = function (pstmt, icol) {
+  return this._dll.sqlite3_column_bytes (pstmt, icol);
+};
+
+bcSQLite3.prototype.column_text = function (pstmt, icol) {
+  return this._dll.sqlite3_column_text (pstmt, icol);
+};
+
+bcSQLite3.prototype.column_blob = function (pstmt, icol) {
+  var bytes = this.column_bytes (pstmt, icol);
+  var blob = this._dll.sqlite3_column_blob (pstmt, icol);
+
+  var sb = new StringBuffer (bytes);
+  DynaCall.moveMemory (sb, blob, bytes);
+
+  return sb;
+};
+
+
+//-------------------------------- BrowserCookie ---------------------------
+
+
+// コンストラクタ
+void function BrowserCookie (opt_cfg) {
+  if (nameOf (this) != 'BrowserCookie') {
+    BrowserCookie.prototype._fatal ('new なしで BrowserCookie() が呼ばれました。');
+  }
+
+
+  // 共通設定を読み込む
+  var common_ini = Dorothy.path + 'user\browsercookie.ini';
+  this._makeCommonIni (common_ini);
+  this._loadCommonIni (common_ini);
+
+
+  // 動作モード初期化
+  var cfg = opt_cfg || { };
+
+  var keys = this.iniTemplate;
+  for (var key in keys) {
+    var v = cfg.hasKey (key) ? cfg [key] : keys [key];
+    if (typeof v == 'string' || nameOf (v) == 'String') {
+      v = v.trim ();
+    }
+
+    this [key.toLowerCase ()] = v;
+  }
+};
+
+// _browser _firefoxcookie _chromecookie _cefcookie
+//   browsercookie.ini から読み込まれて設定される
+//   (省略時は _loadCommonIni にハードコードされた値)
+// browser  firefoxcookie  chromecookie  cefcookie
+//   コンストラクタの引数で設定される(省略時は iniTemplate の値)
+
+// プロパティ初期値
+BrowserCookie.prototype.maxSize = 4200;
+
+
+// 内部で使用: 共通設定のセクション名
+BrowserCookie.prototype._iniSection = 'BrowserCookie';
+
+
+// 内部で使用: DLL をロード
+BrowserCookie.prototype._dll = (function () {
+  var d = new DynaCall ();
+
+  d.register ('ieframe.dll', 'IEIsProtectedModeURL', 'i=w', 'r=l');
+  d.register ('ieframe.dll', 'IEGetProtectedModeCookie', 'i=wws4l', 'r=l');
+  d.register ('wininet.dll', 'InternetGetCookieEx', 'i=sss4lp', 'r=b');
+  d.register ('kernel32', 'WideCharToMultiByte', 'i=ulslslss', 'r=l');
+
+  return d;
+}) ();
+
+
+// 内部で使用: エラーメッセージを表示して false を返す
+BrowserCookie.prototype._p = function (s) {
+  println ('BrowserCookie: ' + s);
+  return false;
+};
+
+
+// 内部で使用: エラーメッセージを表示して null を返す
+BrowserCookie.prototype._null = function (s) {
+  this._p (s);
+  return null;
+};
+
+
+// 内部で使用: エラーを表示してスクリプトを終了
+BrowserCookie.prototype._fatal = function (s) {
+  alert ('BrowserCookie: ' + s);
+  exit ();
+};
+
+
+BrowserCookie.prototype._noCookie = function () {
+  return this._null ('Cookie がありません。');
+};
+
+
+// 内部で使用: 引数で指定した Cookie を返す
+//  debug 時のみ Cookie の値を表示する
+BrowserCookie.prototype._printCookie = function (s) {
+  if (debug) {
+    this._p ('Cookie: ' + s);
+  }
+  return s;
+};
+
+
+// 内部で使用: 共通設定を標準値で保存する
+BrowserCookie.prototype._makeCommonIni = function (file) {
+  var f = new File (file);
+  if (f.exists ()) {
+    // 既に存在するので何もしない
+    return;
+  }
+
+  var t = [
+    '; これは BrowserCookie の共通設定ファイルです。',
+    '; 詳細はドキュメントを参照して下さい。',
+    '; Dorothy2\document\common\browsercookie.txt',
+    '',
+    '[' + this._iniSection + ']',
+    '',
+    '; ブラウザ指定(省略時は IE) IE IE_protected IE_unprotected Firefox Chrome CEF',
+    'Browser=',
+    '',
+    '; Firefox の Cookie ファイル名(省略時は自動取得)',
+    'FirefoxCookie=',
+    '',
+    '; Chrome の Cookie ファイル名(省略時は自動取得)',
+    'ChromeCookie=',
+    '',
+    '; Chromium Embedded Framework の Cookie ファイル名',
+    'CefCookie=',
+    '',
+    '; EOF',
+  '' ].join ("\n");  // "\n" は DMonkey では 0x0d 0x0a
+
+  var success = false;
+  var mutex = new Mutex ('Dorothy2.BrowserCookie');
+  try {
+    mutex.lock ();
+    if (!f.exists ()) {
+      f.open ('w');
+      f.write (t);
+      success = true;
+    }
+  }
+  catch (e) {
+    this._p ('共通設定の保存に失敗しました(' + e + '): ' + file);
+  }
+  finally {
+    f.close ();
+    mutex.unlock ();
+  }
+
+  if (success) {
+    this._p ('共通設定を保存しました: ' + file);
+    if (Dorothy.hasKey ('edit')) {
+      Dorothy.edit (file);
+    }
+  }
+};
+
+
+// 内部で使用: 共通設定を読み込む
+BrowserCookie.prototype._loadCommonIni = function (file) {
+
+  var ini = new Ini (file);
+
+  var sec = this._iniSection;
+  if (!ini.sectionExists (sec)) {
+    this._p ('共通設定に [' + sec + '] セクションがありません。');
+  }
+
+  this._browser = ini.read (sec, 'Browser', '').trim () || 'IE';
+  this._firefoxcookie = ini.read (sec, 'FirefoxCookie', '').trim () || 'Auto';
+  this._chromecookie = ini.read (sec, 'ChromeCookie', '').trim () || 'Auto';
+  this._cefcookie = ini.read (sec, 'CefCookie', '').trim ();
+};
+
+
+// 設定初期値(Util.ini_load 用の型指定)
+// 使用法
+//  var ini = Util.ini_load ({ Cookie: BrowserCookie.prototype.iniTemplate });
+//  var browsercookie = new BrowserCookie (ini.Cookie);
+//  Util.ini_load で設定ファイルを読み込む場合のみ意味がある。
+BrowserCookie.prototype.iniTemplate = {
+  Browser: '',
+  FirefoxCookie: '',
+  ChromeCookie: '',
+  CefCookie: ''
+};
+
+
+// 内部で使用: SQL の結果を取り出す
+BrowserCookie.prototype._sqlColumn = function (db, stmt, icol, type) {
+  if (type == 'text') {
+    return db.column_text (stmt, icol);
+  }
+  if (type == 'blob') {
+    return db.column_blob (stmt, icol);
+  }
+
+  throw '未対応のデータ種別です: ' + type;
+};
+
+
+// 内部で使用: SQL を実行する
+BrowserCookie.prototype._sql = function (cookie_file, sql, types) {
+
+  cookie_file = new File (cookie_file);
+  if (!cookie_file.exists ()) {
+    return this._null ('Cookie ファイルがありません: ' + cookie_file.path);
+  }
+
+  var db = new bcSQLite3 ();
+  var values = [ ];
+
+  var mutex = new Mutex ('Dorothy2.BrowserCookie');
+  try {
+    mutex.lock ();
+
+    db.open (cookie_file.path);
+    var stmt = db.prepare (sql);
+    try {
+      if (db.step (stmt)) {
+        for (var i = 0; i < types.length; ++i) {
+          values.push (this._sqlColumn (db, stmt, i, types [i]));
+        }
+      }
+    }
+    finally {
+      db.finalize (stmt);
+    }
+  }
+  catch (e) {
+    this._p (e);
+  }
+  finally {
+    db.close ();
+    mutex.unlock ();
+  }
+
+  if (debug) {
+    this._p ('file = ' + cookie_file);
+    this._p ('sql = ' + sql);
+    this._p ('value = ' + values.join (', '));
+  }
+
+  return (values.length == types.length) ? values : null;
+};
+
+
+// AppData のパスを調べる
+BrowserCookie.prototype.getShellFolder = function (name) {
+  var reg = new RegIni ('\Software\Microsoft\Windows\CurrentVersion\Explorer');
+  return reg.read ('Shell Folders', name, '');
+};
+
+
+// 内部で使用: 引数の指定が正しいか調べる
+BrowserCookie.prototype._validateTarget = function (obj) {
+  var host = obj.hasKey ('host') ? obj.host.toString () : '';
+  var path = obj.hasKey ('path') ? obj.path.toString () : '/';
+  var name = obj.hasKey ('name') ? obj.name.toString () : '';
+
+  // name を配列にして空文字列を削除する
+  name = name.trim ().split (',');
+  for (var i = name.length; --i >= 0; ) {
+    name [i] || name.splice (i, 1);
+  }
+
+  var h = host.replace (/^\./, '');
+  var url = 'http://' + h + path;
+
+  if (!h || name.length == 0) {
+    return null;
+  }
+
+  return { host: host, path: path, name: name, url: url };
+};
+
+
+// IEGetProtectedModeCookie による IE 保護モード Cookie の読み込み
+// http://msdn.microsoft.com/en-us/library/cc196998.aspx
+BrowserCookie.prototype._IEGetProtectedModeCookie = function (url, name) {
+
+  // フラグ
+  var flag = 0x2000;  // INTERNET_COOKIE_HTTPONLY
+
+  // 読み込みバッファ
+  var wc_len = new Number (this.maxSize);
+  var wc = new StringBuffer (wc_len * 2 + 4);
+
+  var result = this._dll.IEGetProtectedModeCookie (url, name, wc, wc_len, flag);
+  if (result != 0) {
+    return null;
+  }
+
+  // ワイド文字列から UTF-8 に変換
+  var CP_UTF8 = 65001;
+  var wc_flags = 0;
+
+  var u8_len = this._dll.WideCharToMultiByte (CP_UTF8, wc_flags, wc, -1, null, 0, null, null);
+  var u8 = new StringBuffer (u8_len);
+  u8_len = this._dll.WideCharToMultiByte (CP_UTF8, wc_flags, wc, -1, u8, u8_len, null, null);
+
+  u8.length = u8_len - 1;  // 末尾の NUL を取り除く
+  return u8.toString ();
+};
+
+
+// IE から Cookie を読み込む(保護モード有効) 下請け
+BrowserCookie.prototype._importIEprotected = function (obj) {
+
+  var cookies = [ ];
+  for (var i = 0; i < obj.name.length; ++i) {
+    var c = this._IEGetProtectedModeCookie (obj.url, obj.name [i]);
+    if (!c) {
+      return this._noCookie ();
+    }
+    cookies.push (c);
+  }
+
+  return this._printCookie (cookies.join (';'));
+};
+
+
+// IE から Cookie を読み込む(保護モード有効)
+BrowserCookie.prototype.importIEprotected = function (obj) {
+  this._p ('IE 保護モード有効');
+
+  obj = this._validateTarget (obj);
+  if (!obj) {
+    return null;
+  }
+
+  return this._importIEprotected (obj);
+};
+
+
+// InternetGetCookieEx
+BrowserCookie.prototype._InternetGetCookieEx = function (url, name) {
+
+  // フラグ
+  var flag = 0x2000;  // INTERNET_COOKIE_HTTPONLY
+
+  // 読み込みバッファ
+  var sb_len = new Number (this.maxSize);
+  var sb = new StringBuffer (sb_len + 4);
+
+  var rc = this._dll.InternetGetCookieEx (url, name, sb, sb_len, flag, null);
+  if (!rc) {
+    return null;
+  }
+
+  var len = sb.indexOf (String.fromCharCode (0));
+  if (len >= 0) {
+    sb.length = len;
+  }
+
+  return sb.toString ();
+};
+
+
+// IE から Cookie を読み込む(保護モード無効) 下請け
+BrowserCookie.prototype._importIEunprotected = function (obj) {
+
+  var cookies = [ ];
+  for (var i = 0; i < obj.name.length; ++i) {
+    var c = this._InternetGetCookieEx (obj.url, obj.name [i]);
+    if (!c) {
+      return this._noCookie ();
+    }
+    cookies.push (c);
+  }
+
+  return this._printCookie (cookies.join (';'));
+};
+
+
+// IE から Cookie を読み込む(保護モード無効)
+BrowserCookie.prototype.importIEunprotected = function (obj) {
+  this._p ('IE 保護モード無効');
+
+  obj = this._validateTarget (obj);
+  if (!obj) {
+    return null;
+  }
+
+  return this._importIEunprotected (obj);
+};
+
+
+// IE から Cookie を読み込む(保護モード自動識別)
+BrowserCookie.prototype.importIE = function (obj) {
+  obj = this._validateTarget (obj);
+  if (!obj) {
+    return null;
+  }
+
+  // 保護モード有効で開く URL か調べる
+  var p = this._dll.IEIsProtectedModeURL (obj.url);
+
+  if (p == 0) {  // S_OK
+    this._p ('IE 自動識別: 保護モード有効');
+    return this._importIEprotected (obj);
+  }
+
+  this._p ('IE 自動識別: 保護モード無効');
+  return this._importIEunprotected (obj);
+};
+
+
+// Firefox の Cookie ファイルのパスを調べる
+//  存在するかどうかは調べない
+BrowserCookie.prototype.getFirefoxCookiePath = function () {
+
+  // デフォルトプロファイルのセクション名を返す
+  // 複数のプロファイルがありどこにも Defalut=1 がないケースはあり得るが
+  // 通常の使用方法には該当しないので対応しない。
+  function getDefaultSection (ini) {
+    var secs = ini.readSections ();
+    var profs = [ ];
+
+    for (var i = 0; i < secs.length; ++i) {
+      var sec = secs [i];
+      if (/^Profile\d+$/.test (sec)) {
+        if (ini.read (sec, 'Default', null) == '1') {
+          return sec;
+        }
+        profs.push (sec);
+      }
+    }
+
+    return (profs.length == 1) ? profs [0] : null;
+  }
+
+
+  var appdata = this.getShellFolder ('AppData');
+  if (!appdata) {
+    return this._null ('AppData のパスが取得できませんでした。');
+  }
+
+  var prof = new File (appdata + '\Mozilla\Firefox\profiles.ini');
+  if (!prof.exists ()) {
+    return this._null ('profiles.ini がありません。');
+  }
+
+  var ini = new Ini (prof.path);
+  var sec = getDefaultSection (ini);
+  if (!sec) {
+    return this._null ('profiles.ini にデフォルトプロファイルがありません。');
+  }
+
+  var path = ini.read (sec, 'Path', null);
+  if (!path) {
+    return this._null ('profiles.ini のデフォルトプロファイルに Path がありません。');
+  }
+  path = path.replace (/\//g, '\');
+
+  if (ini.read (sec, 'IsRelative', null) == '1') {
+    path = prof.extractPath () + path;
+  }
+
+  return path + '\cookies.sqlite';
+};
+
+
+// Firefox から Cookie を読み込む
+BrowserCookie.prototype.importFirefox = function (obj) {
+  this._p ('Firefox');
+
+  var cookie_file = this.firefoxcookie.trim () || this._firefoxcookie;
+  if (cookie_file.toLowerCase () == 'auto') {
+    cookie_file = this.getFirefoxCookiePath ();
+  }
+  print_debug (cookie_file);
+
+  obj = this._validateTarget (obj);
+  if (!obj || !cookie_file) {
+    return null;
+  }
+
+  if (obj.name.length > 1) {
+    this._fatal ('複数キーは未対応です。');
+  }
+
+  var columnTypes = [ 'text' ];
+  var sql =
+"SELECT value FROM moz_cookies" +
+" WHERE host = '" + obj.host +
+"' and name = '" + obj.name [0] +
+"' and path = '" + obj.path +
+"';";
+
+  var cookie = this._sql (cookie_file, sql, columnTypes);
+  if (!cookie) {
+    return this._noCookie ();
+  }
+
+  return this._printCookie (obj.name [0] + '=' + cookie [0]);
+};
+
+
+// Chrome の Cookie ファイルのパスを調べる
+//  存在するかどうかは調べない
+//  %Local AppData%\Google\Chrome\User Data\Default\Cookies
+BrowserCookie.prototype.getChromeCookiePath = function () {
+  var appdata = this.getShellFolder ('Local AppData');
+  if (!appdata) {
+    return this._null ('Local AppData のパスが取得できませんでした。');
+  }
+
+  var file = new File (appdata + '\Google\Chrome\User Data\Default\Cookies');
+  return file.path;
+};
+
+
+// 内部で使用: CRYPT_INTEGER_BLOB structure
+BrowserCookie.prototype._newDataBlob = function (sb) {
+  var blob = new Struct ('cbData:l', 'pbData:s');
+
+  if (sb) {
+    blob.cbData = sb.length;
+    blob.pbData = sb;
+  }
+
+  return blob;
+};
+
+
+// 内部で使用: Chrome の暗号化 Cookie を復号する
+BrowserCookie.prototype._cryptUnprotectData = function (bin) {
+  var dll = new DynaCall ();
+  dll.register ('kernel32', 'LocalFree', 'i=h', 'r=h');
+  dll.register ('crypt32.dll', 'CryptUnprotectData', 'i=spspsls', 'r=b');
+
+  var dataIn = this._newDataBlob (bin);
+  var dataOut = this._newDataBlob ();
+
+  var r = dll.CryptUnprotectData (dataIn, null, null, null, null, 0, dataOut);
+  if (!r) {
+    throw 'CryptUnprotectData 失敗。';
+  }
+
+  var len = dataOut.cbData;
+  var sb = new StringBuffer (len);
+  DynaCall.moveMemory (sb, dataOut.pbData, len);
+
+  r = dll.LocalFree (dataOut.pbData);
+  if (r != 0) {  // 戻り値がハンドル('r=h')のため != null ではいけない
+    throw 'LocalFree 失敗。';
+  }
+
+  return sb;
+};
+
+
+// 内部で使用: Chrome から Cookie を読み込む
+BrowserCookie.prototype._importChrome = function (cookie_file, obj) {
+  obj = this._validateTarget (obj);
+  if (!obj || !cookie_file) {
+    return null;
+  }
+
+  if (obj.name.length > 1) {
+    this._fatal ('複数キーは未対応です。');
+  }
+
+  var columnTypes = [ 'text', 'blob' ];
+  var sql =
+"SELECT value, encrypted_value FROM cookies" +
+" WHERE host_key = '" + obj.host +
+"' and name = '" + obj.name [0] +
+"' and path = '" + obj.path +
+"';";
+
+  var cookies = this._sql (cookie_file, sql, columnTypes);
+  if (!cookies) {
+    return this._noCookie ();
+  }
+
+  var cookie = cookies [0];
+  var encrypted = cookies [1];
+
+  if (encrypted) {
+    try {
+      cookie = this._cryptUnprotectData (encrypted).text;
+    }
+    catch (e) {
+      return this._null (e);
+    }
+  }
+
+  return this._printCookie (obj.name [0] + '=' + cookie);
+};
+
+
+// Chrome から Cookie を読み込む
+BrowserCookie.prototype.importChrome = function (obj) {
+  this._p ('Chrome');
+
+  var cookie_file = this.chromecookie.trim () || this._chromecookie;
+  if (cookie_file.toLowerCase () == 'auto') {
+    cookie_file = this.getChromeCookiePath ();
+  }
+
+  return this._importChrome (cookie_file, obj);
+};
+
+
+// CEF から Cookie を読み込む
+//  CefCookie= の省略や Auto 指定が出来ないこと以外は Chrome と同じ。
+BrowserCookie.prototype.importCef = function (obj) {
+  this._p ('CEF');
+
+  var cookie_file = this.cefcookie.trim () || this._cefcookie;
+  if (cookie_file.toLowerCase () == 'auto') {
+    return this._null ('Cookie ファイルに Auto は指定できません。');
+  }
+  if (!cookie_file) {
+    return this._null ('Cookie ファイルが指定されていません。');
+  }
+
+  return this._importChrome (cookie_file, obj);
+};
+
+
+// ブラウザから Cookie を読み込む
+BrowserCookie.prototype.import = function (obj) {
+  var browser = this.browser.trim () || this._browser;
+  var b = browser.toLowerCase ();
+
+  var map = {
+    ie_protected: 'importIEprotected',
+    ie_unprotected: 'importIEunprotected',
+    ie: 'importIE',
+    firefox: 'importFirefox',
+    chrome: 'importChrome',
+    cef: 'importCef'
+  };
+
+  if (map.hasKey (b)) {
+    return this [map [b]].apply (this, arguments);
+  }
+
+  return this._null ('未対応のブラウザ名です: ' + browser);
+};
+
+
+}) ()
+
+
+// EOF

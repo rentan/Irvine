@@ -1,0 +1,607 @@
+//Dorothy2
+//caption=HtmlForm
+//version=20140331.0
+//hint=new HtmlForms ()
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+common_load ('utf8');
+
+
+//-------------------------------- HtmlFormSelect --------------------------
+
+// コンストラクタ
+void function HtmlFormSelect (src) {
+  if (nameOf (this) != 'HtmlFormSelect') {
+    alert ('new なしで HtmlFormSelect() が呼ばれました。');
+    exit ();
+  }
+
+  this.outerHTML = src;
+  this.options = [ ];
+
+  // String.replace の第2引数の関数内では this == RegExp オブジェクトになるので回避用
+  var self = this;
+
+  // タグの解析
+  var element_re = /<(select|option)(\s[^>]*)?>()/ig;
+  function analyze_element (s, p1, p2) {
+    var tagname = p1.toLowerCase ();
+    var atr = p2;
+
+    if (tagname == 'select') {
+      var e = HtmlForm.prototype._parseAttributes (atr);
+
+      // 特定の属性のみ保存
+      for (var key in e) {
+        if (/^(class|id|name|size|disabled|multiple)$/.test (key)) {
+          self [key] = e [key];
+        }
+      }
+    }
+    else {  // 'option'
+      var e = self._createOption (HtmlForm.prototype._parseAttributes (atr));
+      self.options.push (e);
+    }
+
+    // 置換結果は使わない。
+    return '';
+  }
+
+  src.replace (element_re, analyze_element);
+
+  // disabled と multiple を「記述されていたら true の真偽値」にする
+  this.disabled = this.hasKey ('disabled');
+  this.multiple = this.hasKey ('multiple');
+
+  this._updateSelectedIndex ();
+
+};
+
+
+// プロパティ初期値
+HtmlFormSelect.prototype.tagName = 'select';
+
+// HtmlForm.elements [n].hasKey ('type') のチェックの手間を省くためキーを作っておく
+HtmlFormSelect.prototype.type = '';
+
+
+// <select> の属性値
+HtmlFormSelect.prototype.class = '';
+HtmlFormSelect.prototype.id = '';
+HtmlFormSelect.prototype.name = '';
+HtmlFormSelect.prototype.size = '';
+
+
+// 内部で使用: selectedIndex を更新する
+//  disabled は考慮しない
+HtmlFormSelect.prototype._updateSelectedIndex = function () {
+  var idx = -1;
+
+  for (var i = 0; i < this.options.length; ++i) {
+    if (this.options [i].selected) {
+      if (this.multiple) {
+        // multiple なら最初に見つかった位置で確定
+        idx = i;
+        break;
+      }
+
+      // 複数の項目が選択されていたら最後の一つ以外は選択解除する
+      if (idx != -1) {
+        this.options [idx].selected = false;
+      }
+      idx = i;
+    }
+  }
+
+  if (!this.multiple && idx == -1) {
+    // 一つも選択されていなければ、先頭の項目を選択する
+    idx = 0;
+    this.options [idx].selected = true;
+  }
+
+  this.selectedIndex = idx;
+};
+
+
+// 内部で使用: options オブジェクトを作成する
+HtmlFormSelect.prototype._createOption = function (atr) {
+  var e = {
+    'class': '',
+    id: '',
+    name: '',
+    value: '',
+
+    type: '',
+    tagName: 'option'
+  };
+
+  for (var key in atr) {
+    if (/^(class|id|name|value)$/.test (key)) {
+      e [key] = atr [key];
+    }
+  }
+
+  // disabled と selected を「記述されていたら true の真偽値」にする
+  e.disabled = atr.hasKey ('disabled');
+  e.selected = atr.hasKey ('selected');
+
+  return e;
+};
+
+
+// <option> を選択する
+//  selectedIndex への代入による選択は出来ない
+HtmlFormSelect.prototype.select = function (optobj, b) {
+  b = !!b;  // true or false
+
+  var found = false;
+  for (var i = 0; i < this.options.length; ++i) {
+    if (this.options [i] == optobj) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    print_debug ('HtmlFormSelect.select: 引数が子要素のオブジェクトではありません。');
+    return false;
+  }
+
+  if (b && !this.multiple) {
+    // 選択する前に他の <option> を選択解除する
+    for (i = 0; i < this.options.length; ++i) {
+      this.options [i].selected = false;
+    }
+  }
+
+  optobj.selected = b;
+  this._updateSelectedIndex ();
+
+  return true;
+};
+
+
+//-------------------------------- HtmlForm --------------------------------
+
+// コンストラクタ
+void function HtmlForm (src, opt_url) {
+  if (nameOf (this) != 'HtmlForm') {
+    alert ('new なしで HtmlForm() が呼ばれました。');
+    exit ();
+  }
+
+  if (nameOf (src) == 'Http') {
+    throw 'HtmlForm を Http オブジェクトで初期化することは出来ません。';
+  }
+
+  this.url = opt_url || null;
+  this.outerHTML = src;
+  this.elements = [ ];
+
+  // String.replace の第2引数の関数内では this == RegExp オブジェクトになるので回避用
+  var self = this;
+
+  // タグの解析
+  var element_re =
+    /<((form|input)(\s[^>]*)?|(select|textarea|button)(\s[^>]*)?>(.*?)<\/\4)(\s[^>]*)?>()/ig;
+   //   2222222222  3333333    4444444444444444444444  5555555    666
+
+  function analyze_element (s, p1, p2, p3, p4, p5, p6) {
+    var tagname = (p2 + p4).toLowerCase ();
+    var atr = p3 + p5;
+    var inner_html = p6;
+
+    if (tagname == 'form') {
+      var e = self._parseAttributes (atr);
+
+      for (var key in e) {
+        // 特定の属性のみ保存
+        if (/^(accept-charset|action|class|enctype|id|method|name|target)$/.test (key)) {
+          self [key] = e [key];
+        }
+      }
+    }
+    else if (tagname == 'select') {
+      var select = new HtmlFormSelect (s);
+      self.elements.push (select);
+    }
+    else {
+      // input textarea button
+      var e = self._createElement (self._parseAttributes (atr));
+      e.tagName = tagname;
+      if (tagname == 'textarea') {
+        e.value = inner_html;
+      }
+      self.elements.push (e);
+    }
+
+    // 置換結果は使わない。
+    return '';
+  }
+
+  src.replace (element_re, analyze_element);
+
+};
+
+
+// <form> の属性値
+HtmlForm.prototype ['accept-charset'] = '';
+HtmlForm.prototype.action = '';
+HtmlForm.prototype.class = '';
+HtmlForm.prototype.enctype = '';
+HtmlForm.prototype.id = '';
+HtmlForm.prototype.method = '';
+HtmlForm.prototype.name = '';
+HtmlForm.prototype.target = '';
+
+
+// 内部で使用: 要素オブジェクトを作成する
+//  <select> <option> には未対応
+HtmlForm.prototype._createElement = function (atr) {
+  var e = {
+    'class': '',
+    id: '',
+    name: '',
+    type: '',
+    value: '',
+
+    tagName: ''
+  };
+
+  for (var key in atr) {
+    if (/^(class|id|name|style|alt|src|type|value|disabled|checked)$/.test (key)) {
+      e [key] = atr [key];
+    }
+  }
+  e.disabled = e.hasKey ('disabled');
+
+  // <input type="checkbox">
+  e.checked = e.hasKey ('checked');
+
+  return e;
+};
+
+
+// 内部で使用: 属性値の解析
+HtmlForm.prototype._parseAttributes = function (src) {
+  var e = { };
+
+  src.replace (/\s([a-z0-9\-_]+)(\s*=\s*('[^']*'|"[^"]*"|[a-z0-9\-._:]*))?()/ig,
+    function (s, p1, p2, p3) {
+    var atr = p1.toLowerCase ();
+    var val = p3.replace (/^['"]|['"]$/g, '');
+
+    e [atr] = (new Utf8 (val)).decodeCharRef ().toUTF8 ();
+
+    // 置換結果は使わない。
+    return '';
+  });
+
+  return e;
+};
+
+
+// 内部で使用: 条件に一致する要素を返す
+//  o.remove == true の場合は、要素を削除して返す
+//  <option> には未対応
+HtmlForm.prototype._operateElements = function (remove, by, single, val) {
+  var ignore_case = (by == 'tagName') || (by == 'type');
+  if (ignore_case) {
+    val = val.toLowerCase ();
+  }
+
+  var result = [ ];
+
+  for (var i = 0; i < this.elements.length; ++i) {
+    var e = this.elements [i];
+
+    if (!e.hasKey (by)) {
+      continue;
+    }
+    var v = ignore_case ? e [by].toLowerCase () : e [by];
+    if (v != val) {
+      continue;
+    }
+
+    // 見つかった
+    if (remove) {
+      this.elements.splice (i, 1);
+      --i;
+    }
+    if (single) {
+      return e;
+    }
+    result.push (e);
+  }
+
+  return (result.length > 0) ? result : null;
+};
+
+
+// HtmlForm.prototype.getElement(s)By* を定義する
+var ops = [ 'get', 'remove' ];
+var bys = [ 'Id', 'Name', 'TagName', 'Class', 'Type', 'Value' ];
+
+function operate_elements (remove, by, single) {
+  return function (val) {
+    return this._operateElements (remove, by, single, val);
+  };
+}
+
+for (var op_idx = 0; op_idx < ops.length; ++op_idx) {
+  var op = ops [op_idx];
+  var remove = (op == 'remove');
+
+  for (var by_idx = 0; by_idx < bys.length; ++by_idx) {
+    var by = bys [by_idx];
+    var by_l = by [0].toLowerCase () + by.slice (1);
+
+    HtmlForm.prototype [op + 'ElementBy' + by] =
+      operate_elements (remove, by_l, true);
+    HtmlForm.prototype [op + 'ElementsBy' + by] =
+      operate_elements (remove, by_l, false);
+  }
+}
+
+
+// 要素を追加する
+//  obj = { tagName: 'input', disabled: 'disabled' }
+//  <select> <option> には未対応
+HtmlForm.prototype.add = function (obj) {
+  var e = this._createElement (obj);
+
+  this.elements.push (e);
+
+  // 追加した要素を返す
+  return e;
+};
+
+
+// 要素の値を書き換える
+//  <select> <option> には未対応
+HtmlForm.prototype.change = function (name, val) {
+  var e = this.getElementByName (name);
+  if (e != null) {
+    e.value = val;
+  }
+
+  // 書き換えた要素(または null)を返す
+  return e;
+};
+
+
+// フォームの送信データを求める
+HtmlForm.prototype.submit = function (submit_element) {
+  if (typeof submit_element != 'object') {
+    submit_element = null;
+  }
+
+  var post = (this.method.toLowerCase ().trim () == 'post');
+
+  var result = {
+    method: post ? 'post' : 'get',
+    url: this.action.replace (/#.*$/, ''),
+    postdata: ''
+  };
+
+  var query = [ ];
+  for (var i = 0; i < this.elements.length; ++i) {
+    var e = this.elements [i];
+
+    // 送信しない要素を除外
+    if (e.name == '' || e.disabled) {
+      continue;
+    }
+
+    var tagName = e.tagName;
+    var type = e.type.toLowerCase ();
+
+    var name = encodeURIComponent (e.name);
+    var nameeq = name + '=';
+
+    if (tagName == 'input') {
+      if (type == 'reset') {
+        continue;
+      }
+      if (type == 'submit' || type == 'image') {
+        if (e != submit_element) {
+          // 指定された submit ボタンでなければ無視
+          continue;
+        }
+      }
+      else if (type == 'checkbox') {
+        if (!e.checked) {
+          // チェックボックスが選択されていない
+          continue;
+        }
+      }
+
+      if (type == 'image') {
+        query.push (name + '.x=0');
+        query.push (name + '.y=0');
+        continue;
+      }
+    }
+    else if (tagName == 'select') {
+      for (var h = 0; h < e.options.length; ++h) {
+        var opt = e.options [h];
+        if (!opt.disabled && opt.selected) {
+          query.push (nameeq + encodeURIComponent (opt.value));
+        }
+      }
+      continue;
+    }
+    else if (tagName == 'button') {
+      if (type != 'submit' || e != submit_element) {
+        continue;
+      }
+    }
+    else if (tagName != 'textarea') {
+      continue;
+    }
+
+    // <input type='image'> <select> 以外のパラメータ
+    query.push (nameeq + encodeURIComponent (e.value));
+  }
+  query = query.join ('&');
+
+  if (post) {
+    result.postdata = query;
+  }
+  else {
+    result.url += (result.url.indexOf ('?') == -1 ? '?' : '&') + query;
+  }
+
+  return result;
+};
+
+
+//-------------------------------- HtmlForms -------------------------------
+
+
+// コンストラクタ
+void function HtmlForms (src, opt_url) {
+  if (nameOf (this) != 'HtmlForms') {
+    alert ('new なしで HtmlForms() が呼ばれました。');
+    exit ();
+  }
+
+  var url = opt_url || null;
+  if (nameOf (src) == 'Http') {
+    // Http オブジェクトを渡された場合
+
+    // opt_url の指定がなければ Http オブジェクトから
+    url = url || src.baseUrl;
+
+    // .data をコメント削除してから解析する
+    src = src.data.replace (/<!--.*?-->/g, '');
+  }
+
+  // HTML ソース内に含まれるフォームを解析
+  var forms = src.match (/<form(\s[^>]*)?>.*?(<\/form(\s[^>]*)?>|$)/ig);
+
+  if (forms != null) {
+    this.length = forms.length;
+    for (var i = 0; i < forms.length; ++i) {
+      this [i] = new HtmlForm (forms [i], url);
+    }
+  }
+};
+
+
+// プロパティ初期値
+HtmlForms.prototype.length = 0;
+
+
+// 内部で使用: 条件に一致するフォームを返す
+HtmlForms.prototype._getForms = function (by, single, val) {
+  var ignore_case = (by == 'method');
+  if (ignore_case) {
+    val = val.toLowerCase ();
+  }
+
+  var result = [ ];
+
+  for (var i = 0; i < this.length; ++i) {
+    var f = this [i];
+
+    if (!f.hasKey (by)) {
+      continue;
+    }
+    var v = ignore_case ? f [by].toLowerCase ().trim () : f [by];
+    if (v != val) {
+      continue;
+    }
+
+    // 見つかった
+    if (single) {
+      return f;
+    }
+    result.push (f);
+  }
+
+  return (result.length > 0) ? result : null;
+};
+
+
+// HtmlForms.prototype.getForm(s)By* を定義する
+var bys2 = [ 'Id', 'Name', 'Class', 'Action', 'Method' ];
+
+function get_forms (by, single) {
+  return function (val) {
+    return this._getForms (by, single, val);
+  };
+}
+
+for (var by_idx = 0; by_idx < bys2.length; ++by_idx) {
+  var by = bys2 [by_idx];
+  var by_l = by [0].toLowerCase () + by.slice (1);
+
+  HtmlForms.prototype ['getFormBy' + by] = get_forms (by_l, true);
+  HtmlForms.prototype ['getFormsBy' + by] = get_forms (by_l, false);
+}
+
+
+// 内部で使用: 条件に一致するフォームを返す(<input> 等から検索)
+HtmlForms.prototype._getForms2 = function (by, single, val) {
+  var result = [ ];
+
+  for (var i = 0; i < this.length; ++i) {
+    var f = this [i];
+
+    if (!f._operateElements (false, by, single, val)) {
+      continue;
+    }
+
+    // 見つかった
+    if (single) {
+      return f;
+    }
+    result.push (f);
+  }
+
+  return (result.length > 0) ? result : null;
+};
+
+
+// HtmlForms.prototype.getForm(s)ByElement* を定義する
+function get_forms2 (by, single) {
+  return function (val) {
+    return this._getForms2 (by, single, val);
+  };
+}
+
+for (var by_idx = 0; by_idx < bys.length; ++by_idx) {
+  var by = bys [by_idx];
+  var by_l = by [0].toLowerCase () + by.slice (1);
+
+  HtmlForms.prototype ['getFormByElement' + by] = get_forms2 (by_l, true);
+  HtmlForms.prototype ['getFormsByElement' + by] = get_forms2 (by_l, false);
+}
+
+
+}) ();
+
+
+// EOF

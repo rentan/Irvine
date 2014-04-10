@@ -1,0 +1,570 @@
+/*
+スクリプト初期化データ
+guid={C20B6AE2-AC5B-4D7E-A24A-CE98BCB95F7A}
+caption=オブジェクト情報を作成
+version=20140309
+hint=Irvine/DMonkey の組み込みオブジェクトの情報を作成します
+event=OnMainMenuClick
+match=
+author=rentan
+synchronize=0
+*/
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+function ObjectInfo (name, opt) {
+  opt = opt || { };
+
+  function get_object (name) {
+    // グローバルオブジェクトが存在するならそれを使う
+    try {
+      var gl = eval (name);
+      return gl;
+    }
+    catch (e) { }
+
+    // new で作成する
+    try {
+      return eval ('new ' + name + ' ()');
+    }
+    catch (e) { }
+
+    return null;
+  }
+
+  // オブジェクト名
+  this.name = name;
+
+  // オブジェクト名の代わりに表示する文字列
+  this.dispname = opt.hasKey ('disp') ? opt.disp : name;
+
+  // オブジェクトのインスタンス
+  this.object = opt.hasKey ('obj') ? opt.obj : get_object (name);
+
+  // 説明文
+  this.caption = opt.hasKey ('caption') ? opt.caption : null;
+
+  // グローバルオブジェクトの存在確認
+  this.hasGlobalObject = false;
+  try {
+    eval (name);
+    this.hasGlobalObject = true;
+  }
+  catch (e) {
+    // グローバルオブジェクトなし
+  }
+
+}
+
+ObjectInfo.prototype.makeAnchor = function () {
+  var t = "<a href='#%name%'>%disp%</a>";
+  if (this.object == null) {
+    t = "<a>%disp%</a>";
+  }
+
+  return t.replace (/%name%/g, this.name).replace (/%disp%/g, this.dispname);
+};
+
+ObjectInfo.prototype.makeHtml = function () {
+  var obj = this.object;
+  if (obj == null) {
+    // .getKeys() 系が使えないオブジェクト
+    return '';
+  }
+
+  var s = [ ];
+
+  // 見出し
+  var t = "<div>\n<h2 id='%name%'>%disp%</h2>\n";
+  s.push (t.replace (/%name%/g, this.name).replace (/%disp%/g, this.dispname));
+
+  // 説明文を表示
+  if (this.caption) {
+    s.push (this.caption);
+  }
+
+  // グローバルオブジェクトが存在しないなら表示（ほとんどは存在する）
+  if (!this.hasGlobalObject) {
+    s.push ("<p>グローバルオブジェクト無し。</p>\n");
+  }
+
+  // nameOf() が違うなら表示
+  //  nameOf (Strings) == StringList
+  var name2 = nameOf (obj);
+  if (this.name != name2) {
+    t = "<p><code>nameOf (%name%) == '%name2%'</code></p>\n";
+    s.push (t.replace (/%name%/g, this.name)
+             .replace (/%name2%/g, name2));
+  }
+
+
+  // getProperties()/getMethods() で得られるメンバが hasKey() で false
+  // になることがあるので（参照は出来る）、その場合は注釈を表示する
+  function haskey (key) {
+    return obj.hasKey (key) ? "" : " [hasKey=false]";
+  }
+
+  // VCL オブジェクトは参照するとエラーになるプロパティがあるので調査しない
+  var is_vcl = /^VCL/.test (this.name);
+
+  // プロパティを HTML 化
+  function prop (key) {
+    var t = "  <li><span class='prop'>%key%</span> : %type%%haskey%</li>\n";
+    var esc_key = key.split (/\$/).join ('\$');  // RegExp.$1 対策
+    var type = is_vcl ? '' : eval ('typeof obj.' + key);
+
+    return t.replace (/%key%/, esc_key)
+            .replace (/%type%/, type)
+            .replace (/%haskey%/, haskey (key));
+  }
+
+  // 全てのプロパティを出力
+  var keys = new Strings ();
+  keys.assign (obj.getProperties ()).sort ();
+  if (keys.length > 0) {
+    s.push ("<ul>\n");
+    for (var i = 0; i < keys.length; ++i) {
+      s.push (prop (keys [i]));
+    }
+    s.push ("</ul>\n");
+  }
+
+  // Object オブジェクトが持つ標準のメソッド
+  var default_method = /^(getEvents|getKeys|getMethods|getProperties|hasKey|hasOwnProperty|removeKey|toString|valueOf)$/;
+
+  // メソッドを HTML 化
+  function meth (key) {
+    var t = "  <li%class%><span class='method'>%key%()</span>%haskey%</li>\n";
+    var cls = default_method.test (key) ? " class='def_method'" : "";
+
+    return t.replace (/%class%/, cls)
+            .replace (/%key%/, key)
+            .replace (/%haskey%/, haskey (key));
+  }
+
+  // 全てのメソッドを出力
+  keys.assign (obj.getMethods ()).sort ();
+  if (keys.length > 0) {
+    s.push ("<ul>\n");
+    for (i = 0; i < keys.length; ++i) {
+      s.push (meth (keys [i]));
+    }
+    s.push ("</ul>\n");
+  }
+
+
+  // 後始末
+  s.push ("</div>\n<hr>\n\n");
+
+  return s.join ('');
+};
+
+
+function ObjectBlock (title) {
+  this.title = title;
+  this.objinfo_list = [ ];
+}
+
+ObjectBlock.prototype.add = function () {
+  for (var i = 0; i < arguments.length; ++i) {
+    this.objinfo_list.push (arguments [i]);
+  }
+};
+
+ObjectBlock.prototype.makeIndex = function () {
+  var s = [ ];
+
+  var t = "<div class='origin'>\n<p>%title%</p>\n<ul>\n";
+  s.push (t.replace (/%title%/, this.title));
+
+  var len = this.objinfo_list.length;
+  for (var i = 0; i < len; ++i) {
+    var obj_info = this.objinfo_list [i];
+    s.push ("  <li>" + obj_info.makeAnchor () + "</li>\n");
+  }
+
+  s.push ("</ul>\n</div>\n\n");
+
+  return s.join ('');
+};
+
+ObjectBlock.prototype.makeHtml = function () {
+  var s = [ ];
+
+  var len = this.objinfo_list.length;
+  for (var i = 0; i < len; ++i) {
+    var obj_info = this.objinfo_list [i];
+    s.push (obj_info.makeHtml ());
+  }
+
+  return s.join ('');
+};
+
+
+// ユーザー定義オブジェクト
+function MyObject () { }
+myobj_caption = "<p><code>function MyObject(){} var obj = new MyObject();</code></p>\n";
+
+
+//メインメニューのクリックイベント
+function OnMainMenuClick (irvine, action) {
+
+  var config = {
+    filename: 'object_info.html',
+    overwrite: true,
+    charset: 'UTF-8'
+  };
+
+  var irvine_objects = new ObjectBlock ('Irvine');
+  irvine_objects.add (
+    new ObjectInfo ('Action'),
+    new ObjectInfo ('IrvineCookieManager'),
+    new ObjectInfo ('IrvineFolderData'),
+    new ObjectInfo ('IrvineInfo'),
+    new ObjectInfo ('IrvineItem'),
+    new ObjectInfo ('IrvineUrlInfo'),
+    new ObjectInfo ('MD5'),
+    new ObjectInfo ('Misc'),
+    new ObjectInfo ('SHA1'),
+    new ObjectInfo ('Timer')
+  );
+
+  var ecma_objects = new ObjectBlock ('ECMAScript');
+  ecma_objects.add (
+    new ObjectInfo ('MyObject', { obj: new MyObject (), disp: 'ユーザー定義', caption: myobj_caption }),
+    new ObjectInfo ('Array'),
+    new ObjectInfo ('Boolean'),
+    new ObjectInfo ('Date'),
+    new ObjectInfo ('Global'),
+    new ObjectInfo ('Math'),
+    new ObjectInfo ('Number'),
+    new ObjectInfo ('Object'),
+    new ObjectInfo ('RegExp'),
+    new ObjectInfo ('String')
+  );
+
+  var dmonkey_objects = new ObjectBlock ('DMonkey');
+  dmonkey_objects.add (
+    new ObjectInfo ('ActiveXObject', { obj: null }),
+    new ObjectInfo ('Base64'),
+    new ObjectInfo ('CRC'),
+    new ObjectInfo ('CheckListBox'),
+    new ObjectInfo ('Clipboard'),
+    new ObjectInfo ('Cookie'),
+    new ObjectInfo ('Dialog'),
+    new ObjectInfo ('Directory'),
+    new ObjectInfo ('DynaCall'),
+    new ObjectInfo ('Enumerator', { obj: null }),
+    new ObjectInfo ('FTP'),
+    new ObjectInfo ('File'),
+    new ObjectInfo ('FileProperty', { obj: null }),
+    new ObjectInfo ('HTTP'),
+    new ObjectInfo ('HTTPS'),
+    new ObjectInfo ('HtmlParser'),
+    new ObjectInfo ('HtmlTag'),
+    new ObjectInfo ('Ini', { obj: new Ini ('test.ini') }),
+    new ObjectInfo ('Keyboard'),
+    new ObjectInfo ('Mail', { obj: null }),
+    new ObjectInfo ('Mouse'),
+    new ObjectInfo ('Mutex'),
+    new ObjectInfo ('POP3'),
+    new ObjectInfo ('RegIni', { obj: new RegIni ('\Software\WildForce\Irvine') }),
+    new ObjectInfo ('Response', { obj: (new HTTP ()).responseHeader }),
+    new ObjectInfo ('SMTP'),
+    new ObjectInfo ('StringBuffer'),
+    new ObjectInfo ('Strings'),
+    new ObjectInfo ('Struct'),
+    new ObjectInfo ('TCPSocket'),
+    new ObjectInfo ('URL'),
+    new ObjectInfo ('WScript'),
+    new ObjectInfo ('Win32')
+  );
+
+// ActiveXObject
+//  グローバルオブジェクトが存在するが基本メンバーが取得出来ない。
+//  new ActiveXObject ('InternetExplorer.Application') の場合
+//  .getProperties () → IE 操作用のプロパティが得られる。
+//  .getMethods () → Object オブジェクトの標準メソッドだけが得られる。
+// Enumerator
+//  ENameError - undefined
+// FileProperty
+//  ENameError - undefined
+// Mail
+//  .getProperties/.getMethods が ENameError
+// Request
+//  nameOf ((new HTTP ()).requestHeader) = 'Request'
+//  中身は空の Object オブジェクト（拡張されていない）。
+// Response
+//  プロパティが列挙されない（for in 構文でも取得できない）。
+// Struct
+//  ENameError - undefined だが、new Struct() で取得出来る。
+
+  var vcl_objects = new ObjectBlock ('DMonkey VCL');
+  vcl_objects.add (
+    new ObjectInfo ('VCLAction'),
+    new ObjectInfo ('VCLButton'),
+    new ObjectInfo ('VCLCheckBox'),
+    new ObjectInfo ('VCLCheckListBox'),
+    new ObjectInfo ('VCLComboBox'),
+    new ObjectInfo ('VCLCoolBar'),
+    new ObjectInfo ('VCLEdit'),
+    new ObjectInfo ('VCLFindDialog'),
+    new ObjectInfo ('VCLFontDialog'),
+    new ObjectInfo ('VCLForm'),
+    new ObjectInfo ('VCLGroupBox'),
+    new ObjectInfo ('VCLImage'),
+    new ObjectInfo ('VCLLabel'),
+    new ObjectInfo ('VCLListBox'),
+    new ObjectInfo ('VCLListView'),
+    new ObjectInfo ('VCLMainMenu'),
+    new ObjectInfo ('VCLMemo'),
+    new ObjectInfo ('VCLMenuItem'),
+    new ObjectInfo ('VCLOpenDialog'),
+    new ObjectInfo ('VCLPageControl'),
+    new ObjectInfo ('VCLPanel'),
+    new ObjectInfo ('VCLPopupMenu'),
+    new ObjectInfo ('VCLProgressBar'),
+    new ObjectInfo ('VCLRadioButton'),
+    new ObjectInfo ('VCLRadioGroup'),
+    new ObjectInfo ('VCLReplaceDialog'),
+    new ObjectInfo ('VCLSaveDialog'),
+    new ObjectInfo ('VCLSpinEdit'),
+    new ObjectInfo ('VCLSplitter'),
+    new ObjectInfo ('VCLStatusBar'),
+    new ObjectInfo ('VCLTabControl'),
+    new ObjectInfo ('VCLTabSheet'),
+    new ObjectInfo ('VCLTimer'),
+    new ObjectInfo ('VCLToolBar'),
+    new ObjectInfo ('VCLToolButton'),
+    new ObjectInfo ('VCLTreeView'),
+    new ObjectInfo ('VCLUpDown')
+  );
+
+  var objects_list = [
+    irvine_objects,
+    ecma_objects,
+    dmonkey_objects,
+    vcl_objects
+  ];
+
+
+  // 文字コード変換
+  //  Mark of the Web が CRLF 改行でないと認識されないので
+  //  改行コードは変更しないこと。
+  function convert_text (charset, s) {
+    if (charset == 'UTF-8') {
+      return s.toUTF8 ();
+    }
+    return s;
+  }
+
+  // スタイルシートを作成
+  function make_css () {
+    // 共通
+    var common =
+"* { font-family: Meiryo, sans-serif; font-size: 100%; line-height: 140%; }\n" +
+"h1 { font-size: 150%; text-align: center; }\n" +
+"h2 { font-size: 120%; margin-bottom: 0px; }\n" +
+"ul { margin-top: 0px; }\n" +
+".version { text-align: right; }\n" +
+".contents li { color: #444; }\n" +
+".prop { color: #000; }\n" +
+".method { color: #000; }\n" +
+"li.def_method, li.def_method .method { color: #888; }\n" +
+    "";
+
+    // シンプル配置
+    var flat = "/*\n" +
+".origin p { display: inline; border: 1px solid black; padding-left: 4px; padding-right: 4px; }\n" +
+".origin ul { display: inline; list-style-type: none; padding-left: 0.5em; padding-right: 1em; }\n" +
+".origin ul li { display: inline; margin-right: 0.5em; }\n" +
+    "*/\n";
+
+    // 左メニュー型
+    var leftmenu =
+"div.container { margin-left: 200px; }\n" +
+"#index {\n" +
+"  position: fixed;\n" +
+"  top: 0px;\n" +
+"  left: 0px;\n" +
+"  width: 200px;\n" +
+"  height: 100%;\n" +
+"  overflow: auto;\n" +
+"}\n" +
+"#index_inner { padding-bottom: 1em; }\n" +
+".origin p {\n" +
+"  font-weight: bold;\n" +
+"  margin: 0px 0px 0px 0.5em;\n" +
+"}\n" +
+".origin ul {\n" +
+"  list-style-type: none;\n" +
+"  margin: 0px 0px 0px 0px;\n" +
+"  padding: 0px 0px 0px 1em;\n" +
+"  font-size: 90%;\n" +
+"}\n" +
+    "";
+
+    return [ "<style>", common, flat, leftmenu, "</style>" ].join ("\n");
+  }
+
+  // 著作権表記を作成
+  function make_copyleft () {
+    var f = new File (WScript.ScriptFullName);
+    f.open ('r');
+    var t = f.read ();
+    f.close ();
+
+    if (/\/\*\s*(Copyright.*?)\s*\*\//.test (t)) {
+      return "<!--\n" + RegExp.$1 + "\n-->\n";
+    }
+
+    alert (WScript.ScriptName + ' から著作権表記が見つかりません。');
+    exit ();
+  }
+
+  // HTML を作成
+  function make_html (charset) {
+    var s = [ ];
+
+    var css = make_css ();
+    var copyright = make_copyleft ();
+
+    // ヘッダ
+    var t =
+"<!DOCTYPE html>\n" +
+"<!-- saved from url=(0017)http://localhost/ -->\n" +
+"<html>\n" +
+"<head>\n" +
+"<meta charset='" + charset + "'>\n" +
+"<meta http-equiv='Content-Type' content='text/html; charset=" + charset + "'>\n" +
+"<title>Irvine/DMonkey オブジェクト一覧</title>\n" +
+"\n" + copyright + "\n" +
+css +
+"</head>\n" +
+"\n" +
+"<body>\n" +
+"<div class='container'>\n" +
+"<h1>Irvine/DMonkey オブジェクト一覧</h1>\n" +
+"<p class='version'>Irvine " + irvine.Version + "." + irvine.Build + " & DMScript " + WScript.Version + "</p>\n" +
+"\n" +
+    "";
+    s.push (t);
+
+
+    // 目次作成
+    s.push ("<div id='index'>\n<div id='index_inner'>\n\n");
+    for (var i = 0; i < objects_list.length; ++i) {
+      s.push (objects_list [i].makeIndex ());
+    }
+    s.push ("</div>\n</div>\n\n");
+
+
+    // スクリプト作成
+    //  中途半端にクロスブラウザ対応しているが IE 以外では動作しない
+    var script =
+"<script>\n" +
+"var index = document.getElementById ('index');\n" +
+"var div = document.getElementById ('index_inner');\n" +
+"\n" +
+"function wheel (ev) {\n" +
+"  var delta = ev.wheelDelta || -ev.detail;\n" +
+"  var rect = div.getBoundingClientRect ();\n" +
+"\n" +
+"  var r = (delta > 0) ? (rect.top < 0) : (rect.bottom > index.clientHeight);\n" +
+"  if (!r) {\n" +
+"    ev.preventDefault ();\n" +
+"  }\n" +
+"  return r;\n" +
+"}\n" +
+"\n" +
+"if ((index.currentStyle || getComputedStyle (index, '')).position == 'fixed') {\n" +
+"  var fx = navigator.userAgent.indexOf ('Firefox') > -1;\n" +
+"  var mw = fx ? 'DOMMouseScroll' : 'mousewheel';\n" +
+"  div.addEventListener (mw, wheel, false);\n" +
+"}\n" +
+"</script>\n" +
+    "";
+    s.push (script + "\n");
+
+
+    // 本文作成
+    s.push ("<hr>\n\n<div class='contents'>\n");
+    for (i = 0; i < objects_list.length; ++i) {
+      s.push (objects_list [i].makeHtml ());
+    }
+    s.push ("</div>\n");
+
+
+    // フッタ
+    s.push ("</div>\n</body>\n</html>\n");
+
+    return convert_text (charset, s.join (''));
+  }
+
+
+  function make_footer (charset, elapsed_time) {
+    var s =
+"\n" +
+"<!-- Generator: " + WScript.ScriptName + " -->\n" +
+"<!-- Generated date: " + Date.toString ().replace (/\//g, '-') + " -->\n" +
+"<!-- Elapsed time: " + elapsed_time + "sec -->\n" +
+"\n" +
+"<!-- EOF -->\n" +
+    "";
+
+    return convert_text (charset, s);
+  }
+
+
+// main
+  var reg = new RegIni ('\Software\WildForce\Irvine');
+  var irvine_path = reg.read ('path', 'application', '');
+  irvine_path = (new File (irvine_path)).extractPath ();
+
+  var f = new File (irvine_path + 'doc\' + config.filename);
+  if (f.exists ()) {
+    if (!config.overwrite) {
+      alert ("ファイルが既に存在します。\n\n" + f.path);
+      return;
+    }
+    f.remove ();
+  }
+
+  var start_time = Win32.getTickCount ();
+  var s = make_html (config.charset);
+
+  f.open ('w');
+  f.write (s);
+
+  var elapsed_time = (Win32.getTickCount () - start_time) / 1000;
+  var foot_comment = make_footer (config.charset, elapsed_time);
+
+  f.write (foot_comment);
+  f.close ();
+
+  alert ("組み込みオブジェクトの情報を作成しました。\n\n" + f.path);
+}
+
+
+//メニューの更新イベント
+function OnMenuUpdate (irvine, action) {
+}
+
+
+// EOF

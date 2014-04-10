@@ -1,0 +1,398 @@
+//Dorothy2
+//caption=NameBuilder
+//version=20140331.0
+//hint=new NameBuilder ()
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2012,2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+
+// 必要なら実装
+// Content-Disposition: から拡張子を返すメソッド
+
+
+// オブジェクトで提供する全てのプロパティとメソッドは、_prototypeKeys
+// で列挙されるように prototype に設定しておくこと。
+
+
+// コンストラクタ
+void function NameBuilder (opt_flags) {
+  if (nameOf (this) != 'NameBuilder') {
+    alert ('new なしで NameBuilder() が呼ばれました。');
+    exit ();
+  }
+
+  // このオブジェクト自体が持つキーの一覧を作る
+  //   これらのキーはファイル名変数として使えない
+  var keys = this.getKeys ();  // hasKey toString など
+  for (var key = 0; key < keys.length; ++key) {
+    this._prototypeKeys [keys [key].toUpperCase ()] = true;
+  }
+  for (key in this.prototype) {
+    this._prototypeKeys [key.toUpperCase ()] = true;
+  }
+
+  // フラグ設定
+  function gf (k) {
+    return (opt_flags && opt_flags.hasKey (k)) ? opt_flags [k] : null;
+  }
+
+  if (gf ('zen2han')) {
+    this._zen2hanMode = true;
+  }
+
+  // 日時系変数を初期化
+  //   定型パターンを簡単に初期化するためのもの
+  if (gf ('ymdhms')) {
+    this.yyyy = null;
+    this.mm = null;
+    this.dd = null;
+    this.hh = null;
+    this.mi = null;
+    this.ss = null;
+
+    this.YY = function () {
+      return this.yyyy && this.yyyy.slice (-2);
+    };
+  }
+
+};
+
+
+// 内部で使用: normalize() で全角を半角にするかどうかのフラグ
+NameBuilder.prototype._zen2hanMode = false;
+
+
+// 内部で使用: プロトタイプとして持っているキー名の一覧
+//  コンストラクタで上書きされる
+NameBuilder.prototype._prototypeKeys = { };
+
+
+// 内部で使用: 半角から全角に変換する文字
+//  半角コロン : は特別に処理しているので除外
+NameBuilder.prototype._han2zenMap = {
+  '\': '￥',
+  '/': '／',
+  '*': '＊',
+  '?': '？',
+  '<': '＜',
+  '>': '＞',
+  '|': '｜',
+  '"': '”'
+};
+
+
+// 内部で使用: 全角から半角に変換する文字
+//   括弧類は除外して、手作業で変換したほうが美しいファイル名になるかも。
+NameBuilder.prototype._zen2hanChars =
+  '　！＃＄％＆（）＋，－．；＝＠［］＾＿｛｝' +
+  '0123456789'.toZenkaku () +
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.toZenkaku () +
+  'abcdefghijklmnopqrstuvwxyz'.toZenkaku ();
+
+
+// ファイル名に使用できない文字を変換する
+//   それに加えて、全角文字を半角に変換する。
+NameBuilder.prototype.normalize = function (s) {
+  s = s || '';
+  if (/^[A-Za-z0-9\-._]*$/.test (s)) {
+    // 変換不要な文字だけならそのまま返す
+    return s;
+  }
+
+
+  // 制御記号をスペースに変換する
+  s = s.replace (/[\x01-\x1f]+/g, ' ');
+
+  // 半角コロン : を、前後のスペースを除去して全角に変換する
+  s = s.replace (/\s*\:\s*/g, '：');
+
+
+  // 半角→全角に変換する文字の集合
+  var h2z = this._han2zenMap.getProperties ().join ('');
+
+  // 全角→半角に変換する文字の集合
+  var z2h = this._zen2hanMode ? this._zen2hanChars : '';
+
+  var ss = '';
+  for (var i = 0; i < s.length; ++i) {
+    // ファイル名から1文字ずつ取り出して調べる
+    var c = s [i];
+
+    if (h2z.indexOf (c) != -1) {
+      ss += this._han2zenMap [c];
+    }
+    else if (z2h.indexOf (c) != -1) {
+      ss += c.toHankaku ();
+    }
+    else {
+      ss += c;
+    }
+  }
+
+  return ss;
+};
+
+
+// ファイル名中の不適切な空白記号を除去する
+NameBuilder.prototype.trim = function (s) {
+  // 先頭と末尾の空白を削除
+  s = s.replace (/^\s+|\s+$/g, '');
+
+  // ドットの前後の空白を削除
+  // s = s.replace (/\s+\.\s+|\s+\.|\.\s+/g, '.');
+
+  // 連続する空白を1個にまとめる
+  s = s.replace (/\s\s+/g, ' ');
+
+  return s;
+};
+
+
+// 日時を分割して変数に格納する
+NameBuilder.prototype.setYmdhms = function (s) {
+  if (!/(\d{4})\D(\d\d)\D(\d\d)\D+(\d\d):(\d\d):(\d\d)/.test (s)) {
+    return false;
+  }
+
+  this.yyyy = RegExp.$1;
+  this.mm = RegExp.$2;
+  this.dd = RegExp.$3;
+  this.hh = RegExp.$4;
+  this.mi = RegExp.$5;
+  this.ss = RegExp.$6;
+
+  return true;
+};
+
+
+// %P% %PZ% の処理関数を定義する
+NameBuilder.prototype.definePPZ = function (po) {
+  this._pageOrigin = po;
+
+  this.P = function () {
+    return this.p + this._pageOrigin;
+  };
+
+  this.PZ = function () {
+    return this.zeroPadding (this.p, this.pages - 1, this._pageOrigin);
+  };
+};
+
+
+// 数値をゼロ詰めの文字列に変換する
+NameBuilder.prototype.zeroPadding = function (n, max, offset) {
+  offset = offset || 0;
+
+  var max_len = (max + offset).toString ().length;
+  return format ('%.*d', max_len, parseInt (n + offset));
+};
+
+
+// ファイル名を作成する
+NameBuilder.prototype.assemble = function (fmt, ext) {
+
+  // 拡張子を確定する
+  if (!ext) {
+    ext = '';
+  }
+  else if (/^https?:/i.test (ext)) {
+    // URL が指定された場合は拡張子を取り出す
+    ext = ext.replace (/[?#].*$/, '').replace (/^.*\//, '');
+    ext = ext.match (/\.[^.]+$/) ? RegExp.lastMatch : '';
+  }
+  // それ以外ならそのまま使用
+
+
+  var self = this;
+
+  function rep (s, p1) {
+    var name = p1;
+
+    if (name == '') {
+      // %% なら % に変換
+      return '%';
+    }
+
+    if (!/^[A-Z0-9_]+$/.test (name)) {
+      println ('変数名として使用できない文字です: ' + s);
+      return s;
+    }
+    // この時点で name == /^[A-Z0-9_]+$/
+
+    if (self._prototypeKeys.hasKey (name)) {
+      println ('変数名として使用できない単語です: ' + s);
+      return s;
+    }
+
+    // 大文字、小文字の順にプロパティがあるか調べる
+    var k = [ name, name.toLowerCase () ];
+    for (var i = 0; i < k.length; ++i) {
+      var v = k [i];
+      if (!self.hasKey (v)) {
+        continue;
+      }
+
+      v = self [v];  // プロパティの値
+      if (isNull (v) || isUndefined (v)) {
+        v = 'Unknown';
+      }
+
+      if (typeof v == 'function') {
+        // 関数型なら呼び出し
+        v = v.call (self);
+      }
+
+      // Utf8 オブジェクトなら Shift_JIS string に変換
+      if (nameOf (v) == 'Utf8') {
+        v = v.toSJIS ();
+      }
+
+      // 正規化
+      v = self.normalize (v.toString ());
+
+      return v;
+    }
+
+    println ('未対応の変数です: ' + s);
+    return s;
+  }
+
+  var f = fmt.replace (/%([^%]*)%/g, rep);
+
+  return this.trim (f + ext);
+};
+
+
+// 内部で使用: Content-Type から拡張子に変換
+NameBuilder.prototype._ctype2extMap = {
+  'image/bmp':  '.bmp',
+  'image/gif':  '.gif',
+  'image/jpeg': '.jpg',
+  'image/png':  '.png',
+  'image/tiff': '.tif'
+};
+
+
+// Content-Type に対応する拡張子を返す
+NameBuilder.prototype.contentTypeToExt = function (ctype) {
+  if (nameOf (ctype) == 'Http') {
+    ctype = ctype.getResponseHeader ('content-type');
+  }
+
+  if (!ctype) {
+    println ('Content-Type が取得できません。');
+    return null;
+  }
+
+  var ct = ctype.replace (/;.*$/, '').trim ();
+  if (ct && this._ctype2extMap.hasKey (ct)) {
+    // type/subtype から変換
+    return this._ctype2extMap [ct];
+  }
+
+  if (/;\s*name\s*=\s*"[^"]*(\.[^"]+)"/.test (ctype)) {
+    // ; name="ファイル名.拡張子" から抽出
+    return RegExp.$1;
+  }
+
+  println ('未対応の Content-Type です: ' + ctype);
+  return null;
+};
+
+
+// データ内容に対応する拡張子を返す
+// 参考: http://www.darwinsys.com/file/
+NameBuilder.prototype.contentToExt = function (data) {
+  if (nameOf (data) == 'Http') {
+    data = data.data;
+  }
+
+  if (!data) {
+    println ('データがありません。');
+    return null;
+  }
+
+  var sb = new StringBuffer (data);
+
+  function cmp (s) {
+    if (sb.length < s.length) {
+      // データが短すぎる
+      return false;
+    }
+
+    if (!s.hasKey ('charCodeAt')) {
+      // 配列を .charCodeAt() で参照できるようにする
+      s.charCodeAt = function (idx) { return this [idx]; };
+    }
+
+    // 1バイトずつ比較
+    for (var i = 0; i < s.length; ++i) {
+      if (sb.charCodeAt (i) != s.charCodeAt (i)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // BMP
+  var bmp_sig = 'BM';
+  if (cmp (bmp_sig)) {
+    return '.bmp';
+  }
+
+  // GIF
+  var gif87a_sig = 'GIF87a';
+  var gif89a_sig = 'GIF89a';
+  if (cmp (gif87a_sig) || cmp (gif89a_sig)) {
+    return '.gif';
+  }
+
+  // JPEG (JFIF)
+  var jfif_sig = [ 0xff, 0xd8, 0xff ];
+  if (cmp (jfif_sig)) {
+    return '.jpg';
+  }
+
+  // PNG
+  var png_sig = [ 137, 80, 78, 71, 13, 10, 26, 10 ];
+  if (cmp (png_sig)) {
+    return '.png';
+  }
+
+  // TIFF
+  var tiff_le_sig = [ 0x49, 0x49, 0x2a, 0x00 ];
+  var tiff_be_sig = [ 0x4d, 0x4d, 0x00, 0x2a ];
+  if (cmp (tiff_le_sig) || cmp (tiff_be_sig)) {
+    return '.tif';
+  }
+
+  println ('未対応のデータ形式です。');
+  return null;
+};
+
+
+}) ()
+
+
+// EOF

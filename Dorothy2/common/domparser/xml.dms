@@ -1,0 +1,356 @@
+//Dorothy2
+//caption=DOMParser/XML
+//version=20140331.0
+//hint=
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+common_load ('domparser\core');
+
+
+//--------------------------------- DOMXml ---------------------------------
+
+
+// コンストラクタ
+void function DOMXml (text) {
+  this.document = new Document ();
+
+  try {
+    this._parse (text);
+  }
+  catch (e) {
+    this.document.destroy ();
+    throw e;
+  }
+};
+
+
+DOMXml.prototype._throw = function (e, src) {
+  throw 'XML: ' + e + ' at ' + src.index;
+};
+
+
+// 空白を飛ばす
+DOMXml.prototype._skipBlank = function (src) {
+
+  for (var i = src.index; i < src.length; ++i) {
+    if (0x20 < src.charCodeAt (i)) {
+      break;
+    }
+  }
+
+  src.index = i;
+};
+
+
+// 実体参照を復号する
+DOMXml.prototype._decodeCharRef = function (src, endString) {
+  var toChar = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+
+  var endPos = src.indexOf (endString, src.index);
+  if (endPos == -1) {
+    endPos = src.length;
+  }
+
+  var t = '';
+  while (src.index < endPos) {
+    // 終端文字より先まで検索してしまうので無駄だが、検索ルーチンは
+    // ネイティブ動作につきそれほど時間はかからないのでよしとする。
+    // 終端文字より先で見つかった場合の処理を忘れないこと。
+    var n = src.indexOf ('&', src.index);
+
+    if (n == -1 || endPos < n) {
+      // 終端文字より手前に & がなければ、残りを出力して終わり
+      t += src.substring (src.index, endPos);
+      break;
+    }
+
+    // & の手前まで出力
+    t += src.substring (src.index, n);
+
+    var semi = src.indexOf (';', n);
+    if (0 < semi && semi < endPos) {
+      var ref = src.substring (n + 1, semi);
+      if (toChar.hasKey (ref)) {
+        t += toChar [ref];
+        src.index = semi + 1;
+        continue;
+      }
+    }
+
+    // 未定義の実体参照
+    src.index = n;
+    this._throw ('未定義の実体参照', src);
+  }
+
+  src.index = endPos;
+  return t;
+};
+
+
+// タグ名を切り出す
+DOMXml.prototype._extractTagName = function (src) {
+
+  for (var i = src.index; i < src.length; ++i) {
+    if (!/[a-z0-9_:]/i.test (src [i])) {
+      break;
+    }
+  }
+
+  var name = src.substring (src.index, i);
+  if (!name) {
+    this._throw ('タグ名がない', src);
+  }
+
+  src.index = i;
+  return name;
+};
+
+
+// 属性名を切り出す
+DOMXml.prototype._extractAttrName = function (src) {
+
+  for (var i = src.index; i < src.length; ++i) {
+    if (!/[a-z0-9_:]/i.test (src [i])) {
+      break;
+    }
+  }
+
+  var name = src.substring (src.index, i);
+  if (!name) {
+    return null;
+  }
+
+  src.index = i;
+  return name;
+};
+
+
+// クオーティングされた値を切り出す
+DOMXml.prototype._extractQuotedValue = function (src) {
+  var q = src.charCodeAt (src.index);
+  if (q != 0x22 && q != 0x27) {
+    this._throw ("属性値が'/\"で開始していない", src);
+  }
+
+  var t = this._decodeCharRef (src, src.substr (src.index++, 1));
+
+  if (src.charCodeAt (src.index) != q) {
+    this._throw ("属性値を閉じる'/\"がない", src);
+  }
+  ++src.index;
+
+  return t;
+};
+
+
+// 属性をパースする
+DOMXml.prototype._parseAttributes = function (src, element) {
+  while (src.index < src.length) {
+    var name = this._extractAttrName (src);
+    if (!name) {
+      return;
+    }
+
+    if (src.charCodeAt (src.index) != 0x3d) {
+      this._throw ('属性名の直後に=がない', src);
+    }
+    ++src.index;
+
+    var value = this._extractQuotedValue (src);
+    this._skipBlank (src);
+
+    element.setAttribute (name, value);
+  }
+};
+
+
+// タグをパースする
+// 子要素を持つ表記の場合はそれらも再帰してパースする
+DOMXml.prototype._parseTag = function (src) {
+  if (src.length <= src.index) {
+    this._throw ('テキスト末尾に到達した', src);
+  }
+
+  // テキストノード
+  if (src.charCodeAt (src.index) != 0x3c) {
+    return new Text (this._decodeCharRef (src, '<'));
+  }
+
+
+  var tagName, endPos;
+
+  // <!-- コメント
+  if (src.substr (src.index, 4) == '<!--') {
+    src.index += 4;  // '<!--'.length
+
+    endPos = src.indexOf ('-->', src.index);
+    if (endPos == -1) {
+      this._throw ('<!--に対応する-->がない', src);
+    }
+
+    src.index = endPos + 3;  // '-->'.length
+    return new Comment ();
+  }
+
+
+  // <?
+  if (src.charCodeAt (src.index + 1) == 0x3f) {
+    src.index += 2;  // '<?'.length
+    tagName = this._extractTagName (src);
+
+    this._skipBlank (src);
+
+    endPos = src.indexOf ('?>', src.index);
+    if (endPos == -1) {
+      this._throw ('<?に対応する?>がない', src);
+    }
+
+    var data = src.substring (src.index, endPos);
+    src.index = endPos + 2;  // '?>'.length
+
+    return new ProcessingInstruction (tagName, data);
+  }
+
+
+  // 通常のタグ
+  ++src.index;
+  tagName = this._extractTagName (src);
+
+  this._skipBlank (src);
+
+  var element = new Element (tagName);
+
+  this._parseAttributes (src, element);
+
+  if (src.length <= src.index) {
+    this._throw ('タグ内でテキスト末尾に到達した', src);
+  }
+
+  var cc = src.charCodeAt (src.index);
+  if (cc == 0x2f) {
+    if (src.charCodeAt (++src.index) != 0x3e) {
+      this._throw ('/の直後に>がない', src);
+    }
+
+    // <... />
+    ++src.index;
+    return element;
+  }
+
+  if (cc != 0x3e) {
+    this._throw ('タグ終端に>がない', src);
+  }
+
+  // <foo>
+  ++src.index;
+  for (;;) {
+    if (src.substr (src.index, 2) == '</') {
+      src.index += 2;  // '</'.length
+
+      var prev = { index: src.index };
+      if (tagName != this._extractTagName (src)) {
+        this._throw ('開始タグ名と異なる終了タグ名', prev);
+      }
+
+      this._skipBlank (src);
+
+      if (src.charCodeAt (src.index) != 0x3e) {
+        this._throw ('終了タグが>で閉じていない', src);
+      }
+      ++src.index;
+
+      // 開始タグと同じタグ名の終了タグが見つかれば終わり
+      break;
+    }
+
+    element.appendChild (this._parseTag (src));
+  }
+
+  return element;
+};
+
+
+// 指定されたテキストノードの値が空白文字のみか調べる
+DOMXml.prototype._isBlankTextNode = function (e) {
+  var sb = new StringBuffer (e.nodeValue);
+
+  var len = sb.length;
+  for (var i = 0; i < len; ++i) {
+    if (sb [i] > 0x20) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+
+// XML をパースする
+DOMXml.prototype._parse = function (text) {
+  var src = new StringBuffer (text);
+  src.index = 0;
+
+  var document = this.document;
+
+  while (src.index < src.length) {
+    var prev = { index: src.index };
+    var e = this._parseTag (src);
+
+    if (e.nodeType == e.TEXT_NODE) {
+      if (!this._isBlankTextNode (e)) {
+        this._throw ('ルートに空白以外のテキストノードがある', prev);
+      }
+      continue;
+    }
+
+    document.appendChild (e);
+
+    if (e.nodeType == e.ELEMENT_NODE) {
+      if (document.documentElement) {
+        this._throw ('ルートに複数のドキュメント要素がある', prev);
+      }
+
+      document.documentElement = e;
+    }
+  }
+
+  if (!document.documentElement) {
+    this._throw ('ドキュメント要素がない', src);
+  }
+};
+
+
+// DOMParser に登録
+DOMParser.prototype._add (
+   'XML',
+   /^(text\/|application\/(xhtml\+)?|image\/svg\+)xml$/,
+   function (str) { return new DOMXml (str).document; }
+);
+
+
+}) ()
+
+
+// EOF

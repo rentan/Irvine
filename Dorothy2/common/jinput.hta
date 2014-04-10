@@ -1,0 +1,326 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<title>JInput</title>
+<!--
+//version=20140331.0
+//author=rentan
+-->
+
+<!--
+Copyright (C) 2013,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+
+<script type="text/javascript">
+// 先にウィンドウを隠す
+window.resizeTo (100, 100);
+window.moveTo (-30000, -30000);
+</script>
+
+
+<hta:application
+  id="JInput"
+  applicationname="Dorothy2/JInput"
+  version="1.0"
+  innerborder="no"
+  singleinstance="yes"
+  windowstate="normal"
+  scrollflat="yes"
+>
+
+
+<style type="text/css">
+#contents {
+  margin-bottom: 8px;
+  font-family: 'Meiryo UI';
+}
+p { margin: 0px 4px; }
+</style>
+
+</head>
+
+
+<body>
+
+<div id="contents"></div>
+
+<div>
+  <input id="code" type="text" size="32">
+  <input id="ok_button" type="button" value=" OK ">
+  <input id="cancel_button" type="button" value="キャンセル">
+</div>
+
+</body>
+
+
+<script type="text/javascript">
+var param = {
+  limit: 180,
+  extend: 180,
+  width: 360,
+  height: 260,
+  min: 1,
+  max: 255
+};
+
+
+// ウィンドウの位置とサイズを調整
+function displayWindow (w, h) {
+  var left = screen.width - w;
+  var top = screen.height - h - 32;
+
+  window.resizeTo (w, h);
+  window.moveTo (left, top);
+}
+
+
+// ウィンドウを最前面表示にする
+function topMostWindow (title) {
+  try {
+    var excel = new ActiveXObject ('Excel.Application');
+    if (excel) {
+      var m = 'CALL("user32","FindWindowA","JCC","HTML Application Host Window Class","' + title + '")';
+      var hwnd = excel.ExecuteExcel4Macro (m);
+      if (hwnd) {
+        m = 'CALL("user32","SetWindowPos","JJJJJJJJ",' + hwnd + ',-1,0,0,0,0,3)';
+        excel.ExecuteExcel4Macro (m);
+      }
+    }
+  }
+  catch (e) { }
+}
+
+
+// ページ内に画像や文章を追加
+function Contents (id) {
+  this.div = document.getElementById (id);
+}
+
+Contents.prototype.image = function (src) {
+  var g = document.createElement ('img');
+  g.src = src;
+
+  // なぜか拡大されてしまうことがある症状の対策
+  g.removeAttribute ('width');
+  g.removeAttribute ('height');
+
+  this.div.appendChild (g);
+};
+
+Contents.prototype.p = function (text) {
+  var p = document.createElement ('p');
+  p.appendChild (document.createTextNode (text));
+  this.div.appendChild (p);
+};
+
+
+// 自動終了タイマー
+function LimitTimer (f) {
+  this.handler = f;
+}
+
+LimitTimer.prototype.stop = function () {
+  if (this.timer) {
+    window.clearTimeout (this.timer);
+    this.timer = null;
+  }
+};
+
+LimitTimer.prototype.start = function (sec) {
+  this.stop ();
+  this.timer = window.setTimeout (this.handler, sec * 1000);
+};
+
+
+// 引数を解析
+function analyzeArg (param, id) {
+  var contents = new Contents (id);
+
+  var cmds = JInput.commandLine.match (/"[^"]*"|\S+/g) || [ ];
+  for (var i = 0; i < cmds.length; ++i) {
+    var arg = cmds [i].replace (/^"|"$/g, '');
+
+    if (!/^\/(\w+):(.*)/.test (arg)) {
+      continue;
+    }
+    var k = RegExp.$1;
+    var v = RegExp.$2;
+
+    if (/^(image|p)$/.test (k)) {
+      contents [k] (v);
+    }
+    else if (/^(limit|extend|width|height|min|max)$/.test (k)) {
+      param [k] = parseInt (v, 10);
+    }
+    else {
+      param [k] = v;
+    }
+  }
+}
+
+
+// テキストを UTF-8 でファイルに保存
+function saveFile (filename, s) {
+  var stream = new ActiveXObject ('ADODB.Stream');
+
+  try {
+    stream.Open ();
+    if (s.length) {
+      stream.Type = 2;
+      stream.Charset = 'UTF-8';
+      stream.WriteText (s);
+
+      stream.Position = 0;
+      stream.Type = 1;
+      stream.Position = 3;
+      s = stream.Read ();
+      stream.Close ();
+
+      stream.Open ();
+      stream.Write (s);
+    }
+    stream.SaveToFile (filename, 2);
+  }
+  finally {
+    stream.Close ();
+  }
+}
+
+
+// ファイルを保存
+var saved = false;
+function save (text) {
+  saved = true;
+  saveFile (param.o, text);
+}
+
+
+// 決定して終了
+function submit () {
+  timer.stop ();
+
+  var code = document.getElementById ('code').value;
+  save ('=' + code);
+
+  window.close ();
+}
+
+
+// テキストボックスにフォーカスしてキャレットを末尾に移動
+function focustextbox () {
+  var e = document.getElementById ('code');
+
+  e.focus ();
+  e.value = e.value;
+}
+
+
+// フォーム以外をクリック
+function bodyclick () {
+  var e = event.srcElement;
+
+  if (e.tagName === 'BODY' || e.tagName === 'IMG') {
+    focustextbox ();
+  }
+
+  return true;
+}
+
+// OK ボタンクリック
+function okclick () {
+  timer.start (param.extend);
+
+  // OK ボタンが有効になっていなければ無視
+  if (document.getElementById ('ok_button').disabled) {
+    return;
+  }
+
+  // 最小文字数以上のテキストが入力されていれば決定して終了
+  var code = document.getElementById ('code').value;
+  if (code.length >= param.min) {
+    submit ();
+  }
+
+  focustextbox ();
+}
+
+// キャンセルボタンクリック
+function cancelclick () {
+  timer.stop ();
+  window.close ();
+}
+
+
+// キー入力発生時
+function keypress () {
+  if (event.keyCode === 13) {
+    okclick ();
+  }
+
+  timer.start (param.extend);
+}
+
+
+// ウィンドウを閉じる直前
+function beforeunload () {
+  if (!saved) {
+    // OK/Enter 以外の理由で閉じる場合は空ファイルを保存
+    save ('');
+  }
+
+  return void 0;
+}
+
+
+var timer;
+
+(function main () {
+  analyzeArg (param, 'contents');
+  if (!param.o) {
+    alert ('/o: が指定されていません。');
+    window.close ();
+    return;
+  }
+
+  window.onbeforeunload = beforeunload;
+
+  var oldTitle = document.title;
+  if (param.title) {
+    document.title = param.title;
+  }
+  displayWindow (param.width, param.height);
+  topMostWindow (oldTitle);
+
+  document.getElementsByTagName ('body') [0].onclick = bodyclick;
+  document.getElementById ('ok_button').onclick = okclick;
+  document.getElementById ('cancel_button').onclick = cancelclick;
+
+  var c = document.getElementById ('code');
+  c.maxlength = param.max;
+  c.onkeypress = keypress;
+
+  timer = new LimitTimer (cancelclick);
+  timer.start (param.limit);
+
+  window.focus ();
+  c.focus ();
+}) ();
+
+</script>
+
+
+</html>

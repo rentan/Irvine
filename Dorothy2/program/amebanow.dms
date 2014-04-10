@@ -1,0 +1,265 @@
+//Dorothy2
+//caption=Amebaなう
+//version=20140331.0
+//hint=
+//match=^http://(now\.ameba\.jp/[^/]+|stat\d+\.ameba\.jp/user_images)/
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2011,2012,2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'http', 'namebuilder', 'utf8');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: false
+    },
+    Filename: {
+      Image:  'amebanow_o%ID%'
+    }
+  };
+  var ini = Util.ini_load (default_ini);
+
+
+//---------------------- 下請け ----------------------//
+
+
+// アメーバIDから各種情報を取得する
+function get_spec_from_amebaid (ameba_id) {
+  var url = 'http://profile.ameba.jp/' + ameba_id + '/';
+
+  var http = new Http ();
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  // ニックネームを取得
+  if (/<a\s+href="\/[^"]+"\s+id="cntNaviName">([^<]+)/.test (http.data)) {
+    nb.nickname = (new Utf8 (RegExp.$1)).decodeCharRef ();
+  }
+
+  return true;
+}
+
+
+// 画像をダウンロード
+function dl_image (url) {
+  if (!/^(http:\/\/stat\d+\.ameba\.jp\/user_images\/\d+\/\d+\/([^\/]+)\/[^\/]+\/[^\/]+\/[^\/]+\/)(t\d+_|o)(\d+)(.*)$/.test (url)) {
+    println ('内部エラー: dl_image');
+    return retry ();
+  }
+  nb.ameba_id = RegExp.$2;
+  nb.id = RegExp.$4;
+
+  // サムネイル画像は原寸画像の URL に差し替え
+  urlinfo.url = RegExp.$1 + 'o' + RegExp.$4 + RegExp.$5;
+
+  var fmt = ini.Filename ['Image'];
+  if (/%NICKNAME%/.test (fmt)) {
+    // ファイル名に未取得の情報が必要なら HTML ページから取得する
+    if (!get_spec_from_amebaid (nb.ameba_id)) {
+      return retry ();
+    }
+  }
+
+  Dorothy.fileName = nb.assemble (fmt, url);
+
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// パーマリンクで指定された投稿の添付画像をダウンロード
+//  画像が添付されていない場合はエラーにする（キューにアイテムを残す）。
+//  返信コメントに添付されている画像はダウンロードしない。
+function dl_post (url) {
+  var http = new Http ();
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  // 投稿本文だけを取り出す（返信に添付された画像を拾わないように）
+  if (! /<ol\s+id="permanent">(.*?)<\/ol>/.test (http.data)) {
+    http.die ('<ol id="permanent">.*</ol> が見つかりません。');
+  }
+  var t = RegExp.$1;
+
+  // 画像の添付部分を取り出す
+  if (! /<span\s+class="photoArea">(.*?)<\/span>/.test (t)) {
+    http.die ('<span class="photoArea">.*</span> が見つかりません。');
+  }
+  t = RegExp.$1;
+
+  // 画像の URL を取り出す
+  if (! /data-original-image="([^"]+)"/.test (t)) {
+    http.die ('画像の URL が見つかりません。');
+  }
+  url = RegExp.$1;
+
+  // 各種情報を取得
+  if (/<div\s+class="profileUserNickname">\s*<em>\s*<a\s+href="[^"]+">([^<]+)/.test (http.data)) {
+    nb.nickname = (new Utf8 (RegExp.$1)).decodeCharRef ();
+  }
+  if (/^(http:\/\/stat\d+\.ameba\.jp\/user_images\/\d+\/\d+\/([^\/]+)\/[^\/]+\/[^\/]+\/[^\/]+\/)(t\d+_|o)(\d+)(.*)$/.test (url)) {
+    nb.ameba_id = RegExp.$2;
+    nb.id = RegExp.$4;
+  }
+
+  Dorothy.fileName = nb.assemble (ini.Filename ['Image'], url);
+
+  urlinfo.url = url;
+  headers.Host = (new URL (url)).host;
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// API で全ての投稿をダウンロード
+//  手抜き実装のため、ブラウザで閲覧した場合のアクセスに対して
+//  ・offset=0 のデータを API から取得している
+//  ・総投稿数より後の offset（空データ）を API から取得しようとする
+//  という違いがある。
+function dl_api (page_url, api_url) {
+  api_url += '?offset=';
+
+  var http = new Http ();
+  http.setRequestHeader ('Referer', page_url);
+
+  var list = [ ];
+
+  for (var offset = 0; ;) {
+    var u = api_url + offset.toString () + '&_=' + Date.getTime ();
+
+    if (!http.getXhr (u)) {
+      return http.retry_or_die ();
+    }
+
+    function add_list (s, p) {
+      list.push ({ Url: p });
+      return '';
+    }
+
+    // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+    http.data.replace (/data-original-image="([^"]+)"/g, add_list);
+
+    var li = http.data.match (/<li\s+/g);
+    if (li == null) {
+      // 中身が空なら、末尾まで読み込んだので終了
+      break;
+    }
+
+    // 次回取得位置
+    offset += li.length;
+  }
+
+  if (list.length == 0) {
+    http.die ('ダウンロード対象が見つかりませんでした。');
+  }
+
+  // 見つかった画像をダウンロード登録
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+// 月別のページからダウンロード
+function dl_archive_month (url) {
+  url.match (/^http:\/\/now\.ameba\.jp\/([^\/]+)\/archive(\/\d{4}\/\d{2})\//);
+  var api_url = 'http://now.ameba.jp/api/archive/' + RegExp.$1 + RegExp.$2;
+
+  dl_api (url, api_url);
+}
+
+
+// 月別のトップページ
+function dl_archive_all (url) {
+  var http = new Http ();
+  if (!http.get (url)) {
+    return http.retry_or_die ();
+  }
+
+  var list = [ ];
+
+  function add_list (s, p) {
+    list.push ({ Url: p });
+    return '';
+  }
+
+  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+  http.data.replace (/<a\s+href="(http:\/\/now\.ameba\.jp\/[^"]+)"\s+class="archiveMonth">/g, add_list);
+
+  if (list.length == 0) {
+    http.die ('月別のリンクが見つかりません。');
+  }
+
+  // 見つかった画像をダウンロード登録
+  additem.send (list) || exit ();
+  Util.remove_this ();
+}
+
+
+//-------------------- メイン処理 --------------------//
+
+
+  var additem = new AddItem (ini.AddItem);
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
+  // ファイル名の生成に使える情報
+  nb.ameba_id = null;  // アメーバID（多分 [-_0-9a-z]+）
+  nb.nickname = null;  // ニックネーム
+  nb.id = null;  // 画像番号
+
+
+  var url = urlinfo.url;
+
+  if (/^(http:\/\/stat\d+\.ameba\.jp\/user_images\/\d+\/\d+\/([^\/]+)\/[^\/]+\/[^\/]+\/[^\/]+\/)(t\d+_|o)(\d+)(.*)$/.test (url)) {
+    // 画像
+    dl_image (url);
+    return;
+  }
+  else if (/^http:\/\/now\.ameba\.jp\/[^\/]+\/\d+\//.test (url)) {
+    // 投稿のパーマリンク
+    dl_post (url);
+    return;
+  }
+  else if (/^http:\/\/now\.ameba\.jp\/[^\/]+\/archive\/\d{4}\/\d{2}\//.test (url)) {
+    // 月別のアーカイブページ
+    dl_archive_month (url);
+    return;
+  }
+  else if (/^(http:\/\/now\.ameba\.jp\/[^\/]+\/)(#.*)?$/.test (url)) {
+    // トップページ
+    dl_archive_all (RegExp.$1 + 'archive/');
+    return;
+  }
+  else if (/^(http:\/\/now\.ameba\.jp\/[^\/]+\/archive\/(\?year=\d+)?(#.*)?$)/.test (url)) {
+    // 月別のトップページ
+    dl_archive_all (url);
+    return;
+  }
+
+  println ('未対応の URL です。');
+  return;
+}
+
+
+// EOF
