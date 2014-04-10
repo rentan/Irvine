@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ニコニコ動画_r
-//version=20140331.0
+//version=20140403.0
 //hint=
 //match=^http://www\.nicovideo\.jp/watch\/([a-z]{2})?\d+
 //author=rentan
@@ -132,11 +132,7 @@ NicoVideo.prototype._importCookie = function (url) {
     host: (new URL (url)).host.replace (/^.*(\.nicovideo\.jp)$/, '$1'),
     name: 'user_session'
   };
-  var cookie = this.cookie = bcookie.import (o) || '';
-
-  if (!cookie || debug) {
-    println ('Cookie: ' + this.cookie);
-  }
+  this.cookie = bcookie.import (o) || '';
 };
 
 
@@ -252,6 +248,7 @@ NicoVideo.prototype._analyzeThumbinfo = function () {
   finally {
     if (document) {
       document.destroy ();
+      document = null;
     }
   }
 
