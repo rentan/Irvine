@@ -1,0 +1,74 @@
+/*
+スクリプト初期化データ
+guid={05E758BC-3DFA-4015-AA74-8DEC1557A9AC}
+caption=URLを開く
+version=20140423
+hint=選択したアイテムのURLを開く
+event=OnListMenuClick
+match=
+author=rentan
+synchronize=0
+*/
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+//キューリストメニューのクリックイベント
+function OnListMenuClick (irvine, action) {
+  var ini = {
+    file: '',
+    shift: 'iexplore'
+  };
+
+  var file = Keyboard.shift ? ini.shift : ini.file;
+
+
+  function open (item) {
+    var url = item.url;
+    if (/^ttps?:\/\/./.test (url)) {
+      url = 'h' + url;
+    }
+    else if (!/^https?:\/\/./.test (url)) {
+      return;
+    }
+
+    if (file) {
+      Win32.shellExecute ('open', file, url);
+    }
+    else {
+      Win32.shellExecute ('open', url);
+    }
+  }
+
+
+  var len = irvine.ItemCount;
+  for (var i = 0; i < len; ++i) {
+    if (irvine.ItemSelected [i]) {
+      open (new IrvineItem (irvine.Items [i]));
+    }
+  }
+}
+
+
+//メニューの更新イベント
+function OnMenuUpdate (irvine, action) {
+  action.enabled = (irvine.SelectedItemCount > 0);
+}
+
+
+// EOF
