@@ -1,0 +1,48 @@
+/*
+スクリプト初期化データ
+guid={7791A246-BBAB-4C48-92C7-260C8C4BA24A}
+caption=Dorothy2R DOA
+version=20140507
+hint=
+event=OnTreeMenuClick
+match=
+author=rentan
+synchronize=0
+*/
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+// キューフォルダメニューのクリックイベント
+function OnTreeMenuClick (irvine, action) {
+  // 全てのアイテムを選択状態にする
+  var len = irvine.ItemCount;
+  for (var i = 0; i < len; ++i) {
+    irvine.ItemSelected [i] = true;
+  }
+
+  irvine.ExecuteScript ('OnListMenuClick', '{BC220934-7214-48CA-9A7A-736A95B25C0F}');
+}
+
+
+// メニューの更新イベント
+function OnMenuUpdate (irvine, action) {
+}
+
+
+// EOF

@@ -1,0 +1,622 @@
+/*
+スクリプト初期化データ
+guid={115F43E2-884F-4B64-A854-D91568694635}
+caption=Dorothy2R OnHttpRequest
+version=20140507
+hint=Dorothy2R OnHttpRequest
+event=OnHttpRequest
+match=
+author=xor, rentan
+synchronize=0
+*/
+
+// based on Dorothy2A.dms version 0.31 by xor
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+//------------------------------- irvinePath -------------------------------
+
+void function irvinePath () { };
+(function (p) {
+  var reg = new RegIni ('\Software\Wildforce\Irvine');
+
+  var paths = [ 'application', 'option', 'import', 'plugins_all', 'plugins_user',
+                'scripts_all', 'scripts_user', 'iemenu_all', 'iemenu_user' ];
+  for (var i = 0; i < paths.length; ++i) {
+    var k = paths [i];
+    p [(k == 'import') ? 'importz' : k] = reg.read ('path', k, '');
+  }
+
+  p.scripts = p.scripts_all;
+  p.scripts2 = p.scripts.replace (/\\[^\\]*$/, '');
+
+  p.queue2 = p.option.replace (/[^\\]*$/, '')+ 'queue';
+  p.queue = p.queue2 + '\';
+}) (irvinePath.prototype);
+
+
+//-------------------------- Dorothy オブジェクト --------------------------
+
+// Dorothy オブジェクトをグローバル定義
+Dorothy = { version: 'uninitialized' };
+
+
+// matchList から検索するルーチン
+Dorothy.search = {
+  _ignoreDot: false,
+  _index: 0
+};
+
+// 検索条件を初期化
+Dorothy.search.init = function (ignoreDot) {
+  Dorothy.search._ignoreDot = !!ignoreDot;
+  Dorothy.search._index = 0;
+};
+
+// matchList から検索
+Dorothy.search.next = function (url) {
+  var ds = Dorothy.search;
+
+  Dorothy.matchFlg = false;
+  Dorothy.matchFile = '';
+  Dorothy.matchType = '';
+
+  var matchList = Dorothy.matchList;
+  var len = matchList.length;
+
+  for (var i = ds._index; i < len; ++i) {
+    var m = matchList [i];
+
+    if (ds._ignoreDot && m.re.toString () == '/./') {
+      // //match=. のファイルは無視する
+      continue;
+    }
+
+    if (m.re.test (url)) {
+      // //match= が一致した
+      Dorothy.matchFlg = true;
+      Dorothy.matchFile = m.f;
+      Dorothy.matchType = 'url';
+
+      Dorothy.userPath = Dorothy.path + 'user\' + m.f + '\';
+      Dorothy.userIniPath = Dorothy.userPath + m.f + '.ini';
+
+      // 次回の検索は次の項目から
+      ds._index = i + 1;
+      return m;
+    }
+  }
+
+  ds._index = i;
+  return null;
+};
+
+
+// プログラムの形式が正しいか調べる
+Dorothy.validateProgram = function (src) {
+  if (!/^\/\/Dorothy2(.+?)^\/\/end/m.test (src)){
+    return 'error>プログラムが正しくありません。';
+  }
+  var head = Dorothy.programHead = RegExp.$1;
+
+  if (!/^\/\/author=(.*?)$/m.test (head) || RegExp.$1 == '') {
+    return 'error>author が未定義。';
+  }
+  Dorothy.author = RegExp.$1;
+
+  if (!/^\/\/caption=(.*?)$/m.test (head) || RegExp.$1 == '') {
+    return 'error>caption が未定義。';
+  }
+  Dorothy.programName = RegExp.$1;
+
+  if (!/^\/\/version=(.*?)$/m.test (head) || RegExp.$1 == '') {
+    return 'error>version が未定義。';
+  }
+  Dorothy.programVersion = RegExp.$1;
+
+  Dorothy.stealth = 0;
+  if (/^\/\/stealth=(.*?)$/m.test (head)) {
+    Dorothy.stealth = RegExp.$1;
+  }
+
+  return null;
+};
+
+// プログラムを読み込んで解析する
+Dorothy.loadProgram = function (file) {
+  Dorothy.program = file_load ('program\' + file + '.dms');
+
+  var s = Dorothy.validateProgram (Dorothy.program);
+  if (s) {
+    println (s);
+    return false;
+  }
+
+  return true;
+};
+
+
+// common の形式が正しいか調べる
+Dorothy.validateCommon = function (name, src) {
+  var obj = Dorothy.common [name] = { };
+
+  if (!/^\/\/version=(.*?)$/m.test (src)) {
+    return 'version が記載されていません';
+  }
+  obj.version = RegExp.$1;
+
+  if (!/^\/\/caption=(.*?)$/m.test (src)) {
+    return 'caption が記載されていません';
+  }
+  obj.caption = RegExp.$1;
+
+  return null;
+};
+
+
+// Dorothy.init でグローバルスコープに定義する関数群
+//   クロージャが必要なら string、そうでなければ function で格納する。
+Dorothy._funcs = { };
+
+
+// (Dorothy2R 拡張) ファイルをテキストエディタで開く
+Dorothy._funcs.edit = "function (file) {
+  var god = typeof Irvine == 'object';
+
+  var ed = god ? Irvine.GetOptionData ('general', 'editor') : optiondata.Editor;
+  var opt = god ? Irvine.GetOptionData ('general', 'editoroption') : optiondata.EditorOption;
+
+  if (!ed) {
+    ed = 'notepad.exe';
+    opt = '';
+  }
+
+  return Win32.shellExecute ('open', '\"' + ed + '\"', opt + '\"' + file + '\"');
+}";
+
+
+// ファイルを読み込んで返す
+Dorothy._funcs.file_load = "function (path) {
+  var fullpath = /^[a-z]:/i.test (path) ? path : Dorothy.path + path;
+  var file = new File (fullpath);
+
+  var mutex = new Mutex ('file_load');
+  try {
+    mutex.lock ();
+    file.open ('r');
+    return file.read ();
+  }
+  catch (e) {
+    println ('error>' + e + ' ' + path + ' の読み込みに失敗しました。');
+  }
+  finally {
+    file.close ();
+    mutex.unlock ();
+  }
+
+  exit ();
+}";
+
+
+// Dorothy2\common\*.dms を読み込んで実行する
+Dorothy._funcs.common_xload = "function (name) {
+  // println (name + ' {');
+  // var tc = Win32.getTickCount ();
+
+  var n = name.replace (/\\//g, '\\');
+
+  // common_name 定義時はそのフォルダから優先検索
+  // common_sp == true 時は common(special) フォルダから優先検索
+  function f (dir, show) {
+    var file = new File (Dorothy.path + dir + '\\' + n + '.dms');
+    if (file.exists ()) {
+      if (show) {
+        println ('common_xload: ' + file.path);
+      }
+      return file.path;
+    }
+    return null;
+  }
+
+  var show = Dorothy.common_show;
+  var file = (Dorothy.common_name && f (Dorothy.common_name, show))
+          || (Dorothy.common_sp && f ('common(special)', show))
+          || f ('common', false);
+
+  if (!file) {
+    println ('common_xload: ファイルがありません: ' + n);
+    exit ();
+  }
+
+  try {
+    var src = file_load (file);
+
+    var s = Dorothy.validateCommon (n, src);
+    if (s) {
+      throw s;
+    }
+
+    eval (src);
+  }
+  catch (e) {
+    println ('common_xload: ' + e + ': ' + file);
+    exit ();
+  }
+
+  // println ('} ' + name + ' ' + (Win32.getTickCount () - tc) + 'ms');
+}";
+
+
+// Dorothy2\common\<引数>.dms を読み込んで実行する
+Dorothy._funcs.common_load = "function () {
+  for (var i = 0; i < arguments.length; i++) {
+    if (Dorothy.common.hasKey (arguments [i])) {
+      // 既にロード済みのファイルは無視
+      continue;
+    }
+
+    common_xload (arguments [i]);
+  }
+}";
+
+
+// Dorothy2\user\<プログラム名>\<name> を読み込んで返す
+Dorothy._funcs.user_load = function (name) {
+  return file_load ('user\' + Dorothy.matchFile + '\' + name);
+};
+
+
+// Dorothy2\user\<プログラム名>\<引数>.dms を読み込んで実行する
+Dorothy._funcs.user_program_load = function () {
+  for (var i = 0; i < arguments.length; i++) {
+    try {
+      eval (file_load ('user\' + Dorothy.matchFile + '\' + arguments [i] + '.dms'));
+    }
+    catch (e) {
+      println (e + ' ' + Dorothy.matchFile + '\' + arguments [i] + '.dms');
+      exit ();
+    }
+  }
+};
+
+
+// debug 時のみログ表示
+Dorothy._funcs.print_debug = function (s) {
+  if (debug) {
+    println (s);
+  }
+};
+
+
+// (非推奨) ファイル名に使用できない記号や実体参照を変換する
+// NameBuilder#normalize()、Utf8#decodeCharRef() を使って下さい。
+Dorothy._funcs.changeFileName = function (filename) {
+  return filename;
+};
+
+
+// Dorothy 初期化
+Dorothy.init = function (o) {
+  // Dorothy2 本体のバージョン番号
+  Dorothy.version = o.version;
+
+  Dorothy.common = { };
+
+
+  // Dorothy メソッドを定義(クロージャあり)
+  var ev = o.eval;
+  ev ('Dorothy.edit=' + Dorothy._funcs.edit);
+
+  // グローバル関数を定義(クロージャあり)
+  var funcs = [ 'file_load', 'common_xload', 'common_load' ];
+  for (var i = 0; i < funcs.length; ++i) {
+    var name = funcs [i];
+    ev (name + '=' + Dorothy._funcs [name]);
+  }
+
+  // グローバル関数を定義(クロージャなし)
+  funcs = [ 'user_load', 'user_program_load', 'print_debug', 'changeFileName' ];
+  for (i = 0; i < funcs.length; ++i) {
+    name = funcs [i];
+    Global [name] = Dorothy._funcs [name];
+  }
+
+
+  // 不要になったプロパティを削除
+  Dorothy.removeKey ('_funcs');
+  Dorothy.removeKey ('init');
+};
+
+
+// Dorothy2R_ini.dms を読み込んで実行する
+Dorothy.loadDorothyIni = function () {
+  var f = new File (WScript.Path + 'scripts\Dorothy2R_ini.dms');
+
+  function err (s) {
+    alert (f.path + ' ' + s + "\n\n「Dorothy2R 設定」で設定を保存して下さい。");
+    exit ();
+  }
+  if (!f.exists ()) {
+    err ('がありません。');
+  }
+  if (!f.length) {
+    err ('が空です。');
+  }
+
+  try {
+    f.open ('r');
+    eval ('(function(){' + f.read () + '})()');
+    f.close ();
+  }
+  catch (e) {
+    f.close ();
+    err (e);
+  }
+};
+
+
+//----------------------------- OnHttpRequest ------------------------------
+
+/*
+  HTTP(S)リクエストイベント
+  ※synchronize=1 以外の場合にIrvine.Api/UrlManager/Folder/Itemを使用しないでください
+  ※ダイアログを呼びださないでください
+*/
+function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
+  // Dorothy オブジェクト初期化
+  function ev () { eval (arguments [0]); }
+  Dorothy.init ({ version: '0.31', eval: ev });
+  Dorothy.loadDorothyIni ();
+
+
+  // Dorothy2\program\*.dms から使える機能を定義
+
+  // Irvine にアイテムの実行をリトライさせる
+  // (実際にリトライするかどうかはフォルダ設定による)
+  function retry () {
+    for (var i = 0; i < arguments.length; i++) {
+      println (arguments [i]);
+    }
+
+    urlinfo.url = '';
+    urlinfo.proxy = '';
+    return false;
+  }
+
+
+  // この関数内で使う変数、関数等のコンテナ
+  var _ = { };
+
+
+  // 保存フォルダを返す(蒸してまたは相対パスの場合は空文字列)
+  _.DorothyFileSavePath = function () {
+    var ipath = item.folder;
+    var ItemFullPathFlag = (2 <= ipath.length && ipath [1] == ':');
+    if (ItemFullPathFlag) {
+      // アイテム設定で保存フォルダが指定されている
+      return ipath;
+    }
+
+    var fpath = folderdata.Folder;
+    var FolderFullPathFlag = (2 <= fpath.length && fpath [1] == ':');
+    if (!FolderFullPathFlag) {
+      // フォルダ設定の保存フォルダが無指定または相対パス
+      return '';
+    }
+
+    return ipath ? fpath + '\' + ipath : fpath;
+  };
+
+  // item.filename にファイル名を設定する
+  // [[rename]] [[md=...]] [[cd=...]] を解釈する
+  _.DorothyItemFilenameWrite = function (filename) {
+    if (filename == 'remove') {
+      return false;
+    }
+
+    if (item.filename != '') {
+      // すでに item.filename が設定されている場合
+
+      if (!/\[\[rename\]\]/.test (item.filename)) {
+        var ifdot = item.filename.lastIndexOf ('.');
+        if (ifdot == item.filename.length - 1) {
+          item.filename = item.filename.slice (0, ifdot);
+          ifdot = -1;
+        }
+
+        var fdot = filename.indexOf ('.');
+        if (ifdot == -1 && fdot != -1) {
+          // 既存設定ファイル名に拡張子がなければ新しいファイル名の拡張子をコピーする
+          var ext = filename.slice (fdot, filename.length);
+          item.filename += ext;
+        }
+        return true;
+      }
+    }
+
+    // item.filename が空、または新しいファイル名が [[rename]] の場合
+
+    // [[rename]] 強制リネーム(item.filename が設定されていても上書き)
+    filename = filename.replace (/\[\[rename\]\]/, '');
+    filename = filename.replace (/ +\]\]/g, ']]');
+
+    // [[md=...]] フォルダを作成して保存
+    // [[cd=...]] 指定フォルダに保存
+    if (/\[\[(md|cd)=(.+?)\]\]/.test (filename)) {
+      var mode = RegExp.$1;
+      var newDir = RegExp.$2;
+
+      filename = filename.replace (/\[\[(md|cd)=.+?\]\]/g, '');
+
+      if (mode == 'md') {
+        var path = DorothyFileSavePath ();
+        if (!path) {
+          return false;
+        }
+        var d = new Directory (path + '\' + newDir);
+        if (!d.exists()) {
+          d.make ();
+        }
+      }
+
+      if (newDir) {
+        item.Folder += (item.Folder ? '\' : '') + newDir;
+      }
+    }
+
+    item.filename = filename;
+    return true;
+  };
+
+
+  // OnDoneThread でリネームが必要なアイテムを xor.ini に保存する
+  _.saveRenameItem = function (url, filename) {
+    var mutex = new Mutex ('xorini');
+    try {
+      mutex.lock ();
+      var ini = new Ini (WScript.Path + 'xor.ini');
+      ini.write ('filename', url.replace (/=/g, '_'), filename);
+      ini.update ();
+    }
+    finally {
+      mutex.unlock ();
+    }
+  };
+
+
+  // URL 修正
+  //  new url>http://～ → http://～
+  //  ttp://～ → http://～
+  _.fixUrl = function () {
+    function fix (url) {
+      return url.replace (/^new url>/, '').replace (/^(ttps?:)/, 'h$1');
+    }
+
+    var u = fix (item.url);
+    if (item.url != u) {
+      item.url = u;
+    }
+
+    u = fix (urlinfo.url);
+    if (urlinfo.url != u) {
+      urlinfo.url = u;
+    }
+  };
+
+
+  // メイン処理
+
+  println ('Dorothy2R version ' + Dorothy.rVersion + ' (based on ' + Dorothy.version + ')');
+
+  Dorothy.fileNameKey = item.url;
+  Dorothy.fileName = '';
+
+  _.fixUrl ();
+
+  if (urlinfo.proxy == '' && folderdata.UseHttpProxy && !folderdata.RandomHttpProxy) {
+    urlinfo.proxy = folderdata.HttpProxy;
+  }
+
+  Dorothy.oldUrl = urlinfo.url;
+  Dorothy.continueCount = 0;
+  Dorothy.end = false;
+
+  _.matchCount = 0;
+  Dorothy.search.init ();
+
+  for (;;) {
+    Dorothy.continue = false;
+    Dorothy.cancel = true;
+
+    if (!Dorothy.search.next (urlinfo.url)) {
+      // 対応するプログラムが見つからない
+      break;
+    }
+
+    // URL に対応するプログラムが見つかった
+
+    // 初回のみ、temp フォルダをカスタマイズしている場合は表示する
+    if (_.matchCount++ == 0 && Dorothy.temp != (Dorothy.path + 'temp\')) {
+      println ('Dorothy.temp = ' + Dorothy.temp);
+    }
+
+    // .dms を読み込む
+    if (!Dorothy.loadProgram (Dorothy.matchFile)) {
+      exit ();
+    }
+    if (Dorothy.stealth != 1) {
+      println ('match>' + Dorothy.programName + ' (' + Dorothy.programVersion + ')' + ' by '+ Dorothy.author);
+    }
+
+    // 読み込んだ .dms を実行する
+    try {
+      Dorothy.return = eval (Dorothy.program) ();
+    }
+    catch (e) {
+      println ('error>' + e);
+      exit ();
+    }
+
+    // Dorothy.continue .end .cancel に応じて次の処理を振り分ける
+
+    if (Dorothy.continue) {
+      // .continue = false → true に変更された場合: 優先度トップから再実行する
+      ++Dorothy.continueCount;
+      Dorothy.search.init ();
+      continue;
+    }
+
+    if (Dorothy.end) {
+      // .end = false → true に変更された場合: 終了
+      Dorothy.cancel = false;
+    }
+    if (!Dorothy.cancel) {
+      // .cancel = true → false に変更された場合: 終了
+      break;
+    }
+
+    // .cancel = true のままなら、次の優先度のプログラムを実行する
+  }
+
+  if (!_.matchCount) {
+    println ('対応する Dorothy2 スクリプトがありません。');
+  }
+
+
+  // urlinfo.url が変更されていたら表示
+  if (Dorothy.oldUrl != urlinfo.url && urlinfo.url != '') {
+    println ('new url>' + urlinfo.url);
+  }
+
+
+  if (Dorothy.fileName != '') {
+    println ('new fileName>' + Dorothy.fileName);
+
+    if (!_.DorothyItemFilenameWrite (Dorothy.fileName)) {
+      _.saveRenameItem (Dorothy.fileNameKey, Dorothy.fileName);
+    }
+  }
+
+
+  // urlinfo と headers を置換する
+  return true;
+}
+
+
+// EOF

@@ -1,0 +1,129 @@
+Dorothy2R by rentan
+
+
+xor さんの Dorothy2 を、勝手に改変したものです。
+
+Dorothy2 という素晴らしいソフトウェアを公開してくださった xor さんに
+感謝いたします。
+
+動作が非互換なので注意して下さい。
+各サイト用のスクリプトはだいたい動作します。
+
+Dorothy2R に関する問い合わせを、Dorothy2 の作者である xor さんにしないこと。
+
+
+動作環境
+========
+
+Windows Vista/7/8/8.1
+Irvine 1.3.1
+Dorothy2 最新版
+
+
+使用方法
+========
+
+1. Dorothy2 の最新版が完全に動作する環境を構築する。
+
+2. 各ファイルを対応フォルダにコピー。
+
+3. フォルダ設定で Dorothy2A.dms のチェックを外す。
+
+4. フォルダ設定で各スクリプトにチェックを入れる。
+
+5. 「Dorothy2R 設定」で上書き保存。
+   (これにより scripts\Dorothy2R_ini.dms が生成されます)
+
+
+Dorothy2 併用時の注意
+=====================
+
+・一つのフォルダの設定で Dorothy2A.dms と Dorothy2R_a.dms の両方に
+  チェックを入れないで下さい。
+
+・「Dorothy2R 設定」では Dorothy2A.dms は更新されないので
+  「動画ダウンロード２設定」の方でも上書き保存して下さい。
+
+
+仕様・制限事項
+==============
+
+・xor.dms を読み込まないようにしているので、それに依存するスクリプトは
+  動作しません(把握できていません)。
+
+・changeFileName() が引数をそのまま返すダミー関数になっています。代わりに
+  NameBuilder#normalize() や Utf8#decodeCharRef() を使って下さい。
+
+
+変更履歴
+========
+
+2014-05-07  rentan at rentan.org
+
+scripts\Dorothy2R_ini.dms
+  ユーザ設定の独立スクリプト。Dorothy2R_set.dms により生成される。
+
+  Dorothy.matchList: オブジェクト構造を変更。
+
+  Dorothy.temp: Dorothy.path から算出する。ユーザー定義時は文字列。
+
+  Dorothy.rVersion: Dorothy2R のバージョン番号(整数)を追加。
+  スクリプト間のバージョン確認については仕様未確定につき未実装。
+
+  Dorothy.nulUrl, Dorothy.nulProxy: 追加。仕様未確定。
+
+scripts\Dorothy2R_a.dms  version 20140507
+  Dorothy2 の Dorothy2A.dms version 0.31 を元に作成。
+  xor さんの記述部分については氏の著作権です。
+
+  スクリプト構造を大幅に変更。
+  ユーザ設定を Dorothy2R_ini.dms に分離。
+  xor.dms を読み込まないようにした。
+
+  common_reload(), program_load(), reset(): 削除。
+
+  irvinePath: オブジェクトとして実装。
+  changeFileName(): 引数を変換せずそのまま返すダミー関数として追加。
+
+  Dorothy.init(), Dorothy.loadDorothyIni(), Dorothy.search.init(),
+  Dorothy.search.next(): 新規メソッド。Dorothy2R_listmenu.dms のような
+  Dorothy2R の周辺スクリプト用。
+
+  Dorothy.edit(): 新規メソッド。
+
+scripts\Dorothy2R_set.dms  version 20140507
+  Dorothy2 の Dorothy2set.dms version 0.19 を元に作成。
+  xor さんの記述部分については氏の著作権です。
+
+  Dorothy2 基本機能を自前で定義せず、Dorothy2R_a.dms を読み込む。
+  ユーザ設定を Dorothy2R_ini.dms に保存するようにした。
+  その関係でクローン機能を削除。
+  header.ini を保存しないようにした。
+
+scripts\Dorothy2R_listmenu.dms  version 20140507
+  新規作成。Dorothy2 の Dorothy2ListMenu.dms version 0.42 に相当。
+
+  Dorothy2 基本機能を自前で定義せず、Dorothy2R_a.dms を読み込む。
+  ユーザ設定を Dorothy2R_ini.dms から読み込む。
+
+scripts\Dorothy2R_doa_list.dms  version 20140507
+  Dorothy2 の DOA.dms version 0.23 を元に作成。
+  xor さんの記述部分については氏の著作権です。
+
+  関数を OnListMenuClick() 内に移動。
+  xor.dms を読み込まないようにした。
+
+  Dorothy.doaVersion: DOA 本体のバージョン番号を追加。
+  folderdata.Folder: ダミー情報を追加。
+
+scripts\Dorothy2R_doa_tree.dms  version 20140507
+  新規作成。Dorothy2 の xor100813_2.dms version 0 に相当。
+
+Dorothy2\system\menu\set\usersetting.dms  version 20140507.0
+  新規作成。
+
+  Dorothy2 の user_name.dms version 1.0 と common.dms version 1.0
+  に相当する機能も統合した。
+
+
+[EOF]

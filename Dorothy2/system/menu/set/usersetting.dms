@@ -1,0 +1,111 @@
+//Dorothy2
+//caption=ユーザー設定
+//version=20140507.0
+//hint=
+//match=
+//author=rentan
+//path=system\menu\set
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+function () {
+  common_load ('EZDialog');
+
+  if (!Dorothy.hasKey ('rVersion')) {
+    return alert ('このスクリプトは Dorothy2R 専用です。');
+  }
+
+
+  // コンストラクタ
+  function UserSettingDialog () {
+    var d = this.dialog = new EZDialog ('ユーザー設定');
+
+    // 基本(既存設定の統合)
+    var w1 = 70, w2 = 200;
+    this.groupU = d.group ('基本');
+    this.user_name = d.label_edit ('ユーザー名', Dorothy.userName, w1, w2);
+    d.groupEnd (this.groupU);
+
+    // Dorothy2R 拡張
+    this.groupR = d.group ('Dorothy2R 拡張');
+    var t = (Dorothy.temp == Dorothy.path + 'temp\') ? '' : Dorothy.temp;
+    this.user_temp = d.label_edit ('tempフォルダ', t, w1, w2);
+    this.user_nulurl = d.label_edit   ('NUL URL     ', Dorothy.nulUrl, w1, w2);
+    this.user_nulproxy = d.label_edit ('NUL プロキシ', Dorothy.nulProxy, w1, w2);
+    d.groupEnd (this.groupR);
+
+    // common_sp
+    this.groupC = d.group ('common');
+    this.common_sp = d.checkBox ('common(special)を有効にする', Dorothy.common_sp);
+    this.common_show = d.checkBox ('special使用時に表示する', Dorothy.common_show);
+    this.common_name = d.label_edit ('もう一つのスペシャル', Dorothy.common_name);
+    d.groupEnd (this.groupC);
+
+    // OK、CANCEL
+    this.ok_cancel = d.ok_cancel ();
+  }
+
+  // ダイアログを表示してOK終了なら true を返す
+  UserSettingDialog.prototype.show = function () {
+    return this.dialog.showModal () == 1;
+  };
+
+  // Dorothy オブジェクトを更新する
+  UserSettingDialog.prototype.updateDorothyObject = function () {
+    USER_NAME = Dorothy.userName = this.user_name.edit.text;
+
+    var t = this.user_temp.edit.text;
+    Dorothy.temp = t ? (new Directory (t)).path : Dorothy.temp;
+    Dorothy.nulUrl = this.user_nulurl.edit.text;
+    Dorothy.nulProxy = this.user_nulproxy.edit.text;
+
+    Dorothy.common_sp = this.common_sp.checked;
+    Dorothy.common_show = this.common_show.checked;
+    Dorothy.common_name = this.common_name.edit.text;
+  };
+
+  // setting.ini を更新する
+  UserSettingDialog.prototype.updateSettingIni = function () {
+    var ini = new Ini (Dorothy.path + 'system\setting.ini');
+
+    ini.write ('user', 'name', Dorothy.userName);
+
+    ini.write ('user', 'temp', Dorothy.temp);
+    ini.write ('user', 'nulurl', Dorothy.nulUrl);
+    ini.write ('user', 'nulproxy', Dorothy.nulProxy);
+
+    ini.write ('common', 'common_sp', +Dorothy.common_sp);
+    ini.write ('common', 'common_show', +Dorothy.common_show);
+    ini.write ('common', 'common_name', Dorothy.common_name);
+
+    ini.update ();
+  };
+
+
+  var dlg = new UserSettingDialog ();
+  if (dlg.show ()) {
+    dlg.updateDorothyObject ();
+    dlg.updateSettingIni ();
+  }
+
+}
+
+
+// EOF

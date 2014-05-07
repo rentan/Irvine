@@ -1,0 +1,188 @@
+/*
+スクリプト初期化データ
+guid={52ad722b-b5ff-4362-8aba-278b6aaaf93e}
+caption=Dorothy2R サイト設定
+version=20140507
+hint=Shiftキー押し下げでプログラム編集
+event=OnListMenuClick
+match=
+author=rentan
+synchronize=0
+*/
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+// キューリストメニューのクリックイベント
+function OnListMenuClick (irvine, action) {
+  // Dorothy2R_a.dms 実行
+  (function () {
+    var f = new File (WScript.Path + 'scripts\Dorothy2R_a.dms');
+    try {
+      f.open ('r');
+      eval ('(function(){' + f.read () + '})()');
+      f.close ();
+    }
+    catch (e) {
+      f.close ();
+      alert (e + "\n" + f.path);
+      exit ();
+    }
+  }) ();
+
+
+  // Dorothy オブジェクト初期化
+  function ev () { eval (arguments [0]); }
+  Dorothy.init ({ version: 'xxxx', eval: ev });
+  Dorothy.loadDorothyIni ();
+
+
+  // グローバル変数として参照できるようにする
+  Irvine = irvine;
+  Action = action;
+
+
+  // パス名変数の定義
+  dorothy2_path = Dorothy.path;
+  dorothy2_temp = Dorothy.temp;
+  dorothy2_document    = dorothy2_path + 'document\';
+  dorothy2_common      = dorothy2_path + 'common\';
+  dorothy2_program     = dorothy2_path + 'program\';
+  dorothy2_setting     = dorothy2_path + 'setting\';
+  dorothy2_system      = dorothy2_path + 'system\';
+  dorothy2_project     = dorothy2_path + 'project\';
+  dorothy2_projectdata = dorothy2_path + 'projectdata\';
+  dorothy2_bin         = dorothy2_path + 'bin\';
+  dorothy2_user        = dorothy2_path + 'user\';
+  dorothy2_system_menu         = dorothy2_system + 'menu\';
+  dorothy2_system_menu_new     = dorothy2_system_menu + 'new\';
+  dorothy2_system_menu_setting = dorothy2_system_menu + 'setting\';
+  dorothy2_system_menu_edit    = dorothy2_system_menu + 'edit\';
+  dorothy2_system_menu_project = dorothy2_system_menu + 'project\';
+  dorothy2_system_menu_tool    = dorothy2_system_menu + 'tool\';
+  dorothy2_system_menu_set     = dorothy2_system_menu + 'set\';
+  dorothy2_system_menu_package = dorothy2_system_menu + 'package\';
+  dorothy2_system_menu_help    = dorothy2_system_menu + 'help\';
+  dorothy2_system_ini          = dorothy2_system + 'ini\';
+
+
+  // この関数内で使う変数、関数等のコンテナ
+  var _ = { };
+
+
+  // 選択されているアイテムを取得
+  _.getSelectedItem = function () {
+    var len = irvine.ItemCount;
+    for (var i = 0; i < len; ++i) {
+      if (irvine.ItemSelected (i)) {
+        return new IrvineItem (irvine.Items (i));
+      }
+    }
+    return null;
+  };
+
+
+  // TAB またはスペースキーが押されていれば true を返す
+  _.isWhiteSpaceKeyDown = function () {
+    return Keyboard.isDown ("\t") || Keyboard.isDown (' ');
+  };
+
+
+  // フォルダ内のパターンで指定したファイルを全て編集する
+  _.editFiles = function (dir, wildcard, re) {
+    var files = (new Directory (dir)).findFiles (wildcard);
+
+    for (var n = 0, i = 0; i < files.length; ++i) {
+      if (!re || re.test (files [i])) {
+        Dorothy.edit (files [i]);
+        ++n;
+      }
+    }
+
+    return n;
+  };
+
+  // 各種ファイルを全て編集する
+  _.editAll = function () {
+    function edit (file) {
+      if ((new File (file)).exists ()) {
+        Dorothy.edit (file);
+      }
+    }
+
+    var m = Dorothy.matchFile;
+    edit (Dorothy.programDir + m + '.dms');
+    edit (Dorothy.path + 'setting\' + m + '.set');
+    edit (Dorothy.path + 'document\program\' + m + '.txt');
+    edit (Dorothy.path + 'DOA\' + m + '.dms');
+
+    editFiles (Dorothy.userPath, '*.*', /\.(dms|bat|hta|html?|ini)$/);
+  };
+
+
+  // 選択したアイテムに対応するプログラムを検索する
+  item = _.getSelectedItem ();
+  if (!item) {
+    return alert ('アイテムが選択されていません。');
+  }
+
+  Dorothy.search.init (true);
+  if (!Dorothy.search.next (item.url.replace (/^(ttps?:)/, 'h$1'))) {
+    return alert ('対応する Dorothy2 スクリプトがありません。');
+  }
+
+
+  // Shift キー押し下げで、プログラム編集
+  if (Keyboard.shift) {
+    return Dorothy.edit (Dorothy.programDir + Dorothy.matchFile + '.dms');
+  }
+
+  // TAB またはスペースキー押し下げで、各種ファイル編集
+  if (_.isWhiteSpaceKeyDown ()) {
+    while (_.isWhiteSpaceKeyDown ()) {
+      Win32.sleep (10);
+    }
+    return _.editAll ();
+  }
+
+  // 設定プログラム起動
+  _.set = Dorothy.path + 'setting\' + Dorothy.matchFile + '.set';
+  if ((new File (_.set)).exists ()) {
+    try {
+      eval (file_load (_.set)) ();
+    }
+    catch (e) {
+      alert (e);
+    }
+    return;
+  }
+
+  // .set スクリプトがなければ .ini ファイルをエディタで開く
+  if (!_.editFiles (Dorothy.userPath, '*.ini')) {
+    alert ('設定スクリプト及び .ini ファイルがありません。');
+  }
+}
+
+
+// メニューの更新イベント
+function OnMenuUpdate (irvine, action) {
+  action.enabled = (irvine.SelectedItemCount == 1);
+}
+
+
+// EOF

@@ -1,0 +1,1039 @@
+/*
+スクリプト初期化データ
+guid={BC220934-7214-48CA-9A7A-736A95B25C0F}
+caption=Dorothy2R DOA
+version=20140507
+hint=
+event=OnListMenuClick
+match=
+author=xor, rentan
+synchronize=0
+*/
+
+// based on DOA.dms version 0.23 by xor
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+// キューリストメニューのクリックイベント
+function OnListMenuClick (irvine, action) {
+  // グローバル変数として参照できるようにする
+  Irvine = irvine;
+
+
+  // Dorothy2R_a.dms 実行
+  (function () {
+    var f = new File (WScript.Path + 'scripts\Dorothy2R_a.dms');
+    try {
+      f.open ('r');
+      eval ('(function(){' + f.read () + '})()');
+      f.close ();
+    }
+    catch (e) {
+      f.close ();
+      alert (e + "\n" + f.path);
+      exit ();
+    }
+  }) ();
+
+
+  // Dorothy オブジェクト初期化
+  function ev () { eval (arguments [0]); }
+  Dorothy.init ({ version: 'xxxx', eval: ev });
+  Dorothy.loadDorothyIni ();
+
+  Dorothy.doaVersion = 0.22;
+
+
+  // パス名変数の定義
+  dorothy2_path = Dorothy.path;
+  dorothy2_temp = Dorothy.temp;
+  dorothy2_document    = dorothy2_path + 'document\';
+  dorothy2_common      = dorothy2_path + 'common\';
+  dorothy2_program     = dorothy2_path + 'program\';
+  dorothy2_setting     = dorothy2_path + 'setting\';
+  dorothy2_system      = dorothy2_path + 'system\';
+  dorothy2_project     = dorothy2_path + 'project\';
+  dorothy2_projectdata = dorothy2_path + 'projectdata\';
+  dorothy2_bin         = dorothy2_path + 'bin\';
+  dorothy2_user        = dorothy2_path + 'user\';
+  dorothy2_system_menu         = dorothy2_system + 'menu\';
+  dorothy2_system_menu_new     = dorothy2_system_menu + 'new\';
+  dorothy2_system_menu_setting = dorothy2_system_menu + 'setting\';
+  dorothy2_system_menu_edit    = dorothy2_system_menu + 'edit\';
+  dorothy2_system_menu_project = dorothy2_system_menu + 'project\';
+  dorothy2_system_menu_tool    = dorothy2_system_menu + 'tool\';
+  dorothy2_system_menu_set     = dorothy2_system_menu + 'set\';
+  dorothy2_system_menu_package = dorothy2_system_menu + 'package\';
+  dorothy2_system_menu_help    = dorothy2_system_menu + 'help\';
+  dorothy2_system_ini          = dorothy2_system + 'ini\';
+
+
+  // この関数内で使う変数、関数等のコンテナ
+  var _ = { };
+
+
+  // DOA 関係の定数を定義
+  _.defineDOAconsts = function () {
+    DOA_OK = 0;
+    DOA_NG = 1;
+    DOA_BS = 2;
+    DOA_UK = 3;
+    DOA_LK = 4;
+    DOA_ER = 5;
+    DOA_UM = 6;
+    DOA_LS = 7;
+
+    DOA_BUSY   = DOA_BS;
+    DOA_UNKOWN = DOA_UK;
+    DOA_LINK   = DOA_LK;
+    DOA_ERROR  = DOA_ER;
+    DOA_LINKS  = DOA_LS;
+
+    DOA_MSG = ['OK', 'NG', 'BUSY', 'UNKNOWN', 'LINK', 'ERROR', '----', 'LINKS' ];
+
+    DOA_COLOR_RED    = 0x5555ff;
+    DOA_COLOR_YELLOW = 0x00ffff;
+  };
+
+  _.defineDOAconsts ();
+
+
+  // DOA オブジェクト
+  DOA = {
+    link: '',
+    status: 0,
+    size: 0,
+    status_str: '',
+    name: '',
+    urls: [],
+    match_list: [],
+    functions: { }
+  };
+  DOA.CurrentQueueFolder = irvine.CurrentQueueFolder;
+
+
+  println = function () {
+    var i, tmp = '';
+    for (i = 0; i < arguments.length; ++i) {
+      tmp += arguments [i];
+    }
+    frmDOA.StatusBar1.SimpleText = tmp;
+  };
+
+
+  function doa_load (name) {
+    return file_load ('DOA\' + name);
+  }
+
+
+  //=========================================================
+  // プログラムファイルのヘッダを取込む
+  //=========================================================
+  function script_file_read (filename) {
+    var ans = {
+      caption: '',
+      author: '',
+      version: '',
+      hint: '',
+      match: '',
+      priority: '',
+      editor: '',
+      path: '',
+      filename: ''
+    };
+
+    var path = filename;
+    var f = new File(path);
+    if(!f.exists()){
+      return ans;
+    }
+    ans.filename = f.extractName();
+    ans.filename = ans.filename.slice(0,ans.filename.lastIndexOf('.'));
+
+    try{
+      f.open('r');
+      var data = f.read();
+      f.close();
+    }
+    catch(e){
+      alert('file open error ' + path);
+      exit();
+    }
+
+    if(!data.match(/^\/\/Dorothy2$(.+?)^\/\/end$/m)){
+      return ans;
+    }
+    var programHead = RegExp.$1;
+    if(programHead.match(/^\/\/author=(.*?)$/m)){
+      ans.author = RegExp.$1;
+    }
+    if(programHead.match(/^\/\/caption=(.*?)$/m)){
+      ans.caption = RegExp.$1;
+    }
+    if(programHead.match(/^\/\/version=(.*?)$/m)){
+      ans.version = RegExp.$1;
+    }
+    if(programHead.match(/^\/\/hint=(.*?)$/m)){
+      ans.hint = RegExp.$1;
+    }
+    if(programHead.match(/^\/\/match=(.*?)$/m)){
+      ans.match = RegExp.$1;
+    }
+    if(programHead.match(/^\/\/priority=(.*?)$/m)){
+      ans.priority = RegExp.$1;
+    }
+    if(programHead.match(/^\/\/editor=(.*?)$/m)){
+      ans.editor = RegExp.$1;
+    }
+
+    return ans;
+  }
+
+
+  function DOAtest (url) {
+    var flg = false;
+    for (var i in DOA.match_list){
+      if(!DOA.match_list[i][7]){
+        continue;
+      }
+      if(!url.match(DOA.match_list[i][0])){
+        continue;
+      }
+
+      Dorothy.matchFile=DOA.match_list[i][1].replace('\.dms','');
+
+      // 未ロードのスクリプトならここで実行する
+      if(!DOA.functions.hasKey(DOA.match_list[i][1])){
+        var func = eval(doa_load(DOA.match_list[i][1]));
+        DOA.functions[DOA.match_list[i][1]] = new func;
+      }
+
+      DOA.status = DOA_ER;
+      DOA.status_str = '';
+      DOA.size = '';
+      DOA.name = '';
+      DOA.link = '';
+      DOA.comment = '';
+
+      DOA.functions[DOA.match_list[i][1]].main(url);
+      return;
+    }
+
+    // URL に対応したスクリプトがなかった
+    DOA.status = DOA_UM;
+    DOA.status_str = '';
+    DOA.size = '';
+    DOA.name = '';
+    DOA.link = '';
+    DOA.comment = '';
+  }
+
+
+  common_load ('EZDialog', 'user32');
+
+  // DOA 画面にアイテム追加
+  DOA_item_add = function (url) {
+    var a = frmDOA.ListView1.Items.add ();
+    a.Caption = url;
+    a.url = url;
+    a.irvItem = -1;
+    a.doa_status = '';
+    a.doa_link   = '';
+    a.doa_name   = '';
+    DOA.urls.add (url);
+    a.SubItems.add ('');
+    a.SubItems.add ('');
+    a.SubItems.add ('');
+    a.SubItems.add ('');
+  };
+
+  // Irvine にアイテム追加
+  DOA_irvine_item_add = function (i, url) {
+    var doaItem = frmDOA.ListView1.Items [i];
+
+    var item2 = new ActiveXObject ('Irvine.Item');
+    item2.url = (doaItem.doa_status == DOA_LK) ? doaItem.doa_link : doaItem.url;
+    if (frmDOA.CheckBox1.Checked && doaItem.doa_name != '') {
+      item2.Filename = doaItem.doa_name;
+    }
+
+    irvine.Current.AddItem (item2);
+  };
+
+
+  // DOA.match_list[] 作成
+  (function () {
+    var dir = new Directory (Dorothy.path + 'DOA');
+    if (!dir.exists ()) {
+      alert ('DOAフォルダがありません');
+      exit ();
+    }
+
+    var files = dir.findFiles ('*.dms');
+    for (var i = 0; i < files.length; ++i) {
+      var filename = new File (files [i]).extractName ();
+
+      var ret = script_file_read (files [i]);
+      ret.priority = ret.priority || 500;
+      var active = false;
+      DOA.match_list.add ([ ret.match, filename, ret.version, ret.priority, ret.caption, ret.author, ret.hint, active ]);
+    }
+
+    // priority でソート
+    DOA.match_list.sort (function (a,b) { return (a[3] < b[3]); });
+  }) ();
+
+
+  frmDOA = new VCLForm (true);
+  frmDOA.loadFromFile ('DOA.dfm');
+
+
+  var ini = new Ini (Dorothy.path + 'DOA\DOA.ini');
+  frmDOA.top    = ini.read ('form', 'top',    frmDOA.top);
+  frmDOA.left   = ini.read ('form', 'left',   frmDOA.left);
+  frmDOA.height = ini.read ('form', 'height', frmDOA.height);
+  frmDOA.width  = ini.read ('form', 'width',  frmDOA.width);
+  for (var i = 0; i < 4; ++i) {
+    var width = ini.read ('form', 'Columns' + i, frmDOA.ListView1.Column.items [i].width);
+    frmDOA.ListView1.Column.items [i].width = width;
+  }
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////
+  // menu
+  ////////////////////////////////////////////////////////////////////////////////////////
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // File menu
+
+  // checkのon off
+  function activeItemOnClick (sender) {
+    // alert (sender.myFilename + ' ' + sender.myIndex);
+    var menuItem = activeItem [sender.myIndex];
+    menuItem.Checked = !menuItem.Checked;
+    DOA.match_list [sender.myIndex] [7] = menuItem.Checked;
+  }
+
+
+  // read
+  var iniActiveItem = new Ini (Dorothy.path + 'DOA\ActiveItem.ini');
+  var activeItem = [];
+  for (var i = 0; i < DOA.match_list.length; ++i) {
+    var menuItem = new VCLMenuItem ();
+    menuItem.Caption=DOA.match_list[i][4]+' ver'+DOA.match_list[i][2];
+    menuItem.Hint=DOA.match_list[i][6];
+    menuItem.Checked=iniActiveItem.read(DOA.match_list[i][1],'active',1)==1;
+    menuItem.onClick=activeItemOnClick;
+    menuItem.myFilename=DOA.match_list[i][1];
+    menuItem.myIndex=i;
+
+    activeItem.push (menuItem);
+    frmDOA.file1.add (activeItem [i]);
+    DOA.match_list [i] [7] = activeItem [i].Checked;
+  }
+
+  // write
+  function iniActiveItemWrite () {
+    for (var i = 0; i < DOA.match_list.length; ++i) {
+      iniActiveItem.write (activeItem [i].myFilename, 'active', activeItem [i].Checked ? 1 : 0);
+    }
+    iniActiveItem.update ();
+  }
+
+
+  /////////////////////////////////////////
+  // folder1
+  DOA.folder1item = [];
+
+
+  // 指定したフォルダに移動
+  // Shift キーを押しながらだとリスト削除
+  function folder1OnClick (sender) {
+    if (Keyboard.Shift) {
+      DOA.folder1item.delete (sender.myIndex);
+      frmDOA.folder1.remove (sender);
+    }
+    else {
+      irvine.CurrentQueueFolder = sender.myPath;
+      openQfolderSelectCurrentQueue ();
+      println (sender.Caption + ' : ' + sender.myPath);
+    }
+  }
+
+
+  var ini = new Ini (Dorothy.path + 'DOA\DOA.ini');
+  var folders = ini.readSection ('folder1');
+  for (var i in folders) {
+    var folderName=ini.read('folder1',folders[i],'???');
+    var a=new VCLMenuItem;
+    a.Caption=folderName;
+    a.myPath=folders[i];
+    a.onClick=folder1OnClick;
+    a.myIndex=DOA.folder1item.length;
+    DOA.folder1item.add(a);
+    frmDOA.folder1.add(DOA.folder1item[DOA.folder1item.length-1]);
+    println(a.Caption+' : '+a.myPath);
+  }
+
+  // カレントフォルダをリストに追加
+  frmDOA.folder1add.onClick=function(){
+    var a=new VCLMenuItem;
+    a.Caption=irvine.Current.Name;
+    a.myPath=irvine.CurrentQueueFolder;
+    a.onClick=folder1OnClick;
+    a.myIndex=DOA.folder1item.length;
+    DOA.folder1item.add(a);
+    frmDOA.folder1.add(DOA.folder1item[DOA.folder1item.length-1]);
+    println(a.Caption+' : '+a.myPath);
+  };
+
+  // 元のフォルダに戻る
+  frmDOA.folder1return.onClick=function(){
+    irvine.CurrentQueueFolder=DOA.CurrentQueueFolder;
+    openQfolderSelectCurrentQueue();
+    println(DOA.CurrentQueueFolder);
+  };
+
+  // 新しいキューの作成
+  // 子フォルダを作る
+  frmDOA.folder1new.onClick=function(){
+    var u32=new user32();
+    u32.SetWindowPos(frmDOA.Handle,HWND_NOTOPMOST,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE|SWP_NOOWNERZORDER);
+    var path=irvine.CurrentQueueFolder;
+    var ezd=new EZDialog('キューフォルダ作成');
+    var fil01=ezd.label('キューフォルダ名');
+    var cap=ezd.edit(Clipboard.asText,300);
+    var fil02=ezd.label('コメント(不可)');
+    var comment=ezd.memo(null,null,300,100);
+    var ok=ezd.ok_cancel();
+    var ret=ezd.showModal();
+    if(ret==1){
+      if(irvine.FolderExists(path+'/'+cap.text)){
+        alert(folderPath+'は既に有ります');
+      }
+      else if(!irvine.CreateQueueFolder(cap.text,true)){
+        alert(folderPath+'の作成に失敗しました');
+      }
+      else{
+        var dl_folder=irvine.GetFolderData('queue','folder');
+        irvine.SetFolderData('queue','folder',dl_folder+'\'+cap.text);
+      }
+      openQfolderSelectCurrentQueue();
+    }
+    u32.SetWindowPos(frmDOA.Handle,HWND_TOPMOST,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE|SWP_NOOWNERZORDER);
+  };
+
+  // 兄弟フォルダを作る
+
+
+  // 終了処理
+  function folder1Close () {
+    var ini = new Ini(Dorothy.path + 'DOA\DOA.ini');
+    ini.eraseSection('folder1');
+    for(var i in DOA.folder1item){
+      ini.write('folder1',DOA.folder1item[i].myPath,DOA.folder1item[i].Caption);
+    }
+    ini.update();
+  }
+
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // ファイル名 フィルター
+
+  frmDOA.CheckBox1.Checked = (irvine.OptionData['xor','DOA_name'] == '1');
+  frmDOA.comname.Checked=frmDOA.CheckBox1.Checked;
+  println(DOA.match_list.length + ' DOA');
+
+  frmDOA.CheckBox2.Checked = (irvine.OptionData['xor','DOA_filter'] == '1');
+  frmDOA.comfilter.Checked=frmDOA.CheckBox2.Checked;
+
+  frmDOA.KeyPreview = true;
+  frmDOA.onKeyDown = function(Sender, Key, Shift){
+    var VK_F1 = 112;
+    var VK_F2 = 113;
+
+    if (Key == VK_F1) {
+      var s = [ WScript.ScriptName + ' ' + Dorothy.doaVersion ];
+
+      for(var i in DOA.match_list){
+        s.add(DOA.match_list[i][1] + ' ' +  DOA.match_list[i][2]);
+      }
+      alert(s.join("\n"));
+    }
+
+    if (Key == VK_F2) {
+      common_load('user32');
+      var u32=new user32();
+      // u32.SetWindowPos(frmDOA.Handle,HWND_BOTTOM,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE|SWP_NOOWNERZORDER);
+      common_load('openQfolder');
+      var oqf=new openQfolder();
+      oqf.topmost=true;
+      oqf.modal=false;
+      oqf.show();
+      // alert (ret);
+    }
+  };
+
+
+  frmDOA.CheckBox1.onClick = function(){
+    if(frmDOA.CheckBox1.Checked){
+      irvine.OptionData['xor','DOA_name'] = '1';
+      frmDOA.comname.Checked=true;
+      frmDOA.CheckBox1.Checked=true;
+    }
+    else{
+      irvine.OptionData['xor','DOA_name'] = '0';
+      frmDOA.comname.Checked=false;
+      frmDOA.CheckBox1.Checked=false;
+    }
+  };
+
+  frmDOA.comname.onClick=function(){
+    frmDOA.CheckBox1.Checked=!frmDOA.CheckBox1.Checked;
+    frmDOA.CheckBox1.onClick();
+  };
+
+  frmDOA.CheckBox2.onClick = function(){
+    if(frmDOA.CheckBox2.Checked){
+      irvine.OptionData['xor','DOA_filter'] = '1';
+      frmDOA.comfilter.Checked=true;
+      frmDOA.CheckBox2.Checked=true;
+    }
+    else{
+      irvine.OptionData['xor','DOA_filter'] = '0';
+      frmDOA.comfilter.Checked=false;
+      frmDOA.CheckBox2.Checked=false;
+    }
+  };
+
+  frmDOA.comfilter.onClick=function(){
+    frmDOA.CheckBox2.Checked=!frmDOA.CheckBox2.Checked;
+    frmDOA.CheckBox2.onClick();
+  };
+
+
+  // 終了
+  frmDOA.CancelBtn.onClick = function(){
+    var ini = new Ini(Dorothy.path + 'DOA\DOA.ini');
+    ini.write('form', 'top', frmDOA.top);
+    ini.write('form', 'left', frmDOA.left);
+    ini.write('form', 'height', frmDOA.height);
+    ini.write('form', 'width', frmDOA.width);
+    ini.write('form', 'Columns0', frmDOA.ListView1.Column.items[0].width);
+    ini.write('form', 'Columns1', frmDOA.ListView1.Column.items[1].width);
+    ini.write('form', 'Columns2', frmDOA.ListView1.Column.items[2].width);
+    ini.write('form', 'Columns3', frmDOA.ListView1.Column.items[3].width);
+    ini.update();
+    iniActiveItemWrite();
+    folder1Close();
+    frmDOA.close();
+  };
+  frmDOA.comexit.onClick=frmDOA.CancelBtn.onClick;
+
+
+  // 選択アイテム取込
+  var item = new IrvineItem ();
+
+  for (var i = 0; i < irvine.ItemCount; i++){
+    if (!irvine.GetItemSelected (i)){
+      continue;
+    }
+
+    item.data = irvine.GetItemData(i);
+    if(item.url.indexOf('ttp://') == 0){
+      item.url = 'h' + item.url;
+    }
+
+    var a = frmDOA.ListView1.Items.add();
+    a.Caption = item.url;
+    a.url = item.url;
+    a.irvItem = i;
+    a.doa_status = '';
+    a.doa_link   = '';
+    a.doa_name   = '';
+    DOA.urls.add(item.url);
+    a.SubItems.add('');
+    a.SubItems.add('');
+    a.SubItems.add('');
+    a.SubItems.add('');
+  }
+  // frmDOA.show();
+
+
+
+  //=============================================================================================================
+  // アイテム毎の処理
+
+  frmDOA.runBtn.onClick = function(){
+    common_load('user32');
+    var u32=new user32();
+    u32.SetWindowPos(frmDOA.Handle,HWND_NOTOPMOST,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE|SWP_NOOWNERZORDER);
+    frmDOA.runBtn.enabled = false;
+    DOA.status_count = [0,0,0,0,0,0,0,0];
+    DOA.functions = new Object;
+
+    folderdata = {
+      HttpVersion: irvine.FolderData['http' ,'httpversion'] == 1,
+      HttpTimeout: irvine.FolderData['http' ,'httptimeout'],
+      Agent:       irvine.FolderData['http' ,'agent'],
+      UrlEncode:   irvine.FolderData['http' ,'urlencode'] == 1,
+      Folder:      irvine.FolderData ['queue', 'folder']
+    };
+
+    headers = {
+      'User-Agent': irvine.FolderData['http' ,'agent']
+    };
+
+
+    function calcScrollCount (top, count, i){
+      if((top+count -1) < i){
+        return i - (top+count -1);
+      }
+      if(top > i){
+        return i - top -1;
+      }
+      return 0;
+    }
+
+    for(var i in frmDOA.ListView1.Items){
+      var doaItem = frmDOA.ListView1.Items[i];
+
+      eventLoop();
+      var sc = calcScrollCount (frmDOA.ListView1.TopItem.Index, frmDOA.ListView1.VisibleRowCount, i);
+      frmDOA.ListView1.scroll (0, 9 * sc);
+      frmDOA.ListView1.update();
+
+      if(doaItem.Checked) {
+        continue;
+      }
+
+      var url = doaItem.url;
+
+      urlinfo = {
+        url: url,
+        ErrorCode: 0,
+        proxy: '',
+        Redirect: false,
+        RedirectUrl: '',
+        StatusCode: 0,
+        StatusMessage: ''
+      };
+
+      item.data = irvine.GetItemData(doaItem.irvItem);
+
+      DOAtest(url);
+      frmDOA.ListView1.update();
+
+      ++DOA.status_count[DOA.status];
+      if (DOA.status_str == ''){
+        DOA.status_str = DOA_MSG[DOA.status];
+      }
+
+      if(DOA.status!=DOA_BS){
+        doaItem.Checked = true;
+      }
+
+      function makeCommentString () {
+        var s = [ DOA.link, DOA.name, DOA.comment ];
+        for (var i = s.length; --i >= 0; ) {
+          if (!s [i]) {
+            s.splice (i, 1);
+          }
+        }
+        return s.join (' / ');
+      }
+
+      doaItem.SubItems[0] = DOA.status_str;
+      doaItem.SubItems[1] = DOA.size;
+      doaItem.SubItems[2] = makeCommentString ();
+      doaItem.doa_status = DOA.status;
+      doaItem.doa_link = DOA.link;
+      doaItem.doa_name = DOA.name;
+      doaItem.ShowHint = true;
+
+      frmDOA.ListView1.font.color = 100000;
+    }
+
+    // デストラクタ
+    for(var i in DOA.functions){
+      DOA.functions[i]._();
+    }
+
+
+    function makeResultString () {
+      var sc = DOA.status_count;
+      var s = [ ];
+
+      for (var i = 0; i < sc.length; ++i) {
+        if (sc [i]) {
+          s.push (DOA_MSG [i] + '=' + sc [i]);
+        }
+      }
+      return s.join (' ');
+    }
+    println (makeResultString ());
+
+    frmDOA.ListView1.font.color = 10000;
+    if (DOA.status_count [DOA_NG] > 0){
+      frmDOA.ListView1.color = DOA_COLOR_RED;
+    }
+    else if (DOA.status_count [DOA_BS] > 0){
+      frmDOA.ListView1.color = DOA_COLOR_YELLOW;
+    }
+
+    frmDOA.runBtn.enabled = true;
+    u32.SetWindowPos(frmDOA.Handle,HWND_TOPMOST,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE|SWP_NOOWNERZORDER);
+  };
+
+  frmDOA.comrun.onClick = frmDOA.runBtn.onClick;
+
+
+  //=============================================================================================================
+  // LINK--->URL
+  frmDOA.linkBtn.onClick = function(){
+    frmDOA.linkBtn.enabled = false;
+
+    for(var i in frmDOA.ListView1.Items){
+      var doaItem = frmDOA.ListView1.Items[i];
+      if (doaItem.doa_status != DOA_LK) {
+        continue;
+      }
+
+      doaItem.Checked = false;
+      doaItem.Caption = doaItem.doa_link;
+      doaItem.url = doaItem.doa_link;
+      doaItem.SubItems[0] = '';
+      doaItem.SubItems[1] = '';
+      doaItem.SubItems[2] = '';
+      DOA.urls[i] = doaItem.doa_link;
+      println(frmDOA.ListView1.Items[i].doa_link);
+    }
+    frmDOA.ListView1.update();
+    frmDOA.linkBtn.enabled = true;
+  };
+
+  frmDOA.comlink.onClick=frmDOA.linkBtn.onClick;
+
+
+  //=============================================================================================================
+  // 上書き
+  frmDOA.writeBtn.onClick = function(){
+    if(DOA.CurrentQueueFolder!=irvine.CurrentQueueFolder){
+      println('カレントキューフォルダが移動しています');
+      return;
+    }
+
+    var oldfilter = irvine.Filtering;
+    irvine.Filtering = false;
+
+    frmDOA.writeBtn.enabled = false;
+
+    var count = 0;
+    for(var i in frmDOA.ListView1.Items){
+      var doaItem = frmDOA.ListView1.Items[i];
+      item.data = irvine.GetItemData(doaItem.irvItem);
+
+      var stat = doaItem.doa_status;
+      item.url = (stat == DOA_LK) ? doaItem.doa_link : doaItem.url;
+
+      if(stat == DOA_NG){
+        item.Error = true;
+      }
+      if(stat == DOA_LS){
+        item.success = true;
+      }
+
+      if(frmDOA.CheckBox1.Checked && doaItem.doa_name != ''){
+        item.Filename = doaItem.doa_name;
+      }
+
+      if(doaItem.irvItem!=-1){
+        irvine.SetItemData(doaItem.irvItem, item.data);
+      }
+      else{
+        DOA_irvine_item_add(i,item);
+      }
+      count++;
+    }
+    irvine.Invalidate();
+    println(count + ' 件上書きしました');
+    frmDOA.writeBtn.enabled = true;
+    irvine.Filtering = oldfilter;
+  };
+  frmDOA.comwrite.onClick=frmDOA.writeBtn.onClick;
+
+
+  //=============================================================================================================
+  // 追加
+  frmDOA.addBtn.onClick = function(){
+    var count = 0;
+    var oldfilter = irvine.Filtering;
+    irvine.Filtering = frmDOA.CheckBox2.Checked;
+
+    frmDOA.addBtn.enabled = false;
+
+    var item2 = new ActiveXObject('Irvine.Item');
+    var item3 = new ActiveXObject('Irvine.Item');
+
+    for(var i in frmDOA.ListView1.Items){
+      var doaItem = frmDOA.ListView1.Items[i];
+
+      if(DOA.CurrentQueueFolder==irvine.CurrentQueueFolder){
+        if(doaItem.irvItem!=-1){
+          item.data = irvine.GetItemData(doaItem.irvItem);
+          item2.data = item.data;
+        }
+        else{
+          item2.data=item3.data;
+        }
+      }
+      else{
+        item2.data=item3.data;
+      }
+
+      item2.url = (doaItem.doa_status == DOA_LK) ? doaItem.doa_link : doaItem.url;
+
+      if(frmDOA.CheckBox1.Checked && doaItem.doa_name != ''){
+        item2.Filename = doaItem.doa_name;
+      }
+
+      if(DOA.CurrentQueueFolder==irvine.CurrentQueueFolder){
+        if(doaItem.irvItem!=-1){
+          item.Success = true;
+          irvine.SetItemData(doaItem.irvItem, item.data);
+        }
+      }
+      irvine.Current.AddItem(item2);
+      count++;
+    }
+
+    irvine.Invalidate();
+    println(count + ' 件追加しました');
+    // frmDOA.addBtn.enabled = true;
+    irvine.Filtering = oldfilter;
+  };
+
+  frmDOA.comadd.onClick=frmDOA.addBtn.onClick;
+
+
+  //=============================================================================================================
+  // キュー
+  frmDOA.folderBtn.onClick = function(){
+    common_load('openQfolder');
+    var oqf=new openQfolder();
+    oqf.topmost=true;
+    oqf.modal=false;
+    // oqf.file=true;
+    oqf.fileName=Dorothy.path+'DOA\DOAQ.txt';
+    // oqf.defaultFolder=null;
+    // oqf.fullExpand=true;
+    // oqf.quick=true;
+    oqf.show();
+    DOA.oqf=oqf;
+  };
+
+  // windowが有れば、カレントキューフォルダに移動させる
+  function openQfolderSelectCurrentQueue () {
+    if(DOA.hasKey('oqf')){
+      if(DOA.oqf.folderPath==null){
+        DOA.oqf.selectFolderPathMake(irvine.CurrentQueueFolder);
+      }
+    }
+  }
+
+
+  //=========================================================================================
+  // 置換
+  var frmDOAreg, DOAreg_label1, DOAreg_source, DOAreg_label2, DOAreg_chikan;
+  var DOAreg_label3, DOAreg_kekka, DOAreg_but1, DOAreg_but2;
+
+  frmDOA.verBtn.onClick = function(){
+    function setPos (obj, top, left, height, width, align) {
+      obj.top = top + 4;
+      obj.left = left;
+      obj.height = height;
+      obj.width = width;
+
+      if (align) {
+        obj.Alignment = 'taCenter';
+        obj.Layout = 'tlCenter';
+      }
+    }
+
+    function setBox (obj) {
+      obj.anchors = '[akLeft , akRight , akTop]';
+      obj.Font.Name = 'ＭＳ ゴシック';
+      obj.AutoComplete = true;
+    }
+
+    frmDOAreg = new VCLForm(true);
+    setPos (frmDOAreg, frmDOA.top + frmDOA.height, frmDOA.left, 160, frmDOA.width);
+
+    var left = 60;
+
+    DOAreg_label1 = new VCLLabel(frmDOAreg);
+    DOAreg_label1.caption = '正規表現';
+    setPos (DOAreg_label1, 0, 0, 20, left, true);
+
+    DOAreg_source = new VCLComboBox(frmDOAreg);
+    setBox (DOAreg_source);
+    setPos (DOAreg_source, 0, left, 20, frmDOAreg.width - left - 10);
+    DOAreg_source.TabOrder = 0;
+
+    DOAreg_label2 = new VCLLabel(frmDOAreg);
+    DOAreg_label2.caption = '置換';
+    setPos (DOAreg_label2, 30, 0, 20, left, true);
+
+    DOAreg_chikan = new  VCLComboBox(frmDOAreg);
+    setPos (DOAreg_chikan, 30, left, 20, frmDOAreg.width - DOAreg_source.left - 10);
+    setBox (DOAreg_chikan);
+
+    DOAreg_label3 = new VCLLabel(frmDOAreg);
+    DOAreg_label3.caption = '結果';
+    setPos (DOAreg_label3, 60, 0, 20, left, true);
+
+    DOAreg_kekka = new  VCLEdit(frmDOAreg);
+    setPos (DOAreg_kekka, 60, left, 20, frmDOAreg.width - DOAreg_source.left - 10);
+    setBox (DOAreg_kekka);
+    DOAreg_kekka.ReadOnly = true;
+
+    DOAreg_but1 = new VCLButton(frmDOAreg);
+    DOAreg_but1.caption = '開始(&S)';
+    setPos (DOAreg_but1, 90, left, 25, 100);
+
+    DOAreg_but2 = new VCLButton(frmDOAreg);
+    DOAreg_but2.caption = '閉じる(&X)';
+    setPos (DOAreg_but2, 90, 200, 25, 100);
+
+
+    // DOA.ini 取込
+    var ini = new Ini(Dorothy.path + 'DOA\DOA.ini');
+    var tmp = ini.readSection('RegSource');
+    for(var i in tmp){
+      DOAreg_source.Items.add(ini.read('RegSource', tmp[i] , ''));
+    }
+    var tmp = ini.readSection('RegReplace');
+    for(var i in tmp){
+      DOAreg_chikan.Items.add(ini.read('RegReplace', tmp[i] , ''));
+    }
+
+
+    DOAreg_but1.onClick = function(){
+      //ssCtrl ssShift ssAlt
+      if(DOAreg_source.text == ''){
+        return;
+      }
+
+      var f = true;
+      for(var i in DOAreg_source.Items){
+        if(DOAreg_source.text == DOAreg_source.Items[i]){
+          f = false;
+          continue;
+        }
+      }
+      if(f){
+        DOAreg_source.Items.add(DOAreg_source.text);
+      }
+
+      var f = true;
+      for(var i in DOAreg_chikan.Items){
+        if(DOAreg_chikan.text == DOAreg_chikan.Items[i]){
+          f = false;
+          continue;
+        }
+      }
+      if(f){
+        DOAreg_chikan.Items.add(DOAreg_chikan.text);
+      }
+
+      var s;
+      for(var i in frmDOA.ListView1.Items){
+        var doaItem = frmDOA.ListView1.Items [i];
+
+        s = DOA.urls[i].replace(DOAreg_source.text , 'gi' , DOAreg_chikan.text);
+        if(s == DOA.urls[i]){
+          doaItem.doa_status  = DOA_UM;
+          doaItem.Checked     = false;
+          doaItem.SubItems[0] = DOA_MSG[DOA_UM];
+          doaItem.SubItems[1] = '';
+          doaItem.SubItems[2] = '';
+          doaItem.doa_link    = '';
+        }
+        else{
+          doaItem.doa_status  = DOA_LK;
+          doaItem.Checked     = true;
+          doaItem.SubItems[0] = DOA_MSG[DOA_LK];
+          doaItem.SubItems[1] = '';
+          doaItem.SubItems[2] = s;
+          doaItem.doa_link    = s;
+        }
+      }
+    };
+
+    DOAreg_but2.onClick = function(){
+      // DOA.ini 書き込み
+      var ini = new Ini(Dorothy.path + 'DOA\DOA.ini');
+      ini.eraseSection('RegSource');
+      for(var i in DOAreg_source.Items){
+        ini.write('RegSource', i, DOAreg_source.Items[i]);
+      }
+      ini.eraseSection('RegReplace');
+      for(var i in DOAreg_chikan.Items){
+        ini.write('RegReplace', i, DOAreg_chikan.Items[i]);
+      }
+      ini.update();
+
+      frmDOAreg.close();
+    };
+
+
+    // 結果の表示
+    DOAreg_source.onChange = function(){
+      DOAreg_kekka.text = DOA.urls[0].replace(DOAreg_source.text, 'gi' , DOAreg_chikan.text);
+    };
+    DOAreg_chikan.onChange = DOAreg_source.onChange;
+
+
+    frmDOAreg.show();
+    eventLoop();
+  };
+
+
+  frmDOA.onShow=function(){
+    common_load('user32');
+    var u32=new user32();
+    u32.SetWindowPos(frmDOA.Handle,HWND_TOPMOST,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE|SWP_NOOWNERZORDER);
+    // u32.SetActiveWindow(frmDOA.Handle);
+    // alert(frmDOA.WindowState);
+    // alert(frmDOA.ParentWindow);
+    // u32.SetWindowPos(mainFormHandle,HWND_BOTTOM,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE);
+  };
+
+
+  frmDOA.showModal ();
+}
+
+
+// メニューの更新イベント
+function OnMenuUpdate (irvine, action) {
+  action.enabled = (irvine.SelectedItemCount > 0);
+}
+
+
+// EOF
