@@ -22,6 +22,7 @@ www.poco2.jp 用のスクリプトです。
 ========
 
 http://www.poco2.jp/viewer/play.php?partid=.
+http://www.poco2.jp/(comic|novel)/[^/]+/
 
 
 仕様・制限事項
@@ -30,6 +31,9 @@ http://www.poco2.jp/viewer/play.php?partid=.
 
 変更履歴
 ========
+
+2014-05-08  version 20140508.0  rentan at rentan.org
+  作品紹介ページを指定した場合は最新話をダウンロードするようにした。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   コンストラクタで .nameBuilder に空オブジェクトを設定するようにした。

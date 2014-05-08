@@ -1,8 +1,8 @@
 //Dorothy2
 //caption=ぽこぽこ
-//version=20140331.0
+//version=20140508.0
 //hint=
-//match=^http://www\.poco2\.jp/viewer/play\.php\?partid=.
+//match=^http://www\.poco2\.jp/((comic|novel)/|viewer/play\.php\?partid=).
 //author=rentan
 //path=program
 //priority=500
@@ -64,6 +64,7 @@ void function Poco2Viewer () {
 // プロパティ初期値
 Poco2Viewer.prototype.comment = '';
 Poco2Viewer.prototype.http = null;
+Poco2Viewer.prototype.partid = null;
 
 
 // NameBuilder パラメータ
@@ -213,20 +214,51 @@ Poco2Viewer.prototype._setupNameBuilder = function () {
 };
 
 
+// HTML ページから play.php のアドレスを抽出する
+Poco2Viewer.prototype.findLatestPartid = function (url) {
+  var http = new Http ();
+  if (!http.get (url)) {
+    return this._httpError ();
+  }
+
+  var latest = /<a\s[^>]*onclick="return\s*!openFlash\('([^']+)'\)"\s[^>]*class="btnPlayLatest"/;
+  if (latest.test (http.data)) {
+    this.partid = RegExp.$1;
+    println ('partid=' + this.partid);
+    return this.OK;
+  }
+
+  this._p ('btnPlayLatestが見つかりません。');
+  return this.UNKNOWN;
+};
+
+
 // データを解析してダウンロードリストを作成する
 Poco2Viewer.prototype.get = function (url) {
   this.list = [ ];
   this.http = new Http ();
+  this.partid = '';
 
   this._setupNameBuilder ();
 
-  // XML ファイルの URL
-  if (!/^(http:\/\/[^\/]+\/)[^#]*[?&](partid=[^&#]+)/.test (url)) {
+  var path = (new URL (url)).path.slice (1);
+
+  if (/^(comic|novel)\/[^\/]+\/(#.*)?$/.test (path)) {
+    var r = this.findLatestPartid (url);
+    if (r != this.OK) {
+      return r;
+    }
+  }
+  else if (/^viewer\/play\.php\?partid=([^&#]+)/.test (path)) {
+    this.partid = RegExp.$1;
+  }
+  else {
     this._p ('未対応の URL です。');
     return this.MIS;
   }
-  var load_php = RegExp.$1 + 'viewerset/common/load.php';
-  var postdata = RegExp.$2;
+
+  var load_php = url.replace (/^(http:\/\/[^\/]+)\/.*$/, '$1/viewerset/common/load.php');
+  var postdata = 'partid=' + this.partid;
 
   return this._analyzeXml (load_php, postdata);
 };
