@@ -114,6 +114,9 @@ contentToExt (data)
 変更履歴
 ========
 
+2014-05-09  version 20140509.0  rentan at rentan.org
+  setYmdhms(): ゼロサプレスされた時刻(hh)に対応。
+
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
   このファイルを UTF-8 に変更。

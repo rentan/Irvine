@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=NameBuilder
-//version=20140331.0
+//version=20140509.0
 //hint=new NameBuilder ()
 //match=
 //author=rentan
@@ -171,7 +171,7 @@ NameBuilder.prototype.trim = function (s) {
 
 // “ú‚ğ•ªŠ„‚µ‚Ä•Ï”‚ÉŠi”[‚·‚é
 NameBuilder.prototype.setYmdhms = function (s) {
-  if (!/(\d{4})\D(\d\d)\D(\d\d)\D+(\d\d):(\d\d):(\d\d)/.test (s)) {
+  if (!/(\d{4})\D(\d\d)\D(\d\d)\D+(\d\d?):(\d\d):(\d\d)/.test (s)) {
     return false;
   }
 
@@ -181,6 +181,8 @@ NameBuilder.prototype.setYmdhms = function (s) {
   this.hh = RegExp.$4;
   this.mi = RegExp.$5;
   this.ss = RegExp.$6;
+
+  this.hh = ('0' + this.hh).slice (-2);
 
   return true;
 };

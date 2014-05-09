@@ -1,0 +1,90 @@
+//Dorothy2
+//caption=pronama
+//version=20140509.0
+//hint=プログラミング生放送
+//match=^http://(pronama\.jp/wallpaper/calendar_2014/$|i\d+\.wp\.com/pronama\.azurewebsites\.net/)
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+function () {
+
+  common_load ('rutil');
+
+  // 設定ファイルの読み込み
+  var default_ini = {
+    General: {
+      Zen2Han: true
+    },
+    Filename: {
+      Calendar: 'calender_%YYYY%-%MM%'
+    }
+  };
+  var ini = default_ini;
+
+
+//--------------------------------- 下請け ---------------------------------
+
+
+function calendar (url) {
+  common_load ('http', 'namebuilder');
+
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han, ymdhms: true });
+  nb.setYmdhms (Date.toString ());
+
+  var http = new Http ();
+  if (!http.head (url)) {
+    return http.retry_or_die ();
+  }
+  var ext = nb.contentTypeToExt (http);
+  if (!ext) {
+    http.die ();
+  }
+
+  Dorothy.fileName = nb.assemble (ini.Filename.Calendar, ext);
+}
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  var url = urlinfo.url;
+
+  // WordPress Photon CDN の URL なら元ファイルの URL に差し替える
+  if (/^http:\/\/i\d+\.wp\.com\/(pronama\.azurewebsites\.net\/[^?#]*)/.test (url)) {
+    urlinfo.url = 'http://' + RegExp.$1;
+
+    headers.Host = (new URL (urlinfo.url)).host;
+    headers.Cookie = '';
+    headers.Referer = '';
+    return;
+  }
+
+  if (url == 'http://pronama.jp/wallpaper/calendar_2014/') {
+    return calendar (url);
+  }
+
+  println ('未対応のURLです。');
+}
+
+
+// EOF
