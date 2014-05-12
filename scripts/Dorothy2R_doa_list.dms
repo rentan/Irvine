@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={BC220934-7214-48CA-9A7A-736A95B25C0F}
 caption=Dorothy2R DOA
-version=20140507
+version=20140512
 hint=
 event=OnListMenuClick
 match=
@@ -677,15 +677,17 @@ function OnListMenuClick (irvine, action) {
 
 
     function makeResultString () {
-      var sc = DOA.status_count;
-      var s = [ ];
+      var stats = [ DOA_OK, DOA_NG, DOA_BS, DOA_UK, DOA_LK, DOA_LS, DOA_ER ];
+      var r = [ ];
 
-      for (var i = 0; i < sc.length; ++i) {
-        if (sc [i]) {
-          s.push (DOA_MSG [i] + '=' + sc [i]);
+      for (var i = 0; i < stats.length; ++i) {
+        var s = stats [i];
+        var c = DOA.status_count [s];
+        if (c) {
+          r.push (DOA_MSG [s] + '=' + c);
         }
       }
-      return s.join (' ');
+      return r.join (' ');
     }
     println (makeResultString ());
 

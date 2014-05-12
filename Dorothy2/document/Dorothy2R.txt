@@ -48,6 +48,9 @@ Dorothy2 併用時の注意
 仕様・制限事項
 ==============
 
+・Dorothy2B.dms に相当するスクリプトはありません。必要なら Dorothy2B.dms
+  がそのまま使えるはずです。
+
 ・xor.dms を読み込まないようにしているので、それに依存するスクリプトは
   動作しません(把握できていません)。
 
@@ -57,6 +60,11 @@ Dorothy2 併用時の注意
 
 変更履歴
 ========
+
+2014-05-12  rentan at rentan.org
+scripts\Dorothy2R_doa_list.dms  version 20140512
+  ステータス行の結果表示が正しくない不具合を修正。
+
 
 2014-05-07  rentan at rentan.org
 
