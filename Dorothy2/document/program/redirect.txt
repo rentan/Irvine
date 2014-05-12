@@ -96,6 +96,9 @@ http://ws1.y-bbs.net/
 変更履歴
 ========
 
+2014-05-12  version 20140512.0  rentan at rentan.org
+  freegaysitepass.com に対応。
+
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
   このファイルを UTF-8 に変更。
