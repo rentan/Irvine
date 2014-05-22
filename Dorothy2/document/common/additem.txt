@@ -131,6 +131,9 @@ send (list)
 変更履歴
 ========
 
+2014-05-21  version 20140521.0  rentan at rentan.org
+  common_load() のタイミングを変更。
+
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
   このファイルを UTF-8 に変更。

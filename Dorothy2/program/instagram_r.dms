@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=instagram_r
-//version=20140331.0
+//version=20140521.0
 //hint=Instagram 別バージョン
 //match=^http://instagr(\.am|am\.com)/p/.
 //author=rentan
@@ -56,17 +56,17 @@ function dl_cid (cid) {
 
 
   // Twitter ID を探す
-  if (/<strong\s+class="username">([^<]+)/.test (http.data)) {
+  if (/"username":"([^"]+)"/.test (http.data)) {
     nb.twitter_id = RegExp.$1;
   }
 
   // 題名を探す
-  if (/<meta\s+property="twitter:title"\s+content="([^"]+)"/.test (http.data)) {
+  if (/"caption":"([^"]+)"/.test (http.data)) {
     nb.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
   }
 
   // 画像 URL を探す
-  if (!/<img\s+class="photo"\s+src="([^"]+)"/.test (http.data)) {
+  if (!/<meta\s+property="og:image"\s+content="([^"]+)"/.test (http.data)) {
     http.die ('画像の URL が見つかりません。');
   }
   var content_url = RegExp.$1;
@@ -74,7 +74,7 @@ function dl_cid (cid) {
 
 
   // ダウンロード情報を設定
-  Dorothy.fileName = nb.assemble (ini.Filename [content_type], content_url);
+  nb.setFilename (ini.Filename [content_type], content_url);
 
   urlinfo.url = content_url;
   headers.Host = (new URL (content_url)).host;
@@ -97,7 +97,7 @@ function dl_cid (cid) {
 
   var url = urlinfo.url;
 
-  if (/^http:\/\/instagr(\.am|am\.com)\/p\/([^\/]+)/.test (url)) {
+  if (/^http:\/\/instagr(\.am|am\.com)\/p\/([^\/#?]+)/.test (url)) {
     // 画像の HTML ページ
     dl_cid (RegExp.$2);
     return;

@@ -96,6 +96,13 @@ http://ws1.y-bbs.net/
 変更履歴
 ========
 
+2014-05-21  version 20140521.0  rentan at rentan.org
+  linkbucks 系で User-Agent が Mozilla/4.* の場合は Mozilla/5.0
+  の User-Agent に差し替えるようにした(403 Forbidden 対策)。
+
+  doaConstructor(): DOA_item_add() を使わずに Dorothy2R DOA の
+  拡張機能にまかせるようにした(Dorothy2 純正の DOA では動作しない)。
+
 2014-05-12  version 20140512.0  rentan at rentan.org
   freegaysitepass.com に対応。
 

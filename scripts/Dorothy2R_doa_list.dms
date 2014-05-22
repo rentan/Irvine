@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={BC220934-7214-48CA-9A7A-736A95B25C0F}
 caption=Dorothy2R DOA
-version=20140512
+version=20140521
 hint=
 event=OnListMenuClick
 match=
@@ -57,7 +57,8 @@ function OnListMenuClick (irvine, action) {
   Dorothy.init ({ version: 'xxxx', eval: ev });
   Dorothy.loadDorothyIni ();
 
-  Dorothy.doaVersion = 0.22;
+  Dorothy.isDOA = true;
+  Dorothy.doaVersion = 0.23;
 
 
   // パス名変数の定義
@@ -206,6 +207,24 @@ function OnListMenuClick (irvine, action) {
   }
 
 
+  function processDoaLinkArray () {
+    if (DOA.status != DOA_LK || nameOf (DOA.link) != 'Array') {
+      return;
+    }
+
+    var len = DOA.link.length;
+    if (len == 1) {
+      DOA.link = DOA.link [0];
+      return;
+    }
+
+    for (var i = 0; i < len; ++i) {
+      DOA_item_add (DOA.link [i]);
+    }
+    DOA.link = '';
+    DOA.status = DOA_LS;
+  }
+
   function DOAtest (url) {
     var flg = false;
     for (var i in DOA.match_list){
@@ -232,6 +251,7 @@ function OnListMenuClick (irvine, action) {
       DOA.comment = '';
 
       DOA.functions[DOA.match_list[i][1]].main(url);
+      processDoaLinkArray ();
       return;
     }
 

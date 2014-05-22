@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={0D313B7E-9959-4F23-9AEC-64276F111EDB}
 caption=Dorothy2R 設定
-version=20140507
+version=20140521
 hint=Dorothy2R 設定
 event=OnMainMenuClick
 match=
@@ -1597,7 +1597,7 @@ function OnMainMenuClick (irvine, action) {
   // Dorothy オブジェクト初期化
   function ev () { eval (arguments [0]); }
   Dorothy.init ({ version: 'xxxx', eval: ev });
-  Dorothy.rVersion = 20140507;
+  Dorothy.rVersion = 20140521;
 
   Dorothy._loadSettingIni ();
   defineDorothy2Path ();

@@ -92,6 +92,34 @@ assemble (fmt, ext)
   で指定した文字列が末尾に繋げられる。ext に URL を指定した場合は
   拡張子部分を抽出した上でファイル名に繋げられる。
 
+buildFilename (fmt, ext)
+  fmt ... string: ファイル名形式
+  ext ... string: 拡張子
+  戻り値 ... object: { Filename: ファイル名, [Folder: フォルダ名] }
+
+  fmt で指定したファイル名形式に従ってファイル名を生成する。ext
+  で指定した文字列が末尾に繋げられる。ext に URL を指定した場合は
+  拡張子部分を抽出した上でファイル名に繋げられる。
+
+  fmt にファイル名コマンドが含まれる場合、ファイル名から取り除かれた
+  上で実行される。
+    [[md=...]]
+      ダウンロードファイルを指定フォルダに保存する。フォルダが存在
+      しない場合は作成される。フォルダ名が 戻り値の Folder プロパティ
+      に格納される。
+    [[cd=...]]
+      md と同じ。
+
+setFilename (fmt, ext)
+  fmt ... string: ファイル名形式
+  ext ... string: 拡張子
+
+  buildFilename() を実行し、その結果を item.filename 及び item.folder
+  に設定する。
+
+  ただし、item.filename が事前に設定済みで [[rename]] を含まない場合は
+  上書きしない(その場合でも拡張子がない時は追加する)。
+
 contentTypeToExt (ctype)
   ctype ... string: Content-Type の値
   戻り値 ... string
@@ -113,6 +141,9 @@ contentToExt (data)
 
 変更履歴
 ========
+
+2014-05-21  version 20140521.0  rentan at rentan.org
+  .buildFilename(), .setFilename(): 新規作成。
 
 2014-05-09  version 20140509.0  rentan at rentan.org
   setYmdhms(): ゼロサプレスされた時刻(hh)に対応。

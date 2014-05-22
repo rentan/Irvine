@@ -28,6 +28,12 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
 変更履歴
 ========
 
+2014-05-22  version 20140522.0  rentan at rentan.org
+  MPEG DASH に対応。
+  .debug をグローバル変数 debug で初期化するようにした。
+
+  保存フォルダやファイル名変数 [[md=...]] が反映されない不具合を修正。
+
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
   このファイルを UTF-8 に変更。

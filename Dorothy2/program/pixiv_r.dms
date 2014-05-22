@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20140331.0
+//version=20140521.0
 //hint=pixiv 別バージョン
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?)
 //author=rentan
@@ -340,12 +340,12 @@ function make_manga_list (img_url, pages) {
   var base = img_url.slice (0, n) + nb.manga_size + '_p';
   var ext = img_url.slice (n);
 
-  var list = [];
+  var list = [ ];
   for (var i = 0; i < pages; ++i) {
     nb.manga_p = i;
-    var u = base + i.toString () + ext;
-    var f = nb.assemble (ini.Filename ['Manga2'], img_url);
-    list.push ({ Url: u, Filename: f });
+    var itemData = nb.buildFilename (ini.Filename ['Manga2'], img_url);
+    itemData.Url = base + i.toString () + ext;
+    list.push (itemData);
   }
 
   return list;
@@ -395,7 +395,7 @@ function dl_illust_p (http, img_specified) {
 
   // 画像URL指定時は Illust を使用(未設定ならページURL指定時と同様に Illust2)
   var fmt = (img_specified && ini.Filename ['Illust']) || ini.Filename ['Illust2'];
-  Dorothy.fileName = nb.assemble (fmt, img_url);
+  nb.setFilename (fmt, img_url);
 
   urlinfo.url = img_url;
   headers.Host = (new URL (img_url)).host;
@@ -442,14 +442,14 @@ function dl_illust_or_manga (url, img_specified) {
 
 // 漫画の画像をダウンロード
 function dl_manga_img (url) {
-  /^http:\/\/i\d+\.pixiv\.net\/img\d+\/img\/([^\/]+)\/(\d+)(_[0-9a-f]+)?(_big)?_p(\d+)/.test (url);
-  nb.pixiv_id = RegExp.$1;
-  nb.id = RegExp.$2;
-  nb.manga_size = RegExp.$4;
-  nb.manga_p = parseInt (RegExp.$5);
-
   // 保存ファイル名が指定されていなければここで決定する
   if (item.filename == '') {
+    /^http:\/\/i\d+\.pixiv\.net\/img\d+\/img\/([^\/]+)\/(\d+)(_[0-9a-f]+)?(_big)?_p(\d+)/.test (url);
+    nb.pixiv_id = RegExp.$1;
+    nb.id = RegExp.$2;
+    nb.manga_size = RegExp.$4;
+    nb.manga_p = parseInt (RegExp.$5);
+
     var fmt = ini.Filename ['Manga'];
 
     // ファイル名に未取得の情報が必要なら HTML ページから取得する
@@ -466,7 +466,7 @@ function dl_manga_img (url) {
       }
     }
 
-    Dorothy.fileName = nb.assemble (fmt, url);
+    nb.setFilename (fmt, url);
   }
 
   headers.Referer = get_manga_img_referer ();
@@ -491,7 +491,7 @@ function dl_profile_bg (url) {
     }
   }
 
-  Dorothy.fileName = nb.assemble (ini.Filename [img_type], url);
+  nb.setFilename (ini.Filename [img_type], url);
 
   headers.Referer = 'http://www.pixiv.net/stacc/' + nb.pixiv_id;
   headers ['Accept-Language'] = 'ja';
@@ -598,7 +598,7 @@ function dl_novel_cover_img (url) {
     return retry ();
   }
 
-  Dorothy.fileName = nb.assemble (ini.Filename [img_type], url);
+  nb.setFilename (ini.Filename [img_type], url);
 
   headers.Referer = novel_url + '&mode=cover';
   headers ['Accept-Language'] = 'ja';
@@ -617,11 +617,11 @@ function dl_novel_cover (http) {
     return;
   }
 
-  // ファイル名の変更
-  var filename = nb.assemble (ini.Filename ['NovelCover'], cover_img);
+  var itemData = nb.buildFilename (ini.Filename ['NovelCover'], cover_img);
+  itemData.Url = cover_img;
 
   // ダウンロード登録
-  var list = [ { Url: cover_img, Filename: filename } ];
+  var list = [ itemData ];
   additem.send (list) || exit ();
 }
 
@@ -642,8 +642,7 @@ function dl_novel (url) {
   dl_novel_cover (http);
 
 
-  // ファイル名の変更
-  Dorothy.fileName = nb.assemble (ini.Filename ['Novel'], ini.General.NovelExt);
+  nb.setFilename (ini.Filename ['Novel'], ini.General.NovelExt);
 
   headers ['Cookie'] = http.getRequestHeader ('Cookie');
   headers ['Accept-Language'] = 'ja';

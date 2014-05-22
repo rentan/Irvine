@@ -58,10 +58,71 @@ Dorothy2 併用時の注意
   NameBuilder#normalize() や Utf8#decodeCharRef() を使って下さい。
 
 
+Dorothy オブジェクト拡張
+========================
+
+Dorothy.isDOA ... boolean
+  DOA からの実行時に true になる。
+
+Dorothy.doaVersion ... number
+  DOA のバージョン。Dorothy.isDOA == true の場合のみ定義される。
+
+Dorothy.edit (file)
+  file ... string: ファイルのフルパス名
+  戻り値 ... なし
+
+  file で指定したファイルをテキストエディタで開く(Irvine のオブション設定
+  で指定されていない場合は notepad.exe)。
+
+Dorothy.getSaveFolder ()
+  戻り値 ... string: フルパス名
+
+  ダウンロードしたファイルが保存されるパス名を返す。
+
+Dorothy.createSaveFolder (path)
+  path ... string: フォルダ名。
+  戻り値 ... string: 作成したフォルダ名(フルパス)。
+
+  保存フォルダ内にフォルダを作成する。
+
+Dorothy.search.init ()
+Dorothy.search.next ()
+Dorothy.validateProgram ()
+Dorothy.loadProgram ()
+Dorothy.validateCommon ()
+Dorothy.init ()
+Dorothy.loadDorothyIni ();
+  システム側開発者向けのため省略。
+
+
 変更履歴
 ========
 
+2014-05-21  rentan at rentan.org
+
+scripts\Dorothy2R_a.dms  version 20140521
+  Dorothy.getSaveFolder(), .createSaveFolder(): メソッド追加。
+  Dorothy.isDOA: 新規プロパティ。
+
+  Dorothy.fileName の処理を作り直し。
+  [[cd=...]] を [[md=...]] と同じ動作に変更。
+  remove 時に nulUrl/nulProxy を Dorothy2R 本体で設定するようにした。
+
+scripts\Dorothy2R_set.dms  version 20140521
+  Dorothy.rVersion を更新。
+
+scripts\Dorothy2R_listmenu.dms  version 20140521
+  テキストエディタ呼び出しを editFiles() に統一。
+
+scripts\Dorothy2R_doa_list.dms  version 20140521
+  Dorothy.isDOA を true にする。
+  Dorothy.doaVersion を 0.23 に変更。
+
+  DOA.status == DOA_LK の時に DOA.link に配列を渡せるようにした。
+  複数の URL が格納されていれば DOA_LS として扱う。
+
 2014-05-12  rentan at rentan.org
+
 scripts\Dorothy2R_doa_list.dms  version 20140512
   ステータス行の結果表示が正しくない不具合を修正。
 

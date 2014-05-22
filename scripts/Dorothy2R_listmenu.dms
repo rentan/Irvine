@@ -2,8 +2,8 @@
 スクリプト初期化データ
 guid={52ad722b-b5ff-4362-8aba-278b6aaaf93e}
 caption=Dorothy2R サイト設定
-version=20140507
-hint=Shiftキー押し下げでプログラム編集
+version=20140521
+hint=Shiftでプログラム編集、Tabで全ファイル編集
 event=OnListMenuClick
 match=
 author=rentan
@@ -119,19 +119,13 @@ function OnListMenuClick (irvine, action) {
 
   // 各種ファイルを全て編集する
   _.editAll = function () {
-    function edit (file) {
-      if ((new File (file)).exists ()) {
-        Dorothy.edit (file);
-      }
-    }
-
     var m = Dorothy.matchFile;
-    edit (Dorothy.programDir + m + '.dms');
-    edit (Dorothy.path + 'setting\' + m + '.set');
-    edit (Dorothy.path + 'document\program\' + m + '.txt');
-    edit (Dorothy.path + 'DOA\' + m + '.dms');
+    _.editFiles (Dorothy.programDir, m + '.dms');
+    _.editFiles (Dorothy.path + 'setting\', m + '.set');
+    _.editFiles (Dorothy.path + 'document\program\', m + '.txt');
+    _.editFiles (Dorothy.path + 'DOA\', m + '.dms');
 
-    editFiles (Dorothy.userPath, '*.*', /\.(dms|bat|hta|html?|ini)$/);
+    _.editFiles (Dorothy.userPath, '*.*', /\.(dms|bat|hta|html?|ini)$/);
   };
 
 
@@ -157,6 +151,8 @@ function OnListMenuClick (irvine, action) {
     while (_.isWhiteSpaceKeyDown ()) {
       Win32.sleep (10);
     }
+    // スペースキーの場合は直後のダイアログが即時閉じてしまう
+
     return _.editAll ();
   }
 

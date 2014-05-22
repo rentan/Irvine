@@ -31,6 +31,9 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2014-05-21  version 20140521.0  rentan at rentan.org
+  NameBuilder#buildFilename(), setFilename() を使うようにした。
+
 2014-03-31  version 20140331.0  rentan at rentan.org
   複数画像に対応。
   プログラム構造を改善。

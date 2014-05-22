@@ -13,22 +13,18 @@ common\rutil.dms
 読み込み時に Dorothy2 本体のバージョン検査が行われます。
 DOA からは使用できません。
 
-
-Util オブジェクトのプロパティ
-=============================
-
-isDOA ... boolean
-  常に false です。
+Dorothy オブジェクトが(勝手に)拡張されます。
 
 
-ActiBook オブジェクトのメソッド
-===============================
+Util オブジェクトのメソッド
+===========================
 
-remove_this ()
-ini_load (def_dat, ini_file)
-ini_save (dat, ini_file)
-ini_copy_edit ()
-get_option (key)
+Util.remove_this ()
+Util.ini_load (defaulData, iniFile)
+Util.ini_save (data, iniFile)
+Util.ini_copy_edit ()
+Util.get_option (key)
+
 
 詳細は省略。
 
@@ -39,6 +35,14 @@ get_option (key)
 
 変更履歴
 ========
+
+2014-05-21  version 20140521.0  rentan at rentan.org
+  Util.remove_this: nulUrl/nulProxy の設定を Dorothy2R 本体にまかせる
+  ようにした。
+  Util.isDOA: 削除。
+
+  rutil_dorothy2r.dms: 新規作成。Dorothy2R 用のスクリプトを Dorothy2
+  で動作するようにする互換スクリプト。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。

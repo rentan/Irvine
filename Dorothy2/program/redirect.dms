@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=URL転送サービス
-//version=20140512.0
+//version=20140521.0
 //hint=
 //match=^https?://((bit\.ly|ilix\.in|ime\.nu|jump\.2ch\.net|lix\.in|pinktower\.com|t\.co|wk\.tk)/.|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|baberepublic\.com|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|placepictures\.com|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|youfap\.me|yyv\.co|zff\.co|zxxo\.net)([/?#].*)?$)
 //author=rentan
@@ -413,8 +413,6 @@ UrlRedirector.prototype.linkbucksRe = (function () {
 }) ();
 
 
-// loadTargetUrl
-
 // linkbucks
 UrlRedirector.prototype.linkbucks = function (u, path) {
 
@@ -499,6 +497,11 @@ UrlRedirector.prototype.linkbucks = function (u, path) {
     }
 
     var http = this.http;
+    if (/^Mozilla\/4\./.test (http.getRequestHeader ('User-Agent'))) {
+      // Mozilla/4.0 Win32 で 403 Forbidden になる対策
+      var ua = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';
+      http.setRequestHeader ('User-Agent', ua);
+    }
     if (http.get (u.url)) {
       return scan (http);
     }
@@ -525,6 +528,7 @@ UrlRedirector.prototype.linkbucks = function (u, path) {
 
 
 // ilix.in
+// http://lix.in/-dd3589
 UrlRedirector.prototype.ilixin = function (u, path) {
   if (!/^[0-9a-z]+$/i.test (path)) {
     return this.MIS;
@@ -965,32 +969,21 @@ function doaConstructor (ur) {
   this.main = function (url) {
     var ur = this.urlRedirector;
     var r = ur.resolveAll (url);
-    var urls = ur.urls;
 
-    var st = DOA_LK;
     if (r == ur.OK) {
-      if (urls.length == 1) {
-        DOA.link = urls [0];
-      }
-      else {
-        st = DOA_LS;
-        for (var i = 0; i < urls.length; ++i) {
-          DOA_item_add (urls [i]);
-        }
-      }
+      DOA.status = DOA_LK;
+      DOA.link = ur.urls;
     }
     else if (r == ur.RETRY) {
-      st = DOA_BS;
+      DOA.status = DOA_BS;
     }
     else if (r == ur.MIS) {
-      st = DOA_UK;
+      DOA.status = DOA_UK;
     }
     else {  // ur.NG .UNKNOWN .EXIT
-      st = DOA_NG;
+      DOA.status = DOA_NG;
       DOA.comment = ur.comment;
     }
-
-    DOA.status = st;
   };
 
   this._ = function () {
@@ -1004,8 +997,8 @@ function doaConstructor (ur) {
 
   var ur = new UrlRedirector (ini.Site, { Max: ini.General.Max });
 
-  // DOA.dms からの実行
-  if (Util.isDOA) {
+  // DOA からの実行
+  if (Dorothy.isDOA) {
     return doaConstructor (ur);
   }
 

@@ -336,11 +336,6 @@ removeUtf8Bom ()
   data の先頭に UTF-8 の BOM があれば削除し、true を返す。そうでなければ
   false を返す。
 
-getSaveFolder ()
-  戻り値 ... string: フルパス名
-
-  saveFile() でファイルを保存するフォルダ名を返す。
-
 saveFile (args)
   args ... object: 引数オブジェクト { filename: '～', data: '～', ... }
     filename ... string: 保存ファイル名
@@ -395,6 +390,14 @@ inflate (s)
 
 変更履歴
 ========
+
+2014-05-22  version 20140522.0  rentan at rentan.org
+  .getSaveFolder(): 削除。
+  .saveFile(): filename に NameBuilder#buildFilename() の戻り値を渡した時は
+  Folder と Filename からファイル名を作成するようにした。
+
+  ._readResponseBody(): (デバッグ用暫定) 不正なチャンクサイズの時に受信データ
+  をファイルに保存するようにした。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。

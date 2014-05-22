@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20140331.0
+//version=20140521.0
 //hint=utility
 //match=
 //author=rentan
@@ -48,7 +48,7 @@ DorothyVersionValidator.prototype.validateDoaVersion = function () {
     return "このスクリプトは DOA では使用できません。";
   }
 
-  if (Dorothy.doaVersion < 0.22) {
+  if (Dorothy.doaVersion < 0.23) {
     return this._oldVer (Dorothy.doaVersion);
   }
 
@@ -69,7 +69,7 @@ DorothyVersionValidator.prototype.validateDorothy2setVersion = function () {
 DorothyVersionValidator.prototype.validateDorothy2aVersion = function () {
   var ver = parseFloat (Dorothy.version);
 
-  if (!isFinite (ver) || ver < 0.30) {
+  if (!isFinite (ver) || ver < 0.31) {
     return this._oldVer (Dorothy.version);
   }
 
@@ -119,12 +119,13 @@ var dvv = new DorothyVersionValidator ();
 dvv.validate ();
 
 
+if (!Dorothy.hasKey ('rVersion')) {
+  common_load ('rutil_dorothy2r');
+}
+
+
 // コンテナ
 Util = { };
-
-
-// DOA からの起動かどうか
-Util.isDOA = dvv.isDOA;
 
 
 // 現在のアイテムをダウンロード後に削除させる
@@ -133,14 +134,6 @@ Util.remove_this = function () {
   // Dorothy2B.dms に削除してもらう
   urlinfo.url = 'http://www.google.com/favicon.ico';
   Dorothy.fileName = 'remove';
-
-  var n = Dorothy.hasKey ('nulUrl') ? Dorothy.nulUrl : '';
-  if (n) {
-    // 削除不要な特殊な URL が指定されている場合
-    urlinfo.proxy = Dorothy.nulProxy;
-    urlinfo.url = n;
-    Dorothy.fileName = '';
-  }
 
   headers.Referer = '';
   headers.Cookie = '';
@@ -229,16 +222,6 @@ Util.ini_copy_edit = function () {
   var ini_path = Dorothy.userIniPath;
 
 
-  // ファイルをテキストエディタで開く
-  function execute_editor (file) {
-    if (Dorothy.hasKey ('edit')) {
-      return Dorothy.edit (file);
-    }
-
-    return Win32.shellExecute ('open', '"notepad.exe"', '"' + file + '"');
-  }
-
-
   // デフォルト設定をコピーする
   function copy_default_ini (ini_path) {
     var def_path = ini_path.replace (/\.ini$/, '.default.ini');
@@ -268,7 +251,7 @@ Util.ini_copy_edit = function () {
   }
 
   // .ini ファイルをテキストエディタで開く
-  execute_editor (ini_path);
+  Dorothy.edit (ini_path);
 };
 
 

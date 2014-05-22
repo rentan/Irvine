@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=NameBuilder
-//version=20140509.0
+//version=20140521.0
 //hint=new NameBuilder ()
 //match=
 //author=rentan
@@ -26,9 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 (function () {
 
-
-// 必要なら実装
-// Content-Disposition: から拡張子を返すメソッド
+common_load ('rutil');
 
 
 // オブジェクトで提供する全てのプロパティとメソッドは、_prototypeKeys
@@ -76,6 +74,13 @@ void function NameBuilder (opt_flags) {
     };
   }
 
+};
+
+
+// 内部で使用: エラー表示
+NameBuilder.prototype._p = function (s) {
+  println ('NameBuilder: ' + s);
+  return false;
 };
 
 
@@ -211,21 +216,25 @@ NameBuilder.prototype.zeroPadding = function (n, max, offset) {
 };
 
 
-// ファイル名を作成する
-NameBuilder.prototype.assemble = function (fmt, ext) {
-
-  // 拡張子を確定する
+// URL から拡張子を抽出する(拡張子がなければ空文字列)
+// null、undefined なら空文字列を返す
+// それ以外なら引数をそのまま返す
+NameBuilder.prototype._extractExt = function (ext) {
   if (!ext) {
-    ext = '';
+    return '';
   }
-  else if (/^https?:/i.test (ext)) {
-    // URL が指定された場合は拡張子を取り出す
-    ext = ext.replace (/[?#].*$/, '').replace (/^.*\//, '');
-    ext = ext.match (/\.[^.]+$/) ? RegExp.lastMatch : '';
+
+  // URL
+  if (/^https?:/i.test (ext)) {
+    return /(\.[^.\/?#]+)([?#].*)?$/.test (ext) ? RegExp.$1 : '';
   }
-  // それ以外ならそのまま使用
+
+  return ext;
+};
 
 
+// ファイル名を作成する(下請け)
+NameBuilder.prototype._assemble = function (fmt, ext) {
   var self = this;
 
   function rep (s, p1) {
@@ -237,13 +246,13 @@ NameBuilder.prototype.assemble = function (fmt, ext) {
     }
 
     if (!/^[A-Z0-9_]+$/.test (name)) {
-      println ('変数名として使用できない文字です: ' + s);
+      self._p ('変数名として使用できない文字です: ' + s);
       return s;
     }
     // この時点で name == /^[A-Z0-9_]+$/
 
     if (self._prototypeKeys.hasKey (name)) {
-      println ('変数名として使用できない単語です: ' + s);
+      self._p ('変数名として使用できない単語です: ' + s);
       return s;
     }
 
@@ -276,13 +285,97 @@ NameBuilder.prototype.assemble = function (fmt, ext) {
       return v;
     }
 
-    println ('未対応の変数です: ' + s);
+    self._p ('未対応の変数です: ' + s);
     return s;
   }
 
   var f = fmt.replace (/%([^%]*)%/g, rep);
 
   return this.trim (f + ext);
+};
+
+
+// ファイル名を作成する
+NameBuilder.prototype.assemble = function (fmt, ext) {
+  return this._assemble (fmt, this._extractExt (ext));
+};
+
+
+// ファイル名を作成する
+// ファイル名コマンドを解釈する
+NameBuilder.prototype.buildFilename = function (fmt, ext) {
+
+  // fmt からコマンドを抽出する
+  var commands = [ ];
+
+  fmt = fmt.replace (/\[\[(cd|md)=(.*?)\]\]/g, function (s, p1, p2) {
+    commands.push ({ s: s, cmd: p1, arg: p2 });
+    return '';
+  });
+
+  // ファイル名を作成
+  var itemData = { Filename: this._assemble (fmt, this._extractExt (ext)) };
+
+  // [[md=...]] 指定フォルダに保存
+  function md (path) {
+    if (!path) {
+      return;
+    }
+
+    path = Dorothy.createSaveFolder (path);
+    if (path) {
+      itemData.Folder = path;
+    }
+  }
+
+  // コマンドを実行する
+  for (var i = 0; i < commands.length; ++i) {
+    var command = commands [i];
+    var arg = this._assemble (command.arg, '');
+
+    if (command.cmd == 'md' || command.cmd == 'cd') {
+      md (arg);
+    }
+    else {
+      this._p ('未対応のファイル名コマンドです: ' + command.s);
+    }
+  }
+
+  if (!itemData.hasKey ('Folder') && item.folder) {
+    itemData.Folder = item.folder;
+  }
+
+  return itemData;
+};
+
+
+// ファイル名を作成して item.filename/folder に書き込む
+NameBuilder.prototype.setFilename = function (fmt, ext) {
+  function setNewFilename (f) {
+    println ('new filename>' + f);
+    item.filename = f;
+  }
+
+
+  // item.filename が設定済みで [[rename]] を含まないなら上書きしない
+  // ただし拡張子がなければ追加する
+  var f = item.filename;
+  if (f && f.indexOf ('[[rename]]') != -1) {
+    var ext = this._extractExt (ext);
+    if ((new File (f)).extractExt () == '' && ext) {
+      setNewFilename (f + ext);
+    }
+
+    return;
+  }
+
+
+  var itemData = this.buildFilename (fmt, ext);
+  setNewFilename (itemData.Filename);
+
+  if (itemData.hasKey ('Folder')) {
+    item.folder = itemData.Folder;
+  }
 };
 
 
@@ -303,7 +396,7 @@ NameBuilder.prototype.contentTypeToExt = function (ctype) {
   }
 
   if (!ctype) {
-    println ('Content-Type が取得できません。');
+    this._p ('Content-Type が取得できません。');
     return null;
   }
 
@@ -318,7 +411,7 @@ NameBuilder.prototype.contentTypeToExt = function (ctype) {
     return RegExp.$1;
   }
 
-  println ('未対応の Content-Type です: ' + ctype);
+  this._p ('未対応の Content-Type です: ' + ctype);
   return null;
 };
 
@@ -331,7 +424,7 @@ NameBuilder.prototype.contentToExt = function (data) {
   }
 
   if (!data) {
-    println ('データがありません。');
+    this._p ('データがありません。');
     return null;
   }
 
@@ -389,7 +482,7 @@ NameBuilder.prototype.contentToExt = function (data) {
     return '.tif';
   }
 
-  println ('未対応のデータ形式です。');
+  this._p ('未対応のデータ形式です。');
   return null;
 };
 

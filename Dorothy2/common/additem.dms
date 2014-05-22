@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=AddItem
-//version=20140331.0
+//version=20140521.0
 //hint=new AddItem ()
 //match=
 //author=rentan
@@ -25,6 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 (function () {
+
+common_load ('rutil');
 
 
 // コンストラクタ
@@ -197,7 +199,6 @@ AddItem.prototype._isValidQueueName = function (queue, func) {
 
 // 内部で使用: AddQueueItem で Irvine に登録する(queue= で指定したキューフォルダ)
 AddItem.prototype._optionQueue = function (list) {
-  common_load ('rutil');
   var q = Util.get_option ('queue');
 
   if (!q) {

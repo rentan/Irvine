@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dキャラめ～る。
-//version=20140331.0
+//version=20140521.0
 //hint=購読者限定壁紙
 //match=^http://www\.dmm\.co\.jp/(dc|digital/nijigen)/mlmg_present/
 //author=rentan
@@ -36,8 +36,8 @@ function () {
       Zen2Han: false
     },
     Filename: {
-      Wallpaper:     'dmm20%YYMMDD%_wallpaper',
-      Wallpaper_mem: 'dmm20%YYMMDD%_wallpaper_mem'
+      Wallpaper:     'dmm%YYYY%%MM%%DD%_wallpaper',
+      Wallpaper_mem: 'dmm%YYYY%%MM%%DD%_wallpaper_mem'
     }
   };
   var ini = Util.ini_load (default_ini);
@@ -89,26 +89,27 @@ function dl_page (url) {
     println ('URL を推測してダウンロードを試みます。');
   }
 
-  nb.yy = ymd.substr (0, 2);
+  nb.yyyy = '20' + ymd.substr (0, 2);
   nb.mm = ymd.substr (2, 2);
   nb.dd = ymd.substr (4, 2);
 
 
   // 会員限定版を追加ダウンロードする
   var u = get_zip_url (ymd, true);
-  var filename = nb.assemble (ini.Filename ['Wallpaper_mem'], u.url);
+  var itemData = nb.buildFilename (ini.Filename ['Wallpaper_mem'], u.url);
+  itemData.Url = u.url;
 
-  var list = [ { Url: u.url, Filename: filename } ];
+  var list = [ itemData ];
   additem.send (list) || exit ();
 
 
   // 通常版をダウンロードする
   u = get_zip_url (ymd, false);
+  nb.setFilename (ini.Filename ['Wallpaper'], u.url);
+
   urlinfo.url = u.url;
   headers.Host = u.host;
   headers.Referer = '';
-
-  Dorothy.fileName = nb.assemble (ini.Filename ['Wallpaper'], u.url);
 }
 
 
@@ -116,23 +117,17 @@ function dl_page (url) {
 
 
   var additem = new AddItem (ini.AddItem);
-  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han, ymdhms: true });
 
   // ファイル名の生成に使える情報
-  nb.yy = null;  // 年
-  nb.mm = null;  // 月
-  nb.dd = null;  // 日
-
   nb.name = null;  // 作者名（URL に含まれるローマ字）
-
-  nb.YYMMDD = function () { return this.yy + this.mm + this.dd; };
 
 
   var url = urlinfo.url;
 
   if (/^http:\/\/www\.dmm\.co\.jp\/(dc|digital\/nijigen)\/mlmg_present\/\d{6}\/page_([^\/]+)[._]html\//.test (url)) {
     // HTML ページ
-    nb.name = RegExp.$1;
+    nb.name = RegExp.$2;
     dl_page (url);
     return;
   }

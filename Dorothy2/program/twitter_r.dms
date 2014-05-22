@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20140331.0
+//version=20140521.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -33,7 +33,8 @@ function () {
   var default_ini = {
     AddItem: AddItem.prototype.iniTemplate,
     General: {
-      Zen2Han: false
+      Zen2Han: false,
+      PageOrigin: 0
     },
     Filename: {
       Photo: 'twitter_%ID%',
@@ -46,6 +47,7 @@ function () {
 // テスト用
 // https://twitter.com/rentan_org/status/314692285487001600
 // https://twitter.com/rentan_org/status/314692615671017472
+// https://twitter.com/rentan_org/status/468794536253083648
 // https://twitter.com/rentan_org/media
 
 
@@ -64,13 +66,14 @@ void function Twitter () {
 Twitter.prototype.comment = '';
 Twitter.prototype.http = null;
 
+// media かどうか
+Twitter.prototype.media = false;
+
 // 複数画像ツイートかどうか
 Twitter.prototype.multiPhoto = false;
 
 // NameBuilder パラメータ
-Twitter.prototype.nameFormat = 'twitter_%ID%';
-Twitter.prototype.nameFormat2 = 'twitter_%ID%_%P%';
-Twitter.prototype.pageOrigin = 1;
+Twitter.prototype.pageOrigin = 0;
 
 
 // .getImage() の戻り値
@@ -188,18 +191,37 @@ Twitter.prototype._analyzeTweet = function (http) {
 };
 
 
-// 内部で使用: ファイル名を決定する
-Twitter.prototype._buildFilename = function (fmt) {
-  var urls = this.urls;
-
+// ファイル名を作成する
+// NameBuilder が必要
+Twitter.prototype.buildFilename = function (fmt) {
   var nb = this.nameBuilder;
-  nb.pages = urls.length;
 
-  for (var i = 0; i < urls.length; ++i) {
+  var urls = this.urls;
+  var len = nb.pages = urls.length;
+
+  for (var i = 0; i < len; ++i) {
     nb.p = i;
-    var u = urls [i].Url.replace (/:large$/, '');
-    urls [i].Filename = nb.assemble (fmt, u);
+
+    var url = urls [i].Url;
+    var itemData = nb.buildFilename (fmt, url.replace (/:large$/, ''));
+    itemData.Url = url;
+
+    urls [i] = itemData;
   }
+};
+
+
+// ファイル名を作成して item.filename/folder に書き込む
+// URL を返す。単一 URL のみ使用可。
+// NameBuilder が必要
+Twitter.prototype.setFilename = function (fmt) {
+  var nb = this.nameBuilder;
+
+  var url = this.urls [0].Url;
+
+  nb.setFilename (fmt, url.replace (/:large$/, ''));
+
+  return url;
 };
 
 
@@ -237,9 +259,6 @@ Twitter.prototype.getTweetImage = function (url) {
     return this.UNKNOWN;
   }
 
-  var fmt = this [this.multiPhoto ? 'nameFormat2' : 'nameFormat'];
-  this._buildFilename (fmt);
-
   return this.OK;
 };
 
@@ -269,6 +288,8 @@ Twitter.prototype.getMediaImage = function (url) {
   }
   var head = RegExp.$1;
   var twitterId = RegExp.$2;
+
+  this.media = true;
 
   var http = this.http;
   http.setRequestHeader ('Referer', head + twitterId + '/media');
@@ -331,7 +352,7 @@ Twitter.prototype.getImage = function (url) {
 
   this.urls = [ ];
   this.http = new Http ();
-  this.multiPhoto = false;
+  this.media = this.multiPhoto = false;
 
   var path = (new URL (url)).path.slice (1);
 
@@ -352,24 +373,27 @@ Twitter.prototype.getImage = function (url) {
 
   var twitter = new Twitter ();
   twitter.nameBuilder = new NameBuilder ({ zen2han: ini.General.Zen2Han });
-  twitter.nameFormat = ini.Filename.Photo;
-  twitter.nameFormat2 = ini.Filename.Photo2;
+  twitter.pageOrigin = ini.General.PageOrigin;
 
   var r = twitter.getImage (urlinfo.url);
   if (r != twitter.OK) {
     return twitter.end (r);
   }
 
-  if (twitter.urls.length > 2) {
+  if (twitter.multiPhoto || twitter.media) {
+    if (twitter.multiPhoto) {
+      twitter.buildFilename (ini.Filename.Photo2);
+    }
+
     (new AddItem (ini.AddItem)).send (twitter.urls) || exit ();
     Util.remove_this ();
     return;
   }
 
-  var o = twitter.urls [0];
+  // 単独画像
+  urlinfo.url = twitter.setFilename (ini.Filename.Photo);
 
-  Dorothy.fileName = o.Filename;
-  headers.Host = (new URL (urlinfo.url = o.Url)).host;
+  headers.Host = (new URL (urlinfo.url)).host;
   headers.Referer = '';
   headers.Cookie = '';
   headers ['Accept-Language'] = 'ja';

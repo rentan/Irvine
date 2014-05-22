@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Http
-//version=20140331.0
+//version=20140522.0
 //hint=new Http ()
 //match=
 //author=rentan
@@ -25,6 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 (function () {
+
+common_load ('rutil');
 
 
 //---------------------------------- Zlib ----------------------------------
@@ -483,11 +485,18 @@ Http.prototype._readResponseBody = function () {
   (this.verbose >= 2) && println ('decode chunk');
 
   var data = '';
+  var readData = '';
   for (;;) {
-    var chunk_size = h.readln ().trim ();
+    var chunk_size = h.readln ();
+    readData += chunk_size + "\n";
+
     // pixiv で "\n1000" になることがあるので空白文字を除去
+    chunk_size = chunk_size.trim ();
 
     if (!/^([0-9a-f]+)/i.test (chunk_size)) {
+      this.data = readData + h.read ();
+      this.capture ();
+
       throw '不正なチャンクサイズ: ' + chunk_size;
     }
     chunk_size = parseInt ('0x' + RegExp.$1);
@@ -495,7 +504,9 @@ Http.prototype._readResponseBody = function () {
       break;    // 終了
     }
 
-    data += h.read (chunk_size);  // サイズ分だけ読み込む
+    var chunk = h.read (chunk_size);  // サイズ分だけ読み込む
+    data += chunk;
+    readData += chunk + "\n----chunk----\n";
 
     h.readln ();  // CRLF を読み捨てる
   }
@@ -820,28 +831,6 @@ Http.prototype.removeUtf8Bom = function () {
 };
 
 
-// 内部で使用: 保存フォルダ名を取得する
-Http.prototype.getSaveFolder = function () {
-  var abs = /^[a-z]:/i;
-
-  var ip = item.folder;
-  if (ip && abs.test (ip)) {
-    // アイテム設定が絶対パス
-    return ip;
-  }
-
-  var fp = folderdata.Folder;
-  if (fp && abs.test (fp)) {
-    // フォルダ設定が絶対パス
-    return (new Directory (fp)).path + ip;
-  }
-
-  var ini = new Ini ((new irvinePath ()).queue + 'queue.ini');
-  var qp = ini.read ('queue', 'folder', '');
-  return new Directory (qp + fp).path + ip;
-};
-
-
 // 内部で使用: 重複しないファイル名を生成する
 Http.prototype._uniqFilename = function (path, rename) {
   var file = new File (path);
@@ -876,17 +865,17 @@ Http.prototype._uniqFilename = function (path, rename) {
 Http.prototype.saveFile = function (args) {
   var result = { success: false, filename: null, error: null };
 
-  var file;
-  try {
-    // 保存フォルダ
-    var dir = new Directory (this.getSaveFolder ());
-    if (!dir.exists ()) {
-      dir.make ();
-    }
+  var path = args.filename;
+  if (typeof path == 'object' && path.hasKey ('Filename')) {
+    // NameBuilder#buildFilename() の戻り値なら文字列化
+    path = (path.hasKey ('Folder') ? path.Folder : '') + path.Filename;
+  }
 
-    // ファイル
-    var path = dir.includePathDelimiter () + args.filename;
-    file = this._uniqFilename (path, args.hasKey ('rename') ? args.rename : '');
+  try {
+    if (!/^[a-z]:/i.test (path)) {
+      path = Dorothy.createSaveFolder ('') + path;
+    }
+    var file = this._uniqFilename (path, args.hasKey ('rename') ? args.rename : '');
   }
   catch (e) {
     result.error = e;
