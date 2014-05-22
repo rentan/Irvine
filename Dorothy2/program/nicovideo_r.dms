@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ニコニコ動画_r
-//version=20140403.0
+//version=20140523.0
 //hint=
 //match=^http://www\.nicovideo\.jp/watch\/([a-z]{2})?\d+
 //author=rentan
@@ -419,7 +419,7 @@ function downloadVideo (video, url, zen2han) {
   nb.nickname = new Utf8 (video.nickname);
 
   var ext = '.' + video.movie_type;
-  Dorothy.fileName = nb.assemble (ini.Filename.Video, ext);
+  nb.setFilename (ini.Filename.Video, ext);
 
   urlinfo.url = video.videoUrl;
   headers.Host = (new URL (video.videoUrl)).host;
