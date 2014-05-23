@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=NameBuilder
-//version=20140521.0
+//version=20140523.0
 //hint=new NameBuilder ()
 //match=
 //author=rentan
@@ -226,7 +226,8 @@ NameBuilder.prototype._extractExt = function (ext) {
 
   // URL
   if (/^https?:/i.test (ext)) {
-    return /(\.[^.\/?#]+)([?#].*)?$/.test (ext) ? RegExp.$1 : '';
+    ext = ext.replace (/^https?:\/\/|[?#].*$/ig, '');
+    return /\/.*(\.[^.\/]+)$/.test (ext) ? RegExp.$1 : '';
   }
 
   return ext;
@@ -360,7 +361,7 @@ NameBuilder.prototype.setFilename = function (fmt, ext) {
   // item.filename Ç™ê›íËçœÇ›Ç≈ [[rename]] Çä‹Ç‹Ç»Ç¢Ç»ÇÁè„èëÇ´ÇµÇ»Ç¢
   // ÇΩÇæÇµägí£éqÇ™Ç»ÇØÇÍÇŒí«â¡Ç∑ÇÈ
   var f = item.filename;
-  if (f && f.indexOf ('[[rename]]') != -1) {
+  if (f && f.indexOf ('[[rename]]') == -1) {
     var ext = this._extractExt (ext);
     if ((new File (f)).extractExt () == '' && ext) {
       setNewFilename (f + ext);
