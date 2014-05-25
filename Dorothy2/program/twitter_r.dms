@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20140521.0
+//version=20140525.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -126,14 +126,18 @@ Twitter.prototype._unknown = function (s) {
 Twitter.prototype._analyzeTweetImage = function (http) {
   var urls = this.urls;
 
+  function pushOrig (url) {
+    urls.push ({ Url: url.replace (/(:[a-z]*)?$/, ':orig') });
+  }
+
   // 画像表示ページ
   if (/<img\s+class="large\s+media-slideshow-image"\s[^>]*src="([^"]+)"/.test (http.data)) {
-    urls.push ({ Url: RegExp.$1 });
+    pushOrig (RegExp.$1);
   }
 
   // 単一画像
   else if (/<a\s+class="media[^"]*"[^>]*\sdata-resolved-url-large="([^"]+)"/.test (http.data)) {
-    urls.push ({ Url: RegExp.$1 });
+    pushOrig (RegExp.$1);
   }
 
   // 複数画像
@@ -142,7 +146,7 @@ Twitter.prototype._analyzeTweetImage = function (http) {
 
     var re = /<div\s+class="multi-photo[^>]*data-resolved-url-large="([^"]+)"/g;
     function add (s, p1) {
-      urls.push ({ Url: p1 });
+      pushOrig (p1);
       return '';
     }
 
@@ -202,9 +206,9 @@ Twitter.prototype.buildFilename = function (fmt) {
   for (var i = 0; i < len; ++i) {
     nb.p = i;
 
-    var url = urls [i].Url;
-    var itemData = nb.buildFilename (fmt, url.replace (/:large$/, ''));
-    itemData.Url = url;
+    var url = urls [i].Url.replace (/:[a-z]*$/, '');
+    var itemData = nb.buildFilename (fmt, url);
+    itemData.Url = urls [i].Url;
 
     urls [i] = itemData;
   }
@@ -219,7 +223,7 @@ Twitter.prototype.setFilename = function (fmt) {
 
   var url = this.urls [0].Url;
 
-  nb.setFilename (fmt, url.replace (/:large$/, ''));
+  nb.setFilename (fmt, url.replace (/:[a-z]*$/, ''));
 
   return url;
 };
@@ -264,7 +268,7 @@ Twitter.prototype.getTweetImage = function (url) {
 
 
 // media/grid の JSON を解析してリストに追加
-//  最後の data-status-id を返す
+//  最後の data-item-id を返す
 Twitter.prototype._analyzeMediaGridJson = function (http, base) {
   var urls = this.urls;
   var lastId = null;
@@ -275,7 +279,7 @@ Twitter.prototype._analyzeMediaGridJson = function (http, base) {
     urls.push ({ Url: base + p1 });
     return '';
   }
-  http.data.replace (/\sdata-status-id=\\"(\d+)\\"/g, add);
+  http.data.replace (/\sdata-item-id=\\"(\d+)\\"/g, add);
 
   return lastId;
 };
@@ -304,7 +308,7 @@ Twitter.prototype.getMediaImage = function (url) {
     }
 
     if (!/"has_more_items"\s*:\s*(true|false)/.test (http.data)) {
-      this._unknown ('has_more_items が見つかりません。');
+      return this._unknown ('has_more_items が見つかりません。');
     }
     if (RegExp.$1 == 'false') {
       break;
@@ -312,7 +316,7 @@ Twitter.prototype.getMediaImage = function (url) {
 
     var lastId = this._analyzeMediaGridJson (http, base);
     if (!lastId) {
-      this._unknown ('data-status-id が見つかりません。');
+      return this._unknown ('data-item-id が見つかりません。');
     }
 
     // 2回目以降は URL に ?max_id=～ をつける
@@ -320,7 +324,7 @@ Twitter.prototype.getMediaImage = function (url) {
   }
 
   if (!this.urls.length) {
-    this._unknown ('ダウンロード対象が見つかりませんでした。');
+    return this._unknown ('ダウンロード対象が見つかりませんでした。');
   }
 
   return this.OK;
