@@ -12,15 +12,16 @@ itema.jpg、itemb.jpg、存在する場合は itemsp.jpg を一括でダウン�
   ツール → メインメニュー → 動画ダウンロード設定２
   プログラムを右クリック → 設定
 
-複数のファイルをダウンロードする場合、新しいアイテムとして Irvine に追加し、
-実行中のアイテムはダミー URL をダウンロードして自動削除します。アイテム追加
-の設定に関しては Dorothy2\document\common\additem.txt を参照して下さい。
+以下のドキュメントも参照して下さい。
+
+・アイテム追加
+  Dorothy2\document\common\additem.txt
 
 
 対応 URL
 ========
 
-http://takumimakura.com/catalog/index.php?id=\d+
+http://takumimakura.com/(all|r18)/catalog/index.php?id=\d+
 
 
 仕様・制限事項
@@ -31,6 +32,9 @@ http://takumimakura.com/catalog/index.php?id=\d+
 
 変更履歴
 ========
+
+2014-05-31  version 20140531.0  rentan at rentan.org
+  サイトリニューアルに対応。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。

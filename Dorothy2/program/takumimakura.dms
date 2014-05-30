@@ -1,8 +1,8 @@
 //Dorothy2
 //caption=匠枕
-//version=20140331.0
+//version=20140531.0
 //hint=
-//match=^http://takumimakura\.com/catalog/index\.php\?id=\d
+//match=^http://takumimakura\.com/(all|r18)/catalog/index\.php\?id=\d
 //author=rentan
 //path=program
 //priority=500
@@ -39,6 +39,7 @@ function () {
     Filename: {
       ItemA: '匠枕_%ID%a_%CHAR%',
       ItemB: '匠枕_%ID%b_%CHAR%',
+      ItemC: '匠枕_%ID%c_%CHAR%',
       ItemSp: '匠枕_%ID%sp_%CHAR%'
     }
   };
@@ -86,12 +87,23 @@ function dl_item (url) {
   if (!h3) {
     http.die ('キャラクター名が見つかりません。');
   }
-  if (h3.length < 2) {
+  nb.char = h3toutf8 (h3 [0]);
+
+  // 作家名
+  var nameRe = new RegExp ('<div[^>]*>イラスト</div\s*>\s*<div[^>]*>：　([^<]+)</div>'.toUTF8 ());
+
+  if (h3.length >= 2) {
+    // 全年齢向けページの商品
+    nb.author = h3toutf8 (h3 [1]);
+  }
+  else if (nameRe.test (http.data)) {
+    // 18歳以上向けページの商品
+    nb.author = new Utf8 (RegExp.$1);
+  }
+  else {
     http.die ('作家名が見つかりません。');
   }
 
-  nb.char = h3toutf8 (h3 [0]);
-  nb.author = h3toutf8 (h3 [1]);
 
   // 画像をリストに追加
   var list = [ ];
@@ -113,6 +125,11 @@ function dl_item (url) {
     println ('itemsp.jpg はありません。');
   }
 
+  // 18歳以上向けページの商品の購入特典
+  // if (/<img\s+src="(id\d+\/itemc.jpg)">/.test (http.data)) {
+  //   dl_item_img (RegExp.$1, ini.Filename.ItemC);
+  // }
+
   additem.send (list) || exit ();
   Util.remove_this ();
 }
@@ -131,16 +148,15 @@ function dl_item (url) {
 
 
   var url = urlinfo.url;
+  var path = (new URL (url)).path.slice (1);
 
-  if (/^http:\/\/takumimakura\.com\/catalog\/index\.php\?id=(\d+)/.test (url)) {
+  if (/\?id=(\d+)/.test (path)) {
     nb.id = RegExp.$1;
-    url = 'http://takumimakura.com/catalog/index.php?id=' + nb.id;
     dl_item (url);
     return;
   }
 
   println ('未対応の URL です。');
-  return;
 }
 
 
