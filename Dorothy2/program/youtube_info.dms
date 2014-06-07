@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/動画情報
-//version=20140522.0
+//version=20140607.0
 //hint=
 //match=^https?://(www\.)?youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -76,6 +76,7 @@ YouTubeVideo.prototype.rental = false;
 YouTubeVideo.prototype.stereo3d = false;
 YouTubeVideo.prototype.isRTMP = false;
 YouTubeVideo.prototype.dashmpd = '';
+YouTubeVideo.prototype.dashmpdError = '';
 YouTubeVideo.prototype.author = '';
 YouTubeVideo.prototype.title = '';
 YouTubeVideo.prototype.time = '';
@@ -90,7 +91,7 @@ YouTubeVideo.prototype.userAgent = 'Mozilla/5.0 (compatible; Googlebot/2.1; +htt
 YouTubeVideo.prototype.flashUrl = '';
 
 // 内部で使用
-YouTubeVideo.prototype._topUrl = 'http://www.youtube.com/';
+YouTubeVideo.prototype._topUrl = 'https://www.youtube.com/';
 
 
 // .get() の戻り値
@@ -818,6 +819,12 @@ YouTubeVideo.prototype._getDashmpd = function () {
   }
 
   if (!http.get (this.dashmpd)) {
+    if (http.code == 403) {
+      this.dashmpdError = http.statusLine;
+
+      this._p ('manifest読み込みエラー。');
+      return this.OK;
+    }
     return this._httpError ();
   }
   if (this.debug) {
@@ -1002,6 +1009,8 @@ YouTubeVideo.prototype.get = function (url) {
   this.representation = [ ];
   this.formats = [ ];
   this.comment = '';
+  this.dashmpd = '';
+  this.dashmpdError = '';
 
   this._decodeRules = [ ];
 
@@ -1119,7 +1128,7 @@ YouTubeVideo.prototype.getFileSize = function (fmt, sep) {
 
 // 既知の itag の一覧
 YouTubeVideo.prototype.knownItags = [
-  264,248,247,246,245,244,243,242,172,171,
+  272,271,264,248,247,246,245,244,243,242,172,171,
   160,141,140,139,138,137,136,135,134,133,
   102,101,100,85,84,83,82,
   78,59,46,45,44,43,38,37,36,35,34,22,18,17,5
@@ -1132,43 +1141,76 @@ YouTubeVideo.prototype.toText = function (opt) {
   var getfs = opt.hasKey ('getFileSize') && opt.getFileSize;
   var sep = opt.hasKey ('separateFileSize') && opt.separateFileSize;
 
-  var sl = new Strings ();
 
-  function fmtListToText () {
-    var sm = [ ], af = [ ], rep = [ ];
-    var newFmt = [ ];
+  function program () {
+    var sl = new Strings ();
+    sl.add ('[Program]');
+    sl.add ('Program=' + Dorothy.matchFile.toUTF8 ());
+    sl.add ('Version=' + Dorothy.programVersion.toUTF8 ());
+    sl.add ('Author=' + Dorothy.author.toUTF8 ());
 
-    var known = new RegExp ('^(' + this.knownItags.join ('|') + ')$');
-
-    var len = this.formats.length;
-    for (var i = 0; i < len; ++i) {
-      var f = this.formats [i];
-      var itag = f.itag;
-
-      if (f.hasKey ('stream_map')) {
-        sm.push (itag);
-      }
-      else if (f.hasKey ('adaptive_fmts')) {
-        af.push (itag);
-      }
-      else if (f.hasKey ('representation')) {
-        rep.push (itag);
-      }
-
-      if (!known.test (itag.toString ())) {
-        newFmt.push (itag);
-      }
-    }
-    sl.add ('MpegDash=' + rep.join (','));
-    sl.add ('AdaptiveFmts=' + af.join (','));
-    sl.add ('Formats=' + sm.join (','));
-
-    if (newFmt.length) {
-      sl.add ('NewFormat=' + newFmt.join (','));
-    }
+    return sl.text;
   }
 
-  function fmtToText () {
+  function youtubevideo () {
+    var sl = new Strings ();
+
+    function fmtListToText () {
+      var sm = [ ], af = [ ], rep = [ ];
+      var newFmt = [ ];
+
+      var known = new RegExp ('^(' + this.knownItags.join ('|') + ')$');
+
+      var len = this.formats.length;
+      for (var i = 0; i < len; ++i) {
+        var f = this.formats [i];
+        var itag = f.itag;
+
+        if (f.hasKey ('stream_map')) {
+          sm.push (itag);
+        }
+        else if (f.hasKey ('adaptive_fmts')) {
+          af.push (itag);
+        }
+        else if (f.hasKey ('representation')) {
+          rep.push (itag);
+        }
+
+        if (!known.test (itag.toString ())) {
+          newFmt.push (itag);
+        }
+      }
+
+      var md = rep.join (',');
+      if (!rep.length && this.dashmpdError) {
+        md = '(' + this.dashmpdError + ')';
+      }
+      sl.add ('MpegDash=' + md);
+
+      sl.add ('AdaptiveFmts=' + af.join (','));
+      sl.add ('Formats=' + sm.join (','));
+
+      if (newFmt.length) {
+        sl.add ('NewFormat=' + newFmt.join (','));
+      }
+    }
+
+    sl.add ('[YouTubeVideo]');
+    sl.add ('Id=' + this.id);
+    sl.add ('Url=' + this.url);
+    sl.add ('Dashmpd=' + this.dashmpd);
+    sl.add ('Stereo3d=' + this.stereo3d);
+    fmtListToText ();
+    sl.add ('DecipherPattern=' + this.decipherPattern);
+    sl.add ('Title=' + this.title);
+    sl.add ('Author=' + this.author);
+    sl.add ('Time=' + this.time);
+
+    return sl.text;
+  }
+
+  function formats () {
+    var sl = new Strings ();
 
     var len = this.formats.length;
     for (var i = 0; i < len; ++i) {
@@ -1201,22 +1243,16 @@ YouTubeVideo.prototype.toText = function (opt) {
 
       sl.add ('');
     }
+
+    return sl.text;
   }
 
-  sl.add ('[YouTubeVideo]');
-  sl.add ('Url=' + this.url);
-  sl.add ('Id=' + this.id);
-  sl.add ('Stereo3d=' + this.stereo3d);
-  fmtListToText ();
-  sl.add ('DecipherPattern=' + this.decipherPattern);
-  sl.add ('Title=' + this.title);
-  sl.add ('Author=' + this.author);
-  sl.add ('Time=' + this.time);
-  sl.add ('');
 
-  fmtToText ();
-
-  return sl.text;
+  return [
+    program (),
+    youtubevideo (),
+    formats ()
+  ].join ("\n");
 };
 
 

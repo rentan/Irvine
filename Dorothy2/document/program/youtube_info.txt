@@ -28,6 +28,11 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
 変更履歴
 ========
 
+2014-06-07  version 20140607.0  rentan at rentan.org
+  itag 272, 271 を追加。
+  manifest の URL を出力するようにした。
+  manifest が 403 Forbidden エラーの場合も処理を続行するようにした。
+
 2014-05-22  version 20140522.0  rentan at rentan.org
   MPEG DASH に対応。
   .debug をグローバル変数 debug で初期化するようにした。
