@@ -29,12 +29,28 @@ Util.get_option (key)
 詳細は省略。
 
 
+Dorothy2R 拡張機能
+==================
+
+Dorothy.isDOA
+Dorothy.edit (file)
+Dorothy.getSaveFolder ()
+Dorothy.createSaveFolder (path)
+Dorothy.getItemFilename ();
+
+
+詳細は省略。
+
+
 仕様・制限事項
 ==============
 
 
 変更履歴
 ========
+
+2014-06-08  version 20140608.0  rentan at rentan.org
+  rutil_dorothy2r.dms: Dorothy.getItemFilename() を追加。
 
 2014-05-21  version 20140521.0  rentan at rentan.org
   Util.remove_this: nulUrl/nulProxy の設定を Dorothy2R 本体にまかせる

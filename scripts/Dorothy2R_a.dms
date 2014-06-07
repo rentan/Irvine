@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20140521
+version=20140608
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -229,6 +229,17 @@ Dorothy._funcs.createSaveFolder = "function (path) {
 }";
 
 
+// (Dorothy2R 拡張) item.filename を返す
+Dorothy._funcs.getItemFilename = "function () {
+  // '[[rename]]' が含まれている場合は指定されていないものと見なす
+  // if (item.filename.indexOf ('[[rename]]') >= 0) {
+  //   reutrn '';
+  // }
+
+  return item.filename;
+}";
+
+
 // ファイルを読み込んで返す
 Dorothy._funcs.file_load = "function (path) {
   var fullpath = /^[a-z]:/i.test (path) ? path : Dorothy.path + path;
@@ -361,7 +372,7 @@ Dorothy.init = function (o) {
 
   // Dorothy メソッドを定義(クロージャあり)
   var ev = o.eval;
-  var funcs = [ 'edit', 'getSaveFolder', 'createSaveFolder' ];
+  var funcs = [ 'edit', 'getSaveFolder', 'createSaveFolder', 'getItemFilename' ];
   for (var i = 0; i < funcs.length; ++i) {
     var name = funcs [i];
     ev ('Dorothy.' + name + '=' + Dorothy._funcs [name]);
@@ -448,21 +459,6 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
   var _ = { };
 
 
-  // item.filename の指定が有効かどうかを返す
-  // 有効かつ拡張子がなければ、Dorothy.fileName から拡張子をコピーする。
-  _.useItemFilename = function (filename) {
-    var f = item.filename;
-    if (!f || /\[\[rename\]\]/.test (f)) {
-      return false;
-    }
-
-    if ((new File (f)).extractExt () == '') {
-      item.filename += (new File (filename)).extractExt ();
-    }
-    return true;
-  };
-
-
   // Dorothy.fileName を item.filename に設定する
   // [[cd=...]] [[md=...]] を解釈する。
   _.parseFilenameCommand = function (filename) {
@@ -502,25 +498,42 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
 
 
   // Dorothy.fileName の設定内容に応じて処理
-  _.parseFilename = function (url, filename) {
-    // 通常のダウンロード
-    if (filename != 'remove') {
-      if (!_.useItemFilename (filename)) {
-        _.parseFilenameCommand (filename);
+  _.parseFilename = function () {
+    var filename = Dorothy.fileName;
+    if (filename == '') {
+      // Dorothy.fileName 指定なし
+      return;
+    }
+
+    println ('new fileName>' + filename);
+
+    // Dorothy.fileName == 'remove' による自アイテム削除
+    if (filename == 'remove') {
+      if (Dorothy.nulUrl) {
+        // nulUrl/nulProxy を使って自動削除
+        urlinfo.url = Dorothy.nulUrl;
+        urlinfo.proxy = Dorothy.nulProxy;
+      }
+      else {
+        // Dorothy2B.dms に削除させる
+        _.saveRenameKey (Dorothy.fileNameKey, filename);
       }
       return;
     }
 
-    // Dorothy.fileName == 'remove' による自アイテム削除
-    if (Dorothy.nulUrl) {
-      // nulUrl/nulProxy を使って自動削除
-      urlinfo.url = Dorothy.nulUrl;
-      urlinfo.proxy = Dorothy.nulProxy;
+    // item.filename が指定されていればそちらを優先する
+    var f = Dorothy.getItemFilename ();
+    if (f) {
+      var ext = (new File (filename)).extractExt ();
+      if ((new File (f)).extractExt () == '' && ext) {
+        // 拡張子がなければ、Dorothy.fileName から拡張子をコピーする。
+        item.filename += ext;
+      }
       return;
     }
 
-    // Dorothy2B.dms に削除させる
-    _.saveRenameKey (url, filename);
+    // Dorothy.fileName のファイル名コマンドを実行、item.filename に設定
+    _.parseFilenameCommand (filename);
   };
 
 
@@ -628,11 +641,8 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
     println ('new url>' + urlinfo.url);
   }
 
-
-  if (Dorothy.fileName != '') {
-    println ('new fileName>' + Dorothy.fileName);
-    _.parseFilename (Dorothy.fileNameKey, Dorothy.fileName);
-  }
+  // 保存ファイル名の処理
+  _.parseFilename ();
 
 
   // urlinfo と headers を置換する

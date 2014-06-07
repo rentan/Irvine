@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=NameBuilder
-//version=20140523.0
+//version=20140608.0
 //hint=new NameBuilder ()
 //match=
 //author=rentan
@@ -360,8 +360,8 @@ NameBuilder.prototype.setFilename = function (fmt, ext) {
 
   // item.filename ‚ªİ’èÏ‚İ‚Å [[rename]] ‚ğŠÜ‚Ü‚È‚¢‚È‚çã‘‚«‚µ‚È‚¢
   // ‚½‚¾‚µŠg’£q‚ª‚È‚¯‚ê‚Î’Ç‰Á‚·‚é
-  var f = item.filename;
-  if (f && f.indexOf ('[[rename]]') == -1) {
+  var f = Dorothy.getItemFilename ();
+  if (f) {
     var ext = this._extractExt (ext);
     if ((new File (f)).extractExt () == '' && ext) {
       setNewFilename (f + ext);

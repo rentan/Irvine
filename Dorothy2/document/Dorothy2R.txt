@@ -85,6 +85,16 @@ Dorothy.createSaveFolder (path)
 
   保存フォルダ内にフォルダを作成する。
 
+Dorothy.getItemFilename ()
+  戻り値 ... string: item.filename の値
+
+  item.filename に設定されている保存ファイル名を返す。
+
+  値が指定されている場合でも、無視する設定値の場合は空文字列を返す。
+  該当するものとしては [[rename]] があるが、現在は無効化されており
+  単に item.filename をそのまま返すだけの関数となっている。
+
+
 Dorothy.search.init ()
 Dorothy.search.next ()
 Dorothy.validateProgram ()
@@ -97,6 +107,12 @@ Dorothy.loadDorothyIni ();
 
 変更履歴
 ========
+
+2014-06-08  rentan at rentan.org
+scripts\Dorothy2R_a.dms  version 20140608
+  Dorothy.getItemFilename(): 新規メソッド。
+
+  Dorothy.fileName の設定まわりを整理。
 
 2014-05-21  rentan at rentan.org
 

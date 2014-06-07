@@ -1,0 +1,92 @@
+//Dorothy2
+//caption=Dorothy2R 互換拡張
+//version=20140608.0
+//hint=part of rutil.dms
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+
+// (Dorothy2R 拡張) DOA からの実行かどうか
+Dorothy.isDOA = (typeof frmDOA == 'object' && nameOf (frmDOA) == 'VCLForm');
+
+
+// (Dorothy2R 拡張) ファイルをテキストエディタで開く
+// 簡易版
+Dorothy.edit = function (file) {
+  return Win32.shellExecute ('open', '"notepad.exe"', '"' + file + '"');
+};
+
+
+// (Dorothy2R 拡張) 保存フォルダ名を取得する
+Dorothy.getSaveFolder = function () {
+  var ip = item.folder;
+  if (/^[a-z]:/i.test (ip)) {
+    // アイテム設定が絶対パス
+    return (new Directory (ip)).path;
+  }
+
+  var fp = folderdata.folder;
+  if (/^[a-z]:/i.test (fp)) {
+    // フォルダ設定が絶対パス
+    return (new Directory ((new Directory (fp)).path + ip)).path;
+  }
+
+  var ini = new Ini ((new irvinePath ()).queue + 'queue.ini');
+  var qp = ini.read ('queue', 'folder', '');
+  return (new Directory (new Directory (qp + fp)).path + ip).path;
+};
+
+
+// (Dorothy2R 拡張) 保存フォルダ内にフォルダを作成する
+Dorothy.createSaveFolder = function (path) {
+  if (!/^[a-z]:/i.test (path)) {
+    // 相対パス
+    path = Dorothy.getSaveFolder () + path;
+  }
+
+  var d = new Directory (path);
+  if (!d.exists()) {
+    println ('new directory>' + d.path);
+    d.make ();
+  }
+
+  return d.path;
+};
+
+
+// (Dorothy2R 拡張) item.filename を返す
+Dorothy.getItemFilename = function () {
+  // '[[rename]]' が含まれている場合は指定されていないものと見なす
+  // if (item.filename.indexOf ('[[rename]]') >= 0) {
+  //   reutrn '';
+  // }
+
+  return item.filename;
+};
+
+
+}) ()
+
+
+// EOF
