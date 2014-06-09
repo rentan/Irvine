@@ -87,6 +87,16 @@ http://www.pixiv.net/novel/show.php?id=\d+
 変更履歴
 ========
 
+2014-06-08  version 20140608.0  rentan at rentan.org
+  漫画の画像をダウンロードする際にリファラが正しくない不具合を修正。
+  item.filename が指定されている時も NameBuilder#setFilename() を使う
+  ようにした。
+
+  ファイル名変数を変更。今までのものも残してあります。
+    %MANGA_P%  →  %P%
+    %MANGA_PZ%  →  %PZ%
+    %MANGA_PAGES%  →  %PAGES%
+
 2014-05-21  version 20140521.0  rentan at rentan.org
   NameBuilder#buildFilename(), setFilename() を使うようにした。
 
