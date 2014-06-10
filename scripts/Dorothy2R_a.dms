@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20140608
+version=20140611
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -511,6 +511,7 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
     if (filename == 'remove') {
       if (Dorothy.nulUrl) {
         // nulUrl/nulProxy を使って自動削除
+        headers.Host = (new URL (Dorothy.nulUrl)).host;
         urlinfo.url = Dorothy.nulUrl;
         urlinfo.proxy = Dorothy.nulProxy;
       }
