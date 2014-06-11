@@ -96,6 +96,10 @@ http://ws1.y-bbs.net/
 変更履歴
 ========
 
+2014-06-11  version 20140611.0  rentan at rentan.org
+  rutil で User-Agent のチェックを強化したのに伴い、linkbucks 系の
+  User-Agent 差し替え機能を削除。
+
 2014-05-21  version 20140521.0  rentan at rentan.org
   linkbucks 系で User-Agent が Mozilla/4.* の場合は Mozilla/5.0
   の User-Agent に差し替えるようにした(403 Forbidden 対策)。

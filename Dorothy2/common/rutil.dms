@@ -81,9 +81,9 @@ DorothyVersionValidator.prototype.validateDorothy2aVersion = function () {
   }
 
   // フォルダ設定 → HTTP(2) → User-Agent のチェック
-  if (folderdata.Agent == 'Irvine') {
+  if (/^Mozilla\/[0-4]\.\d*|MSIE\s+[0-8]\.\d*|Irvine/.test (folderdata.Agent)) {
     return urlinfo.url + "\n\n" +
-           "User-Agent が Irvine になっています。\n" +
+           "User-Agent に " + RegExp.$0 + " が含まれています。\n" +
            "適切な User-Agent に変更して下さい。";
   }
 
@@ -108,7 +108,7 @@ DorothyVersionValidator.prototype.validate = function () {
   }
 
   if (s) {
-    println (s);
+    println (s.replace (/\n(\n)+/g, "\n"));
     alert (s);
     exit ();
   }

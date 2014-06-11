@@ -2,6 +2,7 @@ common\rutil.dms
 
 
 各種ユーティリティ関数用のオブジェクトです。
+DOA からは使用できません。
 
 
 使用方法
@@ -10,10 +11,12 @@ common\rutil.dms
 静的なオブジェクトとして定義されているため、直接 Util オブジェクトの
 プロパティやメソッドを参照して下さい。
 
-読み込み時に Dorothy2 本体のバージョン検査が行われます。
-DOA からは使用できません。
+読み込み時に
+・Dorothy2 本体のバージョン検査
+・User-Agent の検査
+が行われます。
 
-Dorothy オブジェクトが(勝手に)拡張されます。
+Dorothy2 から呼び出された場合、Dorothy オブジェクトが(勝手に)拡張されます。
 
 
 Util オブジェクトのメソッド
@@ -36,7 +39,7 @@ Dorothy.isDOA
 Dorothy.edit (file)
 Dorothy.getSaveFolder ()
 Dorothy.createSaveFolder (path)
-Dorothy.getItemFilename ();
+Dorothy.getItemFilename ()
 
 
 詳細は省略。
@@ -45,9 +48,20 @@ Dorothy.getItemFilename ();
 仕様・制限事項
 ==============
 
+・使用不可 User-Agent
+  Irvine
+  Mozilla/4.* 以下
+  MSIE 8.* 以下
+
+  これらの User-Agent でなければダウンロード出来ないサイトは
+  スクリプト内で headers ['User-Agent'] を書き換えて下さい。
+
 
 変更履歴
 ========
+
+2014-06-11  version 20140611.0  rentan at rentan.org
+  使用不可 User-Agent に Mozilla/4.* 以下、MSIE 8.* 以下を追加。
 
 2014-06-08  version 20140608.0  rentan at rentan.org
   rutil_dorothy2r.dms: Dorothy.getItemFilename() を追加。

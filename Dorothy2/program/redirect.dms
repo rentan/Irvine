@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=URL転送サービス
-//version=20140521.0
+//version=20140611.0
 //hint=
 //match=^https?://((bit\.ly|ilix\.in|ime\.nu|jump\.2ch\.net|lix\.in|pinktower\.com|t\.co|wk\.tk)/.|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|baberepublic\.com|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|placepictures\.com|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|youfap\.me|yyv\.co|zff\.co|zxxo\.net)([/?#].*)?$)
 //author=rentan
@@ -497,11 +497,6 @@ UrlRedirector.prototype.linkbucks = function (u, path) {
     }
 
     var http = this.http;
-    if (/^Mozilla\/4\./.test (http.getRequestHeader ('User-Agent'))) {
-      // Mozilla/4.0 Win32 で 403 Forbidden になる対策
-      var ua = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';
-      http.setRequestHeader ('User-Agent', ua);
-    }
     if (http.get (u.url)) {
       return scan (http);
     }
