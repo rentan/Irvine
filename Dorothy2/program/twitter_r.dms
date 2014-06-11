@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20140611.0
+//version=20140612.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -315,6 +315,13 @@ Twitter.prototype.getMediaImage = function (url) {
 
     var lastId = this._analyzeMediaGridJson (http, base);
     if (!lastId) {
+      if (/"max_id"\s*:\s*"-1"/.test (http.data)) {
+        // {"max_id":"-1","has_more_items":true,"items_html":""}
+        // が返ってくることがある(ブラウザで閲覧するとスピナーが回り続ける)
+        this._p ('"max_id":"-1" が検出されました。古いツイートが取得できません。');
+        break;
+      }
+
       return this._unknown ('data-item-id が見つかりません。');
     }
 

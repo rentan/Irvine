@@ -31,6 +31,13 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2014-06-12  version 20140612.0  rentan at rentan.org
+  /media 指定時に
+    {"max_id":"-1","has_more_items":true,"items_html":""}
+  という JSON が返ってきたら正常終了とするようにした。
+  (それより古いツイートは取得していません)
+    thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/386
+
 2014-06-11  version 20140611.0  rentan at rentan.org
   /media 指定時に最後のブロック内のツイートを無視する不具合を修正。
     thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/377
