@@ -31,6 +31,11 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2014-06-11  version 20140611.0  rentan at rentan.org
+  /media 指定時に画像/動画のツイート数が少ないとダウンロード対象が
+  見つからないエラーになる不具合を修正。
+    thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/377
+
 2014-05-25  version 20140525.0  rentan at rentan.org
   /media 指定時にエラーが発生しても正常終了してしまう不具合を修正。
   従来は :large 画像をダウンロードしていたが、より高解像度の :orig

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20140525.0
+//version=20140611.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -65,6 +65,9 @@ void function Twitter () {
 
 Twitter.prototype.comment = '';
 Twitter.prototype.http = null;
+
+Twitter.prototype.debug = false;
+
 
 // media Ç©Ç«Ç§Ç©
 Twitter.prototype.media = false;
@@ -306,12 +309,8 @@ Twitter.prototype.getMediaImage = function (url) {
     if (!http.getXhr (json + maxId)) {
       return http._httpError ();
     }
-
-    if (!/"has_more_items"\s*:\s*(true|false)/.test (http.data)) {
-      return this._unknown ('has_more_items Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÅB');
-    }
-    if (RegExp.$1 == 'false') {
-      break;
+    if (this.debug) {
+      http.capture ('media_timeline' + maxId.replace (/\?max_id=/, '_') + '_json.txt');
     }
 
     var lastId = this._analyzeMediaGridJson (http, base);
@@ -321,6 +320,13 @@ Twitter.prototype.getMediaImage = function (url) {
 
     // 2âÒñ⁄à»ç~ÇÕ URL Ç… ?max_id=Å` ÇÇ¬ÇØÇÈ
     maxId = '?max_id=' + lastId;
+
+    if (!/"has_more_items"\s*:\s*(true|false)/.test (http.data)) {
+      return this._unknown ('has_more_items Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÅB');
+    }
+    if (RegExp.$1 == 'false') {
+      break;
+    }
   }
 
   if (!this.urls.length) {
