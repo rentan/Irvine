@@ -1,0 +1,82 @@
+//Dorothy2
+//caption=Util spec
+//version=20140605.0
+//hint=http://yasmine.dorothy.test/common/spec/rutil_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//Åıxyzzyï∂éöâªÇØâÒî
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('rutil');
+
+
+describe ('Util.get_option()', function () {
+  var backupItemComment = item.Comment;
+  var backupFolderdataPost = folderdata.Post;
+
+  beforeEach (function () {
+    // ñ≥óùÇ‚ÇËñ¢èâä˙âªèÛë‘Ç…ñﬂÇ∑
+    Util._options = null;
+  });
+
+  afterEach (function () {
+    item.Comment = backupItemComment;
+    folderdata.Post = backupFolderdataPost;
+  });
+
+  it ('no option string', function () {
+    expect (typeof Util.get_option).toBe ('function');
+
+    item.Comment = '';
+    folderdata.Post = '';
+
+    expect (Util.get_option ('*=NoneExistOptionName=*')).toBeNull ();
+  });
+
+  it ('get option', function () {
+    item.Comment = 'foo=123';
+    folderdata.Post = 'foo=abc;bar=xyz';
+
+    expect (Util.get_option ('*=NoneExistOptionName=*')).toBeNull ();
+    expect (Util.get_option ('foo')).toBe ('123');
+    expect (Util.get_option ('bar')).toBe ('xyz');
+  });
+
+  it ('value is null string', function () {
+    item.Comment = '';
+    folderdata.Post = 'asdf=';
+
+    expect (Util.get_option ('asdf')).toBe ('');
+  });
+
+  it ('name is hasKey', function () {
+    item.Comment = 'hasKey=3.14';
+    folderdata.Post = '=';
+
+    expect (Util.get_option ('hasKey')).toBe ('3.14');
+  });
+});
+
+
+// EOF

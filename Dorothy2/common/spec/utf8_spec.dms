@@ -1,0 +1,213 @@
+//Dorothy2
+//caption=Utf8 spec
+//version=20140610.0
+//hint=http://yasmine.dorothy.test/common/spec/utf8_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+// テスト用URL  http://www.pixiv.net/member_illust.php?mode=medium
+// GB2312
+//  &illust_id=33224080
+//  &illust_id=37735590
+// タイトルに Unicode 結合文字
+//  &illust_id=33663511
+//  &illust_id=28109618
+// 結合できない文字 + U+3099
+//  &illust_id=27534825
+// 結合できない文字 + U+309A
+//  &illust_id=18696478
+// 結合文字ではない濁点
+//  &illust_id=37931252
+
+
+common_load ('utf8', 'spec\testcasetext');
+
+
+describe ('.clone()', function () {
+  it ('returns new Utf8 object', function () {
+    var u = new Utf8 ();
+    var c = u.clone ();
+
+    expect (c).not.toBe (u);
+    expect (nameOf (c)).toBe ('Utf8');
+  });
+
+  it ('returns same text object', function () {
+    var u = new Utf8 ('clone test');
+    expect (u.clone ().text).toBe (u.text);
+  });
+});
+
+
+describe ('.toUTF8()', function () {
+  it ('returns string', function () {
+    var s = 'abcdefg';
+    var t = (new Utf8 (s)).toUTF8 ();
+
+    expect (t).toEqual (jasmine.any (String));
+    expect (t).toBe (s);
+
+    s = 'aＺ漢字'.toUTF8 ();
+    t = (new Utf8 (s)).toUTF8 ();
+    expect (t).toBe (s);
+  });
+});
+
+
+describe ('.fromUnicode()', function () {
+  function fromCharCode (codes) {
+    var s = '';
+    for (var i = 0; i < codes.length; ++i) {
+      s += String.fromCharCode (codes [i]);
+    }
+    return s;
+  }
+
+  cases ([
+    // [ codepoint, [ utf8 ] ]
+    [ 0x7f, [ 0x7f] ],
+    [ 0x80, [ 0xc2, 0x80 ] ],
+
+    // BOM (or ZERO WIDTH NO-BREAK SPACE)
+    [ 0xfeff, [ 0xef, 0xbb, 0xbf ] ]
+  ])
+  .it ('converts Unicode code point to UTF-8 string [ codepoint, utf8 ]', function (codepoint, utf8) {
+    var u8 = (new Utf8 ()).fromUnicode (codepoint);
+    expect (u8).toBe (fromCharCode (utf8));
+  });
+
+  it ('can be called as Utf8.prototype.fromUnicode()', function () {
+    var u8 = Utf8.prototype.fromUnicode (0xa5);
+    expect (u8).toBe (fromCharCode ([ 0xc2, 0xa5 ]));
+  });
+});
+
+
+describe ('.removeTags()', function () {
+  it ('returns new Utf8 object', function () {
+    var u = new Utf8 ('foo');
+    var removed = u.removeTags ();
+
+    expect (removed).not.toBe (u);
+    expect (nameOf (removed)).toBe ('Utf8');
+    expect (removed.text).toBe (u.text);
+  });
+
+  it ('remove HTML tags', function () {
+    var u = new Utf8 ('>a<p>b</p>c<s>d</s>e<');
+    expect (u.removeTags ().text).toBe ('>abcde<');
+  });
+});
+
+
+describe ('.decodeCharRef()', function () {
+  it ('returns new Utf8 object', function () {
+    var u = new Utf8 ('foo');
+    var decoded = u.decodeCharRef ();
+
+    expect (decoded).not.toBe (u);
+    expect (nameOf (decoded)).toBe ('Utf8');
+  });
+
+  var file = yasmine.specDir + 'utf8.decodeCharRef.txt';
+  var params = [
+    { key: 'from', encoding: 'UTF-8' },
+    { key: 'to',   encoding: 'UTF-8', quote: true }
+  ];
+  var testcase = new TestCaseText ();
+  testcase.loadFromFile (file, params);
+
+  cases (testcase.cases)
+  .it ('decode character references [ fromLine, from, toLine, to ]',
+                            function (fromLine, from, toLine, to) {
+    var u = new Utf8 (from);
+    var decoded = new String (u.decodeCharRef ());
+    decoded.toString = to.toString;
+
+    expect (decoded).toBe (to);
+  });
+});
+
+
+describe ('.toSJIS()', function () {
+  it ('returns string value', function () {
+    var u = new Utf8 ('foo');
+    u = sjised = u.toSJIS ();
+
+    expect (typeof sjised).toBe ('string');
+  });
+
+  var file = yasmine.specDir + 'utf8.toSJIS.txt';
+  var params = [
+    { key: 'from', encoding: 'Shift_JIS:UTF-8', quote: true },
+    { key: 'to',   encoding: 'Shift_JIS' }
+  ];
+  var testcase = new TestCaseText ();
+  testcase.loadFromFile (file, params);
+
+  cases (testcase.cases)
+  .it ('converts to Shift_JIS [ fromLine, from, toLine, to ]',
+                      function (fromLine, from, toLine, to) {
+
+    // from は String オブジェクトで、.toString() が差し替えられているので
+    // .text で内部 string 値を取り出して渡すこと
+    var u = new Utf8 (from.text);
+
+    expect (u.toSJIS ()).toBe (to);
+  });
+});
+
+
+describe ('.unescape()', function () {
+  it ('returns new Utf8 object', function () {
+    var u = new Utf8 ('foo');
+    var unesced = u.unescape ();
+
+    expect (unesced).not.toBe (u);
+    expect (nameOf (unesced)).toBe ('Utf8');
+  });
+
+  var file = yasmine.specDir + 'utf8.unescape.txt';
+  var params = [
+    { key: 'from', encoding: 'UTF-8' },
+    { key: 'to',   encoding: 'UTF-8', quote: true }
+  ];
+  var testcase = new TestCaseText ();
+  testcase.loadFromFile (file, params);
+
+  cases (testcase.cases)
+  .it ('decodes JavaScript escape sequence [ fromLine, from, toLine, to ]',
+                                   function (fromLine, from, toLine, to) {
+    var u = new Utf8 (from);
+    var unesced = new String (u.unescape ().text);
+    unesced.toString = to.toString;
+
+    expect (unesced).toBe (to);
+  });
+});
+
+
+// EOF

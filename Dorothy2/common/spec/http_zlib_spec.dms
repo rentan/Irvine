@@ -1,0 +1,101 @@
+//Dorothy2
+//caption=Http/Zlib spec
+//version=20140605.0
+//hint=http://yasmine.dorothy.test/common/spec/http_zlib_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//Åıxyzzyï∂éöâªÇØâÒî
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('http');
+
+
+describe ('Zlib', function () {
+  it ('new Zlib()', function () {
+    var z = new Zlib ();
+
+    expect (nameOf (z._dll)).toBe ('DynaCall');
+    expect (z.ZLIB_VERSION).toBe ('1.2.8');
+    expect (z.z_stream.sizeOf ()).toBe (56);
+  });
+
+  it ('.zlibVersion()', function () {
+    var z = new Zlib ();
+
+    expect (z.zlibVersion ()).toBe ('1.2.8');
+  });
+});
+
+
+describe ('inflate', function () {
+  function inflate (s) {
+    var BUFFER_SIZE = 1024;
+
+    var insb = new StringBuffer (s);
+    var outsb = new StringBuffer (BUFFER_SIZE);
+
+    var z = new Zlib ();
+    var r = z.inflateInit2 (15 + 16);  // +16: gzip ÉwÉbÉ_ÇâéﬂÇ∑ÇÈ
+    if (r != z.Z_OK) {
+      throw '' + z.z_stream.msg;
+    }
+
+    z.z_stream.next_in = insb;
+    z.z_stream.avail_in = insb.length;
+
+    var data = '';
+    try {
+      do {
+        z.z_stream.next_out = outsb;
+        z.z_stream.avail_out = outsb.length;
+        r = z.inflate (z.Z_NO_FLUSH);
+
+        if (r != z.Z_OK && r != z.Z_STREAM_END) {
+          throw '' + z.z_stream.msg;
+        }
+
+        data += outsb.substr (0, outsb.length - z.z_stream.avail_out);
+      } while (r == z.Z_OK);
+    }
+    finally {
+      r = z.inflateEnd ();
+    }
+
+    if (r != z.Z_OK) {
+      throw '' + z.z_stream.msg;
+    }
+
+    return data;
+  }
+
+  it ('.inflate()', function () {
+    var gzipped = 'H4sICNnwc1ICAHRlc3QudHh0AAvJyCxWAKJEhYLUPD0Ak9zKOw4AAAA=';
+    gzipped = (new Base64).decode (gzipped);
+
+    expect (inflate (gzipped)).toBe ('This is a pen.');
+  });
+});
+
+
+// EOF

@@ -1,0 +1,137 @@
+//Dorothy2
+//caption=yasmine spec
+//version=20140608.0
+//hint=http://yasmine.dorothy.test/common/spec/yasmine_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//Åıxyzzyï∂éöâªÇØâÒî
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+/*
+describe ('missmatch', function () {
+  it ('causes fail', function () {
+    expect (1).toBe (2);
+    expect (function () { throw; }).not.toThrow ();
+  });
+});
+*/
+
+
+xdescribe ('xdescribe causes pending', function () {
+  it ('it in xdescribe does not called', function () {
+    alert ('it in xdescribe does not called');
+    throw;
+  });
+});
+
+
+describe ('it', function () {
+  it ('without function causes pending');
+});
+
+
+describe ('jasmine.any()', function () {
+  it ('compares object type', function () {
+    expect (1).toEqual (jasmine.any (Number));
+    expect (function () { }).toEqual (jasmine.any (Function));
+
+    expect ('foo').not.toEqual (jasmine.any (Number));
+  });
+});
+
+
+describe ('jasmine.objectContaining()', function () {
+  it ('compares object properties', function () {
+    expect ({ a: 1 }).toEqual (jasmine.objectContaining ({ a: 1 }));
+    expect ({ a: 1, b: 2 }).toEqual (jasmine.objectContaining ({ a: 1, b: 2 }));
+
+    expect ({ }).not.toEqual (jasmine.objectContaining ({ x: 0 }));
+  });
+});
+
+
+describe ('NaN', function () {
+  it ('is falsy', function () {
+    expect (NaN).toBeFalsy ();
+    expect (NaN).not.toBeTruthy ();
+  });
+});
+
+
+describe ('Number', function () {
+  it ('int and double is same type', function () {
+    expect (1).toBe (1.0);
+    expect (parseInt ('1')).toBe (parseFloat ('1'));
+
+    expect (1).not.toBe (2.0);
+    expect (parseInt ('1')).not.toBe (parseFloat ('2'));
+  });
+});
+
+
+describe ('object', function () {
+  it ('equals to other object', function () {
+    expect ({ x: 1 }).toEqual ({ x: 1 });
+    expect ({ x: 1, y: 'foo' }).toEqual ({ x: 1, y: 'foo' });
+
+    expect ({ x: 1 }).not.toEqual ({ x: 9 });
+    expect ({ x: 1, y: 'foo' }).not.toEqual ({ x: 1, y: 'bar' });
+    expect ({ x: 1 }).not.toEqual ({ x: 1, y: 'foo' });
+  });
+});
+
+
+describe ('parameterized test', function () {
+  it ('can execute it before cases', function () {
+    expect ('false').toBeTruthy ();
+  });
+
+  cases ([
+    [ 2, 3, 5 ]
+  ]).it ('cases has .it', function (a, b, c) {
+    expect (a + b).toBe (c);
+  });
+
+  cases ([
+    [ 2, 3, 6 ],
+    [ 4, 5, 20 ]
+  ])
+  .it ('cases.it tests one by one', function (a, b, c) {
+    expect (a * b).toBe (c);
+  });
+
+  cases ([
+    [ 1, 2, 3 ]
+  ])
+  .xit ('cases.xit pends', function (a, b, c) {
+    expect (a - b).toBe (c);
+  });
+
+  it ('can execute it after cases', function () {
+    expect (null).toBeFalsy ();
+  });
+});
+
+
+// EOF

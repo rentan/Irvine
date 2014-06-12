@@ -1,0 +1,76 @@
+//Dorothy2
+//caption=JInput spec
+//version=20140605.0
+//hint=http://yasmine.dorothy.test/common/spec/jinput_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('jinput', 'http');
+
+
+describe ('JInput', function () {
+  it ('new JInput()', function () {
+    var jinput = new JInput ();
+
+    expect (jinput.text).toBeNull ();
+  });
+});
+
+
+describe ('.inputText()', function () {
+  it ('input test', function () {
+    // 画像データをダウンロード
+    var imgUrl = 'https://www.google.com/images/logos/google_logo_41.png';
+    var http = new Http ();
+    expect (http.get (imgUrl)).toBe (true);
+
+    var q = 'テストOk';
+
+    var hta_opt = [
+      {
+        title: Dorothy.matchFile,
+        p: 'JInput ユニットテスト'
+      },
+      {
+        height: 220,
+        image: http.data
+      },
+      {
+        p: [ 'JInput test', '「' + q + '」と入力して下さい。' ]
+      }
+    ];
+
+    var jinput = new JInput ();
+    var t = jinput.inputText (hta_opt).fromUTF8toSJIS ();
+    println ('--->' + t);
+
+    // テスト実施者が入力ミスしてもテストに失敗する
+    expect (t).toBe (q);
+  });
+});
+
+
+// EOF

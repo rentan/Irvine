@@ -1,0 +1,58 @@
+yasmine.dms
+
+
+スクリプト開発者用の支援ツールです。
+Dorothy2 の common ファイルのユニットテストを実行します。
+
+JavaScript 用テストフレームワークの Jasmine に似せてありますが、
+多くの機能が未実装、非互換です。手抜きな部分も多々あります。
+
+
+使用方法
+========
+
+1. spec ファイルを作成する。
+   例: Dorothy2\common\spec\foobar_spec.dms
+
+2. common ファイルを作成する。
+   例: Dorothy2\common\foobar.dms
+
+3. Irvine でテスト用の URL をダウンロード実行する。
+   例: http://yasmine.dorothy.test/common/spec/foobar_spec.dms
+
+4. 失敗するとログファイルと spec ファイルがテキストエディタで
+   開かれるので、修正して実行を繰り返す。
+
+
+対応 URL
+========
+
+http://yasmine.dorothy.test/common/spec/*.dms
+  Dorothy2\common\spec\*.dms ファイルを読み込んでテストを実行する。
+
+http://yasmine.dorothy.test/arguments
+  OnHttpRequest に渡された引数をテキストファイル arguments.txt
+  に保存する。
+
+
+仕様・制限事項
+==============
+
+・DMonkey の仕様上、Jasmine と同じ記述が出来ないパターンがあります。
+
+  NG ... expect ({ }.foo).toBeUndefined ();
+  OK ... expect ({ }.hasKey ('foo')).toBe (false);
+
+
+変更履歴
+========
+
+2014-06-13  rentan at rentan.org
+Dorothy2\program\yasmine.dms  version 20140613.0
+Dorothy2\common\yasmine.dms  version 20140613.0
+Dorothy2\common\spec\testcasetext.dms  version 20140613.0
+ほか spec ファイル、テストケースのテキスト
+  新規作成。
+
+
+[EOF]

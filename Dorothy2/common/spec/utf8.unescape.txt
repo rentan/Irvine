@@ -1,0 +1,48 @@
+# utf8.unescape.txt
+# coding: UTF-8
+
+# 参考
+# http://msdn.microsoft.com/ja-jp/library/ie/2yfce773(v=vs.94).aspx
+# https://developer.mozilla.org/ja/docs/Web/JavaScript/Guide/Values,_variables,_and_literals#String_literals
+# https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/String/quote
+
+
+# エスケープシーケンスなし
+from:abc012
+  to:abc012
+
+# 制御記号
+from:a\bb\tc\nd\ve\ff\rg
+  to:a U+0008 b U+0009 c U+000a d U+000b e U+000c f U+000d g
+
+# 記号
+from:あ\"い\'う\\え
+  to:あ"い'う\え
+
+# \xXX 16進数
+from:\x20\xe3\x91\x96\x5A
+  to:' ' U+3456 Z
+
+# \XXX 8進数
+from:\251
+  to:U+00a9
+
+# \uXXXX Unicode コードポイント
+from:\u0061\u3042
+  to:aあ
+
+# サロゲートペア つちよし
+from:\uD842\uDFB7
+  to:U+20bb7
+
+# 不正なシーケンス
+from:a\1\uZ\
+  to:a1uZ
+
+
+# いろいろ
+from:\u30c6\u30b9\u30c8 < test > & &amp; &quot; " ' \\ \\\\ \u00a5 \\" \\' !#$%()-=^~|@`[{;+:*]},.\/?_
+  to:U+30c6 U+30b9 U+30c8 ' < test > & &amp; &quot; " ' "' \ \\ " U+00a5 ' \" \' "' !#$%()-=^~|@`[{;+:*]},./?_"
+
+
+# EOF

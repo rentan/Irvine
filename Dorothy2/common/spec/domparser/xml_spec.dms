@@ -1,0 +1,169 @@
+//Dorothy2
+//caption=DOMParser/XML spec
+//version=20140613.0
+//hint=http://yasmine.dorothy.test/common/spec/domparser/xml_spec.dms
+//match=
+//author=rentan
+//path=common\spec\domparser
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('domparser\xml');
+
+
+describe ('DOMXml', function () {
+  it ('new DOMXml', function () {
+    var src = 'invalid-xml';
+    var err = 'XML: ルートに空白以外のテキストノードがある at 0';
+
+    expect (function () { new DOMXml (src); }).toThrow (err);
+  });
+});
+
+
+describe ('xml parse 1', function () {
+  it ('single element', function () {
+    var src = '<foo/>';
+    var domxml = new DOMXml (src);
+
+    expect (domxml.hasKey ('document')).toBe (true);
+
+    var document = domxml.document;
+    expect (nameOf (document)).toBe ('Document');
+    expect (document.childNodes.length).toBe (1);
+
+    var e = document.firstChild;
+    expect (e).toBe (document.childNodes [0]);
+
+    expect (e.tagName).toBe ('foo');
+    expect (e.nodeName).toBe ('foo');
+
+    document.destroy ();
+    document = null;
+  });
+});
+
+
+describe ('xml parse 2', function () {
+  it ('with processing instruction', function () {
+    var src = '<?xml version="1.0" ?><bar />';
+
+    var document = new DOMXml (src).document;
+    expect (document.childNodes.length).toBe (2);
+
+    var e = document.firstChild;
+    expect (e).toBe (document.childNodes [0]);
+    expect (e.parentNode).toBe (document);
+
+    expect (e.nodeType).toBe (Node.PROCESSING_INSTRUCTION_NODE);
+    expect (e.nodeName).toBe ('xml');
+
+    expect (e.target).toBe ('xml');
+    expect (e.data).toBe ('version="1.0" ');
+
+    e = document.lastChild;
+    expect (e).toBe (document.childNodes [1]);
+    expect (e.parentNode).toBe (document);
+    expect (e.tagName).toBe ('bar');
+    expect (e.nodeName).toBe ('bar');
+
+    document.destroy ();
+    document = null;
+  });
+});
+
+
+describe ('xml parse 3', function () {
+  it ('nested tags', function () {
+    var src = "<foo a='123'><bar abc=\"a&amp;b&lt;c&gt;d&quot;e&apos;f\" neko='cat' /><baz x=''/></foo>";
+    var document = new DOMXml (src).document;
+
+    var elements = document.getElementsByTagName ('foo');
+    expect (elements.hasKey ('length')).toBe (true);
+    expect (elements.length).toBe (1);
+
+    var e = elements [0];
+    expect (nameOf (e)).toBe ('Element');
+    expect (e.tagName).toBe ('foo');
+
+    expect (e.attributes.length).toBe (1);
+    expect (e.attributes [0]).toBe (e.attributes.a);
+
+    expect (e.getAttribute ('ng')).toBeNull ();
+    expect (e.getAttribute ('a')).toBe ('123');
+
+    elements = document.getElementsByTagName ('bar');
+    e = elements [0];
+    expect (nameOf (e)).toBe ('Element');
+    expect (e.tagName).toBe ('bar');
+
+    expect (e.attributes.length).toBe (2);
+    expect (e.attributes [0]).toBe (e.attributes.abc);
+    expect (e.attributes [1]).toBe (e.attributes.neko);
+
+    expect (e.getAttribute ('abc')).toBe ("a&b<c>d\"e'f");
+    expect (e.getAttribute ('neko')).toBe ('cat');
+
+    elements = document.getElementsByTagName ('baz');
+    e = elements [0];
+    expect (nameOf (e)).toBe ('Element');
+    expect (e.tagName).toBe ('baz');
+
+    expect (e.attributes.length).toBe (1);
+    expect (e.attributes [0]).toBe (e.attributes.x);
+
+    expect (e.getAttribute ('x')).toBe ('');
+
+    document.destroy ();
+    document = null;
+  });
+});
+
+
+describe ('xml parse 4', function () {
+  it ('sm22391404', function () {
+    var src = file_load (yasmine.specDir + 'xml_sm22391404.xml');
+
+    var document = new DOMXml (src).document;
+
+    var elements = document.getElementsByTagName ('title');
+    expect (elements.length).toBe (1);
+
+    var title = elements [0];
+    expect (title.childNodes.length).toBe (1);
+
+    var yen = String.fromCharCode (0xc2, 0xa5);
+    var tt = "テスト < test > & &amp; &quot; \" ' \\ \\\\ ".toUTF8 ();
+    tt += yen + " \\\" \\'  !#$%()-=^~|@`[{;+:*]},./?_";
+
+    var t = title.firstChild;
+    expect (t.nodeName).toBe ('#text');
+    expect (t.nodeValue).toBe (tt);
+
+    document.destroy ();
+    document = null;
+  });
+});
+
+
+// EOF

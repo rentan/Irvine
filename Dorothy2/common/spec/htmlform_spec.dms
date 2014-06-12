@@ -1,0 +1,521 @@
+//Dorothy2
+//caption=HtmlForm spec
+//version=20140605.0
+//hint=http://yasmine.dorothy.test/common/spec/htmlform_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('htmlform', 'http');
+
+
+var html = {
+  src1:
+"<select class='cla' id='id_' name='nam' size='2' disabled>
+  <option class='cla1' id='id1' name='nam1' value='val1'>opt-text-1</option>
+  <option value='val2' disabled='disabled'>opt-text-2</option>
+</select>
+",
+
+  src2:
+"<form accept-charset= 'cha'
+ action ='act'
+ class = 'cla'
+ enctype=enc
+ id=\"id_\"
+ METHOD=' POST '
+ name='nam'
+ Target='tar'
+ dummy='dum'>
+<input id='id_2' name='nam2' type='text' value='val2'>
+<input type='submit' name='sub' value='ok' class='large' style='color:black'>
+<input type='checkbox' name='cb1' value='1'>
+<input type='checkbox' name='cb2' value='2' checked='checked'>
+</form>
+",
+
+  src3:
+"<form>
+<input value='val1' id='id_1' name='nam1'>
+<input value='val2' class='cla1' type='text'>
+<input value='val3' class='cla1' name='nam1'>
+<input value='val4' TYPE='TEXT' name=nam4>
+</form>
+",
+
+  src4:
+"<form method='get' action='http://example.com/'>
+<input type='text' name='url' value='http://example.jp/index.html?q=1'>
+<input type='checkbox' name='cb1' value='ccc' checked>
+<input type='submit' name='sub1' value='val1'>
+<input type='submit' name='sub2' value='val2'>
+</form>
+"
+
+};
+
+
+//-------------------------------- HtmlFormSelect --------------------------
+
+
+describe ('HtmlFormSelect', function () {
+  var sel;
+  beforeEach (function () {
+    sel = new HtmlFormSelect (html.src1);
+  });
+
+  it ('new HtmlFromSelect()', function () {
+    expect (sel.tagName).toBe ('select');
+    expect (sel.disabled).toBe (true);
+    expect (sel.multiple).toBe (false);
+    expect (sel.class).toBe ('cla');
+    expect (sel.id).toBe ('id_');
+    expect (sel.name).toBe ('nam');
+    expect (sel.size).toBe ('2');
+
+    expect (sel.options.length).toBe (2);
+
+    var opt = sel.options [0];
+    expect (opt.tagName).toBe ('option');
+    expect (opt.class).toBe ('cla1');
+    expect (opt.id).toBe ('id1');
+    expect (opt.name).toBe ('nam1');
+    expect (opt.value).toBe ('val1');
+    expect (opt.selected).toBe (true);
+
+    opt = sel.options [1];
+    expect (opt.disabled).toBe (true);
+    expect (opt.value).toBe ('val2');
+    expect (opt.selected).toBe (false);
+  });
+
+  it ('.select()', function () {
+    var opt0 = sel.options [0];
+    expect (sel.select (opt0, true)).toBe (true);
+    expect (opt0.selected).toBe (true);
+
+    var opt1 = sel.options [1];
+    expect (sel.select (opt1, true)).toBe (true);
+    expect (opt1.selected).toBe (true);
+    expect (opt0.selected).toBe (false);
+  });
+
+  it ('.select() multiple', function () {
+    sel.multiple = true;
+
+    var opt0 = sel.options [0];
+    var opt1 = sel.options [1];
+
+    expect (sel.select (opt0, true)).toBe (true);
+    expect (sel.select (opt1, true)).toBe (true);
+    expect (opt0.selected).toBe (true);
+    expect (opt1.selected).toBe (true);
+
+    expect (sel.select (opt1, false)).toBe (true);
+    expect (opt0.selected).toBe (true);
+    expect (opt1.selected).toBe (false);
+  });
+});
+
+
+//-------------------------------- HtmlForm --------------------------------
+
+
+describe ('HtmlForm', function () {
+  it ('new HtmlForm()', function () {
+    var url = 'http://example.com/';
+    var form = new HtmlForm (html.src2, url);
+
+    expect (form.url).toBe (url);
+    expect (form.outerHTML).toBe (html.src2);
+
+    expect (form.elements.length).toBe (4);
+
+    var atr = {
+      'accept-charset': 'cha',
+      action: 'act',
+      'class': 'cla',
+      enctype: 'enc',
+      id: 'id_',
+      method: ' POST ',
+      name: 'nam',
+      target: 'tar'
+    };
+    expect (form).toEqual (jasmine.objectContaining (atr));
+
+    expect (form.hasKey ('dummy')).toBe (false);
+    expect (form).not.toEqual (jasmine.objectContaining ({ dummy: 'dum' }));
+
+    atr = {
+      id: 'id_2',
+      name: 'nam2',
+      type: 'text',
+      value: 'val2',
+      tagName: 'input'
+    };
+    expect (form.elements [0]).toEqual (jasmine.objectContaining (atr));
+
+    atr = {
+      type: 'submit',
+      name: 'sub',
+      value: 'ok',
+      'class': 'large',
+      style: 'color:black',
+      tagName: 'input'
+    };
+    expect (form.elements [1]).toEqual (jasmine.objectContaining (atr));
+
+    expect (form.elements [2].checked).toBe (false);
+
+    expect (form.elements [3].checked).toBe (true);
+  });
+
+
+  it ('.getElement(s)By*()', function () {
+    var form = new HtmlForm (html.src3);
+
+    expect (form.getElementById ('id_1')).toEqual (jasmine.objectContaining ({ value: 'val1' }));
+
+    expect (form.getElementByClass ('cla1')).toEqual (jasmine.objectContaining ({ value: 'val2' }));
+
+    var elements = form.getElementsByClass ('cla1');
+    expect (elements).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (elements [0]).toEqual (jasmine.objectContaining ({ value: 'val2' }));
+    expect (elements [1]).toEqual (jasmine.objectContaining ({ value: 'val3' }));
+
+    expect (form.getElementByName ('nam1')).toEqual (jasmine.objectContaining ({ value: 'val1' }));
+
+    elements = form.getElementsByName ('nam1');
+    expect (elements).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (elements [0]).toEqual (jasmine.objectContaining ({ value: 'val1' }));
+    expect (elements [1]).toEqual (jasmine.objectContaining ({ value: 'val3' }));
+
+    expect (form.getElementByType ('TEXT')).toEqual (jasmine.objectContaining ({ value: 'val2' }));
+
+    elements = form.getElementsByType ('Text');
+    expect (elements).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (elements [0]).toEqual (jasmine.objectContaining ({ value: 'val2' }));
+    expect (elements [1]).toEqual (jasmine.objectContaining ({ value: 'val4' }));
+
+    expect (form.getElementByValue ('val4')).toEqual (jasmine.objectContaining ({ name: 'nam4' }));
+
+    elements = form.getElementsByValue ('val4');
+    expect (elements).toEqual (jasmine.objectContaining ({ length: 1 }));
+    expect (elements [0]).toEqual (jasmine.objectContaining ({ name: 'nam4' }));
+
+    expect (form.getElementByTagName ('input')).toEqual (jasmine.objectContaining ({ name: 'nam1' }));
+
+    elements = form.getElementsByTagName ('INPUT');
+    expect (elements).toEqual (jasmine.objectContaining ({ length: 4 }));
+    expect (elements [3]).toEqual (jasmine.objectContaining ({ name: 'nam4' }));
+  });
+
+  it ('.removeElement(s)ByName()', function () {
+    var form = new HtmlForm (html.src3);
+
+    expect (form.removeElementByName ('noname')).toBeNull ();
+
+    var nam1 = form.getElementByName ('nam1');
+    expect (form.removeElementByName ('nam1')).toBe (nam1);
+
+    nam1 = form.getElementByValue ('val3');
+    var elements = form.getElementsByName ('nam1');
+    expect (elements).toEqual (jasmine.objectContaining ({ length: 1 }));
+    expect (elements [0]).toBe (nam1);
+  });
+
+  it ('.removeElement(s)ByName() 2', function () {
+    var form = new HtmlForm (html.src3);
+
+    expect (form.removeElementsByName ('noname')).toBeNull ();
+
+    var nam1 = form.getElementsByName ('nam1');
+    var elements = form.removeElementsByName ('nam1');
+    expect (elements.length).toBe (nam1.length);
+    expect (elements [0]).toBe (nam1 [0]);
+    expect (elements [1]).toBe (nam1 [1]);
+
+    expect (form.removeElementByName ('nam1')).toBeNull ();
+  });
+
+  it ('.add()', function () {
+    var form = new HtmlForm ('<form></form>');
+
+    var e = form.add ({ name: 'nam1', value: 'val1' });
+    expect (e).toBe (form.elements [0]);
+
+    var atr = {
+      'class': '',
+      id: '',
+      name: 'nam1',
+      type: '',
+      value: 'val1',
+      tagName: ''
+    };
+    expect (e).toEqual (jasmine.objectContaining (atr));
+  });
+
+  it ('.change()', function () {
+    var src = "
+<form>
+  <input name='nam1' value='val1'>
+  <input name='nam2' value='val2'>
+</form>
+";
+    var form = new HtmlForm (src);
+
+    var e = form.change ('nam2', 'newval');
+    expect (e).toBe (form.elements [1]);
+    expect (e).toEqual (jasmine.objectContaining ({ value: 'newval' }));
+
+    expect (form.elements [0].value).toBe ('val1');
+  });
+
+
+  it ('.submit() get without argument', function () {
+    var form = new HtmlForm (html.src4);
+    var sp = form.submit ();
+
+    var query = 'url=http%3A%2F%2Fexample.jp%2Findex.html%3Fq%3D1&cb1=ccc';
+    var url = 'http://example.com/' + '?' + query;
+
+    expect (sp.method).toBe ('get');
+    expect (sp.url).toBe (url);
+    expect (sp.postdata).toBe ('');
+  });
+
+  it ('.submit() post with argument', function () {
+    var form = new HtmlForm (html.src4.replace (/'get'/, "'POST'"));
+    var sp = form.submit (form.getElementByName ('sub2'));
+
+    var url = 'http://example.com/';
+    var query = 'url=http%3A%2F%2Fexample.jp%2Findex.html%3Fq%3D1&cb1=ccc&sub2=val2';
+
+    expect (sp.method).toBe ('post');
+    expect (sp.url).toBe (url);
+    expect (sp.postdata).toBe (query);
+  });
+
+
+  it ('.submit() <select><option>', function () {
+    var src = "
+<form method='post'>
+<input type='text' name='t1' value='abc'>
+<select name='sel1'>
+  <option value='opt1' selected></option>
+  <option value='opt2'></option>
+</select>
+<select name='sel2' multiple='multiple'>
+  <option value='opt3'></option>
+  <option value='opt4'></option>
+</select>
+<input type='password' name='pass' value='***' disabled>
+</form>
+";
+    var form = new HtmlForm (src);
+
+    // value='opt2' を選択
+    var sel1 = form.getElementByName ('sel1');
+    sel1.select (sel1.options [1], true);
+
+    // 全て選択
+    var sel2 = form.getElementByName ('sel2');
+    for (var i = 0; i < sel2.options.length; ++i) {
+      sel2.select (sel2.options [i], true);
+    }
+
+    var sp = form.submit ();
+    expect (sp.postdata).toBe ('t1=abc&sel1=opt2&sel2=opt3&sel2=opt4');
+  });
+
+
+  it ('<button>', function () {
+    var src = "
+<form>
+  <input type='submit' name='s1'>
+  <button type='submit' name='b1' value='v1'>foobar</button>
+  <button><img src='foo.jpg'></button>
+  <input type='image' name='g1' src='bar.gif'>
+</form>
+";
+    var form = new HtmlForm (src);
+
+    var submits = form.getElementsByType ('submit');
+    expect (submits).toEqual (jasmine.objectContaining ({ length: 2 }));
+
+    var submit = form.getElementByTagName ('button');
+    expect (submit).toBe (submits [1]);
+
+    var p = form.submit ();
+    expect (p.postdata).toBe ('');
+
+    submit = form.getElementByType ('image');
+    expect (submit).not.toBeNull ();
+
+    p = form.submit (submit);
+    expect (p.postdata).toBe ('');
+    expect (p.url).toBe ('?g1.x=0&g1.y=0');
+  });
+
+
+  it ("element's methods", function () {
+    var src = "
+<form>
+  <input type='submit' name='s1' toString='aaa' getProperties='bbb'>
+</form>
+";
+    var form = new HtmlForm (src);
+
+    var submit = form.getElementByType ('submit');
+    expect (submit).not.toBeNull ();
+
+    expect (typeof submit.toString).toBe ('function');
+    expect (typeof submit.getProperties).toBe ('function');
+  });
+
+});
+
+
+//-------------------------------- HtmlForms --------------------------------
+
+
+describe ('HtmlForms', function () {
+
+  it ('new HtmlForms()', function () {
+    var forms = new HtmlForms (html.src2);
+
+    expect (forms.length).toBe (1);
+    expect (forms.hasKey ('0')).toBe (true);
+    expect (nameOf (forms [0])).toBe ('HtmlForm');
+
+    expect (forms.hasKey ('1')).toBe (false);
+  });
+
+  it ('new HtmlForms(Http)', function () {
+    var http = new Http ();
+    http.baseUrl = 'http://example.com/';
+    http.data = html.src2 + "\n" + html.src3 + "\n\n" + html.src4;
+
+    var forms = new HtmlForms (http);
+    expect (forms.length).toBe (3);
+    expect (forms [0].url).toBe (http.baseUrl);
+
+    http.data = html.src2 + '<!--' + html.src3 + '-->' + html.src4;
+    forms = new HtmlForms (http);
+
+    // src3 はコメントアウトされているので、src2 と src4 で2個になる
+    expect (forms.length).toBe (2);
+  });
+
+
+  it ('.getForm(s)By*()', function () {
+    var src = "
+<form id='id_1' action='act1' name='nam1'></form>
+<form id='id_2' class='cla1' method='get' name='nam2'></form>
+<form id='id_3' action='act1' class='cla1' method='post'></form>
+<form id='id_4' method='post' name='nam1'></form>
+";
+    var forms = new HtmlForms (src);
+
+    expect (forms.getFormById ('id_1')).toEqual (jasmine.objectContaining ({ name: 'nam1' }));
+
+    expect (forms.getFormByAction ('act1')).toEqual (jasmine.objectContaining ({ id: 'id_1' }));
+
+    var gotForms = forms.getFormsByAction ('act1');
+    expect (gotForms).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (gotForms [0].id).toBe ('id_1');
+    expect (gotForms [1].id).toBe ('id_3');
+
+    expect (forms.getFormByClass ('cla1')).toEqual (jasmine.objectContaining ({ id: 'id_2' }));
+
+    gotForms = forms.getFormsByClass ('cla1');
+    expect (gotForms).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (gotForms [0].id).toBe ('id_2');
+    expect (gotForms [1].id).toBe ('id_3');
+
+    expect (forms.getFormByMethod ('get')).toEqual (jasmine.objectContaining ({ id: 'id_2' }));
+
+    gotForms = forms.getFormsByMethod ('POST');
+    expect (gotForms).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (gotForms [0].id).toBe ('id_3');
+    expect (gotForms [1].id).toBe ('id_4');
+
+    expect (forms.getFormByName ('nam1')).toEqual (jasmine.objectContaining ({ id: 'id_1' }));
+
+    gotForms = forms.getFormsByName ('nam1');
+    expect (gotForms).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (gotForms [0].id).toBe ('id_1');
+    expect (gotForms [1].id).toBe ('id_4');
+  });
+
+
+  it ('.getForm(s)ByElement*()', function () {
+    var forms = new HtmlForms ('<form></form>' + html.src3);
+    expect (forms).toEqual (jasmine.objectContaining ({ length: 2 }));
+
+    var f1 = forms [1];
+
+    expect (forms.getFormByElementId ('id_1')).toBe (f1);
+    expect (forms.getFormByElementClass ('cla1')).toBe (f1);
+    expect (forms.getFormByElementName ('nam1')).toBe (f1);
+    expect (forms.getFormByElementType ('TEXT')).toBe (f1);
+    expect (forms.getFormByElementValue ('val4')).toBe (f1);
+    expect (forms.getFormByElementTagName ('input')).toBe (f1);
+
+    forms = new HtmlForms (html.src3 + html.src3);
+    expect (forms).toEqual (jasmine.objectContaining ({ length: 2 }));
+    var f0 = forms [0];
+    f1 = forms [1];
+
+    var gotForms = forms.getFormsByElementName ('nam1');
+    expect (gotForms).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (gotForms [0]).toBe (f0);
+    expect (gotForms [1]).toBe (f1);
+
+    var gotForms = forms.getFormsByElementType ('Text');
+    expect (gotForms).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (gotForms [0]).toBe (f0);
+    expect (gotForms [1]).toBe (f1);
+
+    var gotForms = forms.getFormsByElementClass ('cla1');
+    expect (gotForms).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (gotForms [0]).toBe (f0);
+    expect (gotForms [1]).toBe (f1);
+
+    var gotForms = forms.getFormsByElementValue ('val4');
+    expect (gotForms).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (gotForms [0]).toBe (f0);
+    expect (gotForms [1]).toBe (f1);
+
+    var gotForms = forms.getFormsByElementTagName ('Input');
+    expect (gotForms).toEqual (jasmine.objectContaining ({ length: 2 }));
+    expect (gotForms [0]).toBe (f0);
+    expect (gotForms [1]).toBe (f1);
+  });
+
+});
+
+
+// EOF

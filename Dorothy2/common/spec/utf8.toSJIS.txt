@@ -1,0 +1,216 @@
+# utf8.toSJIS.txt
+# coding: Shift_JIS
+
+
+# バックスラッシュ
+from:U+005C
+  to:＼
+
+# 円マーク
+from:U+00A5
+  to:\
+# FNUtil.normalize() で ￥ になる
+
+# ver4.0 以下で '＼ \' になっていた不具合の修正確認
+from:'\ \'
+  to:＼ ＼
+
+# &nbsp;
+from:< U+00a0 >
+  to:< >
+
+# その他記号
+from:U+0086 U+0087 U+0088 U+00A2 U+00A3 U+00a6
+  to:†‡^￠￡￤
+
+from:U+0089 U+2030
+  to:‰‰
+
+from:U+00a9 U+00ae
+  to:(C)(R)
+
+from:U+00aa U+00b2 U+00b3 U+00b9 U+00ba
+  to:a231o
+
+from:U+00ab U+00ac U+00bb
+  to:≪￢≫
+
+# マイクロ
+from:U+00b5
+  to:μ
+
+from:U+00bc , U+00bd , U+00be
+  to:1/4,1/2,3/4
+
+from:U+215b , U+215c , U+215d , U+215e
+  to:1/8,3/8,5/8,7/8
+
+from:U+2206 U+220f U+2212 U+2217 U+223C U+2245 U+22C5
+  to:ΔΠ-*～≡・
+
+
+# U+10000 以上の文字(UTF-16 でサロゲートペアになる文字)
+
+# 叱の右が「七」
+from:U+20B9F
+  to:?
+
+# つちよし(吉の上が「土」) 置換テーブル使用
+from:U+20BB7
+  to:吉
+
+
+# 結合文字
+from:ミニテ U+3099 ィスフ U+309A レイホ U+309A ートアタ U+3099 フ U+309A ター
+  to:ミニディスプレイポートアダプター
+
+
+# 仮名
+
+# ヴにはしない
+from:U+3094
+  to:う゛
+
+from:U+3046 U+3099
+  to:う゛
+
+from:U+3095
+  to:ヵ
+
+from:U+3096
+  to:ヶ
+
+from:U+30F7
+  to:ワ゛
+
+from:U+30F8
+  to:ヰ゛
+
+from:U+30F9
+  to:ヱ゛
+
+from:U+30FA
+  to:ヲ゛
+
+
+# 濁点の結合文字
+from:U+304B U+3099
+  to:が
+
+from:U+307B U+3099
+  to:ぼ
+
+from:U+30AB U+3099
+  to:ガ
+
+from:U+30DB U+3099
+  to:ボ
+
+# 半濁点の結合文字
+from:U+306F U+309A
+  to:ぱ
+
+from:U+307B U+309A
+  to:ぽ
+
+from:U+30CF U+309A
+  to:パ
+
+from:U+30DB U+309A
+  to:ポ
+
+# 合成できない結合文字(Shift_JIS に対応する文字がない)
+from:U+03B9 U+3099
+  to:ι゛
+
+from:U+0029 U+309A
+  to:)゜
+
+# 結合文字ではない濁点は結合させない
+from:U+3064 U+309B
+  to:つ゛
+
+# http://www.youtube.com/watch?v=Wc4FnqEujBw
+from:'[進撃の巨人] ただのおまけとは違った 500円のカッフ' U+309A '麺 [進撃の巨人 メモスタント' U+3099 ']'
+  to:[進撃の巨人] ただのおまけとは違った 500円のカップ麺 [進撃の巨人 メモスタンド]
+
+
+
+# Shift_JIS に対応する文字があり、WideCharToMultiByte で変換できる文字
+# utf8.dms で置換テーブルに記述する必要がない。
+
+# PRIME
+from:U+2032
+  to:′
+
+# PARALLEL TO
+from:U+2225
+  to:∥
+
+# FULLWIDTH APOSTROPHE
+from:U+FF07
+  to:＇
+
+
+# 置換テーブル使用
+
+# HYPHENATION POINT
+from:U+2027
+  to:・
+
+# REVERSED PRIME
+from:U+2035
+  to:｀
+
+# DEVISION SLASH
+from:U+2215
+  to:/
+
+# DIVIDES
+from:U+2223
+  to:|
+
+# KATAKANA-HIRAGANA DOUBLE HYPHEN
+from:U+30A0
+  to:=
+
+# DOUBLE VERTICAL LINE
+from:U+2016
+  to:∥
+
+# LESS-THAN OR EQURAL TO
+from:U+2264
+  to:≦
+
+# GREATER-THAN OR EQUAL TO
+from:U+2265
+  to:≧
+
+# LEFT WHITE LENTICULAR BRACKET
+from:U+3016
+  to:【
+
+# RIGHT WHITE LENTICULAR BRACKET
+from:U+3017
+  to:】
+
+
+# Big5
+
+# イ局
+from:U+4FB7 U+9577
+  to:局長
+
+
+# GB2312
+
+# red, vermillion; blush, flush
+from:U+7EA2
+  to:紅
+
+# favorite, concbine; favor
+from:U+5BA0
+  to:寵
+
+
+# EOF

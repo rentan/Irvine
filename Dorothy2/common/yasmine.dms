@@ -1,0 +1,963 @@
+//Dorothy2
+//caption=yasmine
+//version=20140613.0
+//hint=
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+(function () {
+
+
+//-------------------------------- Yasmine ---------------------------------
+
+
+// コンストラクタ
+void function Yasmine () {
+  this._log = new Strings ();
+
+  this.count = { success: 0, fail: 0,  pending: 0 };
+};
+
+
+// ログに追加
+Yasmine.prototype.log = function (s) {
+  if (s) {
+    println (s);
+  }
+  this._log.add (s);
+};
+
+
+// ログをファイルに保存する
+Yasmine.prototype.saveLog = function () {
+  var file = Dorothy.createSaveFolder ('') + 'yasmine_log.txt';
+
+  this.log ('save log file: ' + file);
+  this._log.saveToFile (file);
+
+  return file;
+};
+
+
+// 結果の数を文字列化
+Yasmine.prototype._countToString = function () {
+  var stats = [ 'success', 'fail', 'pending' ];
+
+  var s = [ ];
+  for (var i = 0; i < stats.length; ++i) {
+    var n = this.count [stats [i]];
+    if (n) {
+      s.push (stats [i] + ': ' + n);
+    }
+  }
+
+  return s.join (', ');
+};
+
+
+// ファイルを読み込んで expect() を書き換える
+Yasmine.prototype._loadScript = function () {
+  var file = this.specFile;
+  this.log (file);
+
+  if (!(new File (file)).exists ()) {
+    throw 'file not found';
+  }
+
+  var sl = new Strings ();
+  sl.loadFromFile (file);
+
+  var re = /\sexpect\s*\(/g;
+  var count = 0;
+
+  function rep (s) {
+    ++count;
+
+    // ここの i は以下の for ループでセットされる処理中の行番号
+    return '_expect(' + (i + 1) + ',';
+  }
+
+  var len = sl.length;
+  for (var i = 0; i < len; ++i) {
+    if (re.test (sl [i])) {
+      sl [i] = sl [i].replace (re, rep);
+    }
+  }
+
+  this.log ('replace expect() to _expect(): ' + count);
+  this.log ('');
+
+  var src = '(function(){' + sl.text + '})()';
+  return src;
+};
+
+
+// オブジェクトを文字列化する
+// todo: deep conversion
+Yasmine.prototype._stringify = function (v, inner) {
+  if (isNull (v)) {
+    return 'null';
+  }
+  if (isUndefined (v)) {
+    return 'undefined';
+  }
+  if (isNaN (v)) {
+    return 'NaN';
+  }
+
+  var type = typeof v;
+  if (type === 'function') {
+    return 'function';
+  }
+
+  var name = nameOf (v);
+  if (name === 'Utf8') {
+    return "'" + v.toSJIS () + "'";
+  }
+  if (name === 'String' || type === 'string') {
+    return "'" + v.toString () + "'";
+  }
+
+  if (name === 'Array') {
+    if (inner) {
+      // 配列中の配列は省略
+      return '[ ... ]';
+    }
+
+    var s = [ ];
+    for (var i = 0; i < v.length; ++i) {
+      s.push (this._stringify (v [i], true));
+    }
+    return '[ ' + s.join (', ') + ' ]';
+  }
+
+  return v.toString ();
+};
+
+
+// jasmine.any (Function) を実行できるようにする
+Yasmine.prototype._pseudoFunctionObject = (function () {
+  function Function () { }
+  return new Function ();
+}) ();
+
+
+// jasmine オブジェクトの中身
+// Global.jasmine として定義される
+Yasmine.prototype._jasmineObject = {
+  any: function (obj) {
+    return new YasmineCompare ('any', obj);
+  },
+
+  objectContaining: function (obj) {
+    return new YasmineCompare ('objectContaining', obj);
+  },
+
+  addMatchers: function (customMatchers) {
+    yasmine._addMatchers (customMatchers);
+  }
+};
+
+
+// _expect() に置換されなかった expect() が呼ばれた場合のエラー
+// Global.expect として定義される
+Yasmine.prototype._expect = function () {
+  alert ('_expect() に置換されなかった expect() が呼ばれました。');
+  throw 'EExpectNotReplaced';
+};
+
+
+// describe ('...', function () { ... });
+// Global.describe として定義される
+Yasmine.prototype._describe = function (title, descFunc) {
+  yasmine.log ('describe: ' + title);
+
+  var array = [ ];
+  array.parent = yasmine._beforeEachList;
+  yasmine._beforeEachList = array;
+  array = [ ];
+  array.parent = yasmine._afterEachList;
+  yasmine._afterEachList = array;
+
+  try {
+    // describe() で指定した関数を実行
+    descFunc.call ({ });
+  }
+  catch (e) {
+    yasmine.log (e);
+    ++yasmine.count.fail;
+  }
+
+  yasmine._afterEachList = yasmine._afterEachList.parent;
+  yasmine._beforeEachList = yasmine._beforeEachList.parent;
+
+  yasmine.log ('');
+};
+
+
+// xdescribe ('...', function () { ... });
+// Global.xdescribe として定義される
+Yasmine.prototype._xdescribe = function (title, descFunc) {
+  yasmine.log ('xdescribe: ' + title);
+  yasmine.log ('');
+
+  ++yasmine.count.pending;
+};
+
+
+// beforeEach (function () { ... });
+// Global.beforeEach として定義される
+Yasmine.prototype._beforeEach = function (f) {
+  yasmine._beforeEachList.push (f);
+};
+
+
+// afterEach (function () { ... });
+// Global.afterEach として定義される
+Yasmine.prototype._afterEach = function (f) {
+  yasmine._afterEachList.unshift (f);
+};
+
+
+// xit ('...', function () { ... });
+// Global.xit として定義される
+Yasmine.prototype._xit = function (title, itFunc) {
+  yasmine.log ('xit: ' + title);
+  ++yasmine.count.pending;
+};
+
+
+// it ('...', function () { ... });
+// Global.it として定義される
+Yasmine.prototype._it = function (title, itFunc) {
+  yasmine.log ('it: ' + title);
+
+  if (arguments.length < 2) {
+    ++yasmine.count.pending;
+    return;
+  }
+
+  // これ以降は途中で return しないこと
+
+  var context = {
+    parent: yasmine._itContext,
+    fail: false,
+    pended: false,
+
+    _log: [ ],
+    log: function (s) {
+      this._log.push (s);
+    }
+  };
+  yasmine._itContext = context;
+
+  // beforeEach(), it(), afterEach() で呼び出される関数における this
+  var thisObject = { };
+
+  function callEach (list) {
+    for (; list; list = list.parent) {
+      for (var i = 0; i < list.length; ++i) {
+        list [i].call (thisObject);
+      }
+    }
+  }
+
+  try {
+    // beforeEach(), it(), afterEach() で指定した関数を実行
+    callEach (yasmine._beforeEachList);
+    itFunc.call (thisObject);
+    callEach (yasmine._afterEachList);
+
+    if (context.fail) {
+      ++yasmine.count.fail;
+    }
+    else {
+      ++yasmine.count.success;
+    }
+  }
+  catch (e) {
+    if (yasmine._itContext.pended) {
+      // pending() 実行前に出力されたログは破棄する
+      context._log = [ 'pended' ];
+      ++yasmine.count.pending;
+    }
+    else {
+      context.log (e);
+      ++yasmine.count.fail;
+    }
+  }
+
+  var log = context._log;
+  for (var i = 0; i < log.length; ++i) {
+    yasmine.log (log [i]);
+  }
+
+  // jasmine.addMatchers() で指定されたカスタムマッチャーを忘れる
+  yasmine._clearMatchers ();
+
+  yasmine._itContext = yasmine._itContext.parent;
+};
+
+
+// 参考
+// http://kannokanno.hatenablog.com/entry/2013/10/18/143248
+// https://github.com/kannokanno/jasmine-parameterize/blob/master/jasmine-parameterize.js
+
+// cases ('...', function () { ... });
+// Global.cases として定義される
+Yasmine.prototype._cases = function (cases) {
+  cases.it = function (title, itFunc) {
+    yasmine._casesIt (this, 'it', title, itFunc);
+  };
+
+  cases.xit = function (title, itFunc) {
+    yasmine._casesIt (this, 'xit', title, itFunc);
+  };
+
+  return cases;
+};
+
+
+// cases().it(), .xit() の本体
+Yasmine.prototype._casesIt = function (cases, itName, title, itFunc) {
+  yasmine.log ('cases.' + itName + ': ' + title);
+
+  var itRunner = Global [itName];  // it() or xit()
+
+  function itWrapper (itFunc, args) {
+    return function () {
+      itFunc.apply (this, args);
+    };
+  }
+
+  var len = cases.length;
+  var maxWidth = len.toString ().length;
+  for (var i = 0; i < len; ++i) {
+    var args = cases [i];
+    if (nameOf (args) != 'Array') {
+      args = [ args ];
+    }
+
+    var ttl = format ('cases [%*d]: ', maxWidth, i) + this._stringify (args);
+
+    // it() または xit() を呼び出す
+    itRunner (ttl, itWrapper (itFunc, args));
+  }
+};
+
+
+// pending ();
+// Global.pending として定義される
+Yasmine.prototype._pending = function () {
+  yasmine._itContext.pended = true;
+  throw 'Yasmine.pending';
+};
+
+
+// expect (actual)...
+// Global._expect として定義される
+Yasmine.prototype.__expect = function (line, actual) {
+  var ex = new YasmineExpect (yasmine._itContext, line, actual, false);
+  ex._addMatchers (yasmine._matchers, false);
+
+  return ex;
+};
+
+
+// jasmine.addMatchers() で登録されたカスタムマッチャーを消去する
+Yasmine.prototype._clearMatchers = function () {
+  this._matchers = [ ];
+};
+
+
+// カスタムマッチャーを登録する
+// jasmine.addMatchers() から呼び出される
+Yasmine.prototype._addMatchers = function (matchers) {
+  this._matchers.push (matchers);
+};
+
+
+// テスト実行準備
+Yasmine.prototype._setup = function (file) {
+  this.specFile = file;
+  this.specDir = (new File (file)).extractPath ();
+
+  this._itContext = null;
+
+  this._beforeEachList = null;
+  this._afterEachList = null;
+
+  this._clearMatchers ();
+
+  Global.yasmine = this;
+  Global.jasmine = this._jasmineObject;
+  Global.Function = this._pseudoFunctionObject;
+
+  Global.describe = this._describe;
+  Global.xdescribe = this._xdescribe;
+  Global.beforeEach = this._beforeEach;
+  Global.afterEach = this._afterEach;
+  Global.it = this._it;
+  Global.xit = this._xit;
+  Global.cases = this._cases;
+  Global.expect = this._expect;
+  Global._expect = this.__expect;
+  Global.pending = this._pending;
+};
+
+
+// テスト実行後始末
+Yasmine.prototype._teardown = function () {
+  var keys = [
+    'pending',
+    '_expect',
+    'expect',
+    'cases',
+    'xit',
+    'it',
+    'afterEach',
+    'beforeEach',
+    'xdescribe',
+    'describe',
+
+    'Function',
+    'jasmine',
+    'yasmine'
+  ];
+
+  for (var i = 0; i < keys.length; ++i) {
+    Global.removeKey (keys [i]);
+  }
+};
+
+
+Yasmine.prototype.test = function (file) {
+  this._setup (file);
+
+  try {
+    var phase = 'load script';
+    var src = this._loadScript ();
+
+    phase = 'eval';
+    eval (src);
+  }
+  catch (e) {
+    var s = 'error in ' + phase + ': ' + e;
+    this.log (s);
+    alert (s);
+    ++this.count.fail;
+  }
+
+  this.log (this._countToString ());
+
+  this._teardown ();
+};
+
+
+// yasmine._util.* ---------------------------------------------------------
+
+Yasmine.prototype._util = { };
+
+
+// 同一のオブジェクトまたはプリミティブ値か調べる
+Yasmine.prototype._util._strictEqual = function (a, b) {
+  if (a === b) {
+    return true;
+  }
+
+  // 0 === 0.0 が false になる DMonkey の不具合対処
+  if (typeof a === 'number' && typeof b === 'number' && a == b) {
+    return true;
+  }
+
+  return false;
+};
+
+
+// 同じ内容のオブジェクトまたはプリミティブ値か調べる
+Yasmine.prototype._util._eq = function (a, b, aStack, bStack, customTesters) {
+  if (nameOf (b) === 'YasmineCompare') {
+    return b.compare (a);
+  }
+
+  if (this._strictEqual (a, b)) {
+    // 同一のプリミティブ値(null/undefined も含む)
+    // または a も b も同じオブジェクトを参照している
+    return true;
+  }
+
+  if (isNull (a) || isNull (b) || isUndefined (a) || isUndefined (b)) {
+    return false;
+  }
+
+  function getClassName (v) {
+    // オブジェクトなら型名を返す
+    var n = nameOf (v);
+    if (n) {
+      return n;
+    }
+
+    // プリミティブ値なら対応するオブジェクト型名を返す
+    var c = {
+      string: 'String',
+      number: 'Number',
+      boolean: 'Boolean',
+      regexp: 'RegExp'
+    };
+    var t = typeof (v);
+    return c.hasKey (t) ? c [t] : t;
+  }
+
+  var className = getClassName (a);
+  if (className != getClassName (b)) {
+    // 違う型のプリミティブ値、オブジェクト
+    return false;
+  }
+
+  if (className === 'String') {
+    return a.text === b.text;
+  }
+  if (className === 'Number') {
+    if (typeof a === 'number' || typeof b === 'number') {
+      return isNaN (a) ? isNaN (b) : a == b;
+    }
+
+    // 両方が Number オブジェクト
+    return a.number === b.number;
+  }
+  if (className === 'Boolean') {
+    return a.bool === b.bool;
+  }
+  if (className === 'Date') {
+    return a.format === b.format && a.valueOf () === b.valueOf ();
+  }
+  if (className == 'RegExp') {
+    return a.toString () === b.toString ();
+  }
+
+  if (typeof a === 'function') {
+    return false;
+  }
+
+  // 以下のような構造を一致と見なす。
+  // var a = { }; a.x = a;
+  // var b = { }; b.x = b;
+  var idx = aStack.length;
+  while (idx--) {
+    if (aStack [idx] === a) {
+      return bStack [idx] === b;
+    }
+  }
+
+  aStack.push (a);
+  bStack.push (b);
+  try {
+    var aKeys = a.getKeys ();
+    idx = aKeys.length;
+    if (idx != b.getKeys ().length) {
+      return false;
+    }
+
+    // DMonkey では {}.toString != {}.toString になるため、
+    // デフォルトメソッドが等しくなくても無視する
+    // なおユーザー定義型の constructor は等しくなる
+    var defaultMethods = /^(getEvents|getKeys|getMethods|getProperties|hasKey|hasOwnProperty|removeKey|toString|valueOf)$/;
+    function isDefaultMethods (key, a, b) {
+      return defaultMethods.test (key)
+          && typeof a === 'function'
+          && typeof b === 'function';
+    }
+
+    while (idx--) {
+      var key = aKeys [idx];
+      if (!b.hasKey (key)) {
+        return false;
+      }
+
+      if (!this._eq (a [key], b [key], aStack, bStack, customTesters)
+       && !isDefaultMethods (key, a [key], b [key])) {
+        return false;
+      }
+    }
+  }
+  finally {
+    bStack.pop ();
+    aStack.pop ();
+  }
+
+  return true;
+};
+
+
+Yasmine.prototype._util.equals = function (a, b, customTesters) {
+  return this._eq (a, b, [ ], [ ], customTesters || [ ]);
+};
+
+/*
+Yasmine.prototype._util.contains = function (haystack, needle, customTesters) {
+  //
+};
+*/
+
+Yasmine.prototype._util.buildFailureMessage = function (matcherName, isNot, actual) {
+  var expected = arguments.slice (3);
+
+  var s = 'Expected ' + yasmine._stringify (actual) + (isNot ? ' not ' : ' ');
+  s += matcherName.replace (/[A-Z]/g, function (s) { return ' ' + s.toLowerCase (); });
+
+  if (expected.length) {
+    for (var i = 0; i < expected.length; ++i) {
+      expected [i] = yasmine._stringify (expected [i]);
+    }
+    s += ' ' + expected.join (', ');
+  }
+
+  return s + '.';
+};
+
+
+//----------------------------- YasmineCompare -----------------------------
+
+
+// コンストラクタ
+void function YasmineCompare (type, expected) {
+  this.type = type;
+  this._expected = expected;
+
+  if (type === 'any') {
+    this._initAny (expected);
+  }
+  else if (type === 'objectContaining') {
+    this._initObjectContaining (expected);
+  }
+
+  this.toString = function () {
+    return '<jasmine.' + this.type + '(' + this._string + ')>';
+  };
+};
+
+
+YasmineCompare.prototype._initAny = function (object) {
+  var name = this._name = nameOf (object);
+  this._string = name || typeof object;
+
+  this._lowerName = /^(Array|Boolean|Number|Object|String|Function)$/.test (name)
+                  ? name.toLowerCase () : null;
+
+  if (!name) {
+    this.compare = function () { return false; };
+    return;
+  }
+
+  this.compare = this._compareAny;
+};
+
+
+// expect(e).toEqual(jasmine.any(type))
+YasmineCompare.prototype._compareAny = function (actual) {
+  return (nameOf (actual) === this._name) || (typeof actual === this._lowerName);
+};
+
+
+YasmineCompare.prototype._initObjectContaining = function (object) {
+  this._string = '...';
+
+  this.compare = this._objectContaining;
+};
+
+
+YasmineCompare.prototype._defaultMethods =
+  /^(getEvents|getKeys|getMethods|getProperties|hasKey|hasOwnProperty|removeKey|toString|valueOf)$/;
+
+// expect(e).toEqual(jasmine.objectContaining({...}))
+YasmineCompare.prototype._objectContaining = function (actual) {
+  if (isNull (actual) || isUndefined (actual) || isNaN (actual)) {
+    return false;
+  }
+
+  var expected = this._expected;
+  var keys = expected.getKeys ();
+
+  for (var i = 0; i < keys.length; ++i) {
+    var key = keys [i];
+    if (this._defaultMethods.test (key)) {
+      continue;
+    }
+
+    try {
+      var aValue = actual [key];
+    }
+    catch (e) {
+      // オブジェクトにも prototype にもキーがなかった
+      return false;
+    }
+
+    if (!yasmine._util._strictEqual (aValue, expected [key])) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+
+//----------------------------- YasmineExpect ------------------------------
+
+
+// コンストラクタ
+void function YasmineExpect (itContext, line, actual, isNot) {
+  this._itContext = itContext;
+  this._line = line;
+  this._actual = actual;
+  this._isNot = !!isNot;
+
+  if (!isNot) {
+    this.not = new YasmineExpect (itContext, line, actual, true);
+  }
+};
+
+
+// 既定の matcher を登録
+YasmineExpect.prototype._addMatchers = function (matchersArray, addToPrototype) {
+
+  function createMatcher (matchers, matcherName) {
+
+    var util = Yasmine.prototype._util;
+    var customTesters = [ ];
+
+    var matcher = matchers [matcherName] (util, customTesters);
+    // matcher == { compare: function (actual, expected) };
+
+    return function (/* expected, ... */) {
+      var actual = this._actual;
+
+      var args = [ actual ].concat (arguments);
+
+      var f = matcher.compare;
+      if (this._isNot && matcher.hasKey ('negativeCompare')) {
+        f = matcher.negativeCompare;
+      }
+
+      // DMonkey ではクロージャが正しく動作しないので
+      // this 経由で compare() に受け渡す
+      var thisObj = { util: util, customEqualityTesters: customTesters };
+
+      var result = f.apply (thisObj, args);
+
+      if (this._isNot ? !result.pass : result.pass) {
+        // 合格
+        return;
+      }
+
+      if (!result.hasKey ('message')) {
+        args = [ matcherName, this._isNot, actual ].concat (arguments);
+        result.message = util.buildFailureMessage.apply (util, args);
+      }
+
+      this._itContext.log ('line ' + this._line + ': ' + result.message);
+      this._itContext.fail = true;
+    };
+  }
+
+  var defaultMethods = /^(getEvents|getKeys|getMethods|getProperties|hasKey|hasOwnProperty|removeKey|toString|valueOf)$/;
+
+  for (var arrayIdx = 0; arrayIdx < matchersArray.length; ++arrayIdx) {
+    var matchers = matchersArray [arrayIdx];
+    var methods = matchers.getMethods ();
+
+    for (var i = 0; i < methods.length; ++i) {
+      var matcherName = methods [i];
+      if (defaultMethods.test (matcherName)) {
+        continue;
+      }
+
+      var f = createMatcher (matchers, matcherName);
+
+      if (addToPrototype) {
+        YasmineExpect.prototype [matcherName] = f;
+      }
+      else {
+        this [matcherName] = this.not [matcherName] = f;
+      }
+    }
+  }
+};
+
+
+YasmineExpect.prototype._addMatchers ([ {
+
+  toBe: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual, expected) {
+        var util = this.util;
+
+        return { pass: util._strictEqual (actual, expected) };
+      }
+    };
+  },
+
+  toEqual: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual, expected) {
+        var util = this.util, customEqualityTesters = this.customEqualityTesters;
+
+        return { pass: util.equals (actual, expected, customEqualityTesters || [ ]) };
+      }
+    };
+  },
+
+  toMatch: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual, expected) {
+        return { pass: (new RegExp (expected)).test (actual) };
+      }
+    };
+  },
+
+  toBeNull: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual) {
+        return { pass: isNull (actual) };
+      }
+    };
+  },
+
+  toBeDefined: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual) {
+        return { pass: !isUndefined (actual) };
+      }
+    };
+  },
+
+  toBeUndefined: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual) {
+        return { pass: isUndefined (actual) };
+      }
+    };
+  },
+
+  toBeTruthy: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual) {
+        return { pass: actual ? !isNaN (actual) : false };
+      }
+    };
+  },
+
+  toBeFalsy: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual) {
+        return { pass: actual ? isNaN (actual) : true };
+      }
+    };
+  },
+
+  toContain: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual, expected) {
+        var util = this.util;
+
+        var pass = false;
+        for (var i = 0; i < actual.length; ++i) {
+          if (util._strictEqual (actual [i], expected)) {
+            return { pass: true };
+          }
+        }
+        return { pass: false };
+      }
+    };
+  },
+
+  toBeLessThan: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual, expected) {
+        return { pass: actual < expected };
+      }
+    };
+  },
+
+  toBeGreaterThan: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual, expected) {
+        return { pass: actual > expected };
+      }
+    };
+  },
+
+  toBeCloseTo: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual, expected, precision) {
+        var util = this.util;
+
+        var p = util._strictEqual (precision, 0) ? 0 : (precision || 2);
+        return { pass: Math.abs (expected - actual) < (Math.pow (10, -p) / 2) };
+      }
+    };
+  },
+
+  toThrow: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual, expected) {
+        var threw = false;
+        var thrownError;
+        try {
+          actual ();
+        }
+        catch (e) {
+          threw = true;
+          thrownError = e;
+        }
+
+        if (!threw) {
+          // 例外が発生しなかった
+          return { pass: false };
+        }
+
+        if (arguments.length == 1) {
+          // 例外の指定なし
+          return {
+            pass: true,
+            message: 'Expected function not to throw, but it threw ' + thrownError
+          };
+        }
+
+        // 例外の指定あり
+        var pass = (thrownError == expected);
+        var not = pass ? ' not' : '';
+        return {
+          pass: pass,
+          message: 'Expected function ' + not + 'to throw ' + expected + ', but it threw ' + thrownError
+        };
+      }
+    };
+  }
+
+}], true);
+
+
+}) ()
+
+
+// EOF

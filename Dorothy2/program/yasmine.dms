@@ -1,0 +1,142 @@
+//Dorothy2
+//caption=yasmine
+//version=20140613.0
+//hint=
+//match=^http://yasmine\.dorothy\.test/
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil');
+
+
+// common ファイルのテスト -------------------------------------------------
+// http://yasmine.dorothy.test/common/spec/***
+
+
+function testCommon (file) {
+  common_load ('yasmine');
+
+  var ya = new Yasmine ();
+  ya.test (file);
+  var logFile = ya.saveLog ();
+
+  if (ya.count.fail) {
+    Dorothy.edit (file);
+    Dorothy.edit (logFile);
+    exit();
+  }
+
+  Util.remove_this ();
+};
+
+
+// OnHttpRequest に渡された引数を保存する ----------------------------------
+// http://yasmine.dorothy.test/arguments
+
+
+function dumpArguments () {
+  function ArgumentsDumper () {
+    var sl = this._sl = new Strings ();
+
+    this._header ();
+    this._dump ('urlinfo'),
+    this._dump ('headers'),
+    this._dump ('item'),
+    this._dump ('folderdata'),
+    this._dump ('optiondata'),
+
+    sl.add ('[EOF]');
+  }
+
+  ArgumentsDumper.prototype._header = function () {
+    var sl = this._sl;
+
+    sl.add ('# ' + Dorothy.programName + ' version ' + Dorothy.programVersion + ' by '+ Dorothy.author);
+    sl.add ('# ' + Date.toString ().replace (/\//g, '-'));
+
+    sl.add ('');
+  };
+
+  ArgumentsDumper.prototype._dump = function (objName) {
+    var sl = this._sl;
+    var obj = eval (objName);
+
+    sl.add ('#' + objName + ': ' + nameOf (obj));
+    sl.add ('[' + objName + ']');
+
+    for (var key in obj) {
+      var v = '';
+
+      if (objName == 'folderdata' && /^(Comment|(Ftp|Http)Proxies)$/.test (key)) {
+        v = '(type: ' + typeof obj [key] + ')';
+      }
+      else {
+        v = obj [key];
+        if (typeof v == 'string') {
+          var q = (v.indexOf ("'") > -1) ? '"' : "'";
+          v = q + v + q;
+        }
+      }
+
+      sl.add (key + '=' + v);
+    }
+
+    sl.add ('');
+  };
+
+  ArgumentsDumper.prototype.saveToFile = function (filename) {
+    common_load ('http');  // saveFile
+    var http = new Http ();
+
+    return http.saveFile ({ filename: filename, data: this._sl.text });
+  };
+
+
+  var r = (new ArgumentsDumper ()).saveToFile ('arguments.txt');
+  if (r.error) {
+    alert (e.error);
+    exit ();
+  }
+  Util.remove_this ();
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  var path = (new URL (urlinfo.url)).path.slice (1);
+
+  if (/^(common\/spec\/.+)$/.test (path)) {
+    return testCommon (Dorothy.path + RegExp.$1.replace (/\//g, '\\'));
+  }
+  if (/^arguments$/.test (path)) {
+    return dumpArguments ();
+  }
+
+  alert ('未対応の URL です。');
+  exit ();
+}
+
+
+// EOF

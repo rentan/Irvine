@@ -1,0 +1,163 @@
+//Dorothy2
+//caption=DOMParser/JSON spec
+//version=20140613.0
+//hint=http://yasmine.dorothy.test/common/spec/domparser/json_spec.dms
+//match=
+//author=rentan
+//path=common\spec\domparser
+//end
+
+//Åıxyzzyï∂éöâªÇØâÒî
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('domparser\json');
+
+
+describe ('DOMJson', function () {
+  it ('new DOMJson()', function () {
+    var src = 'true';
+    var err = 'JSON: ÉãÅ[ÉgóvëfÇ™{}/[]Ç≈ÇÕÇ»Ç¢ at 0';
+
+    expect (function () { new DOMJson (src); }).toThrow (err);
+  });
+});
+
+
+describe ('json parse 1', function () {
+  it ('empty array', function () {
+    var domjson = new DOMJson ('[]');
+
+    expect (nameOf (domjson.document)).toBe ('Document');
+    var document = domjson.document;
+
+    expect (document.childNodes.length).toBe (1);
+
+    var e = document.firstChild;
+    expect (e).toBe (document.childNodes [0]);
+
+    expect (e.nodeName).toBe ('array');
+    expect (e.childNodes.length).toBe (0);
+
+    document.destroy ();
+    document = null;
+  });
+});
+
+
+describe ('json parse 2', function () {
+  it ('empty object', function () {
+    var domjson = new DOMJson ('{}');
+
+    expect (nameOf (domjson.document)).toBe ('Document');
+    var document = domjson.document;
+
+    expect (document.childNodes.length).toBe (1);
+
+    var e = document.firstChild;
+    expect (e).toBe (document.childNodes [0]);
+
+    expect (e.nodeName).toBe ('object');
+    expect (e.childNodes.length).toBe (0);
+
+    document.destroy ();
+    document = null;
+  });
+});
+
+
+describe ('json parse 3', function () {
+  it ('RFC 4627 example', function () {
+    var src ="
+{
+  \"Image\": {
+    \"Width\":  800,
+    \"Height\": 600,
+    \"Title\":  \"View from 15th Floor\",
+    \"Thumbnail\": {
+      \"Url\":    \"http://www.example.com/image/481989943\",
+      \"Height\": 125,
+      \"Width\":  \"100\"
+    },
+  \"IDs\": [116, 943, 234, 38793]
+  }
+}";
+
+    var document = (new DOMJson (src)).document;
+    var root = document.firstChild;
+
+    expect (root.tagName).toBe ('object');
+    expect (root.childNodes.length).toBe (1);
+
+    var image = root.lastChild;
+    expect (image.tagName).toBe ('object');
+    expect (image.childNodes.length).toBe (5);
+
+    var width = image.childNodes [0];
+    expect (width.name).toBe ('Width');
+    expect (width.nodeName).toBe ('number');
+    expect (width.nodeValue).toBe (800);
+
+    var title = image.getElementsByName ('Title');
+    expect (title.length).toBe (1);
+    title = title [0];
+    expect (title.tagName).toBe ('string');
+    expect (title.nodeValue).toBe ('View from 15th Floor');
+
+    var ids = document.getElementsByTagName ('array');
+    expect (ids.length).toBe (1);
+    ids = ids [0];
+    expect (ids.childNodes.length).toBe (4);
+    expect (ids.childNodes [0].nodeValue).toBe (116);
+    expect (ids.childNodes [3].nodeValue).toBe (38793);
+
+    document.destroy ();
+    document = null;
+  });
+});
+
+
+describe ('json parse 4', function () {
+  it ('literals', function () {
+    var domjson = new DOMJson ('  [null,true,false]  ');
+    var document = domjson.document;
+
+    var array = document.firstChild;
+    expect (array.childNodes.length).toBe (3);
+
+    var e = array.childNodes [0];
+    expect (e.nodeName).toBe ('null');
+    expect (e.nodeValue).toBeNull ();
+
+    e = array.childNodes [1];
+    expect (e.nodeName).toBe ('true');
+    expect (e.nodeValue).toBe (true);
+
+    e = array.childNodes [2];
+    expect (e.nodeName).toBe ('false');
+    expect (e.nodeValue).toBe (false);
+
+    document.destroy ();
+    document = null;
+  });
+});
+
+
+// EOF

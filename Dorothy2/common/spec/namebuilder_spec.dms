@@ -1,0 +1,377 @@
+//Dorothy2
+//caption=NameBuilder spec
+//version=20140612.0
+//hint=http://yasmine.dorothy.test/common/spec/namebuilder_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('namebuilder', 'http', 'utf8');
+
+
+describe ('NameBuilder', function () {
+  it ('new NameBuilder()', function () {
+    var nb = new NameBuilder ();
+    expect (nb._zen2hanMode).toBe (false);
+
+    nb = new NameBuilder ({ zen2han: 'true' });
+    expect (nb._zen2hanMode).toBe (true);
+  });
+});
+
+
+describe ('.normalize()', function () {
+  var nb;
+  beforeEach (function () {
+    nb = new NameBuilder ();
+  });
+
+  // 制御記号とコロンのテスト
+  it ('control code and colon', function () {
+    var from = 'aＢ＄' + String.fromCharCode (0x0d) + 'c : d';
+    var to = 'aＢ＄ c：d';
+    expect (nb.normalize (from)).toBe (to);
+  });
+
+  // 半角→全角のテスト
+  it ('hankaku to zenkaku', function () {
+    var from = 'a' + '\/*?<>|"' + 'z';
+    var to = 'a' + '￥／＊？＜＞｜”' + 'z';
+    expect (nb.normalize (from)).toBe (to);
+  });
+
+  // 全角→半角のテスト
+  it ('zenkaku to hankaku', function () {
+    nb = new NameBuilder ({ zen2han: true });
+
+    var from = '始　！＃＄％＆（）＋，－．；＝＠［］＾＿｛｝０９ＡＺａｚ終';
+    var to = '始 !#$%&()+,-.;=@[]^_{}09AZaz終';
+    expect (nb.normalize (from)).toBe (to);
+  });
+});
+
+
+describe ('.trim()', function () {
+  it ('remove spaces', function () {
+    var nb = new NameBuilder ();
+
+    var from = ' a b  c   d . e  .  f  ';
+    var to = 'a b c d . e . f';
+    expect (nb.trim (from)).toBe (to);
+  });
+});
+
+
+describe ('.setYmdhms()', function () {
+  var nb;
+  beforeEach (function () {
+    nb = new NameBuilder ();
+  });
+
+  it ('invalid date/time', function () {
+    expect (nb.setYmdhms ('foobar')).toBe (false);
+  });
+
+  it ("separate ymd with '-'", function () {
+    expect (nb.setYmdhms ('2014-05-23 01:23:45')).toBe (true);
+    expect (nb.yyyy).toBe ('2014');
+    expect (nb.mm).toBe ('05');
+    expect (nb.dd).toBe ('23');
+    expect (nb.hh).toBe ('01');
+    expect (nb.mi).toBe ('23');
+    expect (nb.ss).toBe ('45');
+  });
+
+  it ("separate ymd with '/', hour zero suppress", function () {
+    expect (nb.setYmdhms ('1987/12/01 9:10:20')).toBe (true);
+    expect (nb.yyyy).toBe ('1987');
+    expect (nb.mm).toBe ('12');
+    expect (nb.dd).toBe ('01');
+    expect (nb.hh).toBe ('09');
+    expect (nb.mi).toBe ('10');
+    expect (nb.ss).toBe ('20');
+  });
+});
+
+
+describe ('.definePPZ()', function () {
+  var nb;
+  beforeEach (function () {
+    nb = new NameBuilder ();
+  });
+
+  it ('pageOrigin 0', function () {
+    var pageOrigin = 0;
+    nb.definePPZ (pageOrigin);
+
+    expect (nb.P).toEqual (jasmine.any (Function));
+    expect (nb.PZ).toEqual (jasmine.any (Function));
+    expect (nb._pageOrigin).toBe (pageOrigin);
+  });
+
+  it ('pageOrigin 1', function () {
+    var pageOrigin = 1;
+    nb.definePPZ (pageOrigin);
+
+    expect (nb._pageOrigin).toBe (pageOrigin);
+  });
+});
+
+
+describe ('.zeroPadding()', function () {
+  var nb = new NameBuilder ();
+
+  cases ([
+    // n, max, offset, result
+    [ 0, 5, 0, '0' ],
+    [ 0, 10, 0, '00' ],
+    [ 10, 10, 0, '10' ],
+
+    [ 0, 5, 1, '1' ],
+    [ 0, 9, 1, '01' ],
+    [ 9, 9, 1, '10' ]
+  ])
+  .it ('[ n, max, offset, result ]', function (n, max, offset, result) {
+    expect (nb.zeroPadding (n, max, offset)).toBe (result);
+  });
+});
+
+
+describe ('.assemble()', function () {
+  var nb;
+  beforeEach (function () {
+    nb = new NameBuilder ();
+  });
+
+  it ('variables', function () {
+    // 文字列
+    nb.a = 'neko';
+    expect (nb.assemble ('%A%', 'http://example.com/foo.jpg?pi=3.14')).toBe ('neko.jpg');
+
+    // 数値
+    nb.a = 123;
+    expect (nb.assemble ('%A%', 'http://www.example.com/')).toBe ('123');
+
+    // 数値を返す関数
+    nb.a = function () {
+      return 456;
+    };
+    expect (nb.assemble ('%A%', 'http://example.com/bar')).toBe ('456');
+
+    // UTF-8
+    nb.a = new Utf8 ('山田'.toUTF8 ());
+    expect (nb.assemble ('%A%', 'http://example.com/')).toBe ('山田');
+
+    // 大文字のプロパティ
+    nb.a = 'blue';
+    nb.A = 'red';
+    nb.b = '$';
+    nb.B = function () {
+      return this.b + '-' + this.b;
+    };
+    expect (nb.assemble ('%A%%B%', '.gif')).toBe ('red$-$.gif');
+  });
+
+  // 全角→半角変換あり
+  it ('zenkaku to hankaku', function () {
+    nb = new NameBuilder ({ zen2han: 'true' });
+
+    nb.a = 'ＡＺ';
+    nb.b = '＄　＠';
+    expect (nb.assemble ('あ%A%-%B%＠')).toBe ('あAZ-$ @＠');
+  });
+
+  // 存在しない変数名
+  it ('none exist variable', function () {
+    nb.a = 'abc';
+    var url = 'http://example.com/foo.jpg';
+    expect (nb.assemble ('%a%%AA%%HASKEY%', url)).toBe ('%a%%AA%%HASKEY%.jpg');
+    // ログに以下の3行が表示される
+    //  変数名として使用できない文字です: %a%
+    //  未対応の変数です: %AA%
+    //  変数名として使用できない単語です: %HASKEY%
+  });
+
+  // 拡張子の抽出
+  cases ([
+    // [ url, result ]
+    [ 'http://example.com/index.html', 'foo.html' ],
+    [ 'http://example.com/index.html?f=bar.jpg', 'foo.html' ],
+
+    // 拡張子ではないものを誤認しない
+    [ 'http://example.com/foo#pi=3.14', 'foo' ],
+    [ 'http://example.com?e=2.71', 'foo' ],
+    [ 'http://example.com#foo.bar', 'foo' ]
+  ])
+  .it ('extract ext: [ url, result ]', function (url, result) {
+    nb.a = 'foo';
+    expect (nb.assemble ('%A%', url)).toBe (result);
+  });
+});
+
+
+describe ('.buildFilename()', function () {
+  var nb;
+  beforeEach (function () {
+    nb = new NameBuilder ();
+
+    nb.user = 'TEMP';
+    nb.title = 'foo';
+  });
+
+  it ('simple filename', function () {
+    var itemData = nb.buildFilename ('%TITLE%', 'http://example.com/bar.jpg');
+    expect (itemData).toEqual (jasmine.any (Object));
+
+    expect (itemData.hasKey ('Filename')).toBe (true);
+    expect (itemData.Filename).toBe ('foo.jpg');
+  });
+
+  it ('filename command', function () {
+    var backupItemFolder = item.folder;
+    try {
+      item.folder = 'R:\';
+      var itemData = nb.buildFilename ('[[md=%USER%]]%TITLE%');
+    }
+    finally {
+      item.folder = backupItemFolder;
+    }
+
+    expect (itemData.hasKey ('Folder')).toBe (true);
+    expect (itemData.Folder).toBe ('R:\TEMP\');
+    expect (itemData.Filename).toBe ('foo');
+  });
+});
+
+
+describe ('.setFilename()', function () {
+  var nb;
+  beforeEach (function () {
+    nb = new NameBuilder ();
+    nb.user = 'TEMP';
+    nb.title = 'foo';
+
+    this.backupItemFolder = item.folder;
+    this.backupItemFilename = item.filename;
+  });
+
+  afterEach (function () {
+    item.folder = this.backupItemFolder;
+    item.filename = this.backupItemFilename;
+  });
+
+  cases ([
+    // [ item.filename, url, result ]
+
+    // item.filename 設定済みなら上書きしない
+    [ 'cat.png', '', 'cat.png' ],
+
+    // ただし [[rename]] が含まれるなら上書きする
+    // [ '[[rename]]dog.gif', '', 'foo' ],
+    // 現在の仕様では、[[rename]] はコマンドとして解釈しない
+    [ '[[rename]]dog.gif', '', '[[rename]]dog.gif' ],
+
+    // また、拡張子がない場合は拡張子をコピー
+    [ 'bird', '.zip', 'bird.zip' ],
+
+    // item.filename 設定なし
+    [ '', '', 'foo' ]
+  ])
+  .it ('item.filename: [ item.filename, url, result ]',
+  function (itemFilename, url, result) {
+    item.filename = itemFilename;
+    nb.setFilename ('%TITLE%', url);
+    expect (item.filename).toBe (result);
+  });
+
+  // R:\TEMP 固定なので注意
+  it ('filename command', function () {
+    item.folder = 'R:\';
+    item.filename = '';
+    nb.setFilename ('[[md=%USER%]]%TITLE%');
+    expect (item.folder).toBe ('R:\TEMP\');
+    expect (item.filename).toBe ('foo');
+  });
+});
+
+
+describe ('.contentTypeToExt()', function () {
+  var nb;
+  beforeEach (function () {
+    nb = new NameBuilder ();
+  });
+
+  cases ([
+    // [ ctype, result ]
+    [ 'image/bmp',  '.bmp' ],
+    [ 'image/gif',  '.gif' ],
+    [ 'image/jpeg', '.jpg' ],
+    [ 'image/png',  '.png' ],
+    [ 'image/tiff', '.tif' ],
+
+    [ 'application/octet-stream; name="foo.jpg"; charset="UTF-8"', '.jpg' ],
+
+    // ログに「未対応の Content-Type です: image/bm」と表示される
+    [ 'image/bm', null ]
+  ])
+  .it ('[ ctype, result ]', function (ctype, result) {
+    expect (nb.contentTypeToExt (ctype)).toBe (result);
+  });
+
+  it ('Http', function () {
+    var http = new Http ();
+    http.responseHeader ['content-type'] = 'image/gif';
+
+    expect (nb.contentTypeToExt (http)).toBe ('.gif');
+  });
+});
+
+
+describe ('.contentToExt()', function () {
+  var nb;
+  beforeEach (function () {
+    nb = new NameBuilder ();
+  });
+
+  cases ([
+    // [ data, result ]
+    [ 'GIF89a', '.gif' ],
+
+    // ログに「未対応のデータ形式です。」と表示される
+    [ 'aaaaaa', null ]
+  ])
+  .it ('[ data, result ]', function (data, result) {
+    expect (nb.contentToExt (data)).toBe (result);
+  });
+
+  it ('Http', function () {
+    var http = new Http ();
+    http.data = 'BM';
+    expect (nb.contentToExt (http)).toBe ('.bmp');
+  });
+});
+
+
+// EOF

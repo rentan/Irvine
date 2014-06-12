@@ -1,0 +1,191 @@
+//Dorothy2
+//caption=Yasmine/TestCaseText
+//version=20140613.0
+//hint=new TestCaseText()
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+(function () {
+
+
+// コンスタラクタ
+void function TestCaseText () {
+  this.cases = [ ];
+};
+
+
+// U+hhhh 文字列形式のコードポイントを Utf8 オブジェクトに変換する
+TestCaseText.prototype.codePointToUtf8 = function (cp) {
+  if (/^U\+([0-9a-fA-F]{1,6})$/.test (cp)) {
+    cp = parseInt ('0x' + RegExp.$1);
+    return Utf8.prototype.fromUnicode (cp);
+  }
+
+  return cp;
+};
+
+
+// U+hhhh "..." '...' 形式の文字列を UTF-8 に変換する
+TestCaseText.prototype.decodeQuotedUtf8String = function (s) {
+  var self = this;
+
+  s = s.replace (/U\+[0-9a-fA-F]{1,6}|'([^']*)'|"([^"]*)"|\s+/g, function (t, p1, p2) {
+    var c = t [0];
+    if (c == 'U') {
+      return self.codePointToUtf8 (t);
+    }
+    if (c == "'") {
+      return p1;
+    }
+    if (c == '"') {
+      return p2;
+    }
+
+    return '';
+  });
+
+  return s;
+};
+
+
+// UTF-8 文字列を Shift_JIS コンソール環境に出力可能なように
+// 0x20-0x7e 以外の文字を \xhh 形式に変換する
+TestCaseText.prototype._escapeUtf8String = function () {
+  var sb = new StringBuffer (this.text);
+  var result = [ ];
+
+  var len = sb.length;
+  for (var i = 0; i < len; ++i) {
+    var cc = sb.charCodeAt (i);
+    if ((cc < 0x20) || (0x7e < cc)) {
+      result.push (format ('\x%.2x', cc));
+    }
+    else {
+      result.push (sb [i]);
+    }
+  }
+
+  return result.join ('');
+};
+
+
+// sjis か utf8 を指定したデータは UTF-8 形式の String オブジェクト。
+//
+// そのままだと Irvine のログに表示した際に化けてしまうので
+// .toString() を差し替えている。
+//
+// ただし、new Utf8() の引数にすると「化けないように変換した結果」
+// で初期化してしまうので、new Utf8 (s.text) のように .text プロパティ
+// を取り出して渡すこと。
+
+// Strings からテストケースを読み込む
+TestCaseText.prototype.loadFromStrings = function (sl, params) {
+  var phase = 0;
+  var c = [ ];
+
+  function throwError (line, s) {
+    throw 'line ' + (line + 1) + ': ' + s;
+  }
+
+  for (var i = 0; i < params.length; ++i) {
+    var param = params [i];
+
+    // 入力が Shift_JIS かどうか
+    param._sjis = /^Shift_JIS(:UTF-8)?$/.test (param.encoding);
+
+    // 出力が UTF-8 かどうか
+    param._utf8 = /^(Shift_JIS:)?UTF-8$/.test (param.encoding);
+
+    // U+hhhh、'～'、"～" をデコードするかどうか
+    param._quote = params [i].hasKey ('quote') && param.quote;
+  }
+
+  for (var line = 0; line < sl.length; ++line) {
+    var t = sl [line];
+
+    if (/^\s*(#.*)?$/.test (t)) {
+      // 空行、コメント行
+      continue;
+    }
+
+    if (!/^\s*([a-z0-9_]+):(.*)$/.test (t)) {
+      throwError (line, '書式エラー');
+    }
+    var k = RegExp.$1;
+    var v = RegExp.$2;
+
+    var param = params [phase];
+    if (k != param.key) {
+      throwError (line, param.key + 'ではなく' + k + 'が記述されています');
+    }
+
+    // utf8_spec.dms で使用していない組み合わせは未実装
+    if (param._quote) {
+      if (param._sjis) {
+        v = v.toUTF8 ();
+      }
+      v = this.decodeQuotedUtf8String (v);
+    }
+    if (param._utf8) {
+      v = new String (v);
+      v.toString = this._escapeUtf8String;
+    }
+
+    c.push (line + 1);
+    c.push (v);
+
+    if (++phase == params.length) {
+      // 全てのパラメータを読み取った
+      this.cases.push (c);
+
+      phase = 0;
+      c = [ ];
+    }
+  }
+
+  if (c.length) {
+    throwError (line, 'テストケースの途中でEOFになりました');
+  }
+};
+
+
+TestCaseText.prototype.loadFromFile = function (filename, params) {
+  var f = new File (filename);
+
+  try {
+    var sl = new Strings ();
+    sl.loadFromFile (f.path);
+    this.loadFromStrings (sl, params);
+  }
+  catch (e) {
+    throw f.path + ': ' + e;
+  }
+
+  println (f.path + ': ' + this.cases.length + ' test cases');
+};
+
+
+}) ()
+
+
+// EOF

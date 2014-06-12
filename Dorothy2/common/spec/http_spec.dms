@@ -1,0 +1,588 @@
+//Dorothy2
+//caption=Http spec
+//version=20140605.0
+//hint=http://yasmine.dorothy.test/common/spec/http_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('http');
+
+
+describe ('exit functions', function () {
+  function count (f) {
+    var count = { retry: 0, exit: 0, println: 0 };
+
+    var backup = { retry: retry, exit: exit, println: println };
+
+    try {
+      retry = function () { ++count.retry; return false; };
+      exit = function () { ++count.exit; };
+      println = function () { ++count.println; };
+
+      f ();
+    }
+    finally {
+      println = backup.println;
+      exit = backup.exit;
+      retry = backup.retry;
+    }
+
+    return count;
+  }
+
+  var h;
+  beforeEach (function () {
+    h = new Http ();
+  });
+
+
+  it ('.die()', function () {
+    var c = count (function () {
+      h.die ('foo', 'bar', 'baz');
+    });
+    expect (c).toEqual ({ println: 3, retry: 0, exit: 1 });
+  });
+
+  it ('.retry_or_die()', function () {
+    var c = count (function () {
+      h.code = 0;
+      h.retry_or_die ('foo', 'bar');
+    });
+    expect (c).toEqual ({ println: 2, retry: 1, exit: 0 });
+
+    c = count (function () {
+      h.code = 503;
+      h.retry_or_die ('foo');
+    });
+    expect (c).toEqual ({ println: 1, retry: 1, exit: 0 });
+
+    c = count (function () {
+      h.code = 404;
+      h.retry_or_die ();
+    });
+    expect (c).toEqual ({ println: 0, retry: 0, exit: 1 });
+  });
+});
+
+
+describe ('.clone()', function () {
+  it ('clone', function () {
+    var h = new Http ();
+    h.code = 123;
+    var h2 = h.clone ();
+
+    expect (nameOf (h2)).toBe ('Http');
+    expect (h2.code).toBe (123);
+  });
+});
+
+
+describe ('RequestHeader', function () {
+  var h;
+  beforeEach (function () {
+    h = new Http ();
+  });
+
+  it ('.setRequestHeader()', function () {
+    h.setRequestHeader ('Test', 'foo');
+    expect (h.requestHeader).toEqual (jasmine.objectContaining ({ Test: 'foo' }));
+
+    // ヘッダ値は文字列化される
+    h.setRequestHeader ('Test', 123);
+    expect (h.requestHeader).toEqual (jasmine.objectContaining ({ Test: '123' }));
+
+    // 値を省略するとヘッダ削除
+    h.setRequestHeader ('Test');
+    expect (h.requestHeader.hasKey ('Test')).toBe (false);
+  });
+
+  it ('.removeRequestHeader()', function () {
+    h.setRequestHeader ('Test', 123);
+    h.removeRequestHeader ('Test');
+
+    expect (h.requestHeader.hasKey ('Test')).toBe (false);
+  });
+});
+
+
+describe ('ResponseHeader', function () {
+  var h;
+  beforeEach (function () {
+    h = new Http ();
+  });
+
+  it ('.getResponseHeader()', function () {
+    h.responseHeader = { };
+    h.responseHeader ['content-type'] = 'text/html';
+
+    expect (h.getResponseHeader ('content-type')).toBe ('text/html');
+    expect (h.getResponseHeader ('Content-Type')).toBe ('text/html');
+  });
+
+  it ('.removeResponseHeader()', function () {
+    h.responseHeader = { };
+    h.responseHeader ['content-type'] = 'text/html';
+    h.removeResponseHeader ('content-type');
+
+    expect (h.responseHeader.hasKey ('content-type')).toBe (false);
+
+    h.responseHeader ['content-type'] = 'text/html';
+    h.removeResponseHeader ('Content-Type');
+
+    expect (h.responseHeader.hasKey ('content-type')).toBe (false);
+  });
+});
+
+
+describe ('FLASH', function () {
+  var h;
+  beforeEach (function () {
+    h = new Http ();
+  });
+
+  it ('.removeFlashHeader()', function () {
+    h.setRequestHeader ('x-flash-version', '11,7,700,169');
+
+    h.removeFlashHeader ();
+    expect (h.getRequestHeader ('x-flash-version')).toBeNull ();
+  });
+
+  it ('.setFlashHeader() IE', function () {
+    var ua = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)';
+
+    h.setRequestHeader ('User-Agent', ua);
+    h.setFlashHeader ();
+
+    expect (h.getRequestHeader ('x-flash-version')).toBeTruthy ();
+  });
+
+  it ('.setFlashHeader() Chrome', function () {
+    var ua = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.64 Safari/537.31';
+
+    h.setRequestHeader ('User-Agent', ua);
+    h.setFlashHeader ();
+
+    expect (h.getRequestHeader ('x-flash-version')).toBeNull ();
+  });
+});
+
+
+describe ('.expandUrl()', function () {
+  cases ([
+    // [ base, url, expected ]
+    [ null, 'http://www.example.com/', 'http://www.example.com/' ],
+
+    [ 'http://www.example.com/', 'foo.html', 'http://www.example.com/foo.html' ],
+    [ 'http://www.example.com/foo.html', 'bar.html', 'http://www.example.com/bar.html' ],
+
+    // <form action=''> を現在のファイルへの移動と見なす。
+    // <a href=''> は現在のディレクトリへの移動になるが
+    // そのような変換を行いたい場合は各自で処理してもらう。
+    [ 'http://www.example.com/aaa/bbb', '', 'http://www.example.com/aaa/bbb' ],
+
+    [ 'http://www.example.com/', '?q=1', 'http://www.example.com/?q=1' ],
+    [ 'http://www.example.com/?q=1', '?a=123&b=456', 'http://www.example.com/?a=123&b=456' ],
+
+    [ 'http://www.example.com/foo.html', '/', 'http://www.example.com/' ],
+    [ 'http://www.example.com/', '/aaa/bbb', 'http://www.example.com/aaa/bbb' ],
+    [ 'http://www.example.com/aaa/bbb', './', 'http://www.example.com/aaa/' ],
+    [ 'http://www.example.com/aaa/bbb', '../index.html', 'http://www.example.com/index.html' ],
+
+    [ 'http://www.example.com/', '//www.google.com/', 'http://www.google.com/' ],
+
+    [ 'https://www.example.com/', '//www.google.com/', 'https://www.google.com/' ],
+
+    [ 'http://www.example.com/', 'https://www.google.com/', 'https://www.google.com/' ],
+
+    [ 'http://www.example.com/#bar', '#foo', 'http://www.example.com/#foo' ],
+    [ 'http://www.example.com/index.html', 'test.html#foo', 'http://www.example.com/test.html#foo' ],
+    [ 'http://www.example.com/index.html', '?q=1#foo', 'http://www.example.com/index.html?q=1#foo' ],
+    [ 'http://www.example.com/aaa/bbb', '../#foo', 'http://www.example.com/#foo' ],
+    [ 'http://www.example.com/aaa/bbb', './#foo', 'http://www.example.com/aaa/#foo' ],
+
+    // 変換エラー(null)
+    [ 'not-base-url', '//example.com/', null ],
+    [ null, 'index.html', null ]
+  ])
+  .it ('[ base, url, expected ]', function (base, url, expected) {
+    var http = new Http ();
+    expect (http.expandUrl (url, base)).toBe (expected);
+  });
+});
+
+
+describe ('HTTP GET', function () {
+  var h;
+  beforeEach (function () {
+    h = new Http ();
+  });
+
+  it ('.get() sets Referer/Cookie', function () {
+    var url_1 = 'http://www.google.co.jp/';
+    var url_2 = 'http://www.cybersyndrome.net/env.cgi';
+
+    // User-Agent を送信すると https:// に転送されてしまうため
+    h.removeRequestHeader ('User-Agent');
+
+    expect (h.get (url_1)).toBe (true);
+
+    expect (h.responseHeader.hasKey ('code')).toBe (true);
+    expect (h.responseHeader.code).toBe (200);
+    expect (h.code).toBe (200);
+
+    expect (h.statusLine).toBe ('HTTP/1.1 200 OK');
+
+    var cookie = h.getResponseHeader ('cookie');
+    println ('Cookie: ' + cookie.toString ());
+
+    // 次回アクセス時用に Referer と Cookie が自動設定されているはず
+    expect (h.getRequestHeader ('Referer')).toBe (url_1);
+    expect (h.getRequestHeader ('Cookie')).toBe (cookie.data);
+
+    expect (h.baseUrl).toBe (url_1);
+    expect (h.previousUrl).toBe (url_1);
+
+    // 不具合があった際に Google の Cookie を他サイトに送らないように
+    h.setRequestHeader ('Cookie', 'test=123');
+
+    expect (h.get (url_2)).toBe (true);
+
+    if (!/<td[^>]*>HTTP_COOKIE<\/td>\s*<td>\s*<font[^>]*>\s*(.*?)\s*<\/font>/.test (h.data)) {
+      // サイトの HTML 出力が変わった場合
+      h.capture ();
+      throw 'ページ内に HTTP_COOKIE が見つからない';
+    }
+    cookie = RegExp.$1;
+
+    println ('HTTP_COOKIE = ' + cookie);
+    expect (cookie).toBe ('(none)');
+
+    expect (h.baseUrl).toBe (url_2);
+    expect (h.previousUrl).toBe (url_2);
+  });
+
+  it ('404 Not Found', function () {
+    expect (h.get ('http://www.google.co.jp/not-found-url')).toBe (false);
+    expect (h.responseHeader.hasKey ('code')).toBe (true);
+    expect (h.responseHeader.code).toBe (404);
+    expect (h.code).toBe (404);
+    expect (h.data.length).toBeGreaterThan (0);
+  });
+
+  it ('invalid URL', function () {
+    expect (h.get ('http://www.example.invalid/')).toBe (false);
+    expect (h.responseHeader.hasKey ('code')).toBe (true);
+    expect (h.responseHeader.code).toBe (0);
+    expect (h.code).toBe (0);
+  });
+});
+
+
+describe ('autoRedirect', function () {
+  var h;
+  beforeEach (function () {
+    h = new Http ({ autoRedirect: true });
+  });
+
+  it ('redirect to other url', function () {
+    h = new Http ();
+    h.autoRedirect = true;
+
+    var fromUrl = 'http://bit.ly/9L5xEf';
+    var toUrl = 'http://www.google.co.jp/favicon.ico';
+
+    expect (h.get (fromUrl)).toBe (true);
+    expect (h.previousUrl).toBe (toUrl);
+    expect (h.baseUrl).toBe (toUrl);
+    expect (h.location).toBeNull ();
+  });
+
+  it ('multiple redirect', function () {
+    var fromUrl = 'http://bit.ly/GE0HIf';
+    // http://p.tl/4leu- に転送されて更に転送される
+    var toUrl = 'http://www.google.co.jp/favicon.ico';
+
+    expect (h.get (fromUrl)).toBe (true);
+    expect (h.previousUrl).toBe (toUrl);
+    expect (h.baseUrl).toBe (toUrl);
+    expect (h.location).toBeNull ();
+  });
+
+
+  // rentan.org に設置した CGI を使ったテスト
+  //
+  // Location: /～ を出力するものはサーバ内で内部リダイレクトとして処理され
+  // レスポンスヘッダに Location: が出力されないので設置不可
+  cases ([
+    // [ from, to ]
+
+    // Location: http://rentan.org/blog/
+    [ 'http://rentan.org/test/http/loc_absurl.pl', 'http://rentan.org/blog/' ],
+
+    // Location: index.html
+    [ 'http://rentan.org/test/http/loc_relpath1.pl', 'http://rentan.org/test/http/index.html' ],
+
+    // Location: ./index.html
+    [ 'http://rentan.org/test/http/loc_relpath2.pl', 'http://rentan.org/test/http/index.html' ],
+
+    // Location: ../../blog/page/4/
+    [ 'http://rentan.org/test/http/loc_relpath3.pl', 'http://rentan.org/blog/page/4/' ],
+
+    // Location /blog/page/2/
+    [ 'http://rentan.org/test/http/nph-abspath.pl', 'http://rentan.org/blog/page/2/' ],
+
+    // Location //rentan.org/blog/page/3/
+    [ 'http://rentan.org/test/http/nph-netpath.pl', 'http://rentan.org/blog/page/3/' ]
+  ])
+  .it ('[ from, to ]', function (from, to) {
+    h.setRequestHeader ('Accept-Encoding', 'gzip');
+
+    expect (h.get (from)).toBe (true);
+    expect (h.previousUrl).toBe (to);
+  });
+});
+
+
+describe ('XML HTTP Request emulation', function () {
+  it ('.getXhr()', function () {
+    var url = 'http://www.google.co.jp/';
+    var rel = 'favicon.ico';  // 相対 URL
+
+    var h = new Http ();
+
+    // h.get (url); の代わり
+    h.setRequestHeader ('Referer', url);
+    h.baseUrl = url;
+
+    expect (h.getXhr (rel)).toBe (true);
+
+    // 次回アクセス時に送るリファラは変化しない
+    expect (h.getRequestHeader ('Referer')).toBe (url);
+
+    // .baseUrl は変化しない
+    expect (h.baseUrl).toBe (url);
+
+    // .previousUrl は直前にアクセスした URL に更新される
+    expect (h.previousUrl).toBe (url + rel);
+  });
+});
+
+
+describe ('HTTP POST', function () {
+  it ('.post()', function () {
+    var h = new Http ();
+
+    var url = 'http://standards.ieee.org/cgi-bin/ouisearch';
+    var postdata = 'x=0007E9';
+
+    expect (h.post (url, postdata)).toBe (true);
+  });
+});
+
+
+describe ('HTTP HEAD', function () {
+  it ('.head()', function () {
+    var h = new Http ();
+    h.removeRequestHeader ('User-Agent');
+
+    expect (h.head ('http://www.google.co.jp/')).toBe (true);
+  });
+});
+
+
+describe ('.exec()', function () {
+  var h;
+  beforeEach (function () {
+    h = new Http ();
+  });
+
+  it ('get if method omitted', function () {
+    h.removeRequestHeader ('User-Agent');
+
+    expect (h.exec ({ url: 'http://www.google.co.jp/' })).toBe (true);
+  });
+
+  it ('post', function () {
+    var submit = {
+      method: 'POST',
+      url: 'http://standards.ieee.org/cgi-bin/ouisearch',
+      postdata: 'x=0007E9'
+    };
+
+    expect (h.exec (submit)).toBe (true);
+  });
+});
+
+
+describe ('.getLocation()', function () {
+  it ('redirect page', function () {
+    var h = new Http ();
+
+    var loc = h.getLocation ('http://bit.ly/1vXXu4');
+    expect (loc).toBe ('http://www.google.co.jp/');
+    expect (h.location).toBe (loc);
+
+    // リダイレクトなら Referer を書き換えない
+    expect (h.getRequestHeader ('Referer')).toBeNull ();
+  });
+});
+
+
+describe ('.getContentType()', function () {
+  it ('image/x-icon for google icon', function () {
+    var h = new Http ();
+
+    var ctype = h.getContentType ('http://www.google.co.jp/favicon.ico');
+    expect (ctype).toBe ('image/x-icon');
+  });
+});
+
+
+describe ('.removeUtf8Bom()', function () {
+  var h;
+  beforeEach (function () {
+    h = new Http ();
+  });
+
+  // BOM でないデータは false が返される
+  it ('no BOM data', function () {
+    h.data = 'abc';
+    expect (h.removeUtf8Bom ()).toBe (false);
+    expect (h.data).toBe ('abc');
+  });
+
+  it ('BOM data', function () {
+    var bom = String.fromCharCode (0xef, 0xbb, 0xbf);
+    h.data = bom + 'xyz';
+    expect (h.removeUtf8Bom ()).toBe (true);
+    expect (h.data).toBe ('xyz');
+  });
+});
+
+
+// 省略
+// ._uniqFilename()
+// .saveFile()
+
+
+describe ('.capture()', function () {
+  var h;
+  beforeEach (function () {
+    h = new Http ();
+  });
+
+  it ('set captureFilename in constructor', function () {
+    var filename = 'http_test.txt';
+
+    h = new Http ({ captureFilename: filename });
+    expect (h.captureFilename).toBe (filename);
+  });
+
+  it ('save to ' + Dorothy.matchFile + '_html.txt', function () {
+    var filename = Dorothy.matchFile + '_html.txt';
+
+    // ファイル名初期値は ***_html.txt
+    expect (h.captureFilename).toBe (filename);
+
+    var dataToWrite = 'capture[test]';
+    h.data = dataToWrite;
+
+    var r = h.capture ();
+    println ('success = ' + r.success + ', filename = ' + r.filename);
+
+    var f = new File (r.filename);
+    expect (f.exists ()).toBe (true);
+
+    f.open ('r');
+    var writtenData = f.read ();
+    f.close ();
+    f.remove ();
+
+    expect (writtenData).toBe (dataToWrite);
+  });
+});
+
+
+describe ('.dumpResponse()', function () {
+  it ('dump with hex', function () {
+    var h = new Http ();
+
+    h.statusLine = 'HTTP/1.1 801 Test';
+    h.responseHeader ['content-type'] = 'text/plain';
+    h.responseHeader.foo = 'bar';
+    h.data = '0123456789abcdef<' + String.fromCharCode (0) + '>';
+
+    var s =
+"HTTP/1.1 801 Test\n" +
+"\n" +
+"content-type: text/plain\n" +
+"foo: bar\n" +
+"\n" +
+"19 bytes\n" +
+"-----------------------------------------------\n" +
+"30 31 32 33 34 35 36 37 38 39 61 62 63 64 65 66\n" +
+"3C 00 3E\n";
+
+    expect (h.dumpResponse (100)).toBe (s);
+  });
+});
+
+
+describe ('.inflate()', function () {
+  var h;
+  beforeEach (function () {
+    h = new Http ();
+  });
+
+  it ('inflate small data', function () {
+    // ruby -e 'puts [$stdin.read(nil)].pack("m0")' < in.gz > out.txt
+    var gzipped = 'H4sICNnwc1ICAHRlc3QudHh0AAvJyCxWAKJEhYLUPD0Ak9zKOw4AAAA=';
+    gzipped = (new Base64).decode (gzipped);
+
+    expect (h.inflate (gzipped)).toBe ('This is a pen.');
+  });
+
+  it ('.get() with Accept-Encoding: gzip', function () {
+    var url = 'http://www.google.co.jp/intl/ja/policies/';
+
+    // Http で取得時に自動伸張しない
+    h.setRequestHeader ('Accept-Encoding', 'gzip');
+
+    expect (h.get (url)).toBe (true);
+    expect (h.getResponseHeader ('content-encoding')).toBe ('gzip');
+
+    var inflated = h.inflate (h.data);
+
+    // Http で取得時に自動伸張する
+    h = new Http ({ gunzip: true });
+    expect (h.get (url)).toBe (true);
+    expect (h.getResponseHeader ('content-encoding')).toBeNull ();
+    expect (h.data).toBe (inflated);
+  });
+});
+
+
+// EOF

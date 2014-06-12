@@ -1,0 +1,189 @@
+# utf8.decodeCharRef.txt
+# coding: UTF-8
+
+
+# 数字文字参照
+from:&#38;&#x26;_&#97;&#x3042;
+  to:&&_a U+3042
+
+# 軽量テーブル q_tbl で変換する文字実体参照
+from:a&amp;b&lt;c&gt;d&quot;e&nbsp;f&apos;g
+  to:'a&b<c>d"e' U+00a0 "f'g"
+
+# 複数文字に変換される文字実体参照
+from:&NotEqualTilde;
+  to:U+2242 U+0338
+
+# セミコロンなし
+from:&amp&lt&gt&quot&apos
+  to:'&<>"' "'"
+
+# 未定義の文字実体参照
+from:&InvalidCharRef;&
+  to:&InvalidCharRef;&
+
+# 不正な数の数値文字参照
+from:&#0;&#x110000;&#xffffffff;
+  to:&#0;&#x110000;&#xffffffff;
+
+from:&#x22;&quot;
+  to:'""'
+from:&#x26;&amp;
+  to:&&
+from:&#x27;&apos;
+  to:"''"
+from:&#x3c;&lt;
+  to:<<
+from:&#x3e;&gt;
+  to:>>
+
+from:&nbsp;
+  to:U+00a0
+
+from:&permil;
+  to:‰
+
+from:&cent;
+  to:U+00A2
+from:&pound;
+  to:U+00A3
+
+# 円マーク
+from:&#165;&yen;
+  to:U+00A5 U+00A5
+# UTF8.toSJIS() で \(0x5c) になり、NameBuilder.normalize() で ￥ になる
+
+from:&brvbar;
+  to:U+00a6
+from:&#167;&sect;
+  to:§§
+from:&#168;&uml;
+  to:¨¨
+from:&copy;
+  to:U+00A9
+from:&ordf;
+  to:U+00AA
+from:&laquo;
+  to:U+00ab
+from:&not;
+  to:U+00ac
+from:&reg;
+  to:U+00ae
+from:&#176;&deg;
+  to:°°
+from:&#177;&plusmn;
+  to:±±
+from:&sup2;
+  to:U+00b2
+from:&sup3;
+  to:U+00b3
+from:&micro;
+  to:U+00b5
+from:&#182;&para;
+  to:¶¶
+from:&sup1;
+  to:U+00b9
+from:&ordm;
+  to:U+00ba
+from:&raquo;
+  to:U+00bb
+from:&frac14;
+  to:U+00bc
+from:&frac12;
+  to:U+00bd
+from:&frac34;
+  to:U+00be
+from:&#215;&times;
+  to:××
+from:&#247;&divide;
+  to:÷÷
+from:&#8220;&ldquo;
+  to:““
+from:&#8221;&rdquo;
+  to:””
+from:&#8230;&hellip;
+  to:……
+from:&#8592;&larr;
+  to:←←
+from:&#8594;&rarr;
+  to:→→
+from:&#8704;&forall;
+  to:∀∀
+from:&#8706;&part;
+  to:∂∂
+from:&#8707;&exist;
+  to:∃∃
+from:&#8711;&nabla;
+  to:∇∇
+from:&#8712;&isin;
+  to:∈∈
+from:&#8715;&ni;
+  to:∋∋
+from:&prod;
+  to:U+220f
+from:&#8721;&sum;
+  to:∑∑
+from:&minus;
+  to:U+2212
+from:&lowast;
+  to:U+2217
+from:&#8730;&radic;
+  to:√√
+from:&#8733;&prop;
+  to:∝∝
+from:&#8734;&infin;
+  to:∞∞
+from:&#8736;&ang;
+  to:∠∠
+from:&#8743;&and;
+  to:∧∧
+from:&#8744;&or;
+  to:∨∨
+from:&#8745;&cap;
+  to:∩∩
+from:&#8746;&cup;
+  to:∪∪
+from:&#8747;&int;
+  to:∫∫
+from:&#8748;
+  to:∬
+from:&#8750;
+  to:∮
+from:&#8756;&there4;
+  to:∴∴
+from:&#8757;
+  to:∵
+from:&sim;
+  to:U+223c
+from:&#8765;
+  to:∽
+from:&cong;
+  to:U+2245
+from:&#8786;
+  to:≒
+from:&#8800;&ne;
+  to:≠≠
+from:&#8801;&equiv;
+  to:≡≡
+from:&#8810;
+  to:≪
+from:&#8811;
+  to:≫
+from:&#8834;&sub;
+  to:⊂⊂
+from:&#8835;&sup;
+  to:⊃⊃
+from:&#8838;&sube;
+  to:⊆⊆
+from:&#8839;&supe;
+  to:⊇⊇
+from:&#8869;&perp;
+  to:⊥⊥
+from:&sdot;
+  to:U+22c5
+
+from:-
+  to:-
+
+
+# EOF

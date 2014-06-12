@@ -1,0 +1,179 @@
+//Dorothy2
+//caption=DOMParser/core spec
+//version=20140605.0
+//hint=http://yasmine.dorothy.test/common/spec/domparser/core_spec.dms
+//match=
+//author=rentan
+//path=common\spec\domparser
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('domparser\core');
+
+
+describe ('Node', function () {
+  it ('types', function () {
+    expect (typeof Node).toBe ('object');
+
+    var types = {
+      ELEMENT_NODE: 1,
+      TEXT_NODE: 3,
+      PROCESSING_INSTRUCTION_NODE: 7,
+      COMMENT_NODE: 8,
+      DOCUMENT_NODE: 9,
+      DOCUMENT_TYPE_NODE: 10,
+      DOCUMENT_FRAGMENT_NODE: 11
+    };
+    expect (Node).toEqual (jasmine.objectContaining (types));
+
+    var noneStandardTypes = {
+      ATTRIBUTE_NODE: 2,
+      CDATA_SECTION_NODE: 4,
+      ENTITY_REFERENCE_NODE: 5,
+      ENTITY_NODE: 6,
+      NOTATION_NODE: 12
+    };
+    expect (Node).not.toEqual (jasmine.objectContaining (noneStandardTypes));
+  });
+});
+
+
+describe ('NamedNodeMap', function () {
+  it ('get from empty map', function () {
+    var attributes = new NamedNodeMap ();
+
+    expect (attributes.length).toBe (0);
+    expect (attributes.item (0)).toBeNull ();
+    expect (attributes.item (1)).toBeNull ();
+    expect (attributes.getNamedItem ('foo')).toBeNull ();
+  });
+
+  if ('set and get', function () {
+    var attributes = new NamedNodeMap ();
+
+    var node1 = { name: 'n1', value: 'v1' };
+    var node2 = { name: 'n2', value: 'v2' };
+    var node20 = { name: 'n2', value: 'v2' };
+
+    // アイテムを追加
+    expect (attributes.setNamedItem (node1)).toBeNull ();
+    expect (attributes.length).toBe (1);
+    expect (attributes.getNamedItem ('n1')).toBe (node1);
+
+    // 別のアイテムを追加
+    expect (attributes.setNamedItem (node2)).toBeNull ();
+    expect (attributes.length).toBe (2);
+
+    // 同名のアイテムを上書き
+    expect (attributes.setNamedItem (node20)).toBe (node2);
+    expect (attributes.length).toBe (2);
+    expect (attributes.getNamedItem ('n2')).toBe (node20);
+  });
+});
+
+
+describe ('DOMParser', function () {
+  it ('new DOMParser()', function () {
+    var domparser = new DOMParser ();
+
+    expect (typeof domparser.parseFromString).toBe ('function');
+
+    expect (function () {
+      domparser.parseFromString ('invalid-text', 'invalid-type');
+    }).toThrow ('DOMParser: 対応していないContent-Typeです: invalid-type');
+  });
+});
+
+
+describe ('Document', function () {
+  it ('new Document()', function () {
+    var document = new Document ();
+
+    expect (document.nodeType).toBe (Node.DOCUMENT_NODE);
+    expect (document.nodeName).toBe ('#document');
+
+    expect (document.childNodes.length).toBe (0);
+    expect (document.firstChild).toBeNull ();
+    expect (document.lastChild).toBeNull ();
+  });
+});
+
+
+describe ('Element', function () {
+  it ('new Element()', function () {
+    var element = new Element ('foo');
+
+    expect (element.nodeType).toBe (Node.ELEMENT_NODE);
+    expect (element.nodeName).toBe ('foo');
+    expect (element.tagName).toBe ('foo');
+
+    expect (element.attributes).toEqual (jasmine.any (new NamedNodeMap ()));
+    expect (element.attributes).not.toEqual (jasmine.any (Array));
+    expect (element.attributes.length).toBe (0);
+
+    expect (element.childNodes.length).toBe (0);
+
+    expect (element.firstChild).toBeNull ();
+    expect (element.lastChild).toBeNull ();
+    expect (element.previousSibling).toBeNull ();
+    expect (element.nextSibling).toBeNull ();
+    expect (element.parentNode).toBeNull ();
+  });
+});
+
+
+describe ('Text', function () {
+  it ('new Text()', function () {
+    var text = new Text ('foo bar');
+
+    expect (text.nodeType).toBe (Node.TEXT_NODE);
+    expect (text.nodeName).toBe ('#text');
+
+    expect (text.nodeValue).toBe ('foo bar');
+  });
+});
+
+
+describe ('ProcessingInstruction', function () {
+  it ('new ProcessingInstruction()', function () {
+    var pi = new ProcessingInstruction ('foo', 'bar');
+
+    expect (pi.nodeType).toBe (Node.PROCESSING_INSTRUCTION_NODE);
+    expect (pi.nodeName).toBe ('foo');
+    expect (pi.target).toBe ('foo');
+    expect (pi.data).toBe ('bar');
+  });
+});
+
+
+describe ('Comment', function () {
+  it ('new Comment()', function () {
+    var comment = new Comment ();
+
+    expect (comment.nodeType).toBe (Node.COMMENT_NODE);
+    expect (comment.nodeName).toBe ('#comment');
+  });
+});
+
+
+// EOF
