@@ -9,6 +9,9 @@ DOMParser の擬似的な実装です。
 
 動作テストが不十分です。
 
+EInvalidPointer エラーが発生することがあるため、実用的では
+ありません。
+
 
 使用方法
 ========
@@ -16,15 +19,14 @@ DOMParser の擬似的な実装です。
 common\domparser\xml.dms などから読み込まれます。
 詳しくはそちらを参照して下さい。
 
-なお、document を確保した後にそのまま手放すと、スクリプト終了時に
+スクリプト終了時に
   EInvalidPointer: Invalid pointer operation
-というエラーが発生してスクリプトが異常終了します。
+というエラーが発生してスクリプトが異常終了することがあります。
 (DMonkey のガベージコレクタ関係の不具合?)
 
-デストラクタとして .destroy() というメソッドを定義してあるので、
-document が不要になった時点で必ず呼び出し、かつ document への
-参照も削除して下さい(document への参照が残っていると exit()
-で終了した時に EInvalidPointer が発生します)。
+document のデストラクタとして .destroy() というメソッドを定義
+してあり、これを呼び出した上で document への参照も削除すると、
+多少発生確率が下がるような気がしますが気のせいかもしれません。
 
 
 DOMParser オブジェクトのプロパティ
@@ -76,6 +78,10 @@ Comment
 
 変更履歴
 ========
+
+2014-06-13  version 20140613.0  rentan at rentan.org
+  .getElementsBy*() から ._getElements() の呼び出しの間に
+  初期化メソッドを挟むようにした。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   新規作成。

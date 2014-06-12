@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DOMParser/core
-//version=20140331.0
+//version=20140613.0
 //hint=new DOMParser()
 //match=
 //author=rentan
@@ -152,6 +152,7 @@ Document.prototype.destroy = function () {
     this.childNodes [i].destroy ();
     this.childNodes.removeKey (i);
   }
+  this.childNodes.removeKey ('length');
 
   var props = this.getProperties ();
   for (var key in props) {
@@ -229,20 +230,27 @@ Document.prototype._getElements = function (founds, key, value) {
 };
 
 
+Document.prototype._startGetElements = function (key, value) {
+  var elements = this._getElements ({ length: 0 }, key, value);
+
+  return elements;
+};
+
+
 Document.prototype.getElementById = function (id) {
   return this._getElement ('id', id);
 };
 
 Document.prototype.getElementsByName = function (name) {
-  return this._getElements ({ length: 0 }, 'name', name);
+  return this._startGetElements ('name', name);
 };
 
 Document.prototype.getElementsByTagName = function (tagName) {
-  return this._getElements ({ length: 0 }, 'tagName', tagName);
+  return this._startGetElements ('tagName', tagName);
 };
 
 Document.prototype.getElementsByClassName = function (className) {
-  return this._getElements ({ length: 0 }, 'className', className);
+  return this._startGetElements ('className', className);
 };
 
 
@@ -278,6 +286,7 @@ void function Element (tagName) {
     'hasChildNodes',
     '_getElement',
     '_getElements',
+    '_startGetElements',
     'getElementById',
     'getElementsByName',
     'getElementsByTagName',
