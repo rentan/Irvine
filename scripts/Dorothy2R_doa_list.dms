@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={BC220934-7214-48CA-9A7A-736A95B25C0F}
 caption=Dorothy2R DOA
-version=20140521
+version=20140626
 hint=
 event=OnListMenuClick
 match=
@@ -610,6 +610,7 @@ function OnListMenuClick (irvine, action) {
 
     folderdata = {
       HttpVersion: irvine.FolderData['http' ,'httpversion'] == 1,
+      HttpMethod:  parseInt (irvine.FolderData['http' ,'httpmethod']),
       HttpTimeout: irvine.FolderData['http' ,'httptimeout'],
       Agent:       irvine.FolderData['http' ,'agent'],
       UrlEncode:   irvine.FolderData['http' ,'urlencode'] == 1,
