@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20140613.0
+//version=20140621.0
 //hint=
 //match=
 //author=rentan
@@ -87,7 +87,7 @@ Yasmine.prototype._loadScript = function () {
   var sl = new Strings ();
   sl.loadFromFile (file);
 
-  var re = /\sexpect\s*\(/g;
+  var re = /(^|\s)expect\s*\(/g;
   var count = 0;
 
   function rep (s) {
@@ -578,24 +578,16 @@ Yasmine.prototype._util._eq = function (a, b, aStack, bStack, customTesters) {
       return false;
     }
 
-    // DMonkey では {}.toString != {}.toString になるため、
-    // デフォルトメソッドが等しくなくても無視する
-    // なおユーザー定義型の constructor は等しくなる
-    var defaultMethods = /^(getEvents|getKeys|getMethods|getProperties|hasKey|hasOwnProperty|removeKey|toString|valueOf)$/;
-    function isDefaultMethods (key, a, b) {
-      return defaultMethods.test (key)
-          && typeof a === 'function'
-          && typeof b === 'function';
-    }
-
     while (idx--) {
       var key = aKeys [idx];
       if (!b.hasKey (key)) {
         return false;
       }
 
+      // prototype で定義されたメソッド同士の比較は恐らく無理なので
+      // 両方共 function なら一致と見なす
       if (!this._eq (a [key], b [key], aStack, bStack, customTesters)
-       && !isDefaultMethods (key, a [key], b [key])) {
+       && !(typeof a [key] === 'function' && typeof b [key] === 'function')) {
         return false;
       }
     }
