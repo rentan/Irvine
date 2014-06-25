@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20140608.0
+//version=20140626.0
 //hint=pixiv 別バージョン
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?)
 //author=rentan
@@ -41,6 +41,7 @@ function () {
     Filename: {
       Illust:  '',  // 省略時は Illust2 を使用
       Illust2: 'pixiv_%ID%',
+      Ugoira: 'pixiv_%ID%',
       Manga:  'pixiv_%ID%_p%P%',
       Manga2: 'pixiv_%ID%_p%P%',
       Profile: 'pixiv_profile_%ID%',
@@ -232,6 +233,8 @@ function get_profile_from_pixivid (pixiv_id) {
 
 
 // HTML から各種情報を取得する
+//  成功時 true、HTTP エラー時 false を返す
+//  情報が見つからなければ強制終了する
 function get_spec_from_html (http) {
   // 題名を探す
   if (!/<section\s+class="work-info[^>]*>(.*?)<div\s+id="tag-editor">/.test (http.data)) {
@@ -242,25 +245,46 @@ function get_spec_from_html (http) {
   }
   nb.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
 
-  // 画像 URL、pixiv ID を探す
-  if (!/<img\s+src="(http:\/\/i\d+\.pixiv\.net\/img\d+\/img\/([^\/]+)\/\d+(_[0-9a-f]+)?(_m)?\.[^"]*)"/.test (http.data)) {
-    http.die ('画像 URL が見つかりません。');
-  }
-  var img_url = RegExp.$1;
-  nb.pixiv_id = RegExp.$2;
-
   if (/<h1\s+class="user">/.test (http.data)) {
     // 他人のページなのでこのページ内にプロフィールがある
+    if (!/<a\s+href="\/stacc\/([^\/"]+)"\s+class="tab-feed">/.test (http.data)) {
+      http.die ('pixiv ID が見つかりません。');
+    }
+    nb.pixiv_id = RegExp.$1;
+
     if (!get_profile_from_html (http)) {
-      return null;
+      return false;
     }
   }
   else {
     // 自分のページはプロフィール情報がないので別ページから取得する
+    if (!/<img\s+src="http:\/\/i\d+\.pixiv\.net\/img\d+\/profile\/([^\/"]+)\/[^"]*"[^>]*class="user-icon"/.test (http.data)) {
+      http.die ('pixiv ID が見つかりません。');
+    }
+    nb.pixiv_id = RegExp.$1;
+
     if (!get_profile_from_pixivid (nb.pixiv_id)) {
-      return null;
+      return false;
     }
   }
+
+  return true;
+}
+
+
+// HTML から各種情報を取得する(イラスト、漫画)
+//  成功時は画像 URL、HTTP エラー時 null を返す
+//  情報が見つからなければ強制終了する
+function get_img_spec_from_html (http) {
+  if (!get_spec_from_html (http)) {
+    return null;
+  }
+
+  // 画像 URL を探す
+  if (!/<img\s+src="(http:\/\/i\d+\.pixiv\.net\/img\d+\/img\/([^\/]+)\/\d+(_[0-9a-f]+)?(_m)?\.[^"]*)"/.test (http.data)) {
+    http.die ('画像 URL が見つかりません。');
+  }
+  var img_url = RegExp.$1;
 
   // 原寸画像の URL を返す（ただし漫画の場合は存在しない）
   img_url = img_url.replace (/_m(\.[^\/.]*)$/, '$1');
@@ -278,7 +302,7 @@ function get_spec_from_illustid (illust_id) {
     return retry ();
   }
 
-  if (!get_spec_from_html (http)) {
+  if (!get_img_spec_from_html (http)) {
     return null;
   }
 
@@ -358,7 +382,7 @@ function make_manga_list (img_url, pages) {
 
 // 漫画のページを解析して全ての画像をダウンロード
 function dl_manga_p (http) {
-  var img_url = get_spec_from_html (http);
+  var img_url = get_img_spec_from_html (http);
   if (!img_url || !get_manga_size (img_url)) {
     return retry ();
   }
@@ -392,7 +416,7 @@ function dl_manga (url) {
 
 // イラストのページを解析して画像をダウンロード
 function dl_illust_p (http, img_specified) {
-  var img_url = get_spec_from_html (http);
+  var img_url = get_img_spec_from_html (http);
   if (!img_url) {
     return retry ();
   }
@@ -404,7 +428,7 @@ function dl_illust_p (http, img_specified) {
   urlinfo.url = img_url;
   headers.Host = (new URL (img_url)).host;
   headers.Cookie = '';
-  headers.Referer = http.previousUrl.replace (/mode=medium/, 'mode=big');
+  headers.Referer = http.previousUrl.replace (/([?&]mode)=medium/, '$1=big');
   headers ['Accept-Language'] = 'ja';
 }
 
@@ -429,11 +453,71 @@ function dl_illust (url) {
 }
 
 
-// イラストまたは漫画を判別してダウンロード mode=medium
+// うごイラの作品か調べる
+function is_ugoira (http) {
+  var re = /<script[^>]*>\s*pixiv\.context\.illustId[^<]*;pixiv\.context\.ugokuIllustFullscreenData\s*=\s*\{\s*"src"\s*:\s*"([^"]*)"/;
+
+  if (!re.test (http.data)) {
+    return false;
+  }
+  var zip = RegExp.$1.replace (/\\/g, '');
+
+  http.ugokuIllustFullscreenData = zip;
+  return true;
+}
+
+
+// うごイラのページを解析して zip をダウンロード
+function dl_ugoira_p (http) {
+  if (!get_spec_from_html (http)) {
+    return retry ();
+  }
+
+  var zip = http.ugokuIllustFullscreenData;
+  if (!/^https?:\/\/./.test (zip)) {
+    http.capture ();
+    http.die ('未対応の ugokuIllustFullscreenData の形式です。');
+  }
+
+  nb.setFilename (ini.Filename.Ugoira, zip);
+
+  urlinfo.url = zip;
+  headers.Host = (new URL (zip)).host;
+  headers.Cookie = '';
+  headers.Referer = http.previousUrl.replace (/([?&]mode)=medium/, '$1=ugoira_view');
+  headers ['Accept-Language'] = 'ja';
+}
+
+
+// うごイラをダウンロード mode=ugoira_view
+function dl_ugoira (url) {
+  url = url.replace (/mode=ugoira_view/, 'mode=medium');
+
+  var http = new_http (url);
+  if (!http.get_and_login_check (url)) {
+    return retry ();
+  }
+
+  if (!is_ugoira (http)) {
+    http.die ('ugokuIllustFullscreenData が見つかりません。');
+  }
+
+  return dl_ugoira_p (http);
+}
+
+
+// イラスト、うごイラ、漫画を判別してダウンロード mode=medium
 function dl_illust_or_manga (url, img_specified) {
   var http = new_http (url);
   if (!http.get_and_login_check (url)) {
     return retry ();
+  }
+
+  if (is_ugoira (http)) {
+    if (img_specified) {
+      http.die ('イラストの URL でうごイラが指定されました。');
+    }
+    return dl_ugoira_p (http);
   }
 
   if (!get_manga_pages (http)) {
@@ -738,8 +822,14 @@ function dl_www_pixiv_net (u, path) {
       return true;
     }
     if (/[?&]mode=medium/.test (q)) {
-      // イラストまたは漫画の HTML ページ
+      // イラスト、うごイラ、漫画の HTML ページ
       dl_illust_or_manga (u.url);
+      return true;
+    }
+
+    if (/[?&]mode=ugoira_view/.test (q)) {
+      // うごイラの HTML ページ
+      dl_ugoira (u.url);
       return true;
     }
 

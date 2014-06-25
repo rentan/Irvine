@@ -44,8 +44,8 @@ http://www.pixiv.net/member_illust.php?id=\d+
   &p=\d+ が付いていればそのページ内の作品だけダウンロードする。
   1ページ目だけダウンロードしたい場合は &p=1 を付ける。
 
-http://www.pixiv.net/member_illust.php?mode=(big|medium|manga)&illust_id=\d+
-  イラストや漫画のページ
+http://www.pixiv.net/member_illust.php?mode=(big|medium|manga|ugoira_view)&illust_id=\d+
+  イラストやうごイラ、漫画のページ
   漫画の場合は全画像をダウンロード。
 
 http://i\d+.pixiv.net/img\d+/img/[^/]+/\d+(_[0-9a-f]+)?
@@ -86,6 +86,9 @@ http://www.pixiv.net/novel/show.php?id=\d+
 
 変更履歴
 ========
+
+2014-06-26  version 20140626.0  rentan at rentan.org
+  うごイラに対応。
 
 2014-06-08  version 20140608.0  rentan at rentan.org
   漫画の画像をダウンロードする際にリファラが正しくない不具合を修正。
