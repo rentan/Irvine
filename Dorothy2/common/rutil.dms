@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20140608.0
+//version=20140626.0
 //hint=utility
 //match=
 //author=rentan
@@ -25,103 +25,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 (function () {
-
-
-// Dorothy2 本体のバージョンチェック
-function DorothyVersionValidator () {
-}
-
-DorothyVersionValidator.prototype._oldVer = function (ver) {
-  var s = WScript.ScriptName;
-
-  return s + " version " + ver + "\n\n" +
-         s + " のバージョンが古すぎます。\n" +
-         "Dorothy2 の最新版を使用して下さい。";
-};
-
-// DOA.dms
-DorothyVersionValidator.prototype.isDOA =
-  (typeof frmDOA == 'object' && nameOf (frmDOA) == 'VCLForm');
-
-DorothyVersionValidator.prototype.validateDoaVersion = function () {
-  if (!Dorothy.hasKey ('doaVersion')) {
-    return "このスクリプトは DOA では使用できません。";
-  }
-
-  if (Dorothy.doaVersion < 0.23) {
-    return this._oldVer (Dorothy.doaVersion);
-  }
-
-  return null;
-};
-
-// Dorothy2set.dms Dorothy2ListMenu.dms
-DorothyVersionValidator.prototype.validateDorothy2setVersion = function () {
-  if (!Dorothy.hasKey ('userPath')) {
-    return "Dorothy.userPath が定義されていません。\n" +
-           "Dorothy2 の最新版を使用して下さい。";
-  }
-
-  return null;
-};
-
-// Dorothy2A.dms
-DorothyVersionValidator.prototype.validateDorothy2aVersion = function () {
-  var ver = parseFloat (Dorothy.version);
-
-  if (!isFinite (ver) || ver < 0.31) {
-    return this._oldVer (Dorothy.version);
-  }
-
-  // フォルダ設定 → HTTP(1) → HTTP メソッドのチェック
-  if (folderdata.HttpMethod) {
-    return urlinfo.url + "\n\n" +
-           "HTTP メソッドが GET 以外のフォルダでは実行できません。\n" +
-           "GET に設定したフォルダで実行して下さい。";
-  }
-
-  // フォルダ設定 → HTTP(2) → User-Agent のチェック
-  if (/^Mozilla\/[0-4]\.\d*|MSIE\s+[0-8]\.\d*|Irvine/.test (folderdata.Agent)) {
-    return urlinfo.url + "\n\n" +
-           "User-Agent に " + RegExp.$0 + " が含まれています。\n" +
-           "適切な User-Agent に変更して下さい。";
-  }
-
-  return null;
-};
-
-DorothyVersionValidator.prototype.validate = function () {
-  var s;
-
-  if (typeof Dorothy != 'object') {
-    s = "Dorothy2 のバージョンが古すぎます。\n" +
-        "Dorothy2 の最新版を使用して下さい。";
-  }
-  if (this.isDOA) {
-    s = this.validateDoaVersion ();
-  }
-  else if (Dorothy.version == 'xxxx') {
-    s = this.validateDorothy2setVersion ();
-  }
-  else {
-    s = this.validateDorothy2aVersion ();
-  }
-
-  if (s) {
-    println (s.replace (/\n(\n)+/g, "\n"));
-    alert (s);
-    exit ();
-  }
-};
-
-
-var dvv = new DorothyVersionValidator ();
-dvv.validate ();
-
-
-if (!Dorothy.hasKey ('rVersion')) {
-  common_load ('rutil_dorothy2r');
-}
 
 
 // コンテナ
@@ -285,6 +188,49 @@ Util.get_option = function (key) {
 
   return null;
 };
+
+
+// エラー終了
+Util.fatal = function (s) {
+  println (s.replace (/\n(\n)+/g, "\n"));
+  alert (s);
+  exit ();
+};
+
+
+//----------------------- 実行環境が正しいか検証する -----------------------
+
+
+if (Dorothy.hasKey ('rVersion')) {
+  if (Dorothy.rVersion < 20140521) {
+    Util.fatal ("Dorothy2R のバージョンが古すぎます。\nDorothy2R の最新版を使用して下さい。");
+  }
+}
+else {
+  common_load ('rutil_dorothy2r');
+}
+
+
+// フォルダ設定
+(function () {
+  if (typeof folderdata != 'object') {
+    return;
+  }
+
+  // フォルダ設定 → HTTP(1) → HTTP メソッド
+  if (folderdata.HttpMethod) {
+    Util.fatal (urlinfo.url + "\n\n" +
+      "HTTP メソッドが GET 以外のフォルダでは実行できません。\n" +
+      "GET に設定したフォルダで実行して下さい。");
+  }
+
+  // フォルダ設定 → HTTP(2) → User-Agent
+  if (/^Mozilla\/[0-4]\.\d*|MSIE\s+[0-8]\.\d*|Irvine/.test (folderdata.Agent)) {
+    Util.fatal (urlinfo.url + "\n\n" +
+      "User-Agent に " + RegExp.$0 + " が含まれています。\n" +
+      "適切な User-Agent に変更して下さい。");
+  }
+}) ();
 
 
 }) ()
