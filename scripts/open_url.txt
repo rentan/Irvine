@@ -22,6 +22,10 @@ Shift キーを押しながらメニュー確定で Internet Explorer で開き�
 変更履歴
 ========
 
+2014-06-10  version 20140610  rentan at rentan.org
+  http://yasmine.dorothy.test/common/spec/*.dms の時は
+  spec ファイルをテキストエディタで開くようにした。
+
 2014-04-23  version 20140423  rentan at rentan.org
   新規作成。
 

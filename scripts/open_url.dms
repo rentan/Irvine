@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={05E758BC-3DFA-4015-AA74-8DEC1557A9AC}
 caption=URLを開く
-version=20140423
+version=20140610
 hint=選択したアイテムのURLを開く
 event=OnListMenuClick
 match=
@@ -45,6 +45,10 @@ function OnListMenuClick (irvine, action) {
     }
     else if (!/^https?:\/\/./.test (url)) {
       return;
+    }
+
+    if (/^http:\/\/yasmine\.dorothy\.test\/(common\/spec\/.*\.dms)$/.test (url)) {
+      url = WScript.Path + 'Dorothy2\' + RegExp.$1.replace (/\//g, '\\');
     }
 
     if (file) {
