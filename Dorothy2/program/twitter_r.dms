@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20140612.0
+//version=20140702.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -155,6 +155,11 @@ Twitter.prototype._analyzeTweetImage = function (http) {
 
     html.replace (re, add);
     this.multiPhoto = true;
+  }
+
+  // “®‰æ
+  else if (/<source\s+video-src="(https:\/\/pbs\.twimg\.com\/tweet_video\/[^"]+)"/.test (http.data)) {
+    urls.push ({ Url: RegExp.$1 });
   }
 
   if (!urls.length) {

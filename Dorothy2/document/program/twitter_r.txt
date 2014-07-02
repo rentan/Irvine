@@ -17,11 +17,11 @@ Twitter 用のスクリプトです。
 
 https://twitter.com/[^/]+/status(es)?/\d+
   ツイート
-  そのツイートに添付されている画像をダウンロード。
+  そのツイートに添付されている画像/動画をダウンロード。
 
 https?://twitter.com/[^/]+/media
-  画像一覧
-  画像一覧に表示される作品をダウンロード。
+  画像/動画一覧
+  画像/動画一覧に表示される作品をダウンロード。
 
 
 仕様・制限事項
@@ -30,6 +30,9 @@ https?://twitter.com/[^/]+/media
 
 変更履歴
 ========
+
+2014-07-02  version 20140702.0  rentan at rentan.org
+  動画に対応。
 
 2014-06-12  version 20140612.0  rentan at rentan.org
   /media 指定時に
