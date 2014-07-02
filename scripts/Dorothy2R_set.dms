@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={0D313B7E-9959-4F23-9AEC-64276F111EDB}
 caption=Dorothy2R 設定
-version=20140521
+version=20140702
 hint=Dorothy2R 設定
 event=OnMainMenuClick
 match=
@@ -227,11 +227,11 @@ object Form1: TForm1
     end
     object Help1: TMenuItem
       Caption = 'ヘルプ'
-      object N16: TMenuItem
-        Caption = 'バージョン'
-      end
       object doc: TMenuItem
         Caption = 'ドキュメント'
+      end
+      object N16: TMenuItem
+        Caption = 'バージョン'
       end
     end
   end
@@ -239,46 +239,6 @@ end
 ";
 
 
-
-
-var D = "
-object Form4: TForm4
-  Left = 227
-  Top = 142
-  Width = 618
-  Height = 479
-  Caption = 'Form4'
-  Color = clBtnFace
-  Font.Charset = SHIFTJIS_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -12
-  Font.Name = 'ＭＳ Ｐゴシック'
-  Font.Style = []
-  OldCreateOrder = False
-  DesignSize = (
-    610
-    452)
-  PixelsPerInch = 96
-  TextHeight = 12
-  object Memo1: TMemo
-    Left = 0
-    Top = 0
-    Width = 609
-    Height = 449
-    Anchors = [akLeft, akTop, akRight, akBottom]
-    Font.Charset = SHIFTJIS_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -16
-    Font.Name = 'ＭＳ Ｐゴシック'
-    Font.Style = []
-    Lines.Strings = (
-      'Memo1')
-    ParentFont = False
-    ScrollBars = ssBoth
-    TabOrder = 0
-  end
-end
-";
 
 
 //========================
@@ -873,7 +833,7 @@ class SettingForm(VCLForm){
 			return;
 		}
 		var path = dorothy2_program + ListView1.Items[ListView1.Selected.Index].filename + '.dms';
-		editor(path);
+		DorothySetting.edit (path);
 	}
 	//=======================================
 	//プログラム編集（userフォルダも編集)
@@ -886,7 +846,7 @@ class SettingForm(VCLForm){
 			return;
 		}
 		var path = dorothy2_program + ListView1.Items[ListView1.Selected.Index].filename + '.dms';
-		editor(path);
+		DorothySetting.edit (path);
 
 		//user
 		var path = dorothy2_path + 'user\' + ListView1.Items[ListView1.Selected.Index].filename;
@@ -897,7 +857,7 @@ class SettingForm(VCLForm){
 		var f = dir.findFirstFile('*.*');
 		while(f != null){
 			if(f.match(/\.dms$|\.bat$|\.hta$|\.html?$/)){
-				editor(path + '\' + f);
+				DorothySetting.edit (path + '\' + f);
 			}
 			f = dir.findNextFile();
 		}
@@ -906,13 +866,13 @@ class SettingForm(VCLForm){
 		//設定用
 		var path = dorothy2_setting + ListView1.Items[ListView1.Selected.Index].filename + '.set';
 		if(new File(path).exists()){
-			editor(path);
+			DorothySetting.edit (path);
 		}
 
 		//ドキュメント
 		var path = dorothy2_document + 'program\' + ListView1.Items[ListView1.Selected.Index].filename + '.txt';
 		if(new File(path).exists()){
-			editor(path);
+			DorothySetting.edit (path);
 		}
 	}
 	//=======================================
@@ -939,7 +899,7 @@ class SettingForm(VCLForm){
 			f.close();
 			f = '';
 		}
-		editor(path);
+		DorothySetting.edit (path);
 		selectItem();
 	}
 	//=======================================
@@ -951,7 +911,7 @@ class SettingForm(VCLForm){
 			return;
 		}
 		var path = dorothy2_document + 'program\' + ListView1.Items[ListView1.Selected.Index].filename + '.txt';
-		editor(path);
+		DorothySetting.edit (path);
 	}
 	//=======================================
 	//その他のscriptを作成
@@ -992,7 +952,7 @@ class SettingForm(VCLForm){
 					f = '';
 				}
 			}
-			editor(path);
+			DorothySetting.edit (path);
 		}
 	}
 	//=======================================
@@ -1026,7 +986,7 @@ class SettingForm(VCLForm){
 			eval(f)('path' , path);
 		}
 		else{
-			editor(path);
+			DorothySetting.edit (path);
 		}
 	}
 	//===========================================================
@@ -1083,7 +1043,7 @@ class SettingForm(VCLForm){
 			return;
 		}
 		var path = dorothy2_setting + ListView1.Items[ListView1.Selected.Index].filename + '.set';
-		editor(path);
+		DorothySetting.edit (path);
 	}
 	//=======================================
 	//全て選択
@@ -1126,11 +1086,17 @@ class SettingForm(VCLForm){
 	//=======================================
 	//ドキュメント
 	//=======================================
-	function doc2(){
-		if(ListView1.SelCount == 0){
-			return;
+	function getSelectedItem () {
+		if (ListView1.SelCount == 0) {
+			return null;
 		}
-		doc_dsp(ListView1.Items[ListView1.Selected.Index].filename);
+		return ListView1.Items [ListView1.Selected.Index];
+	}
+	function doc2(){
+		var item = getSelectedItem ();
+		if (item) {
+			DorothySetting.showProgramDocument (item.filename);
+		}
 	}
 	//=======================================
 	//デバッグモード
@@ -1276,22 +1242,9 @@ class SettingForm(VCLForm){
 	//ドキュメント
 	//=================================================
 	function help_doc(){
-		var path = dorothy2_system_menu_help + 'doc.dms';
+		var path = dorothy2_system_menu_help + 'document.dms';
 		var p = file_load(path);
 		eval(p)();
-	}
-}
-//========================
-//設定用フォーム
-//========================
-class docForm(VCLForm){
-	//var ColumnToSort = 0;
-	//-------------------
-	//コンストラクタ
-	//-------------------
-	function docForm(){
-		loadFromText(D);
-		//this.show();
 	}
 }
 //===========================
@@ -1307,26 +1260,6 @@ class newForm(VCLForm){
 		var a = ListView1.Items.add();
 		a.Caption = '標準';
 	}
-}
-//===========================
-//ドキュメント file
-//===========================
-function doc_dsp(name){
-	var f = new docForm;
-	var path = dorothy2_document + 'program\' + name + '.txt';
-	var d = file_load(path);
-	f.Memo1.Lines.assign(d);
-	f.Caption = name;
-	f.showModal();
-}
-//===========================
-//ドキュメント data
-//===========================
-function doc_dsp2(name , data){
-	var f = new docForm;
-	f.Memo1.Lines.assign(data);
-	f.Caption = name;
-	f.showModal();
 }
 //===========================
 //new
@@ -1458,33 +1391,132 @@ function script_file_read(filename){
 	}
 	return ans;
 }
-//=========================================================
-//エディタで編集
-//=========================================================
-function editor(path){
-	if(!new File(path).exists()){
-		alert('ファイルが在りません');
-		return;
-	}
-	Dorothy.edit (path);
-}
-//=========================================================
-function esc(s){
-	var e;
-	try{
-		s = s.replace(/\\/g,'\\\\');
-		s = s.replace(/\"/g,'\\\"');
-		s = s.replace(/\n/g,'\\n');
-		s = s.replace(/\t/g,'\\t');
-	}
-	catch(e) {
-		return s;
-	}
 
-	return s;
-}
 
-//=========================================================
+//----------------------------- DorothySetting -----------------------------
+
+var DorothySetting = { };
+
+
+// ファイルをテキストエディタで開く
+DorothySetting.edit = function (file) {
+  if(new File (file).exists ()) {
+    Dorothy.edit (file);
+  }
+  else {
+    alert ('ファイルがありません。');
+  }
+};
+
+
+// 文字列が UTF-8 か調べる
+DorothySetting._isUtf8 = function (s) {
+  var sb = new StringBuffer (s);
+
+  // 長い UTF-8 文字列で非常に時間がかかってしまうので
+  // 適当なところで打ち切る
+  var len = Math.min (sb.length, 1000);
+
+  sb.append (String.fromCharCode (0xff));
+
+  for (var i = 0; i < len; ) {
+    var cc = sb.charCodeAt (i++);
+
+    if (cc <= 0x7f) {
+      continue;
+    }
+    if ((cc <= 0xc1) || (0xf8 <= cc)) {
+      return false;
+    }
+
+    // UTF-8 の2バイト目以降の値として正しいか
+    var bytes = (cc <= 0xdf) ? 1 : (cc <= 0xef) ? 2 : 3;
+    do {
+      cc = sb.charCodeAt (i++);
+      if ((cc < 0x80) || (0xbf < cc)) {
+        return false;
+      }
+    } while (--bytes);
+  }
+
+  return true;
+};
+
+
+// テキストファイルを読み込んで返す
+// 中身が UTF-8 の場合は Shift_JIS に変換する
+DorothySetting.loadFileToSJIS = function (file) {
+  var s = file_load (file);
+  return this._isUtf8 (s) ? s.fromUTF8toSJIS () : s;
+};
+
+
+// テキスト表示用のフォーム定義
+DorothySetting._textFormDfm = "
+object Form4: TForm4
+  Left = 227
+  Top = 142
+  Width = 618
+  Height = 479
+  Caption = 'Form4'
+  Color = clBtnFace
+  Font.Charset = SHIFTJIS_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'ＭＳ Ｐゴシック'
+  Font.Style = []
+  OldCreateOrder = False
+  DesignSize = (610 452)
+  PixelsPerInch = 96
+  TextHeight = 12
+  object Memo1: TMemo
+    Left = 0
+    Top = 0
+    Width = 609
+    Height = 449
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    Font.Charset = SHIFTJIS_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -16
+    Font.Name = 'ＭＳ Ｐゴシック'
+    Font.Style = []
+    ParentFont = False
+    ScrollBars = ssBoth
+    TabOrder = 0
+  end
+end";
+
+// テキスト表示用のフォームを作成
+DorothySetting.createTextForm = function (title) {
+  var form = new VCLForm (true);
+  form.loadFromText (this._textFormDfm);
+
+  if (title) {
+    form.Caption = title;
+  }
+
+  return form;
+};
+
+
+// テキストファイルを表示
+DorothySetting.showTextFile = function (file, title) {
+  var form = this.createTextForm (title);
+  var t = this.loadFileToSJIS (file);
+
+  form.Memo1.Lines.assign (t);
+  form.showModal ();
+};
+
+
+// program のドキュメントを表示
+DorothySetting.showProgramDocument = function (name) {
+  var file = Dorothy.path + 'document\program\' + name + '.txt';
+  this.showTextFile (file, name);
+};
+
+
+//---------------------------- OnMainMenuClick -----------------------------
 
 // メインメニューのクリックイベント
 function OnMainMenuClick (irvine, action) {
@@ -1597,7 +1629,7 @@ function OnMainMenuClick (irvine, action) {
   // Dorothy オブジェクト初期化
   function ev () { eval (arguments [0]); }
   Dorothy.init ({ version: 'xxxx', eval: ev });
-  Dorothy.rVersion = 20140521;
+  Dorothy.rVersion = 20140702;
 
   Dorothy._loadSettingIni ();
   defineDorothy2Path ();
@@ -1616,7 +1648,7 @@ function OnMainMenuClick (irvine, action) {
 }
 
 
-//メニューの更新イベント
+// メニューの更新イベント
 function OnMenuUpdate (irvine, action) {
 }
 
