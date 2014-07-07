@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Http
-//version=20140522.0
+//version=20140707.0
 //hint=new Http ()
 //match=
 //author=rentan
@@ -323,7 +323,7 @@ Http.prototype.setFlashHeader = function (v) {
   if (!v) {
     // Internet Explorer
     if (ua.indexOf ('Trident/') != -1) {
-      v = '12,0,0,38';
+      v = '14,0,0,125';
     }
   }
 

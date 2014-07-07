@@ -160,7 +160,7 @@ setFlashHeader (ver)
 
   setRequestHeader ('x-flash-version', ver) と同じ。ver を省略すると、
   User-Agent に 'Trident/' が含まれる場合のみ規定の値
-  (例: '12,0,0,38')が設定される。
+  (例: '14,0,0,125')が設定される。
 
 removeResponseHeader (name)
   name ... string: ヘッダ名
@@ -390,6 +390,9 @@ inflate (s)
 
 変更履歴
 ========
+
+2014-07-07  version 20140707.0  rentan at rentan.org
+  .setFlashHeader(): x-flash-version: 14,0,0,125 に更新。
 
 2014-05-22  version 20140522.0  rentan at rentan.org
   .getSaveFolder(): 削除。
