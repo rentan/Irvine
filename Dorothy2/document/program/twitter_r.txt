@@ -31,6 +31,13 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2014-07-14  version 20140714.0  rentan at rentan.org
+  リプライ形式のツイートをダウンロードすると %USER_NAME% と %TITLE%
+  が正しくない不具合を修正。
+    thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/527
+
+  Dorothy2\program\spec\twitter_r_spec.dms を新規作成。
+
 2014-07-02  version 20140702.0  rentan at rentan.org
   動画に対応。
 

@@ -1,0 +1,273 @@
+//Dorothy2
+//caption=twitter_r spec
+//version=20140714.0
+//hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
+//match=
+//author=rentan
+//path=program\spec
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('esx\array');
+
+
+// program\twitter_r.dms を読み込んで実行
+function loadProgram (name, keyToDefine) {
+  Global [keyToDefine] = true;
+
+  var src = file_load (Dorothy.programDir + name + '.dms');
+  eval (src) ();
+
+  Global.removeKey (keyToDefine);
+}
+
+loadProgram ('twitter_r', 'DEFINE_TWITTER_OBJECT_ONLY');
+
+
+describe ('Twitter', function () {
+  var twitter = new Twitter ();
+
+  it ('urls の初期値は空配列', function () {
+    expect (twitter.urls).toEqual ([ ]);
+  });
+});
+
+
+describe ('単一画像', function () {
+  var twitter = new Twitter ();
+  twitter.nameBuilder = new NameBuilder ({ zen2han: false });
+
+  var url = 'https://twitter.com/rentan_org/status/314692285487001600';
+  var imageUrl = 'https://pbs.twimg.com/media/BF4C92JCMAEHMR9.png:orig';
+
+  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%]';
+  var filename = '練炭 [rentan_org] - ちょっとテスト。GlyphWiki より。 ' +
+                 'pic.twitter.com／7kRfsb8rZn [314692285487001600].png';
+
+
+  it ('.getImage() 成功時に .OK を返す', function () {
+    expect (twitter.getImage (url)).toBe (twitter.OK);
+  });
+
+  it ('.media が false', function () {
+    expect (twitter.media).toBe (false);
+  });
+
+  it ('.multiPhoto が false', function () {
+    expect (twitter.multiPhoto).toBe (false);
+  });
+
+  it ('.urls が [ { Url: ... } ] 形式', function () {
+    expect (twitter.urls).toEqual ([ { Url: imageUrl } ]);
+  });
+
+  it ('.setFilename() が item.filename を書き換えて URL を返す', function () {
+    var ifn = item.filename;
+    var u = twitter.setFilename (fmt);
+
+    expect (u).toBe (imageUrl);
+    expect (item.filename).toBe (filename);
+
+    item.filename = ifn;
+  });
+
+  it ('.buildFilename() で .utls にファイル名が追加される', function () {
+    twitter.buildFilename (fmt);
+    expect (twitter.urls).toEqual ([ { Url: imageUrl, Filename: filename } ]);
+  });
+});
+
+
+describe ('単一画像(ツイート本文に別のツイートの画像 URL あり)', function () {
+  var twitter = new Twitter ();
+  twitter.nameBuilder = new NameBuilder ({ zen2han: false });
+
+  var url = 'https://twitter.com/rentan_org/status/314692615671017472';
+  var imageUrl = 'https://pbs.twimg.com/media/BF4DRELCcAAp1sI.png:orig';
+
+  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%]';
+  var filename = '練炭 [rentan_org] - ちょっとテスト その2。 pic.twitter.com／2g0roAlhG3 ' +
+                 'pic.twitter.com／uGtcUO2tzT [314692615671017472].png';
+
+
+  it ('.getImage() 成功時に .OK を返す', function () {
+    expect (twitter.getImage (url)).toBe (twitter.OK);
+  });
+
+  it ('.media が false', function () {
+    expect (twitter.media).toBe (false);
+  });
+
+  it ('.multiPhoto が false', function () {
+    expect (twitter.multiPhoto).toBe (false);
+  });
+
+  it ('.urls が [ { Url: ... } ] 形式', function () {
+    expect (twitter.urls).toEqual ([ { Url: imageUrl } ]);
+  });
+
+  it ('.setFilename() が item.filename を書き換えて URL を返す', function () {
+    var ifn = item.filename;
+    var u = twitter.setFilename (fmt);
+
+    expect (u).toBe (imageUrl);
+    expect (item.filename).toBe (filename);
+
+    item.filename = ifn;
+  });
+
+  it ('.buildFilename() で .utls にファイル名が追加される', function () {
+    twitter.buildFilename (fmt);
+    expect (twitter.urls).toEqual ([ { Url: imageUrl, Filename: filename } ]);
+  });
+});
+
+
+describe ('複数画像', function () {
+  var twitter = new Twitter ();
+  twitter.nameBuilder = new NameBuilder ({ zen2han: false });
+  twitter.pageOrigin = 1;
+
+  var url = 'https://twitter.com/rentan_org/status/468794536253083648';
+  var imageUrls = [
+    'https://pbs.twimg.com/media/BoF-JNxIUAATgXe.png:orig',
+    'https://pbs.twimg.com/media/BoF-JRQIIAA_9Ay.png:orig',
+    'https://pbs.twimg.com/media/BoF-JUpIEAAHhbV.png:orig',
+    'https://pbs.twimg.com/media/BoF-JUmIUAA9Yqe.png:orig'
+  ];
+
+  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%] %P%of%PAGES%';
+  var filenames = [ 0, 1, 2, 3 ].map (function (v) {
+    return '練炭 [rentan_org] - 複数画像ツイートのテスト。 ' +
+           'pic.twitter.com／L7uxMhCUMb [468794536253083648] ' +
+           (v + twitter.pageOrigin) + 'of4.png';
+  });
+
+
+  it ('.getImage() 成功時に .OK を返す', function () {
+    expect (twitter.getImage (url)).toBe (twitter.OK);
+  });
+
+  it ('.media が false', function () {
+    expect (twitter.media).toBe (false);
+  });
+
+  it ('.multiPhoto が true', function () {
+    expect (twitter.multiPhoto).toBe (true);
+  });
+
+  it ('.urls が [ { Url: ... }, ... ] 形式', function () {
+    var urls = imageUrls.map (function (v) {
+      return { Url: v };
+    });
+
+    expect (twitter.urls).toEqual (urls);
+  });
+
+  it ('.buildFilename() で .utls にファイル名が追加される', function () {
+    var urls = [ 0, 1, 2, 3 ].map (function (v) {
+      return { Url: imageUrls [v], Filename: filenames [v] };
+    });
+
+    twitter.buildFilename (fmt);
+    expect (twitter.urls).toEqual (urls);
+  });
+});
+
+
+describe ('メディア', function () {
+  var twitter = new Twitter ();
+  twitter.nameBuilder = new NameBuilder ({ zen2han: false });
+
+  var url = 'https://twitter.com/rentan_org/media';
+
+
+  it ('.getImage() 成功時に .OK を返す', function () {
+    expect (twitter.getImage (url)).toBe (twitter.OK);
+  });
+
+  it ('.media が true', function () {
+    expect (twitter.media).toBe (true);
+  });
+
+  it ('.multiPhoto が false', function () {
+    expect (twitter.multiPhoto).toBe (false);
+  });
+
+  it ('.urls.length >= 30', function () {
+    expect (twitter.urls.length).toBeGreaterThan (29);
+  });
+
+  cases ([
+    // [ no, url ]
+    [  1, 'https://twitter.com/rentan_org/status/146256880342282240' ],
+    [  3, 'https://twitter.com/rentan_org/status/198840674177646592' ],
+    [ 29, 'https://twitter.com/rentan_org/status/470484218963701760' ],
+    [ 30, 'https://twitter.com/rentan_org/status/473809360666103808' ]
+  ])
+  .it ('.urls が [ { Url: ... }, ... ] 形式 [ no, url ]', function (no, url) {
+    var idx = twitter.urls.length - no;
+    expect (twitter.urls [idx]).toEqual ({ Url: url });
+  });
+});
+
+
+describe ('リプライツイートの画像', function () {
+  var twitter;
+  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%]';
+
+  beforeEach (function () {
+    twitter = new Twitter ();
+    twitter.nameBuilder = new NameBuilder ({ zen2han: false });
+  });
+
+  cases ([
+    // [ url, image, filename ]
+    [ 'https://twitter.com/fumi104/status/486724140196311040',
+      'https://pbs.twimg.com/media/BsExBcSCMAAPDY8.jpg:orig',
+      'fumi [fumi104] - @Melpomeneco ステラちゃんに伊東ライフされたい人生だった' +
+      ' pic.twitter.com／FsJ7PoDYWX [486724140196311040].jpg' ],
+
+    [ 'https://twitter.com/YJ893/status/486493831047548929',
+      'https://pbs.twimg.com/media/BsBfjyzCcAA8-dJ.jpg:orig',
+      '銀 [YJ893] - @Hafune 伊東ライフ先生のだからね　仕方ないね　じゃけん代わり' +
+      'のモノはってとますね pic.twitter.com／7vsazqz8fy [486493831047548929].jpg' ],
+
+    [ 'https://twitter.com/_bigwood2310/status/486324348878618625',
+      'https://pbs.twimg.com/media/Br_Fap6CMAETSCP.jpg:orig',
+      '二見 たいじゅ [_bigwood2310] - @Tetorapoto3 がんばれ？？がんばれ？？(伊東ライフ感' +
+      ' pic.twitter.com／NmfvmjcRfV [486324348878618625].jpg' ]
+  ])
+  .it ('[ url, image, filename ]', function (url, image, filename) {
+    expect (twitter.getImage (url)).toBe (twitter.OK);
+    expect (twitter.media).toBe (false);
+    expect (twitter.multiPhoto).toBe (false);
+    expect (twitter.urls).toEqual ([ { Url: image } ]);
+
+    twitter.buildFilename (fmt);
+    expect (twitter.urls).toEqual ([ { Url: image, Filename: filename } ]);
+  });
+});
+
+
+// EOF

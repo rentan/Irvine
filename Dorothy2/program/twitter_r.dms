@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20140702.0
+//version=20140714.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -42,13 +42,6 @@ function () {
     }
   };
   var ini = Util.ini_load (default_ini);
-
-
-// テスト用
-// https://twitter.com/rentan_org/status/314692285487001600
-// https://twitter.com/rentan_org/status/314692615671017472
-// https://twitter.com/rentan_org/status/468794536253083648
-// https://twitter.com/rentan_org/media
 
 
 //-------------------------------- Twitter ---------------------------------
@@ -182,16 +175,21 @@ Twitter.prototype._analyzeTweet = function (http) {
   nb.twitter_id = RegExp.$1;
   nb.id = RegExp.$3;
 
-  if (!/<strong\s+class="fullname[^"]*">\s*([^<]+)\s*</.test (http.data)) {
+  if (!/<div\s+[^>]*class="permalink-inner\s+permalink-tweet-container[^>]*>(.*?)<div\s+[^>]*class="inline-reply-tweetbox/.test (http.data)) {
+    return this._p ('<div class="permalink-inner permalink-tweet-container"> が見つかりません。');
+  }
+  var html = RegExp.$1;
+
+  if (!/<strong\s+class="fullname[^"]*">\s*([^<]+)\s*</.test (html)) {
     return this._p ('<strong class="fullname ..."> が見つかりません。');
   }
   nb.user_name = (new Utf8 (RegExp.$1)).decodeCharRef ();
 
   var t;
-  if (/<p\s+class="js-tweet-text\s+tweet-text\s*">\s*(.*?)\s*<\/p>/.test (http.data)) {
+  if (/<p\s+class="js-tweet-text\s+tweet-text\s*">\s*(.*?)\s*<\/p>/.test (html)) {
     t = RegExp.$1;
   }
-  else if (/<div\s+class="tweet-text\s+js-tweet-text\s*">\s*(.*?)\s*<\/div>/.test (http.data)) {
+  else if (/<div\s+class="tweet-text\s+js-tweet-text\s*">\s*(.*?)\s*<\/div>/.test (html)) {
     t = RegExp.$1;
   }
   else {
@@ -391,6 +389,13 @@ Twitter.prototype.getImage = function (url) {
 
 
 //------------------------------- メイン処理 -------------------------------
+
+
+  // program\spec\twitter_r_spec.dms から読み込まれて呼び出された場合
+  if (typeof DEFINE_TWITTER_OBJECT_ONLY == 'boolean') {
+    // Twitter オブジェクトの定義だけを行う
+    return;
+  }
 
 
   var twitter = new Twitter ();
