@@ -1,0 +1,42 @@
+common\esx\array.dms
+
+
+Array オブジェクトに EcmaScript のメソッドを追加(polyfill)します。
+
+
+使用方法
+========
+
+  common_load ('esx\array');
+
+
+Array オブジェクトに追加されるメソッド
+======================================
+
+indexOf (searchElement, fromIndex)
+lastIndexOf (searchElement, fromIndex)
+forEach (callback, thisArg)
+every (callback, thisArg)
+some (callback, thisArg)
+filter (callback, thisArg)
+map (callback, thisArg)
+reduce (callback, initialValue)
+reduceRight (callback, initialValue)
+
+
+仕様・制限事項
+==============
+
+・追加されたメソッドに対して .call()、.apply() を使用しないこと。
+  関数の動作モードが変更される DMoneky の不具合により、以後メソッド
+  が正常動作しなくなる。
+
+
+変更履歴
+========
+
+2014-07-14  version 20140714.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]

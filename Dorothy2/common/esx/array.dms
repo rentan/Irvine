@@ -1,0 +1,275 @@
+//Dorothy2
+//caption=esx/array
+//version=20140714.0
+//hint=
+//match=
+//author=rentan
+//path=common\esx
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+(function () {
+
+
+// 引数を整数化する(無限大も許容)
+Array.prototype._toIntOrInf = function (n) {
+  if (typeof n != 'number' && nameOf (n) != 'Number') {
+    n = new Number (n);
+  }
+
+  if (n > 0) {
+    return (n === Number.POSITIVE_INFINITY) ? n : Math.floor (n);
+  }
+  if (n < 0) {
+    return (n === Number.NEGATIVE_INFINITY) ? n : Math.ceil (n);
+  }
+
+  // zero or NaN
+  return 0;
+};
+
+
+// length を正規化する
+Array.prototype._getLength = function (thisObj) {
+  var n = thisObj.length;
+  if (typeof n != 'number' && nameOf (n) != 'Number') {
+    n = new Number (n);
+  }
+
+  if ((n <= 0) || isNaN (n) || n === Number.POSITIVE_INFINITY) {
+    return 0;
+  }
+
+  return Math.floor (n);
+};
+
+
+// アクセサメソッド
+
+
+Array.prototype.indexOf = function (searchElement, fromIndex) {
+  var len = Array.prototype._getLength (this);
+
+  var n = 0;
+  if (arguments.length > 1) {
+    n = Array.prototype._toIntOrInf (fromIndex);
+    if (n < 0) {
+      n = (n === Number.NEGATIVE_INFINITY) ? 0 : Math.max (0, len + n);
+    }
+  }
+
+  if (typeof searchElement === 'number') {
+    for (; n < len; ++n) {
+      var v = this [n];
+      if (typeof v === 'number' && v == searchElement) {
+        return n;
+      }
+    }
+  }
+  else {
+    for (; n < len; ++n) {
+      if (this [n] === searchElement) {
+        return n;
+      }
+    }
+  }
+
+  return -1;
+};
+
+
+Array.prototype.lastIndexOf = function (searchElement, fromIndex) {
+  var len = Array.prototype._getLength (this);
+
+  var n = len - 1;
+  if (arguments.length > 1) {
+    n = Array.prototype._toIntOrInf (fromIndex);
+
+    if (n < 0) {
+      n = (n === Number.NEGATIVE_INFINITY) ? -1 : len + n;
+    }
+    else if (len <= n) {
+      n = len - 1;
+    }
+  }
+
+  if (typeof searchElement === 'number') {
+    for (; n >= 0; --n) {
+      var v = this [n];
+      if (typeof v === 'number' && v == searchElement) {
+        return n;
+      }
+    }
+  }
+  else {
+    for (; n >= 0; --n) {
+      if (this [n] === searchElement) {
+        return n;
+      }
+    }
+  }
+
+  return -1;
+};
+
+
+// 反復メソッド
+
+
+Array.prototype.forEach = function (callback, thisArg) {
+  var len = Array.prototype._getLength (this);
+
+  for (var i = 0; i < len; ++i) {
+    var v = this [i];
+    if (!isUndefined (v)) {
+      callback.call (thisArg, v, i, this);
+    }
+  }
+};
+
+
+Array.prototype.every = function (callback, thisArg) {
+  var len = Array.prototype._getLength (this);
+
+  for (var i = 0; i < len; ++i) {
+    var v = this [i];
+    if (!isUndefined (v)) {
+      v = callback.call (thisArg, v, i, this);
+      if (!v || isNaN (v)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
+
+Array.prototype.some = function (callback, thisArg) {
+  var len = Array.prototype._getLength (this);
+
+  for (var i = 0; i < len; ++i) {
+    var v = this [i];
+    if (!isUndefined (v)) {
+      v = callback.call (thisArg, v, i, this);
+      if (v && !isNaN (v)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
+
+Array.prototype.filter = function (callback, thisArg) {
+  var len = Array.prototype._getLength (this);
+  var res = [ ];
+
+  for (var i = 0; i < len; ++i) {
+    var v = this [i];
+    if (!isUndefined (v)) {
+      var b = callback.call (thisArg, v, i, this);
+      if (b && !isNaN (b)) {
+        res.push (v);
+      }
+    }
+  }
+
+  return res;
+};
+
+
+Array.prototype.map = function (callback, thisArg) {
+  var len = Array.prototype._getLength (this);
+  var res = new Array (len);
+
+  for (var i = 0; i < len; ++i) {
+    var v = this [i];
+    if (!isUndefined (v)) {
+      res [i] = callback.call (thisArg, v, i, this);
+    }
+  }
+
+  return res;
+};
+
+
+Array.prototype.reduce = function (callback, initialValue) {
+  var len = Array.prototype._getLength (this);
+
+  var i = 0;
+  var value = initialValue;
+
+  if (arguments.length < 2) {
+    while (i < len && isUndefined (this [i])) {
+      ++i;
+    }
+    if (len <= i) {
+      throw 'TypError: Reduce of empty array with no initial value';
+    }
+    value = this [i++];
+  }
+
+  for (; i < len; ++i) {
+    var v = this [i];
+    if (!isUndefined (v)) {
+      value = callback (value, v, i, this);
+    }
+  }
+
+  return value;
+};
+
+
+Array.prototype.reduceRight = function (callback, initialValue) {
+  var len = Array.prototype._getLength (this);
+
+  var i = len - 1;
+  var value = initialValue;
+
+  if (arguments.length < 2) {
+    while (0 <= i && isUndefined (this [i])) {
+      --i;
+    }
+    if (i < 0) {
+      throw 'TypError: Reduce of empty array with no initial value';
+    }
+    value = this [i--];
+  }
+
+  for (; 0 <= i; --i) {
+    var v = this [i];
+    if (!isUndefined (v)) {
+      value = callback (value, v, i, this);
+    }
+  }
+
+  return value;
+};
+
+
+}) ()
+
+
+// EOF
