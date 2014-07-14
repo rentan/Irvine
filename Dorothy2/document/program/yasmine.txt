@@ -30,6 +30,9 @@ JavaScript 用テストフレームワークの Jasmine に似せてあります
 http://yasmine.dorothy.test/common/spec/*.dms
   Dorothy2\common\spec\*.dms ファイルを読み込んでテストを実行する。
 
+http://yasmine.dorothy.test/program/spec/*.dms
+  Dorothy2\program\spec\*.dms ファイルを読み込んでテストを実行する。
+
 http://yasmine.dorothy.test/arguments
   OnHttpRequest に渡された引数をテキストファイル arguments.txt
   に保存する。
@@ -46,6 +49,13 @@ http://yasmine.dorothy.test/arguments
 
 変更履歴
 ========
+
+2014-07-14  rentan at rentan.org  version 20140714.0
+Dorothy2\common\yasmine.dms
+  Dorothy2\program\spec\*.dms を実行できるようにした。
+
+Dorothy2\common\yasmine.dms
+  Yasmine._util._eq(): 配列の添字要素を比較していない不具合を修正。
 
 2014-06-21  rentan at rentan.org
 Dorothy2\common\yasmine.dms  version 20140621.0

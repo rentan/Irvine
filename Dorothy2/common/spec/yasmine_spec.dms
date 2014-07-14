@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine spec
-//version=20140608.0
+//version=20140714.0
 //hint=http://yasmine.dorothy.test/common/spec/yasmine_spec.dms
 //match=
 //author=rentan
@@ -130,6 +130,18 @@ describe ('parameterized test', function () {
 
   it ('can execute it after cases', function () {
     expect (null).toBeFalsy ();
+  });
+});
+
+
+describe ('”z—ñ‚Ì”äŠr', function () {
+  it ('“YŽš—v‘f‚ð”äŠr‚·‚é', function () {
+    expect ([ 'aaa', 'bbb' ]).toEqual ([ 'aaa', 'bbb' ]);
+    expect ([ { a: 'aaa' }, { b: 'bbb' } ]).toEqual ([ { a: 'aaa' }, { b: 'bbb' } ]);
+
+    expect ([ 'aaa', 'bbb' ]).not.toEqual ([ 'aaa', 'zzz' ]);
+    expect ([ 'aaa', 'bbb' ]).not.toEqual ([ 'xxx', 'bbb' ]);
+    expect ([ { a: 'aaa' }, { b: 'bbb' } ]).not.toEqual ([ { a: 'xxx' }, { b: 'yyy' } ]);
   });
 });
 

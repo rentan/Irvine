@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20140613.0
+//version=20140714.0
 //hint=
 //match=^http://yasmine\.dorothy\.test/
 //author=rentan
@@ -30,11 +30,12 @@ function () {
   common_load ('rutil');
 
 
-// common ファイルのテスト -------------------------------------------------
+// spec ファイルの実行 -----------------------------------------------------
 // http://yasmine.dorothy.test/common/spec/***
+// http://yasmine.dorothy.test/program/spec/***
 
 
-function testCommon (file) {
+function testSpec (file) {
   common_load ('yasmine');
 
   var ya = new Yasmine ();
@@ -127,8 +128,8 @@ function dumpArguments () {
 
   var path = (new URL (urlinfo.url)).path.slice (1);
 
-  if (/^(common\/spec\/.+)$/.test (path)) {
-    return testCommon (Dorothy.path + RegExp.$1.replace (/\//g, '\\'));
+  if (/^((common|program)\/spec\/.+)$/.test (path)) {
+    return testSpec (Dorothy.path + RegExp.$1.replace (/\//g, '\\'));
   }
   if (/^arguments$/.test (path)) {
     return dumpArguments ();

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20140621.0
+//version=20140714.0
 //hint=
 //match=
 //author=rentan
@@ -551,11 +551,11 @@ Yasmine.prototype._util._eq = function (a, b, aStack, bStack, customTesters) {
   if (className === 'Date') {
     return a.format === b.format && a.valueOf () === b.valueOf ();
   }
-  if (className == 'RegExp') {
+  if (className === 'RegExp') {
     return a.toString () === b.toString ();
   }
 
-  if (typeof a === 'function') {
+  if (className === 'function') {
     return false;
   }
 
@@ -591,13 +591,31 @@ Yasmine.prototype._util._eq = function (a, b, aStack, bStack, customTesters) {
         return false;
       }
     }
+
+    if (className != 'Array') {
+      return true;
+    }
+
+    idx = a.length;
+    if (idx != b.length) {
+      return false;
+    }
+    while (idx--) {
+      if (!this._eq (a [idx], b [idx], aStack, bStack, customTesters)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  catch (e) {
+    alert (e);
   }
   finally {
     bStack.pop ();
     aStack.pop ();
   }
 
-  return true;
+  return false;
 };
 
 
