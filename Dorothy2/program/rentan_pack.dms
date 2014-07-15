@@ -1,8 +1,8 @@
 //Dorothy2
 //caption=rentan 詰め合わせ
-//version=20140331.0
+//version=20140716.0
 //hint=
-//match=^http://(www\.enterbrain\.co\.jp/fb/pc/(14gallery/14images|20omake/wallpaper)|websunday\.net/download/wallpaper|sundaygx\.com/members/[^/]+/download/wall_p|www\.microsoft\.com/taiwan/silverlight|supersonico\.jp/mobile/dl|img\.toranoana\.jp/popup_img18|(ftp|download)\.vector\.co\.jp)/
+//match=^http://(www\.enterbrain\.co\.jp/fb/pc/(14gallery/14images|20omake/wallpaper)|websunday\.net/download/wallpaper|sundaygx\.com/members/[^/]+/download/wall_p|supersonico\.jp/mobile/dl|img\.toranoana\.jp/popup_img18|(ftp|download)\.vector\.co\.jp|www\.chuable\.net)/
 //author=rentan
 //path=program
 //priority=500
@@ -176,29 +176,6 @@ function ibbs_image (url) {
 //set_site ('http://image.i-bbs.sijex.net/bbs/', ibbs_image);
 
 
-//---------------------- Microsoft 台湾 Silverlight 藍澤光 壁紙 ----------------------//
-
-function microsoft_tw (url) {
-  if (url.match (/^(.*\/)desktop(_[a-z])_(\d+x\d+)\.htm$/)) {
-    urlinfo.url = RegExp.$1 + 'images/' + RegExp.$3.toUpperCase () + RegExp.$2 + '.jpg';
-  }
-  else if (url.match (/^(.*\/)(wallpaper_.*)\.htm$/)) {
-    urlinfo.url = RegExp.$1 + 'images/' + RegExp.$2 + '.jpg';
-  }
-  else {
-    return null;
-  }
-
-  headers.Cookie = '';
-  headers.Referer = url;
-
-  Dorothy.fileName = (new URL (urlinfo.url)).filename;
-
-  return true;
-}
-set_site ('http://www.microsoft.com/taiwan/silverlight/', microsoft_tw);
-
-
 //---------------------- すーぱーそに子公式モバイルサイト ----------------------//
 
 function supersonico_mobile (url) {
@@ -249,6 +226,16 @@ function my_vector (url) {
   return vector (url);
 }
 //set_site ('http://my.vector.co.jp/servlet/System.FileDownload/download/', my_vector);
+
+
+//----------------- チュアブルソフト -----------------//
+
+function chuable (url) {
+  headers.Cookie = 'over18=Yes';
+
+  return true;
+}
+set_site (/^http:\/\/www\.chuable\.net\//, chuable);
 
 
 //-------------------- メイン処理 --------------------//
