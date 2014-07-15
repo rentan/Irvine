@@ -391,6 +391,9 @@ inflate (s)
 変更履歴
 ========
 
+2014-07-16  version 20140716.0  rentan at rentan.org
+  .setFlashHeader(): x-flash-version: 14,0,0,145 に更新。
+
 2014-07-07  version 20140707.0  rentan at rentan.org
   .setFlashHeader(): x-flash-version: 14,0,0,125 に更新。
 
