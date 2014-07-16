@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=URL転送サービス
-//version=20140611.0
+//version=20140716.0
 //hint=
 //match=^https?://((bit\.ly|ilix\.in|ime\.nu|jump\.2ch\.net|lix\.in|pinktower\.com|t\.co|wk\.tk)/.|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|baberepublic\.com|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|placepictures\.com|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|youfap\.me|yyv\.co|zff\.co|zxxo\.net)([/?#].*)?$)
 //author=rentan
@@ -490,6 +490,13 @@ UrlRedirector.prototype.linkbucks = function (u, path) {
   }
 
 
+  // http://<id>.example.com/ を http://www.example.com/<id>/ 形式に変換
+  if (/^(https?:\/\/)([^.]+)((\.[^\/.]+){2,}\/)$/.test (u.url)) {
+    if (RegExp.$2 != 'www') {
+      u = new URL (RegExp.$1 + 'www' + RegExp.$3 + RegExp.$2 + '/');
+    }
+  }
+
   var retryMax = 3;
   for (var i = 0; i < retryMax; ++i) {
     if (i) {
@@ -501,7 +508,7 @@ UrlRedirector.prototype.linkbucks = function (u, path) {
       return scan (http);
     }
 
-    var verify = u.url + '/verify/url/';
+    var verify = u.url.replace (/\/?$/, '/verify/url/');
     if (http.code == 302 && http.location == verify) {
       continue;
     }

@@ -96,6 +96,10 @@ http://ws1.y-bbs.net/
 変更履歴
 ========
 
+2014-07-16  version 20140716.0  rentan at rentan.org
+  linkbucks 系の仕様変更に対応。
+    thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/542
+
 2014-06-11  version 20140611.0  rentan at rentan.org
   rutil で User-Agent のチェックを強化したのに伴い、linkbucks 系の
   User-Agent 差し替え機能を削除。
