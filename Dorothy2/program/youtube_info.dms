@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/動画情報
-//version=20140607.0
+//version=20140718.0
 //hint=
 //match=^https?://(www\.)?youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -552,16 +552,18 @@ YouTubeVideo.prototype._makeDecipherPattern = function () {
 // 下記ソフトウェアのコードを使用
 //
 // @name Download YouTube Videos as MP4
-// @homepageURL http://userscripts.org:8080/scripts/show/25105
+// @homepageURL https://github.com/gantt/downloadyoutube
 // @author Gantt
-// @version 1.7.18
-// @date 2014-01-14
+// @version 1.7.22
+// @date 2014-07-15
 // @license MIT License
 //
 // findSignatureCode() の移植に必要な作業
 // - '～' 形式の文字列内に \ があれば "～" に変更する。
-//   - その文字列内に " があれば \" に変更する。
+//   - その文字列内の " を \" に、{ を \\{ に変更する
+// - .replace('$' を .replace(/\$/g, に変更する
 // - regCode の (.+) を ([^}]+) に変更する。
+// - debug() を別名に変更するか、関数として定義する。
 // - 正規表現検索が遅いので高速化した方がよい。
 
 
@@ -594,15 +596,30 @@ YouTubeVideo.prototype._findSignatureCode = function (html) {
   }
 
   function findSignatureCode(sourceCode) {
-    var functionName=fastMatch(sourceCode, /\.signature\s*=\s*(\w+)\(\w+\)/);
-    if (functionName==null) return setPref(STORAGE_CODE, 'error');
-    var regCode=new RegExp('function '+functionName+
+    function debug (s) { /*print_debug*/alert (s); }
+
+    var functionName = fastMatch(sourceCode, /\.signature\s*=\s*([a-zA-Z_$][0-9a-zA-Z_$]*)\([a-zA-Z_$][0-9a-zA-Z_$]*\)/);
+    functionName=functionName.replace(/\$/g,'\\$');
+    if (functionName == null) return setPref(STORAGE_CODE, 'error');
+    debug('DYVAM - Info: function ' + functionName);
+    var regCode = new RegExp('function ' + functionName +
     "\\s*\\(\\w+\\)\\s*\\{\\w+=\\w+\\.split\\(\"\"\\);([^}]+);return \\w+\\.join");
-    var functionCode=fastMatch(sourceCode, regCode);
-    if (functionCode==null) return setPref(STORAGE_CODE, 'error');
-    var regSlice=new RegExp("slice\\s*\\(\\s*(.+)\\s*\\)");
-    var regSwap=new RegExp("\\w+\\s*\\(\\s*\\w+\\s*,\\s*([0-9]+)\\s*\\)");
-    var regInline=new RegExp("\\w+\\[0\\]\\s*=\\s*\\w+\\[([0-9]+)\\s*%\\s*\\w+\\.length\\]");
+    var functionCode = fastMatch(sourceCode, regCode);
+    debug('DYVAM - Info: functioncode ' + functionCode);
+    if (functionCode == null) return setPref(STORAGE_CODE, 'error');
+
+    var regReverseFunction = new RegExp("(\\w*)\\s*:\\s*function\\s*\\(\\s*\\w*\\s*\\)\\s*\\{\\s*return\\s*\\w*\\.reverse\\s*\\(\\s*\\)\\s*}");
+    var reverseFunctionName = findMatch(sourceCode, regReverseFunction);
+    debug('DYVAM - Info: reversefunction ' + reverseFunctionName);
+
+    var regSliceFunction = new RegExp("(\\w*)\\s*:\\s*function\\s*\\(\\s*\\w*\\s*,\\s*\\w*\\s*\\)\\s*\\{\\s*return\\s*\\w*\\.slice\\(.+\\)\\s*}");
+    var sliceFunctionName = findMatch(sourceCode, regSliceFunction);
+    debug('DYVAM - Info: slicefunction ' + sliceFunctionName);
+
+    var regSlice = new RegExp("slice\\s*\\(\\s*(.+)\\s*\\)");
+    var regSliceVar = sliceFunctionName && new RegExp(sliceFunctionName+"\\s*\\(\\s*.+([0-9]+)\\s*\\)");
+    var regSwap = new RegExp("\\w+\\s*\\(\\s*\\w+\\s*,\\s*([0-9]+)\\s*\\)");
+    var regInline = new RegExp("\\w+\\[0\\]\\s*=\\s*\\w+\\[([0-9]+)\\s*%\\s*\\w+\\.length\\]");
     var functionCodePieces=functionCode.split(';');
     var decodeArray=[], signatureLength=81;
     for (var i=0; i<functionCodePieces.length; i++) {
@@ -626,6 +643,15 @@ YouTubeVideo.prototype._findSignatureCode = function (html) {
             decodeArray.push(inline);
             i+=2;
           } else return setPref(STORAGE_CODE, 'error');
+      } else if (sliceFunctionName && functionCodePieces[i].indexOf('.'+sliceFunctionName) >= 0) {
+        var slice=findMatch(functionCodePieces[i], regSliceVar);
+        slice=parseInt(slice, 10);
+        if (isInteger(slice)){
+          decodeArray.push(-slice);
+          signatureLength+=slice;
+        } else return setPref(STORAGE_CODE, 'error');
+      } else if (reverseFunctionName && functionCodePieces[i].indexOf('.'+reverseFunctionName) >= 0) {
+        decodeArray.push(0);
       } else if (functionCodePieces[i].indexOf(',') >= 0) {
         var swap=findMatch(functionCodePieces[i], regSwap);
         swap=parseInt(swap, 10);

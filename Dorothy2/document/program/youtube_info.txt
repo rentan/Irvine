@@ -28,6 +28,10 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
 変更履歴
 ========
 
+2014-07-18  version 20140718.0  rentan at rentan.org
+  signature 復号器を Download YouTube Videos as MP4 version 1.7.22
+  のものに更新。
+
 2014-06-07  version 20140607.0  rentan at rentan.org
   itag 272, 271 を追加。
   manifest の URL を出力するようにした。
