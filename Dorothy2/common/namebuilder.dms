@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=NameBuilder
-//version=20140608.0
+//version=20140718.0
 //hint=new NameBuilder ()
 //match=
 //author=rentan
@@ -352,11 +352,6 @@ NameBuilder.prototype.buildFilename = function (fmt, ext) {
 
 // ファイル名を作成して item.filename/folder に書き込む
 NameBuilder.prototype.setFilename = function (fmt, ext) {
-  function setNewFilename (f) {
-    println ('new filename>' + f);
-    item.filename = f;
-  }
-
 
   // item.filename が設定済みで [[rename]] を含まないなら上書きしない
   // ただし拡張子がなければ追加する
@@ -364,7 +359,7 @@ NameBuilder.prototype.setFilename = function (fmt, ext) {
   if (f) {
     var ext = this._extractExt (ext);
     if ((new File (f)).extractExt () == '' && ext) {
-      setNewFilename (f + ext);
+      Dorothy.setFilename (f + ext);
     }
 
     return;
@@ -372,7 +367,7 @@ NameBuilder.prototype.setFilename = function (fmt, ext) {
 
 
   var itemData = this.buildFilename (fmt, ext);
-  setNewFilename (itemData.Filename);
+  Dorothy.setFilename (itemData.Filename);
 
   if (itemData.hasKey ('Folder')) {
     item.folder = itemData.Folder;

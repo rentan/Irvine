@@ -94,6 +94,21 @@ Dorothy.getItemFilename ()
   該当するものとしては [[rename]] があるが、現在は無効化されており
   単に item.filename をそのまま返すだけの関数となっている。
 
+Dorothy.setUrl (url, referer)
+  url ... string: URL
+  referer ... string: リファラ(省略可)
+
+  urlinfo.url に URL を、headers.Host にホスト名を設定し、headers.Cookie
+  を空にする。また、referer 指定時は headers.Referer に設定する。
+
+Dorothy.setFilename (filename)
+  filename ... string: ファイル名
+
+  item.filename にファイル名を設定する。
+
+  ファイル名にユーザーが指定したファイル名コマンドが含まれない場合に、
+  Dorothy.fileName への書き込みの代わりに呼び出す。
+
 
 Dorothy.search.init ()
 Dorothy.search.next ()
@@ -107,6 +122,14 @@ Dorothy.loadDorothyIni ();
 
 変更履歴
 ========
+
+2014-07-18  version 20140718.0  rentan at rentan.org
+scripts\Dorothy2R_a.dms
+  program_load() を再実装。
+  Dorothy.setUrl(), .setFilename() を追加。
+
+scripts\Dorothy2R_set.dms
+  Dorothy.rVersion を 20140718 に変更。
 
 2014-07-02  version 20140702.0  rentan at rentan.org
 scripts\Dorothy2R_set.dms

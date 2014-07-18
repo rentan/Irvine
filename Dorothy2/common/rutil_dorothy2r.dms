@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R ŒÝŠ·Šg’£
-//version=20140622.0
+//version=20140718.0
 //hint=part of rutil.dms
 //match=
 //author=rentan
@@ -83,6 +83,23 @@ Dorothy.getItemFilename = function () {
   // }
 
   return item.filename;
+};
+
+
+// (Dorothy2R Šg’£) URL ‚ðÝ’è‚·‚é
+Dorothy.setUrl = function (url, referer) {
+  urlinfo.url = url;
+  headers.Host = (new URL (url)).host;
+  headers.Cookie = '';
+
+  headers.Referer = referer || '';
+};
+
+
+// (Dorothy2R Šg’£) ƒtƒ@ƒCƒ‹–¼‚ðÝ’è‚·‚é
+Dorothy.setFilename = function (filename) {
+  println ('new filename>' + filename);
+  item.filename = filename;
 };
 
 

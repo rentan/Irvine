@@ -142,6 +142,9 @@ contentToExt (data)
 変更履歴
 ========
 
+2014-07-18  version 20140718.0  rentan at rentan.org
+  setFilename(): Dorothy.setFilename() を使うようにした。
+
 2014-06-08  version 20140608.0  rentan at rentan.org
   setFilename(): Dorothy.getItemFilename() を使うようにした。
 

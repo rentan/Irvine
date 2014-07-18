@@ -28,7 +28,6 @@ Util.ini_save (data, iniFile)
 Util.ini_copy_edit ()
 Util.get_option (key)
 
-
 詳細は省略。
 
 
@@ -40,7 +39,8 @@ Dorothy.edit (file)
 Dorothy.getSaveFolder ()
 Dorothy.createSaveFolder (path)
 Dorothy.getItemFilename ()
-
+Dorothy.setUrl (url)
+Dorothy.setFilename (filename)
 
 詳細は省略。
 
@@ -66,6 +66,9 @@ Dorothy.getItemFilename ()
 
 変更履歴
 ========
+
+2014-07-18  version 20140718.0  rentan at rentan.org
+  rutil_dorothy2r.dms: Dorothy.setUrl(), .setFilename() を追加。
 
 2014-06-26  version 20140626.0  rentan at rentan.org
   Dorothy2 のバージョンチェックを rutil_dorothy2r.dms に移動。

@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20140611
+version=20140718
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -240,6 +240,23 @@ Dorothy._funcs.getItemFilename = "function () {
 }";
 
 
+// (Dorothy2R 拡張) URL を設定する
+Dorothy._funcs.setUrl = "function (url, referer) {
+  urlinfo.url = url;
+  headers.Host = (new URL (url)).host;
+  headers.Cookie = '';
+
+  headers.Referer = referer || '';
+}";
+
+
+// (Dorothy2R 拡張) ファイル名を設定する
+Dorothy._funcs.setFilename = "function (filename) {
+  println ('new filename>' + filename);
+  item.filename = filename;
+}";
+
+
 // ファイルを読み込んで返す
 Dorothy._funcs.file_load = "function (path) {
   var fullpath = /^[a-z]:/i.test (path) ? path : Dorothy.path + path;
@@ -325,6 +342,12 @@ Dorothy._funcs.common_load = "function () {
 }";
 
 
+// Dorothy2\program\<name>.dms を読み込んで返す
+Dorothy._funcs.program_load = function (name) {
+  return file_load (Dorothy.programDir + name + '.dms');
+};
+
+
 // Dorothy2\user\<プログラム名>\<name> を読み込んで返す
 Dorothy._funcs.user_load = function (name) {
   return file_load ('user\' + Dorothy.matchFile + '\' + name);
@@ -372,7 +395,14 @@ Dorothy.init = function (o) {
 
   // Dorothy メソッドを定義(クロージャあり)
   var ev = o.eval;
-  var funcs = [ 'edit', 'getSaveFolder', 'createSaveFolder', 'getItemFilename' ];
+  var funcs = [
+    'edit',
+    'getSaveFolder',
+    'createSaveFolder',
+    'getItemFilename',
+    'setUrl',
+    'setFilename'
+  ];
   for (var i = 0; i < funcs.length; ++i) {
     var name = funcs [i];
     ev ('Dorothy.' + name + '=' + Dorothy._funcs [name]);
@@ -386,7 +416,13 @@ Dorothy.init = function (o) {
   }
 
   // グローバル関数を定義(クロージャなし)
-  funcs = [ 'user_load', 'user_program_load', 'print_debug', 'changeFileName' ];
+  funcs = [
+    'program_load',
+    'user_load',
+    'user_program_load',
+    'print_debug',
+    'changeFileName'
+  ];
   for (i = 0; i < funcs.length; ++i) {
     name = funcs [i];
     Global [name] = Dorothy._funcs [name];
