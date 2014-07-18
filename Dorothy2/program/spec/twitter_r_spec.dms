@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20140714.0
+//version=20140718.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -35,7 +35,7 @@ common_load ('esx\array');
 function loadProgram (name, keyToDefine) {
   Global [keyToDefine] = true;
 
-  var src = file_load (Dorothy.programDir + name + '.dms');
+  var src = program_load (name);
   eval (src) ();
 
   Global.removeKey (keyToDefine);
@@ -65,8 +65,8 @@ describe ('単一画像', function () {
                  'pic.twitter.com／7kRfsb8rZn [314692285487001600].png';
 
 
-  it ('.getImage() 成功時に .OK を返す', function () {
-    expect (twitter.getImage (url)).toBe (twitter.OK);
+  it ('.get() 成功時に .OK を返す', function () {
+    expect (twitter.get (url)).toBe (twitter.OK);
   });
 
   it ('.media が false', function () {
@@ -79,16 +79,6 @@ describe ('単一画像', function () {
 
   it ('.urls が [ { Url: ... } ] 形式', function () {
     expect (twitter.urls).toEqual ([ { Url: imageUrl } ]);
-  });
-
-  it ('.setFilename() が item.filename を書き換えて URL を返す', function () {
-    var ifn = item.filename;
-    var u = twitter.setFilename (fmt);
-
-    expect (u).toBe (imageUrl);
-    expect (item.filename).toBe (filename);
-
-    item.filename = ifn;
   });
 
   it ('.buildFilename() で .utls にファイル名が追加される', function () {
@@ -110,8 +100,8 @@ describe ('単一画像(ツイート本文に別のツイートの画像 URL あり)', function () {
                  'pic.twitter.com／uGtcUO2tzT [314692615671017472].png';
 
 
-  it ('.getImage() 成功時に .OK を返す', function () {
-    expect (twitter.getImage (url)).toBe (twitter.OK);
+  it ('.get() 成功時に .OK を返す', function () {
+    expect (twitter.get (url)).toBe (twitter.OK);
   });
 
   it ('.media が false', function () {
@@ -124,16 +114,6 @@ describe ('単一画像(ツイート本文に別のツイートの画像 URL あり)', function () {
 
   it ('.urls が [ { Url: ... } ] 形式', function () {
     expect (twitter.urls).toEqual ([ { Url: imageUrl } ]);
-  });
-
-  it ('.setFilename() が item.filename を書き換えて URL を返す', function () {
-    var ifn = item.filename;
-    var u = twitter.setFilename (fmt);
-
-    expect (u).toBe (imageUrl);
-    expect (item.filename).toBe (filename);
-
-    item.filename = ifn;
   });
 
   it ('.buildFilename() で .utls にファイル名が追加される', function () {
@@ -164,8 +144,8 @@ describe ('複数画像', function () {
   });
 
 
-  it ('.getImage() 成功時に .OK を返す', function () {
-    expect (twitter.getImage (url)).toBe (twitter.OK);
+  it ('.get() 成功時に .OK を返す', function () {
+    expect (twitter.get (url)).toBe (twitter.OK);
   });
 
   it ('.media が false', function () {
@@ -202,8 +182,8 @@ describe ('メディア', function () {
   var url = 'https://twitter.com/rentan_org/media';
 
 
-  it ('.getImage() 成功時に .OK を返す', function () {
-    expect (twitter.getImage (url)).toBe (twitter.OK);
+  it ('.get() 成功時に .OK を返す', function () {
+    expect (twitter.get (url)).toBe (twitter.OK);
   });
 
   it ('.media が true', function () {
@@ -259,7 +239,7 @@ describe ('リプライツイートの画像', function () {
       ' pic.twitter.com／NmfvmjcRfV [486324348878618625].jpg' ]
   ])
   .it ('[ url, image, filename ]', function (url, image, filename) {
-    expect (twitter.getImage (url)).toBe (twitter.OK);
+    expect (twitter.get (url)).toBe (twitter.OK);
     expect (twitter.media).toBe (false);
     expect (twitter.multiPhoto).toBe (false);
     expect (twitter.urls).toEqual ([ { Url: image } ]);

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20140714.0
+//version=20140718.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -72,7 +72,7 @@ Twitter.prototype.multiPhoto = false;
 Twitter.prototype.pageOrigin = 0;
 
 
-// .getImage() の戻り値
+// .get() の戻り値
 Twitter.prototype.OK = 0;
 Twitter.prototype.NG = 1;
 Twitter.prototype.RETRY = 2;
@@ -221,20 +221,6 @@ Twitter.prototype.buildFilename = function (fmt) {
 };
 
 
-// ファイル名を作成して item.filename/folder に書き込む
-// URL を返す。単一 URL のみ使用可。
-// NameBuilder が必要
-Twitter.prototype.setFilename = function (fmt) {
-  var nb = this.nameBuilder;
-
-  var url = this.urls [0].Url;
-
-  nb.setFilename (fmt, url.replace (/:[a-z]*$/, ''));
-
-  return url;
-};
-
-
 // 単一のツイートに含まれる画像を抽出する
 Twitter.prototype.getTweetImage = function (url) {
 
@@ -366,8 +352,8 @@ Twitter.prototype._setupNameBuilder = function () {
 };
 
 
-// 画像のURLを取得する
-Twitter.prototype.getImage = function (url) {
+// 画像またはメディアのURLを取得する
+Twitter.prototype.get = function (url) {
   this._setupNameBuilder ();
 
   this.urls = [ ];
@@ -398,11 +384,13 @@ Twitter.prototype.getImage = function (url) {
   }
 
 
+  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
   var twitter = new Twitter ();
-  twitter.nameBuilder = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+  twitter.nameBuilder = nb;
   twitter.pageOrigin = ini.General.PageOrigin;
 
-  var r = twitter.getImage (urlinfo.url);
+  var r = twitter.get (urlinfo.url);
   if (r != twitter.OK) {
     return twitter.end (r);
   }
@@ -418,11 +406,10 @@ Twitter.prototype.getImage = function (url) {
   }
 
   // 単独画像
-  urlinfo.url = twitter.setFilename (ini.Filename.Photo);
+  var url = twitter.urls [0].Url;
+  nb.setFilename (ini.Filename.Photo, url.replace (/:[a-z]*$/, ''));
+  Dorothy.setUrl (url);
 
-  headers.Host = (new URL (urlinfo.url)).host;
-  headers.Referer = '';
-  headers.Cookie = '';
   headers ['Accept-Language'] = 'ja';
 }
 
