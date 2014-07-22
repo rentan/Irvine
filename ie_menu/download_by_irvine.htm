@@ -2,7 +2,7 @@
 caption=Irvineでダウンロード(&Z)
 hint=Irvineでリンクや画像をダウンロード
 contexts=55
-version=20140327
+version=20140722
 author=rentan
 -->
 
@@ -58,15 +58,16 @@ var config = {
 
   // リファラを送信しないリンク元サイト
   no_referer: [
-    'http://inoreader.com/',
-    'http://local.ptron/'
+    'http://local.ptron/',
+    /^http:\/\/(www\.)?inoreader\.com\//
   ],
 
 
   // imgonly で無視する画像ファイル名
   ignore_img: [
     'blank.gif',
-    'spacer.gif'
+    'spacer.gif',
+    'clear.gif'
   ]
 };
 
@@ -287,10 +288,15 @@ function referer_check () {
 
   for (var i = 0; i < noref_len; ++i) { //>
     var s = noref [i];
-  
+
     if (typeof s === 'string') {
       // 文字列なら先頭一致
       if (s === url.slice (0, s.length)) {
+        return false;
+      }
+    }
+    else if (s instanceof RegExp) {
+      if (s.test (url)) {
         return false;
       }
     }
