@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/ìÆâÊèÓïÒ
-//version=20140718.0
+//version=20140723.0
 //hint=
 //match=^https?://(www\.)?youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -596,7 +596,7 @@ YouTubeVideo.prototype._findSignatureCode = function (html) {
   }
 
   function findSignatureCode(sourceCode) {
-    function debug (s) { /*print_debug*/alert (s); }
+    function debug (s) { print_debug (s); }
 
     var functionName = fastMatch(sourceCode, /\.signature\s*=\s*([a-zA-Z_$][0-9a-zA-Z_$]*)\([a-zA-Z_$][0-9a-zA-Z_$]*\)/);
     functionName=functionName.replace(/\$/g,'\\$');
