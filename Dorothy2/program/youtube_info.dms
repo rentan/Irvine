@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/動画情報
-//version=20140723.0
+//version=20140726.0
 //hint=
 //match=^https?://(www\.)?youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -55,7 +55,7 @@ function () {
 
 //-------------------------------- YouTube ---------------------------------
 
-common_load ('http', 'domparser\xml');
+common_load ('http', 'domparser\xml', 'utf8');
 
 
 // コンストラクタ
@@ -130,6 +130,12 @@ YouTubeVideo.prototype._httpError = function () {
 YouTubeVideo.prototype._p = function (s) {
   println (this.comment = nameOf (this) + ': ' + s);
   return false;
+};
+
+
+YouTubeVideo.prototype._ng = function (s) {
+  this._p (s);
+  return this.NG;
 };
 
 
@@ -248,10 +254,10 @@ YouTubeVideo.prototype._getVideoSpec = function (html) {
   }
   this.author = RegExp.$2;
 
-  if (!/<meta\s+name="title"\s+content="([^"]+)"/.test (html)) {
+  if (!/<span\s+id="eow-title"[^>]*title="([^"]+)">/.test (html)) {
     return this._p ('タイトルが見つかりません。');
   }
-  this.title = RegExp.$1;
+  this.title = (new Utf8 (RegExp.$1)).decodeCharRef ().toUTF8 ();
 
   var s = this.getVideoInfo ('length_seconds');
   if (!s) {
@@ -554,15 +560,18 @@ YouTubeVideo.prototype._makeDecipherPattern = function () {
 // @name Download YouTube Videos as MP4
 // @homepageURL https://github.com/gantt/downloadyoutube
 // @author Gantt
-// @version 1.7.22
-// @date 2014-07-15
+// @version 1.7.24
+// @date 2014-07-24
 // @license MIT License
 //
 // findSignatureCode() の移植に必要な作業
 // - '～' 形式の文字列内に \ があれば "～" に変更する。
 //   - その文字列内の " を \" に、{ を \\{ に変更する
-// - .replace('$' を .replace(/\$/g, に変更する
+// - .replace('$' を .replace(/\$/ に変更する
 // - regCode の (.+) を ([^}]+) に変更する。
+// - 正規表現中の { を \{ に変更する。
+// - 正規表現中の (?:～) を (～) に変更する。
+// - String#match() の仕様が異なるので辻褄を合わせる。
 // - debug() を別名に変更するか、関数として定義する。
 // - 正規表現検索が遅いので高速化した方がよい。
 
@@ -571,70 +580,77 @@ YouTubeVideo.prototype._findSignatureCode = function (html) {
   var DECODE_RULE = this._decodeRules;
   var isSignatureCodeUpdated = false;
 
-  var scriptURL = '';
-  var STORAGE_URL = '';
   var STORAGE_CODE = '';
   function setPref () { }
 
   function findMatch (text, regexp) {
-      var matches = text.match (regexp);
-      return (matches) ? RegExp.$1 : null;
-  }
-
-  function isInteger (n) {
-    return typeof n == 'number' && parseInt (n) == n;
-  }
-
-  function fastMatch (text, regexp) {
     if (/^\/((\\\.|[ a-z])+)/i.test (regexp)) {
       var n = text.indexOf (RegExp.$1.replace (/\\/g, ''));
       if (0 < n) {
         text = text.slice (n);
       }
     }
-    return findMatch (text, regexp);
+
+    var matches = text.match (regexp);
+    return (matches) ? RegExp.$1 : null;
+  }
+
+  function isInteger (n) {
+    return typeof n == 'number' && parseInt (n) == n;
   }
 
   function findSignatureCode(sourceCode) {
     function debug (s) { print_debug (s); }
 
-    var functionName = fastMatch(sourceCode, /\.signature\s*=\s*([a-zA-Z_$][0-9a-zA-Z_$]*)\([a-zA-Z_$][0-9a-zA-Z_$]*\)/);
-    functionName=functionName.replace(/\$/g,'\\$');
-    if (functionName == null) return setPref(STORAGE_CODE, 'error');
-    debug('DYVAM - Info: function ' + functionName);
-    var regCode = new RegExp('function ' + functionName +
-    "\\s*\\(\\w+\\)\\s*\\{\\w+=\\w+\\.split\\(\"\"\\);([^}]+);return \\w+\\.join");
-    var functionCode = fastMatch(sourceCode, regCode);
-    debug('DYVAM - Info: functioncode ' + functionCode);
+    var signatureFunctionName = findMatch(sourceCode,
+    /\.signature\s*=\s*([a-zA-Z_$][\w$]*)\([a-zA-Z_$][\w$]*\)/);
+    if (signatureFunctionName == null) return setPref(STORAGE_CODE, 'error');
+    signatureFunctionName=signatureFunctionName.replace(/\$/,"\\$");
+    var regCode = new RegExp("function \\s*" + signatureFunctionName +
+    "\\s*\\([\\w$]*\\)\\s*\\{[\\w$]*=[\\w$]*\\.split\\(\"\"\\);([^}]+);return [\\w$]*\\.join");
+    var functionCode = findMatch(sourceCode, regCode);
+    debug('DYVAM - Info: signaturefunction ' + signatureFunctionName + ' -- ' + functionCode);            
     if (functionCode == null) return setPref(STORAGE_CODE, 'error');
 
-    var regReverseFunction = new RegExp("(\\w*)\\s*:\\s*function\\s*\\(\\s*\\w*\\s*\\)\\s*\\{\\s*return\\s*\\w*\\.reverse\\s*\\(\\s*\\)\\s*}");
-    var reverseFunctionName = findMatch(sourceCode, regReverseFunction);
+    var reverseFunctionName = findMatch(sourceCode,
+    /([\w$]*)\s*:\s*function\s*\(\s*[\w$]*\s*\)\s*\{\s*(return\s*)?[\w$]*\.reverse\s*\(\s*\)\s*\}/);
     debug('DYVAM - Info: reversefunction ' + reverseFunctionName);
-
-    var regSliceFunction = new RegExp("(\\w*)\\s*:\\s*function\\s*\\(\\s*\\w*\\s*,\\s*\\w*\\s*\\)\\s*\\{\\s*return\\s*\\w*\\.slice\\(.+\\)\\s*}");
-    var sliceFunctionName = findMatch(sourceCode, regSliceFunction);
+    if (reverseFunctionName) reverseFunctionName=reverseFunctionName.replace(/\$/,"\\$");
+    var sliceFunctionName = findMatch(sourceCode,
+    /([\w$]*)\s*:\s*function\s*\(\s*[\w$]*\s*,\s*[\w$]*\s*\)\s*\{\s*(return\s*)?[\w$]*\.(slice|splice)\(.+\)\s*\}/);
     debug('DYVAM - Info: slicefunction ' + sliceFunctionName);
+    if (sliceFunctionName) sliceFunctionName=sliceFunctionName.replace(/\$/,"\\$");
 
-    var regSlice = new RegExp("slice\\s*\\(\\s*(.+)\\s*\\)");
-    var regSliceVar = sliceFunctionName && new RegExp(sliceFunctionName+"\\s*\\(\\s*.+([0-9]+)\\s*\\)");
-    var regSwap = new RegExp("\\w+\\s*\\(\\s*\\w+\\s*,\\s*([0-9]+)\\s*\\)");
-    var regInline = new RegExp("\\w+\\[0\\]\\s*=\\s*\\w+\\[([0-9]+)\\s*%\\s*\\w+\\.length\\]");
+    var regSlice = new RegExp("\\.("+'slice'+(sliceFunctionName?'|'+sliceFunctionName:'')+
+    ")\\s*\\(\\s*([a-zA-Z_$][\\w$]*\\s*,)?\\s*([0-9]+)\\s*\\)"); // .slice(5) sau .Hf(a,5)
+    function regSliceMatch (s) {
+      return regSlice.test (s) ? [ null, RegExp.$3 ] : null;
+    }
+    var regReverse = new RegExp("\\.("+'reverse'+(reverseFunctionName?'|'+reverseFunctionName:'')+
+    ")\\s*\\([^\\)]*\\)");  // .reverse() sau .Gf(a,45)
+    function regReverseMatch (s) {
+      return regReverse.test (s) ? [ null, RegExp.$2 ] : null;
+    }
+    var regSwap = new RegExp("[\\w$]+\\s*\\(\\s*[\\w$]+\\s*,\\s*([0-9]+)\\s*\\)");
+    var regInline = new RegExp("[\\w$]+\\[0\\]\\s*=\\s*[\\w$]+\\[([0-9]+)\\s*%\\s*[\\w$]+\\.length\\]");
     var functionCodePieces=functionCode.split(';');
     var decodeArray=[], signatureLength=81;
     for (var i=0; i<functionCodePieces.length; i++) {
       functionCodePieces[i]=functionCodePieces[i].trim();
-      if (functionCodePieces[i].length==0) {
-      } else if (functionCodePieces[i].indexOf('slice') >= 0) { // slice
-        var slice=findMatch(functionCodePieces[i], regSlice);
-        slice=parseInt(slice, 10);
-        if (isInteger(slice)){
-          decodeArray.push(-slice);
-          signatureLength+=slice;
-        } else return setPref(STORAGE_CODE, 'error');
-      } else if (functionCodePieces[i].indexOf('reverse') >= 0) {
-        decodeArray.push(0);
-      } else if (functionCodePieces[i].indexOf('[0]') >= 0) {
+      var codeLine=functionCodePieces[i];
+      if (codeLine.length>0) {
+        var arrSlice=regSliceMatch(codeLine);
+        var arrReverse=regReverseMatch(codeLine);
+        debug(i+': '+codeLine+' --'+(arrSlice?' slice length '+arrSlice.length:'') +' '+(arrReverse?'reverse':''));
+        if (arrSlice && arrSlice.length >= 2) { // slice
+          var slice=parseInt(arrSlice[1], 10);
+          if (isInteger(slice)){
+            decodeArray.push(-slice);
+            signatureLength+=slice;
+          } else return setPref(STORAGE_CODE, 'error');
+        } else if (arrReverse && arrReverse.length >= 1) { // reverse
+          decodeArray.push(0);
+        } else if (codeLine.indexOf('[0]') >= 0) { // inline swap
           if (i+2<functionCodePieces.length &&
           functionCodePieces[i+1].indexOf('.length') >= 0 &&
           functionCodePieces[i+1].indexOf('[0]') >= 0) {
@@ -643,32 +659,19 @@ YouTubeVideo.prototype._findSignatureCode = function (html) {
             decodeArray.push(inline);
             i+=2;
           } else return setPref(STORAGE_CODE, 'error');
-      } else if (sliceFunctionName && functionCodePieces[i].indexOf('.'+sliceFunctionName) >= 0) {
-        var slice=findMatch(functionCodePieces[i], regSliceVar);
-        slice=parseInt(slice, 10);
-        if (isInteger(slice)){
-          decodeArray.push(-slice);
-          signatureLength+=slice;
+        } else if (codeLine.indexOf(',') >= 0) { // swap
+          var swap=findMatch(codeLine, regSwap);
+          swap=parseInt(swap, 10);
+          if (isInteger(swap)){
+            decodeArray.push(swap);
+          } else return setPref(STORAGE_CODE, 'error');
         } else return setPref(STORAGE_CODE, 'error');
-      } else if (reverseFunctionName && functionCodePieces[i].indexOf('.'+reverseFunctionName) >= 0) {
-        decodeArray.push(0);
-      } else if (functionCodePieces[i].indexOf(',') >= 0) {
-        var swap=findMatch(functionCodePieces[i], regSwap);
-        swap=parseInt(swap, 10);
-        if (isInteger(swap)){
-          decodeArray.push(swap);
-        } else return setPref(STORAGE_CODE, 'error');
-      } else return setPref(STORAGE_CODE, 'error');
+      }
     }
 
-    if (decodeArray) {
-      setPref(STORAGE_URL, scriptURL);
-      setPref(STORAGE_CODE, decodeArray.toString());
-      DECODE_RULE[signatureLength]=decodeArray;
-      isSignatureCodeUpdated=true; // updated signature
-    }
+    DECODE_RULE[signatureLength]=decodeArray;
+    isSignatureCodeUpdated = true;
   }
-
 
   if (this.debug) {
     this._p ('signature 復号器の解析を開始します。');
@@ -871,8 +874,7 @@ YouTubeVideo.prototype._getDashmpd = function () {
     this._getDashmpdDOM (document);
   }
   catch (e) {
-    this._p (e);
-    return this.NG;
+    return this.ng (e);
   }
   finally {
     if (document) {
@@ -896,7 +898,7 @@ YouTubeVideo.prototype._buildVideoUrl = function (m) {
     return null;
   }
 
-  var sig = m.get ('sig'); // || m.get ('signature');
+  var sig = m.get ('sig');
   var s = m.get ('s');
   if (!sig && s) {
     sig = this._decryptSignature (s);
@@ -980,7 +982,7 @@ YouTubeVideo.prototype._buildAdaptiveFmt = function (m) {
   fmt.resolution = m.get ('size') || (fmt.audioOnly ? '(audio only)' : '(missing size)');
 
   fmt.adaptive_fmts = m;
-  fmt.url = m.get ('url');
+  fmt.url = this._buildVideoUrl (m);
 
   this.formats.push (fmt);
 };
@@ -1060,8 +1062,7 @@ YouTubeVideo.prototype.get = function (url) {
   }
   if (this.rental) {
     // 有料動画はエラー扱い
-    this._p ('有料動画です。');
-    return this.NG;
+    return this._ng ('有料動画です。');
   }
   if (!this._decodeFmtList () || !this._decodeStreamMap ()) {
     return this.UNKNOWN;
