@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=redirect/rentan_pack 用設定
-//version=20140331.0
+//version=20140729.0
 //hint=
 //match=
 //author=rentan
@@ -33,8 +33,8 @@ function () {
 
 // program\*.dms を書き換える
 function update_program (replace_func) {
-  var prog_path = dorothy2_program + Dorothy.matchFile + '.dms';
-  var bak_dir = dorothy2_program + 'backup';
+  var prog_path = Dorothy.programDir + Dorothy.matchFile + '.dms';
+  var bak_dir = Dorothy.programDir + 'backup';
   var bak_path  = bak_dir + '\' + Dorothy.matchFile + '.bak';
 
   // program\*.dms を読み込む
@@ -106,11 +106,8 @@ function update_program (replace_func) {
 function update_program_match () {
 
   function replace (dms) {
-    // ↓変数名と型を変更する場合は program\*.dms も修正が必要
-    var MAKE_SITE_MATCH = true;
-
     // パターン生成ルーチンを呼び出す
-    var match = eval ('(' + dms + ') ()');
+    var match = eval ('(' + dms + ') ("MAKE_SITE_MATCH")');
     if (typeof match != 'string' || match == '') {
       alert ('//match= パターンの生成に失敗しました。');
       return null;

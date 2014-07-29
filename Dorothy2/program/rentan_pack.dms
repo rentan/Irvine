@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=rentan 詰め合わせ
-//version=20140716.0
+//version=20140729.0
 //hint=
 //match=^http://(www\.enterbrain\.co\.jp/fb/pc/(14gallery/14images|20omake/wallpaper)|websunday\.net/download/wallpaper|sundaygx\.com/members/[^/]+/download/wall_p|supersonico\.jp/mobile/dl|img\.toranoana\.jp/popup_img18|(ftp|download)\.vector\.co\.jp|www\.chuable\.net)/
 //author=rentan
@@ -25,7 +25,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-function () {
+function (scriptMode) {
 
 
 //---------------------- 下請け ----------------------//
@@ -242,7 +242,7 @@ set_site (/^http:\/\/www\.chuable\.net\//, chuable);
 
 
   // setting\rentan_pack.set から読み込まれて呼び出された場合
-  if (typeof MAKE_SITE_MATCH == 'boolean') {
+  if (scriptMode === 'MAKE_SITE_MATCH') {
     // //match= パターンを生成して返す
     return make_site_match ();
   }

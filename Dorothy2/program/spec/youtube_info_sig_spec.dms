@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTubeSig spec
-//version=20140727.0
+//version=20140729.0
 //hint=http://yasmine.dorothy.test/program/spec/youtube_info_sig_spec.dms
 //match=
 //author=rentan
@@ -29,16 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 // program\youtube_info.dms Çì«Ç›çûÇÒÇ≈é¿çs
-function loadProgram (name, keyToDefine) {
-  Global [keyToDefine] = true;
-
-  var src = program_load (name);
-  eval (src) ();
-
-  Global.removeKey (keyToDefine);
-}
-
-loadProgram ('youtube_info', 'DEFINE_YOUTUBE_OBJECT_ONLY');
+eval (program_load ('youtube_info')) ('DEFINE_ONLY');
 
 
 describe ('YouTubeSig#calcDecipherPattern()', function () {

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20140718.0
+//version=20140729.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -30,18 +30,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 common_load ('esx\array');
 
-
 // program\twitter_r.dms を読み込んで実行
-function loadProgram (name, keyToDefine) {
-  Global [keyToDefine] = true;
-
-  var src = program_load (name);
-  eval (src) ();
-
-  Global.removeKey (keyToDefine);
-}
-
-loadProgram ('twitter_r', 'DEFINE_TWITTER_OBJECT_ONLY');
+eval (program_load ('twitter_r')) ('DEFINE_ONLY');
 
 
 describe ('Twitter', function () {
@@ -202,8 +192,8 @@ describe ('メディア', function () {
     // [ no, url ]
     [  1, 'https://twitter.com/rentan_org/status/146256880342282240' ],
     [  3, 'https://twitter.com/rentan_org/status/198840674177646592' ],
-    [ 29, 'https://twitter.com/rentan_org/status/470484218963701760' ],
-    [ 30, 'https://twitter.com/rentan_org/status/473809360666103808' ]
+    [ 30, 'https://twitter.com/rentan_org/status/470484218963701760' ],
+    [ 31, 'https://twitter.com/rentan_org/status/473809360666103808' ]
   ])
   .it ('.urls が [ { Url: ... }, ... ] 形式 [ no, url ]', function (no, url) {
     var idx = twitter.urls.length - no;

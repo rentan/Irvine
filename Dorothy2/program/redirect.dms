@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=URL転送サービス
-//version=20140716.0
+//version=20140729.0
 //hint=
 //match=^https?://((bit\.ly|ilix\.in|ime\.nu|jump\.2ch\.net|lix\.in|pinktower\.com|t\.co|wk\.tk)/.|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|baberepublic\.com|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|placepictures\.com|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|youfap\.me|yyv\.co|zff\.co|zxxo\.net)([/?#].*)?$)
 //author=rentan
@@ -25,7 +25,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-function () {
+function (scriptMode) {
 
   common_load ('rutil', 'additem');
 
@@ -997,6 +997,12 @@ function doaConstructor (ur) {
 //-------------------- メイン処理 --------------------//
 
 
+  if (scriptMode === 'DEFINE_ONLY') {
+    // UrlRedirector オブジェクトの定義だけを行う
+    return;
+  }
+
+
   var ur = new UrlRedirector (ini.Site, { Max: ini.General.Max });
 
   // DOA からの実行
@@ -1005,7 +1011,7 @@ function doaConstructor (ur) {
   }
 
   // setting\redirect.set から読み込まれて呼び出された場合
-  if (typeof MAKE_SITE_MATCH == 'boolean') {
+  if (scriptMode === 'MAKE_SITE_MATCH') {
     // //match= パターンを生成して返す
     return ur.buildMatch ();
   }

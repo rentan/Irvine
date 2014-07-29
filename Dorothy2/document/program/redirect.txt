@@ -96,6 +96,9 @@ http://ws1.y-bbs.net/
 変更履歴
 ========
 
+2014-07-29  version 20140729.0  rentan at rentan.org
+  script Mode 引数で動作モードを切り替えるようにした。
+
 2014-07-16  version 20140716.0  rentan at rentan.org
   linkbucks 系の仕様変更に対応。
     thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/542

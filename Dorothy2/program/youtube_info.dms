@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/動画情報
-//version=20140727.0
+//version=20140729.0
 //hint=
 //match=^https?://(www\.)?youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -25,7 +25,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-function () {
+function (scriptMode) {
 
   common_load ('rutil', 'additem', 'http', 'namebuilder', 'utf8');
 
@@ -1382,7 +1382,7 @@ function downloadVideo (video, priority) {
 
 
   // program\spec\youtube_info_sig_spec.dms から読み込まれて呼び出された場合
-  if (typeof DEFINE_YOUTUBE_OBJECT_ONLY == 'boolean') {
+  if (scriptMode === 'DEFINE_ONLY') {
     // YouTubeVideo、YouTubeSig オブジェクトの定義だけを行う
     return;
   }

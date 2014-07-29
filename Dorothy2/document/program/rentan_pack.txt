@@ -35,6 +35,9 @@ http://my.vector.co.jp/servlet/System.FileDownload/download/
 変更履歴
 ========
 
+2014-07-29  version 20140729.0  rentan at rentan.org
+  script Mode 引数で動作モードを切り替えるようにした。
+
 2014-07-16  version 20140716.0  rentan at rentan.org
   microsoft_tw 削除、chuable 追加。
 

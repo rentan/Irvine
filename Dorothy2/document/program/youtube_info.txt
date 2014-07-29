@@ -28,6 +28,9 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
 変更履歴
 ========
 
+2014-07-29  version 20140729.0  rentan at rentan.org
+  script Mode 引数で動作モードを切り替えるようにした。
+
 2014-07-27  version 20140727.0  rentan at rentan.org
   YouTubeSig オブジェクトを作成。signature 復号を新規作成。
 

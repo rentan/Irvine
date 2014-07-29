@@ -31,6 +31,9 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2014-07-29  version 20140729.0  rentan at rentan.org
+  script Mode 引数で動作モードを切り替えるようにした。
+
 2014-07-18  version 20140718.0  rentan at rentan.org
   .getImage() を .get() にリネーム。
   .setFilename() を削除。

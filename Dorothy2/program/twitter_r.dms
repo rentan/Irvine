@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20140718.0
+//version=20140729.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -25,7 +25,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-function () {
+function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
 
@@ -378,7 +378,7 @@ Twitter.prototype.get = function (url) {
 
 
   // program\spec\twitter_r_spec.dms から読み込まれて呼び出された場合
-  if (typeof DEFINE_TWITTER_OBJECT_ONLY == 'boolean') {
+  if (scriptMode === 'DEFINE_ONLY') {
     // Twitter オブジェクトの定義だけを行う
     return;
   }
