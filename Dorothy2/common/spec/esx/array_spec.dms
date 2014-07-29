@@ -1,0 +1,470 @@
+//Dorothy2
+//caption=esx/array spec
+//version=20140622.0
+//hint=http://yasmine.dorothy.test/common/spec/esx/array_spec.dms
+//match=
+//author=rentan
+//path=common\spec\esx
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('esx\array');
+
+
+describe ('Array', function () {
+  it ('同じ内容の配列は .toEqual() が成立する', function () {
+    expect ([ ]).toEqual ([ ]);
+    expect ([ 1, 'foo' ]).toEqual ([ 1.0, 'foo' ]);
+  });
+
+  it ('.call() または .apply() は禁止(DMonkey bug workaround)', function () {
+    // このようなコードを実行すると .map() の挙動が正しくなくなる。
+
+    // var s = new String ('Hello World');
+    // var a = Array.prototype.map.call (s, function (x) { return x.charCodeAt (0); });
+    // expect (a).toEqual ([ 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100 ]);
+  });
+});
+
+
+describe ('Array#indexOf', function () {
+  it ('先頭から検索して一致する要素の位置を返す', function () {
+    expect ([ 2, 5, 9 ].indexOf (2)).toBe (0);
+    expect ([ 2, 5, 9 ].indexOf (9)).toBe (2);
+    expect ([ true, null, 'foo' ].indexOf (null)).toBe (1);
+  });
+
+  it ('一致する要素がなければ -1 を返す', function () {
+    expect ([ 2, 5, 9 ].indexOf (7)).toBe (-1);
+    expect ([ true, null, 'foo' ].indexOf (false)).toBe (-1);
+  });
+
+  it ('空配列は -1 を返す', function () {
+    expect ([ ].indexOf (1)).toBe (-1);
+  });
+
+  it ('fromIndex を指定するとその位置から検索する', function () {
+    expect ([ 1, 2, 3, 1, 2 ].indexOf (1, 2)).toBe (3);
+    expect ([ 1, 2, 3, 1, 2 ].indexOf (1, Number.POSITIVE_INFINITY)).toBe (-1);
+  });
+
+  it ('fromIndex が負数なら末尾からのオフセット', function () {
+    expect ([ 1, 2, 3, 1, 2 ].indexOf (2, -3)).toBe (4);
+    expect ([ 1, 2, 3, 1, 2 ].indexOf (2, Number.NEGATIVE_INFINITY)).toBe (1);
+  });
+
+  cases ([
+    // [ fromIndex, result ]
+    [ 0.1, 0 ],
+    [ 0.5, 0 ],
+    [ 0.9, 0 ],
+    [ 1.1, 1 ],
+    [ 1.5, 1 ],
+    [ 1.9, 1 ],
+    [ 2.5, 2 ],
+    [ 3.1, -1 ],
+
+    [ -0.1, 0 ],
+    [ -0.5, 0 ],
+    [ -0.9, 0 ],
+    [ -1.1, 2 ],
+    [ -1.5, 2 ],
+    [ -1.9, 2 ],
+    [ -2.5, 1 ],
+    [ -3.1, 0 ]
+  ])
+  .it ('[ fromIndex, result ] fromIndex の小数点以下は切り捨て', function (fromIndex, result) {
+    expect ([ 'a', 'a', 'a' ].indexOf ('a', fromIndex)).toBe (result);
+  });
+
+  it ('整数型と浮動小数点型を同一視する(DMonkey bug workaround)', function () {
+    expect ([ 1, 1.0 ].indexOf (1.0)).toBe (0);
+  });
+});
+
+
+describe ('Array#lastIndexOf', function () {
+  it ('末尾から検索して一致する要素の位置を返す', function () {
+    expect ([ 2, 5, 9, 2 ].lastIndexOf (2)).toBe (3);
+    expect ([ true, null, 'foo' ].lastIndexOf (null)).toBe (1);
+  });
+
+  it ('一致する要素がなければ -1 を返す', function () {
+    expect ([ 2, 5, 9, 2 ].lastIndexOf (7)).toBe (-1);
+    expect ([ true, null, 'foo' ].lastIndexOf (false)).toBe (-1);
+  });
+
+  it ('空配列は -1 を返す', function () {
+    expect ([ ].lastIndexOf (1)).toBe (-1);
+  });
+
+  it ('fromIndex を指定するとその位置から検索する', function () {
+    expect ([ 2, 5, 9, 2 ].lastIndexOf (2, 3)).toBe (3);
+    expect ([ 2, 5, 9, 2 ].lastIndexOf (2, 2)).toBe (0);
+    expect ([ 1, 2, 3, 1, 2 ].lastIndexOf (1, Number.POSITIVE_INFINITY)).toBe (3);
+  });
+
+  it ('fromIndex が負数なら末尾からのオフセット', function () {
+    expect ([ 2, 5, 9, 2 ].lastIndexOf (2, -2)).toBe (0);
+    expect ([ 2, 5, 9, 2 ].lastIndexOf (2, -1)).toBe (3);
+    expect ([ 1, 2, 3, 1, 2 ].lastIndexOf (1, Number.NEGATIVE_INFINITY)).toBe (-1);
+  });
+
+  cases ([
+    // [ fromIndex, result ]
+    [ 0.1, 0 ],
+    [ 0.5, 0 ],
+    [ 0.9, 0 ],
+    [ 1.1, 1 ],
+    [ 1.5, 1 ],
+    [ 1.9, 1 ],
+    [ 2.5, 2 ],
+    [ 3.1, 2 ],
+
+    [ -0.1, 0 ],
+    [ -0.5, 0 ],
+    [ -0.9, 0 ],
+    [ -1.1, 2 ],
+    [ -1.5, 2 ],
+    [ -1.9, 2 ],
+    [ -2.5, 1 ],
+    [ -3.1, 0 ]
+  ])
+  .it ('[ fromIndex, result ] fromIndex の小数点以下は切り捨て', function (fromIndex, result) {
+    expect ([ 'a', 'a', 'a' ].lastIndexOf ('a', fromIndex)).toBe (result);
+  });
+
+  it ('整数型と浮動小数点型を同一視する(DMonkey bug workaround)', function () {
+    expect ([ 1, 1.0 ].lastIndexOf (1)).toBe (1);
+  });
+});
+
+
+describe ('Array#forEach', function () {
+  it ('配列の各要素を引数にコールバック関数を呼び出す', function () {
+    var array = [ 'a', 'b', 'c' ];
+
+    var args = [ ];
+    array.forEach (function (element, index, array) {
+      args.push ([ element, index, array ]);
+    });
+
+    expect (args.length).toBe (3);
+    expect (args [0]).toEqual ([ 'a', 0, array ]);
+    expect (args [1]).toEqual ([ 'b', 1, array ]);
+    expect (args [2]).toEqual ([ 'c', 2, array ]);
+  });
+
+  it ('要素の値が undefined なら疎配列と見なしてコールバックしない', function () {
+    var array = [ ];
+    array [0] = 'a';
+    array [2] = 'b';
+    expect (array [1]).toBeUndefined ();
+
+    var args = [ ];
+    array.forEach (function (element, index, array) {
+      args.push ([ element, index, array ]);
+    });
+
+    expect (args.length).toBe (2);
+    expect (args [0]).toEqual ([ 'a', 0, array ]);
+    expect (args [1]).toEqual ([ 'b', 2, array ]);
+  });
+
+  it ('第2引数 thisArg でコールバック時の this を指定', function () {
+    var thisObj = { };
+    var sentThis = null;
+
+    [ true ].forEach (function () {
+      sentThis = this;
+    }, thisObj);
+
+    expect (sentThis).toBe (thisObj);
+  });
+});
+
+
+describe ('Array#every', function () {
+  function isBigEnough (element, index, array) {
+    return (element >= 10);
+  }
+
+  it ('コールバック関数が全て真を返したら true を返す', function () {
+    expect ([ 12, 54, 18, 130, 44 ].every (isBigEnough)).toBe (true);
+  });
+
+  it ('コールバック関数が一つでも偽を返したら false を返す', function () {
+    expect ([ 12, 5, 8, 130, 44 ].every (isBigEnough)).toBe (false);
+  });
+
+  it ('コールバック関数が偽を返したら以後の要素は走査しない', function () {
+    var overrun = false;
+    function run (element, index, array) {
+      if (index === 0) {
+        return false;
+      }
+      overrun = true;
+      return true;
+    }
+
+    expect ([ 1, 2, 3 ].every (run)).toBe (false);
+    expect (overrun).toBe (false);
+  });
+
+  it ('空配列は true を返す', function () {
+    expect ([ ].every (function () { throw; })).toBe (true);
+  });
+
+  it ('要素の値が undefined なら疎配列と見なしてコールバックしない', function () {
+    var array = [ ];
+    array [0] = 1;
+    array [2] = 2;
+    expect (array [1]).toBeUndefined ();
+
+    expect (array.every (function (element, index, array) {
+      return !isUndefined (element);
+    })).toBe (true);
+  });
+
+  it ('NaN は偽と見なす(DMonkey bug workaround)', function () {
+    expect ([ 1 ].every (function () { return NaN; })).toBe (false);
+  });
+});
+
+
+describe ('Array#some', function () {
+  function isBigEnough (element, index, array) {
+    return (element >= 10);
+  }
+
+  it ('コールバック関数が一つでも真を返したら true を返す', function () {
+    expect ([ 12, 5, 8, 1, 4 ].some (isBigEnough)).toBe (true);
+  });
+
+  it ('コールバック関数が全て偽を返したら false を返す', function () {
+    expect ([ 2, 5, 8, 1, 4 ].some (isBigEnough)).toBe (false);
+  });
+
+  it ('コールバック関数が真を返したら以後の要素は走査しない', function () {
+    var overrun = false;
+    function run (element, index, array) {
+      if (index === 0) {
+        return true;
+      }
+      overrun = true;
+      return false;
+    }
+
+    expect ([ 1, 2, 3 ].some (run)).toBe (true);
+    expect (overrun).toBe (false);
+  });
+
+  it ('空配列は false を返す', function () {
+    expect ([ ].some (function () { throw; })).toBe (false);
+  });
+
+  it ('要素の値が undefined なら疎配列と見なしてコールバックしない', function () {
+    var array = [ ];
+    array [0] = 1;
+    array [2] = 2;
+    expect (array [1]).toBeUndefined ();
+
+    expect (array.some (function (element, index, array) {
+      return isUndefined (element);
+    })).toBe (false);
+  });
+
+  it ('NaN は偽と見なす(DMonkey bug workaround)', function () {
+    expect ([ 1 ].some (function () { return NaN; })).toBe (false);
+  });
+});
+
+
+describe ('Array#filter', function () {
+  function isBigEnough (element, index, array) {
+    return (element >= 10);
+  }
+
+  it ('コールバック関数が真を返した要素からなる配列を返す', function () {
+    expect ([ 12, 5, 8, 130, 44 ].filter (isBigEnough)).toEqual ([ 12, 130, 44 ]);
+  });
+
+  it ('コールバック関数が全て偽を返したら空配列を返す', function () {
+    expect ([ 2, 5, 8, 1, 4 ].filter (isBigEnough)).toEqual ([ ]);
+  });
+
+  it ('空配列は空配列を返す', function () {
+    expect ([ ].filter (function () { throw; })).toEqual ([ ]);
+  });
+
+  it ('要素の値が undefined なら疎配列と見なしてコールバックしない', function () {
+    var array = [ ];
+    array [0] = 1;
+    array [2] = 2;
+    expect (array [1]).toBeUndefined ();
+
+    expect (array.filter (function (element, index, array) {
+      return true;
+    })).toEqual ([ 1, 2 ]);
+  });
+
+  it ('NaN は偽と見なす(DMonkey bug workaround)', function () {
+    expect ([ 1 ].filter (function () { return NaN; })).toEqual ([ ]);
+  });
+});
+
+
+describe ('Array#map', function () {
+  it ('コールバック関数の戻り値からなる配列を返す', function () {
+    function sqrt (x) {
+      return Math.sqrt (x);
+    }
+
+    var numbers = [ 1, 4, 9 ];
+    expect (numbers.map (sqrt)).toEqual ([ 1, 2, 3 ]);
+    expect (numbers).toEqual ([ 1, 4, 9 ]);
+  });
+
+  it ('空配列は空配列を返す', function () {
+    expect ([ ].map (function () { throw; })).toEqual ([ ]);
+  });
+
+  it ('要素の値が undefined なら疎配列と見なしてコールバックしない', function () {
+    var run = false;
+
+    var array = new Array (1);
+    expect (array [0]).toBeUndefined ();
+
+    expect (array.map (function (x) { run = true; return 1; })).toEqual (new Array (1));
+    expect (run).toBe (false);
+  });
+
+  it ('コールバック関数に別の引数を渡したい場合はラッパーを挟めばよい', function () {
+    function returnInt (element) {
+      return parseInt (element, 10);
+    }
+
+    expect ([ '1', '2', '3' ].map (returnInt)).toEqual ([ 1, 2, 3 ]);
+  });
+});
+
+
+describe ('Array#reduce', function () {
+  function add (previousValue, currentValue, index, array) {
+    return previousValue + currentValue;
+  }
+
+  it ('左から右へ、隣り合う2要素に対しコールバック関数を適用して値を返す', function () {
+    expect ([ 0, 1, 2, 3, 4 ].reduce (add)).toBe (10);
+    expect ([ 0, 1, 2, 3 ].reduce (function (a, b) { return a + b; })).toBe (6);
+
+    var flattened = [ [0, 1], [2, 3], [4, 5] ].reduce (function (a, b) {
+      return a.concat (b);
+    });
+    expect (flattened).toEqual ([ 0, 1, 2, 3, 4, 5 ]);
+  });
+
+  it ('第2引数 initialValue で初期値を指定', function () {
+    expect ([ 0, 1, 2, 3, 4 ].reduce (add, 10)).toBe (20);
+  });
+
+  it ('空配列は第2引数の値を返す', function () {
+    expect ([ ].reduce (add, 'foobar')).toBe ('foobar');
+  });
+
+  it ('空配列で第2引数が無指定なら例外を投げる', function () {
+    expect (function () { [ ].reduce (add); }).toThrow ();
+  });
+
+  it ('要素の値が undefined なら疎配列と見なしてコールバックしない', function () {
+    var array = [ ];
+    array [0] = 1;
+    array [2] = 2;
+    array [4] = 3;
+    expect (array [1]).toBeUndefined ();
+    expect (array [3]).toBeUndefined ();
+
+    var run = false;
+    var value = array.reduce (function add (previousValue, currentValue, index, array) {
+      if (index === 1 || index === 3) {
+        run = true;
+      }
+      return previousValue + currentValue;
+    });
+
+    expect (value).toBe (6);
+    expect (run).toBe (false);
+  });
+});
+
+
+describe ('Array#reduceRight', function () {
+  function add (previousValue, currentValue, index, array) {
+    return previousValue + currentValue;
+  }
+
+  it ('右から左へ、隣り合う2要素に対しコールバック関数を適用して値を返す', function () {
+    expect ([ 0, 1, 2, 3, 4 ].reduceRight (add)).toBe (10);
+    expect ([ 0, 1, 2, 3 ].reduceRight (function (a, b) { return a + b; })).toBe (6);
+
+    var flattened = [ [0, 1], [2, 3], [4, 5] ].reduceRight (function (a, b) {
+      return a.concat (b);
+    });
+    expect (flattened).toEqual ([ 4, 5, 2, 3, 0, 1 ]);
+  });
+
+  it ('第2引数 initialValue で初期値を指定', function () {
+    expect ([ 0, 1, 2, 3, 4 ].reduceRight (add, 10)).toBe (20);
+  });
+
+  it ('空配列は第2引数の値を返す', function () {
+    expect ([ ].reduceRight (add, 'foobar')).toBe ('foobar');
+  });
+
+  it ('空配列で第2引数が無指定なら例外を投げる', function () {
+    expect (function () { [ ].reduceRight (add); }).toThrow ();
+  });
+
+  it ('要素の値が undefined なら疎配列と見なしてコールバックしない', function () {
+    var array = [ ];
+    array [0] = 1;
+    array [2] = 2;
+    array [4] = 3;
+    expect (array [1]).toBeUndefined ();
+    expect (array [3]).toBeUndefined ();
+
+    var run = false;
+    var value = array.reduceRight (function add (previousValue, currentValue, index, array) {
+      if (index === 1 || index === 3) {
+        run = true;
+      }
+      return previousValue + currentValue;
+    });
+
+    expect (value).toBe (6);
+    expect (run).toBe (false);
+  });
+});
+
+
+// EOF
