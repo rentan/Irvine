@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20140718.0
+//version=20140729.0
 //hint=utility
 //match=
 //author=rentan
@@ -202,7 +202,7 @@ Util.fatal = function (s) {
 
 
 if (Dorothy.hasKey ('rVersion')) {
-  if (Dorothy.rVersion < 20140718) {
+  if (Dorothy.rVersion < 20140729) {
     Util.fatal ("Dorothy2R のバージョンが古すぎます。\nDorothy2R の最新版を使用して下さい。");
   }
 }

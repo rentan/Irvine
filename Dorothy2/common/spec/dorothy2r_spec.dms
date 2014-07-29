@@ -1,0 +1,86 @@
+//Dorothy2
+//caption=Dorothy2R spec
+//version=20140729.0
+//hint=http://yasmine.dorothy.test/common/spec/dorothy2r_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+// joint.call() または joint.apply() は
+// joint() 自体の動作モードが変更されてしまうため使用禁止
+
+
+describe ('joint()', function () {
+  cases ([
+    // [ separator, strings... ], result
+    [ [ '' ], '' ],
+    [ [ '-' ], '' ],
+
+    [ [ '', '' ], '' ],
+    [ [ '-', '' ], '' ],
+    [ [ '', 'a' ], 'a' ],
+    [ [ '-', 'a' ], 'a' ],
+
+    [ [ '', '', '' ], '' ],
+    [ [ '-', '', '' ], '' ],
+    [ [ '', 'a', 'b' ], 'ab' ],
+    [ [ '-', 'a', 'b' ], 'a-b' ],
+    [ [ '', 'a', '' ], 'a' ],
+    [ [ '', '', 'b' ], 'b' ],
+    [ [ '-', 'a', '' ], 'a' ],
+    [ [ '-', '', 'b' ], 'b' ],
+
+    [ [ '', '', '', '' ], '' ],
+    [ [ '-', '', '', '' ], '' ],
+    [ [ '', 'a', '', '' ], 'a' ],
+    [ [ '-', 'a', '', '' ], 'a' ],
+    [ [ '', '', 'b', '' ], 'b' ],
+    [ [ '-', '', 'b', '' ], 'b' ],
+    [ [ '', '', '', 'c' ], 'c' ],
+    [ [ '-', '', '', 'c' ], 'c' ],
+
+    [ [ '', 'a', 'b', '' ], 'ab' ],
+    [ [ '-', 'a', 'b', '' ], 'a-b' ],
+    [ [ '', 'a', '', 'c' ], 'ac' ],
+    [ [ '-', 'a', '', 'c' ], 'a-c' ],
+    [ [ '', '', 'b', 'c' ], 'bc' ],
+    [ [ '-', '', 'b', 'c' ], 'b-c' ],
+
+    [ [ '', 'a', 'b', 'c' ], 'abc' ],
+    [ [ '-', 'a', 'b', 'c' ], 'a-b-c' ]
+  ])
+  .it ('[ [ separator, strings... ], result ]', function (args, result) {
+    var r = (args.length == 1) ? joint (args [0])
+          : (args.length == 2) ? joint (args [0], args [1])
+          : (args.length == 3) ? joint (args [0], args [1], args [2])
+          : (args.length == 4) ? joint (args [0], args [1], args [2], args [3])
+          : '未対応の引数長です: ' + args;
+
+    expect (r).toBe (result);
+  });
+});
+
+
+// EOF

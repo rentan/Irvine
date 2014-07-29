@@ -67,6 +67,9 @@ Dorothy.setFilename (filename)
 変更履歴
 ========
 
+2014-07-29  version 20140729.0  rentan at rentan.org
+  Dorothy2R の場合の最低バージョンを 20140729 に更新。
+
 2014-07-18  version 20140718.0  rentan at rentan.org
   rutil_dorothy2r.dms: Dorothy.setUrl(), .setFilename() を追加。
 
