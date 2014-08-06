@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ニコニコ動画_r
-//version=20140523.0
+//version=20140806.0
 //hint=
 //match=^http://www\.nicovideo\.jp/watch\/([a-z]{2})?\d+
 //author=rentan
@@ -228,7 +228,7 @@ NicoVideo.prototype._analyzeThumbinfo = function () {
     // <user_id>: 一般動画のみ
     // <ch_id>: チャンネル動画のみ
     this.user_id = getText2 (resp, 'user_id');
-    this.channel_no = getText2 (resp, 'channel_no');
+    this.channel_no = getText2 (resp, 'ch_id');
 
     if (!this.user_id && !this.channel_no) {
       throw 'user_id または ch_id がありません。';
