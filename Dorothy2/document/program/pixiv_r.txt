@@ -83,9 +83,15 @@ http://www.pixiv.net/novel/show.php?id=\d+
 
 ・小説の挿絵はダウンロードしません。
 
+・うごイラの JSON データは内容の検証をしていません。eval() などの危険な
+  方法での読み込みはしないように注意して下さい。
+
 
 変更履歴
 ========
+
+2014-08-08  version 20140808.0  rentan at rentan.org
+  うごイラの JSON データを保存できるようにした。
 
 2014-06-26  version 20140626.0  rentan at rentan.org
   うごイラに対応。

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20140626.0
+//version=20140808.0
 //hint=pixiv 別バージョン
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?)
 //author=rentan
@@ -38,10 +38,15 @@ function () {
       PageOrigin: 0,
       NovelExt: '.html'
     },
+    Ugoira: {
+      SaveJson: false,
+      JsonExt: '.txt'
+    },
     Filename: {
       Illust:  '',  // 省略時は Illust2 を使用
       Illust2: 'pixiv_%ID%',
       Ugoira: 'pixiv_%ID%',
+      UgoiraJson: 'pixiv_%ID%',
       Manga:  'pixiv_%ID%_p%P%',
       Manga2: 'pixiv_%ID%_p%P%',
       Profile: 'pixiv_profile_%ID%',
@@ -455,15 +460,30 @@ function dl_illust (url) {
 
 // うごイラの作品か調べる
 function is_ugoira (http) {
-  var re = /<script[^>]*>\s*pixiv\.context\.illustId[^<]*;pixiv\.context\.ugokuIllustFullscreenData\s*=\s*\{\s*"src"\s*:\s*"([^"]*)"/;
+  var re = /<script[^>]*>\s*pixiv\.context\.illustId[^<]*;pixiv\.context\.ugokuIllustFullscreenData\s*=\s*(\{[^<]+\})\s*;\s*<\/script>/;
 
-  if (!re.test (http.data)) {
-    return false;
+  var json = re.test (http.data) ? RegExp.$1 : null;
+  http.ugokuIllustFullscreenData = json;
+
+  return json != null;
+}
+
+
+// うごイラの JSON データをファイルに保存する
+function saveUgoiraJson (http) {
+  if (!ini.Ugoira.SaveJson) {
+    return;
   }
-  var zip = RegExp.$1.replace (/\\/g, '');
 
-  http.ugokuIllustFullscreenData = zip;
-  return true;
+  var json = http.ugokuIllustFullscreenData;
+
+  var f = nb.buildFilename (ini.Filename.UgoiraJson, ini.Ugoira.JsonExt);
+
+  var result = http.saveFile ({ filename: f, data: json });
+
+  if (!result.success) {
+    http.die (result.error);
+  }
 }
 
 
@@ -473,11 +493,18 @@ function dl_ugoira_p (http) {
     return retry ();
   }
 
-  var zip = http.ugokuIllustFullscreenData;
+  if (!/"src"\s*:\s*"([^"]*)"/.test (http.ugokuIllustFullscreenData)) {
+    http.capture ();
+    http.die ('ugokuIllustFullscreenData.src がありません。');
+  }
+  var zip = (new Utf8 (RegExp.$1)).unescape ().toUTF8 ();
+
   if (!/^https?:\/\/./.test (zip)) {
     http.capture ();
-    http.die ('未対応の ugokuIllustFullscreenData の形式です。');
+    http.die ('ugokuIllustFullscreenData.src が未対応の形式です。');
   }
+
+  saveUgoiraJson (http);
 
   nb.setFilename (ini.Filename.Ugoira, zip);
 
