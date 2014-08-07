@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JInput spec
-//version=20140605.0
+//version=20140808.0
 //hint=http://yasmine.dorothy.test/common/spec/jinput_spec.dms
 //match=
 //author=rentan
@@ -47,7 +47,7 @@ describe ('.inputText()', function () {
     var http = new Http ();
     expect (http.get (imgUrl)).toBe (true);
 
-    var q = 'テストOk';
+    var q = 'test ok';
 
     var hta_opt = [
       {
@@ -69,6 +69,23 @@ describe ('.inputText()', function () {
 
     // テスト実施者が入力ミスしてもテストに失敗する
     expect (t).toBe (q);
+  });
+});
+
+
+describe ('.synchronize()', function () {
+  // 他のダウンロードスレッドとの排他機能はこのスクリプト単体では
+  // 確認できないのでチェック省略。
+
+  it ('コールバック関数を呼び出す', function () {
+    var called = false;
+
+    function f () {
+      called = true;
+    }
+
+    (new JInput ()).synchronize (f);
+    expect (called).toBe (true);
   });
 });
 

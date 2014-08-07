@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JInput
-//version=20140331.0
+//version=20140808.0
 //hint=new JInput ()
 //match=
 //author=rentan
@@ -102,6 +102,23 @@ JInput.prototype._makeCmdline = function (tmpdir, args) {
 };
 
 
+// 内部で使用: Mutex 名
+JInput.prototype._mutexName = 'inputCaptcha';  // Input\Input*.dms と同じ
+
+
+// Mutex を用いてアトミックにコールバック関数を呼び出す
+JInput.prototype.synchronize = function (f) {
+  var mutex = new Mutex (this._mutexName);
+  try {
+    mutex.lock ();
+    return f ();
+  }
+  finally {
+    mutex.unlock ();
+  }
+};
+
+
 // ダイアログを表示してテキスト入力を行う
 JInput.prototype.inputText = function (args) {
   common_load ('exec');
@@ -115,10 +132,7 @@ JInput.prototype.inputText = function (args) {
   var result = files.result;
   var image = files.image;
 
-  var mutex = new Mutex ('Dorothy2.JInput');
-  try {
-    mutex.lock ();
-
+  var err = this.synchronize (function () {
     // 画像データをファイルに保存
     if (image) {
       image.open ('w');
@@ -140,22 +154,25 @@ JInput.prototype.inputText = function (args) {
       result.open ('r');
 
       var t = result.read ();
-      this.text = (t.charAt (0) == '=') ? t.slice (1) : null;
+      this.text = (t [0] == '=') ? t.slice (1) : null;
 
       result.close ();
       result.remove ();
     }
     else {
-      this._err ('inputText', 'ファイルがありません: ' + result.path);
+      return 'ファイルがありません: ' + result.path;
     }
 
     // 画像ファイルを削除
     if (image && image.exists ()) {
       image.remove ();
     }
-  }
-  finally {
-    mutex.unlock ();
+
+    return null;
+  });
+
+  if (err) {
+    this._err ('inputText', err);
   }
 
   return this.text;

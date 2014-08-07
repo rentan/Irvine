@@ -67,6 +67,19 @@ inputText (hta_opt)
     hta_opt = { p: [ 'abc', 'xyz' ] };
   のように p の値を配列にすることで複数指定できる。
 
+synchronize (func)
+  func ... function: コールバック関数(引数、戻り値なし)
+  戻り値 ... なし
+
+  Mutex (名称=inputCaptcha) を用いて排他的に、func で指定したコール
+  バック関数を呼び出す。他のダウンロードスレッドで先に実行されていた
+  場合は、終了するまで待機する。
+
+  以下の関数とも排他制御が適用される。
+    common\Input\inputCaptcha.dms .... inputCaptcha()
+    common\Input\inputCaptcha2.dms ... inputCaptcha2()
+    common\Input\inputText.dms ....... inputText()
+
 
 仕様・制限事項
 ==============
@@ -89,6 +102,9 @@ inputText (hta_opt)
 
 変更履歴
 ========
+
+2014-08-08  version 20140808.0  rentan at rentan.org
+  .synchronize(): メソッド追加。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
