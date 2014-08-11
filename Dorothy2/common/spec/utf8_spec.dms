@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utf8 spec
-//version=20140610.0
+//version=20140811.0
 //hint=http://yasmine.dorothy.test/common/spec/utf8_spec.dms
 //match=
 //author=rentan
@@ -206,6 +206,14 @@ describe ('.unescape()', function () {
     unesced.toString = to.toString;
 
     expect (unesced).toBe (to);
+  });
+
+  // http://peace.2ch.net/test/read.cgi/win/1394240473/715-719
+  it ('do not override global i variable', function () {
+    var u = new Utf8 ('foo');
+    expect (u.unescape ().toUTF8 ()).toBe ('foo');
+
+    expect (typeof i).toBe ('undefined');
   });
 });
 

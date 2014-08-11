@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utf8
-//version=20140331.0
+//version=20140811.0
 //hint=new Utf8 (str)
 //match=
 //author=rentan
@@ -542,7 +542,8 @@ Utf8.prototype.unescape = function () {
   var r = new StringBuffer ();
 
   var sbLen = sb.length;
-  for (var i = 0, prev = -1; i < sbLen; ) {
+  var prev = -1;
+  for (var i = 0; i < sbLen; ) {
     if (i == prev) {
       alert ('Utf8.unescape(): “à•”ƒGƒ‰[ (i == prev)');
       exit ();

@@ -98,6 +98,10 @@ toSJIS ()
 変更履歴
 ========
 
+2014-08-11  version 20140811.0  rentan at rentan.org
+  .unescape(): グローバル変数 i を上書きしてしまう不具合を修正。
+    thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/715-719
+
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
   このファイルを UTF-8 に変更。
