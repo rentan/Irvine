@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ドキュメント
-//version=20140702.0
+//version=20140815.0
 //hint=
 //match=
 //author=rentan
@@ -26,8 +26,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 function () {
+  var formText = file_load (dorothy2_system_menu_help + 'doc.dfm');
+  formText = formText.replace (/^\s*object\s+Splitter2:\s*TSplitter.*?^\s*end\s*$/mg, '');
+  formText = formText.replace (/^\s*object\s[^:]*:\s*TRadioButton.*?^\s*end\s*$/mg, '');
+
   var form = DorothySetting._documentForm = new VCLForm (true);
-  form.loadFromFile (dorothy2_system_menu_help + 'doc.dfm');
+  form.loadFromText (formText);
 
   // TreeView1 にノードを追加
   function add (node, name, path) {
