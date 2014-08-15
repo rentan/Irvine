@@ -1,26 +1,17 @@
-common\rutil.dms
+common\rutil.dms  for Dorothy2
 
 
-各種ユーティリティ関数用のオブジェクトです。
-DOA からは使用できません。
+Usage
+=====
+
+Util is defined as a static object.
+Please refer directly to properties and methods of Util.
+
+Extend Dorothy object when executed by Dorothy2.
 
 
-使用方法
-========
-
-静的なオブジェクトとして定義されているため、直接 Util オブジェクトの
-プロパティやメソッドを参照して下さい。
-
-読み込み時に
-・Dorothy2 本体のバージョン検査
-・User-Agent の検査
-が行われます。
-
-Dorothy2 から呼び出された場合、Dorothy オブジェクトが(勝手に)拡張されます。
-
-
-Util オブジェクトのメソッド
-===========================
+Util object's method
+====================
 
 Util.remove_this ()
 Util.ini_load (defaulData, iniFile)
@@ -28,11 +19,9 @@ Util.ini_save (data, iniFile)
 Util.ini_copy_edit ()
 Util.get_option (key)
 
-詳細は省略。
 
-
-Dorothy2R 拡張機能
-==================
+Dorothy object extention
+========================
 
 Dorothy.isDOA
 Dorothy.edit (file)
@@ -42,58 +31,28 @@ Dorothy.getItemFilename ()
 Dorothy.setUrl (url)
 Dorothy.setFilename (filename)
 
-詳細は省略。
 
+Limitations
+===========
 
-仕様・制限事項
-==============
-
-・使用不可 User-Agent
+・Unavailable User-Agent
   Irvine
-  Mozilla/4.* 以下
-  MSIE 8.* 以下
+  Mozilla/4.* or less
+  MSIE 8.* or less
 
-  これらの User-Agent でなければダウンロード出来ないサイトは
-  スクリプト内で headers ['User-Agent'] を書き換えて下さい。
-
-・使用不可 HTTP メソッド
+・Unavailable HTTP method
   HEAD
   POST
 
-  HEAD/POST でなければダウンロード出来ないサイトがあれば
-  仕様を変更します。
 
+ChangeLog
+=========
 
-変更履歴
-========
-
-2014-07-29  version 20140729.0  rentan at rentan.org
-  Dorothy2R の場合の最低バージョンを 20140729 に更新。
-
-2014-07-18  version 20140718.0  rentan at rentan.org
-  rutil_dorothy2r.dms: Dorothy.setUrl(), .setFilename() を追加。
-
-2014-06-26  version 20140626.0  rentan at rentan.org
-  Dorothy2 のバージョンチェックを rutil_dorothy2r.dms に移動。
-  使用不可 User-Agent に Mozilla/4.* 以下、MSIE 8.* 以下を追加。
-
-2014-06-08  version 20140608.0  rentan at rentan.org
-  rutil_dorothy2r.dms: Dorothy.getItemFilename() を追加。
-
-2014-05-21  version 20140521.0  rentan at rentan.org
-  Util.remove_this: nulUrl/nulProxy の設定を Dorothy2R 本体にまかせる
-  ようにした。
-  Util.isDOA: 削除。
-
-  rutil_dorothy2r.dms: 新規作成。Dorothy2R 用のスクリプトを Dorothy2
-  で動作するようにする互換スクリプト。
-
-2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  ドキュメント作成。
+2014-08-15  version 20140815.0  rentan at rentan.org
+  Dorothy.edit see Irvine setting
 
 2012-07-11  version 1.0
-  新規作成。
+  first release
 
 
 [EOF]

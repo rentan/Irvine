@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R 互換拡張
-//version=20140729.0
+//version=20140815.0
 //hint=part of rutil.dms
 //match=
 //author=rentan
@@ -32,9 +32,18 @@ Dorothy.isDOA = (typeof frmDOA == 'object' && nameOf (frmDOA) == 'VCLForm');
 
 
 // (Dorothy2R 拡張) ファイルをテキストエディタで開く
-// 簡易版
 Dorothy.edit = function (file) {
-  return Win32.shellExecute ('open', '"notepad.exe"', '"' + file + '"');
+  var god = typeof Irvine == 'object';
+
+  var ed = god ? Irvine.GetOptionData ('general', 'editor') : optiondata.Editor;
+  var opt = god ? Irvine.GetOptionData ('general', 'editoroption') : optiondata.EditorOption;
+
+  if (!ed) {
+    ed = 'notepad.exe';
+    opt = '';
+  }
+
+  return Win32.shellExecute ('open', '"' + ed + '"', opt + '"' + file + '"');
 };
 
 
