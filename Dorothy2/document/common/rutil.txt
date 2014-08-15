@@ -35,12 +35,12 @@ Dorothy.setFilename (filename)
 Limitations
 ===========
 
-・Unavailable User-Agent
+- Unavailable User-Agent
   Irvine
   Mozilla/4.* or less
   MSIE 8.* or less
 
-・Unavailable HTTP method
+- Unavailable HTTP method
   HEAD
   POST
 
