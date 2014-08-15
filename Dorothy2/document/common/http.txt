@@ -1,11 +1,11 @@
-common\http.dms
+common\http.dms  for Dorothy2
 
 
-HTTP()/HTTPS() のラッパーオブジェクトです。
+HTTP/HTTPS wrapper object
 
 
-使用方法
-========
+Usage
+=====
 
   var url = 'http://example.com/';
 
@@ -17,476 +17,188 @@ HTTP()/HTTPS() のラッパーオブジェクトです。
   var html = http.data;
 
 
-Http オブジェクトのプロパティ
-=============================
+Http object's properties
+========================
 
-http ... object または null
-  アクセス時に使用した HTTP または HTTPS オブジェクトへの参照が格納
-  される。アクセス前は null。
+http ... object or null
 
 proxy ... string
-  使用するプロキシ。new Http () 時に urlinfo.proxy で初期化される。
-  書き換え可能。
 
-autoRedirect ... boolean または string
-  自動転送するかどうか。既定値は false。書き換え可能。
-
-  文字列 'once' を設定した場合は、次に呼び出したメソッドでだけ自動転送を
-  行う。呼び出し後は false が設定される。
-
-  ステータスコード 301、302、303、307 を転送ステータスと見なす。
+autoRedirect ... boolean or string
 
 verbose ... number
-  リクエストとステータスの表示レベル。既定値は 1。書き換え可能。
-    0: 表示なし。
-    1: リクエストを表示し、ステータスはエラー時のみ表示する。
-    2: 全て表示する。
 
 gunzip ... boolean
-  Content-Encoding: gzip を展開するかどうか。既定値は false。書き換え可能。
-
-  リクエストヘッダの Accept-Encoding: gzip は自動送信しないので、必要なら
-  呼び出し側で設定しておく必要がある。
-
-  展開した場合は レスポンスヘッダ Content-Encoding: は削除される。
 
 captureFilename ... string
-  ファイル名を省略して capture() を実行した際に保存するファイル名。書き換え
-  可能。既定値は以下の通り。
-    Dorothy.matchFile + '_html.txt'
 
-baseUrl ... string または null
-  前回アクセスした URL。アクセス前は null。getXhr()/postXhr() メソッドを
-  実行した際は更新されない。
+baseUrl ... string or null
 
-  autoRedirect == true で自動転送された場合、転送後の最終的にアクセスした
-  URL になる。
-
-previousUrl ... string または null
-  前回アクセスした URL。アクセス前は null。
-
-  autoRedirect == true で自動転送された場合、転送後の最終的にアクセスした
-  URL になる。
+previousUrl ... string or null
 
 requestHeader ... object
-  リクエストヘッダを設定する。既定値は以下のとおり
-    requestHeader = {
-      'Accept-Language': 'ja',
-      'User-Agent': headers ['User-Agent']
-    };
-
-  補助用のメソッドとして removeRequestHeader()、setRequestHeader()、
-  getRequestHeader() があるが、直接読み書きしてもよい。
 
 responseHeader ... object
-  アクセス時に得られたレスポンスヘッダへの参照（Response オブジェクト）。
-  アクセス前は空オブジェクト（code や cookie プロパティも含まれない）。
-
-  requestHeader.Cookie は文字列型で書き込むが、responseHeader.cookie
-  は Cookie オブジェクト型なので注意。
-
-  補助用のメソッドとして removeResponseHeader()、setResponseHeader()
-  があるが、直接読み書きしてもよい。
 
 statusLine ... string
-  アクセス時に得られたステータス行。アクセス前は空文字列。
-  実際に受信したデータではなく、responseHeader から再構築したもの。
 
 code ... number
-  アクセス時に得られたステータスコード。アクセス前は 0。
-
-  responseHeader.code と同じ。
 
 data ... string
-  アクセス時に読み込んだレスポンスボディ。アクセス前は空文字列。
 
-  Transfer-Encoding: chunked の場合は chunk データがデコードされる。
-  ただし responseHeader ['transfer-encoding'] は削除されない。
-
-location ... string または null
-  レスポンスヘッダに Location: があればその値。それ以外の場合は null。
+location ... string or null
 
 
-Http オブジェクトのメソッド
-===========================
+Http object's methods
+=====================
 
-コンストラクタ
+constructor
 new Http (opt)
-  opt ... object: プロパティ指定値(省略可)
-  戻り値 ... Http インスタンス
+  opt ... object: property specifier (omittable)
+  return value ... Http instance
 
-  Http インスタンスを作成して返す。opt でオブジェクトが指定された場合は
-  その中身をプロパティに設定する。対応しているプロパティは以下の通り。
-    proxy autoRedirect verbose gunzip captureFilename
-
-  例: var http = new Http ({ autoRedirect: true, verbose: 0 });
+  e.g.  var http = new Http ({ autoRedirect: true, verbose: 0 });
 
 clone ()
-  戻り値 ... Http インスタンス
-
-  Http インスタンスを複製して返す。ただし、内部変数を完全に再現できる
-  訳ではない（一部のオブジェクトが複写ではなく参照になってしまうなど）。
+  return value ... Http instance
 
 removeRequestHeader (name)
-  name ... string: ヘッダ名
-  戻り値 ... なし
-
-  リクエストヘッダから name で指定したヘッダを削除する。
+  name ... string: header name
 
 setRequestHeader (name, value)
-  name ... string: ヘッダ名
-  value ... string: 値(省略可)
-  戻り値 ... なし
-
-  リクエストヘッダに name で指定したヘッダを value で指定した値で追加
-  または上書きする。value を省略したか、undefined か null の場合は
-  ヘッダを削除する。
+  name ... string: header name
+  value ... string: value (omittable)
 
 getRequestHeader (name)
-  name ... string: ヘッダ名
-  戻り値 ... string または null
-
-  リクエストヘッダから name で指定したヘッダを探し、その値を返す。
-  ヘッダがない場合は null を返す。
+  name ... string: header name
+  return value ... string or null
 
 removeFlashHeader ()
-  戻り値 ... なし
-
-  removeRequestHeader ('x-flash-version') と同じ。
 
 setFlashHeader (ver)
-  ver ... string: バージョン番号(省略可)
-  戻り値 ... なし
-
-  setRequestHeader ('x-flash-version', ver) と同じ。ver を省略すると、
-  User-Agent に 'Trident/' が含まれる場合のみ規定の値
-  (例: '14,0,0,125')が設定される。
+  ver ... string: version number (omittable)
 
 removeResponseHeader (name)
-  name ... string: ヘッダ名
-  戻り値 ... なし
-
-  レスポンスヘッダから name で指定したヘッダを削除する。name は小文字に
-  変換されて使用される。
+  name ... string: header name
 
 getResponseHeader (name)
-  name ... string: ヘッダ名
-  戻り値 ... string または null
-
-  レスポンスヘッダから name で指定したヘッダを探し、その値を返す。name
-  は小文字に変換されて使用される。ヘッダがない場合は null を返す。
+  name ... string: header name
+  return value ... string or null
 
 expandUrl (base, url)
-  base ... string: 基準 URL
-  url ... 相対 URL(絶対 URL でも可)
-  戻り値 ... string または null
-
-  相対 URL を絶対 URL に変換して返す。引数が正しくなければ null を返す。
+  base ... string: base URL
+  url ... relative URL (or absolute URL)
+  return value ... string or null
 
 get (url)
   url ... string: URL
-  戻り値 ... boolean
-
-  url で指定した URL を GET する。相対 URL を指定した場合は、baseUrl
-  を基準とした絶対 URL に正規化される。
-
-  成功(ステータスコードが 200 OK)なら true、失敗(それ以外)なら false
-  を返す。
-
-  前回アクセス時が https://～ で今回が http://～ の場合は、requestHeader
-  ['Referer'] を削除してからアクセスする。
-
-  前回アクセス時とホスト名が違う場合は、requestHeader ['Cookie'] を削除
-  してからアクセスする。
-
-  読み込んだレスポンスボディは data プロパティに書き込まれる。
-
-  アクセス後に requestHeader ['Referer'] に url が追加される。また、
-  requestHeader ['Cookie'] に送信した Cookie と受信した Cookie を統合した
-  文字列が追加される。次回アクセスでそれらのヘッダを送信したくない場合は、
-  removeRequestHeader() で削除するか、new Http() で新しいインスタンスを
-  作って使用する。
-
-  これらの挙動は以下の post()、getXhr() などでも同じ。
+  return value ... boolean
 
 post (url, postdata)
   url ... string: URL
-  postdata ... string: 送信するパラメータ
-  戻り値 ... boolean
-
-  url で指定した URL に postdata で指定したパラメータを POST して、
-  成功なら true、失敗なら false を返す。
+  postdata ... string: parameters to send
+  return value ... boolean
 
 head (url)
   url ... string: URL
-  戻り値 ... boolean
-
-  url で指定した URL を HEAD して、成功なら true、失敗なら false を返す。
+  return value ... boolean
 
 getXhr (url)
   url ... string: URL
-  戻り値 ... boolean
-
-  url で指定した URL を GET して、成功なら true、失敗なら false を返す。
-
-  アクセス時のリクエストヘッダに x-requested-with: XMLHttpRequest が追加
-  される(getRequestHeader() からは見えない)。またアクセス後に
-  requestHeader ['Referer'] を書き換えない。
-
-  この挙動は postXhr() でも同じ。
+  return value ... boolean
 
 postXhr (url, postdata)
   url ... string: URL
-  postdata ... string: 送信するパラメータ
-  戻り値 ... boolean
-
-  url で指定した URL に postdata で指定したパラメータを POST して、
-  成功なら true、失敗なら false を返す。
+  postdata ... string: parameters to send
+  return value ... boolean
 
 getLocation (url)
   url ... string: URL
-  戻り値 ... string または null
-
-  url で指定した URL を GET して、レスポンスヘッダの location の値を返す。
-  失敗した場合は null を返す。
+  return value ... string or null
 
 postLocation (url, postdata)
   url ... string: URL
-  postdata ... string: 送信するパラメータ
-  戻り値 ... string または null
-
-  url で指定した URL に postdata で指定したパラメータを POST して、
-  レスポンスヘッダの location の値を返す。失敗した場合は null を返す。
+  postdata ... string: parameters to send
+  return value ... string or null
 
 headLocation (url)
   url ... string: URL
-  戻り値 ... string または null
-
-  url で指定した URL を HEAD して、レスポンスヘッダの location の値を返す。
-  失敗した場合は null を返す。
+  return value ... string or null
 
 getContentType (url)
   url ... string: URL
-  戻り値 ... string または null
-
-  url で指定した URL を GET して、レスポンスヘッダの content-type の値を返す。
-  失敗した場合は null を返す。
+  return value ... string or null
 
 postContentType (url, postdata)
   url ... string: URL
-  postdata ... string: 送信するパラメータ
-  戻り値 ... string または null
-
-  url で指定した URL に postdata で指定したパラメータを POST して、
-  レスポンスヘッダの content-type の値を返す。失敗した場合は null を返す。
+  postdata ... string: parameters to send
+  return value ... string or null
 
 headContentType (url)
   url ... string: URL
-  戻り値 ... string または null
-
-  url で指定した URL を HEAD して、レスポンスヘッダの content-type の値を
-  返す。失敗した場合は null を返す。
+  return value ... string or null
 
 exec (obj)
-  obj ... object: メソッド、URL、送信データ
-  戻り値 ... boolean
+  obj ... object: method, URL, parameters to send
+  return value ... boolean
 
-  obj で指定した引数に従って get() または post() を実行する。
+  obj = {
+    method: method,  // 'get' or 'post'
+    url: url,
+    postdata: parameters_to_send  // need only for 'post'
+  };
 
-  obj オブジェクトは以下の形式で指定する。HtmlForm.submit() の戻り値を
-  そのまま渡すことが出来る。
-    obj = {
-      method: メソッド,  // 'get' または 'post'
-      url: URL,
-      postdata: 送信データ  // 'post' の場合のみ必要
-    };
-
-  例:
+  e.g.
     var http = new Http ();
-    http.get (～);
-    var form = (new HtmlForms (http)).getFormByName (～);
+    http.get (...);
+    var form = (new HtmlForms (http)).getFormByName (...);
     http.exec (form.submit ());
 
 retry_or_die (message, ...)
-  message ... string: 表示する文字列(省略可、可変長引数)
-  戻り値 ... boolean
-
-  可変長引数で渡された文字列を1行ずつ全て表示する。
-
-  直前のアクセスが、再試行して成功する可能性のある原因で失敗していれば
-  retry() を呼び出し、その戻り値（常に false）をそのまま返す。そうでなけ
-  れば exit() を呼び出す。この場合はスクリプトが終了するため呼び出し元には
-  戻らない。
-
-  retry() するのはステータスコードが以下の場合
-    0 (ホストへの接続に失敗した)
-    503 Service Unavailable 
+  message ... string: string(s) to print (omittable)
+  return value ... boolean
 
 die (message, ...)
-  message ... string: 表示する文字列(省略可、可変長引数)
-  戻り値 ... なし
-
-  可変長引数で渡された文字列を1行ずつ全て表示する。
-
-  exit() を呼び出す。スクリプトが終了するため呼び出し元には戻らない。
+  message ... string: string(s) to print (omittable)
 
 removeUtf8Bom ()
-  戻り値 ... boolean
-
-  data の先頭に UTF-8 の BOM があれば削除し、true を返す。そうでなければ
-  false を返す。
+  return value ... boolean
 
 saveFile (args)
-  args ... object: 引数オブジェクト { filename: '～', data: '～', ... }
-    filename ... string: 保存ファイル名
-    data ... string: 保存データ
-    rename ... string: ファイル名重複時の付加番号(省略可)
-  戻り値 ... object { success: ～, filename: ～, error: ～ }
-    success ... boolean: 成功時 true、失敗時 false
-    filename ... string: 保存したファイル名(フルパス)
-    error ... string: 失敗時のエラー文字列
-
-  filename で指定したファイルに data で指定した文字列データを保存し、
-  実行結果を示すオブジェクトを返す。
-
-  同名のファイルが既に存在する場合は rename で指定したパターンが付加される
-  (省略時は (1) となる)。
+  args ... object: { filename: '...', data: '...', ... }
+    filename ... string: filename to save
+    data ... string: data to save
+    rename ... string: number to append when filename is duplicated
+  return value ... object { success: ..., filename: ..., error: ... }
+    success ... boolean: true or false
+    filename ... string: saved filename (full path)
+    error ... string: error message
 
 capture (filename)
-  filename ... string: 保存ファイル名(省略可)
-  戻り値 ... object { success: ～, filename: ～, error: ～ }
-
-  filename で指定したファイルに data を保存し、実行結果を示すオブジェクト
-  を返す(戻り値の詳細は saveFile() を参照のこと)。
-
-  filename を省略した場合は captureFilename の値がファイル名として使用される。
+  filename ... string: filename to save (omittable)
+  return value ... object { success: ..., filename: ..., error: ... }
 
 dumpResponse (n)
-  n ... number: バイト数(省略可)
-  戻り値 ... string
-
-  レスポンスヘッダを文字列にして返す。n に 1 以上の数（最大 256）が指定された
-  場合はレスポンスボディの16進ダンプも追加される。
-
-  スクリプトの開発支援用。
+  n ... number: bytes to dump response body (omittable)
+  return value ... string
 
 inflate (s)
-  s ... string: 圧縮データ文字列
-  戻り値 ... string
+  s ... string: deflated data
+  return value ... string
 
-  deflate 圧縮されたデータを展開して返す。エラー時は例外が発生する。
-
-  以下のファイルが必要。
-    Dorothy2\bin\zlib1.dll (version 1.2.8 以上)
-    Dorothy2\common\zlib.dms (versin 1.02 以上)
+  need following file:
+    Dorothy2\bin\zlib1.dll (version 1.2.8 or later)
 
 
-仕様・制限事項
-==============
+ChangeLog
+=========
 
-・Irvine ログに出力したメッセージが表示されないことがあります（原因不明）。
-  自動転送を行った際など、連続してログ出力が行われる時に起きやすいようです。
-
-
-変更履歴
-========
-
-2014-07-16  version 20140716.0  rentan at rentan.org
-  .setFlashHeader(): x-flash-version: 14,0,0,145 に更新。
-
-2014-07-07  version 20140707.0  rentan at rentan.org
-  .setFlashHeader(): x-flash-version: 14,0,0,125 に更新。
-
-2014-05-22  version 20140522.0  rentan at rentan.org
-  .getSaveFolder(): 削除。
-  .saveFile(): filename に NameBuilder#buildFilename() の戻り値を渡した時は
-  Folder と Filename からファイル名を作成するようにした。
-
-  ._readResponseBody(): (デバッグ用暫定) 不正なチャンクサイズの時に受信データ
-  をファイルに保存するようにした。
-
-2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
-
-2014-02-27  version 15.0
-  common\zlib.dms の代わりに自前で定義した Zlib オブジェクトを使う
-  ようにした。
-
-2014-01-23  version 14.0
-  .setFlashHeader(): x-flash-version: 12,0,0,38 に更新。
-  User-Agent が Trident の時、またはバージョン番号指定時のみヘッダを
-  設定するようにした。
-
-  ESocketError 時に .responseHeader を設定するようにした(従来は
-  初期化時のダミー用空オブジェクトのままだったため、.code 等が参照
-  できなかった)。
-    thanks to http://toro.2ch.net/test/read.cgi/win/1371715233/773
-
-  コード整理。
-  ._p(), ._getResponseHeader(): 新規メソッド。
-
-2014-01-12  version 13.0
-  HEAD 時にレスポンスボディを読み込まないようにした。
-
-2014-01-09  version 12.1
-  autoRedirect 時の Location: ヘッダの処理で、abs_path 以外の相対
-  URL にも対応。
-    thanks to http://toro.2ch.net/test/read.cgi/win/1371715233/728
-
-2013-11-02  version 12.0
-  statusLine: 新規。レスポンスヘッダのステータス行を返す。
-  inflate(): 新規。deflate 圧縮されたデータを伸張する。
-  saveFile(): 新規。文字列をファイルに保存する。
-  getSaveFolder(): 新規。saveFile() で保存するパスを返す。
-
-  gunzip = true を指定して gzip を展開した時に、データが破損することが
-  ある不具合を修正。
-
-  インデントを2スペースに変更。
-
-2013-07-13  version 11.0
-  expandUrl(), _doRequest(): url 引数を文字列化するようにした。
-
-2013-06-18  version 10.0
-  HTTPS で Transfer-Encoding: chunked のデータがエラーになる不具合を修正
-  (WinInet 側でデコードされていた)。
-  responseHeader ['transfer-encoding'] を削除しないようにした。
-
-2013-04-28  version 9.0
-  removeFlashHeader(), setFlashHeader(): 新規。
-
-2012-12-27  version 8.0
-  expandUrl(): 基準 URL 内の #～ を削除するようにした。
-  ソースコード整理。
-
-2012-11-25  version 7.0
-  location: 新規。Location: ヘッダの値を返す。
-  ソースコード整理。
-
-2012-11-19  version 6.0
-  autRedirect: 'once' を追加。
-  expandUrl(): ./ ../ が解決されない不具合を修正。引数を相対 URL、基準 URL
-  の順に変更。基準省略時は .baseUrl を使用する。
-
-2012-10-22  version 5.0
-  postLocation(), postContentType(): 新規。
-  転送系ステータスの時にレスポンスヘッダ location の値を表示するようにした。
-
-2012-07-11  version 4.0
-  captureFilename, baseUrl, expandUrl(), exec(), retry_or_die(), die():
-  新規。各アクセス機能で、相対 URL を絶対 URL に正規化するようにした。
-
-2012-04-09  version 3.0
-  postXhr(), headLocation(), headContentType(): 新規。
-  getContentType(): メソッドを HEAD から GET に変更。
-
-2012-04-04  version 2.0
-  Http(): プロパティの一部を prototype に追い出した。
-  dumpResponse(): Cookie が出力されない不具合を修正。
+2014-08-15  version 20140815.0  rentan at rentan.org
+  suport HTTP status 308 Permanent Redirect
+  remake chunked decoder
 
 2012-03-29  version 1.0
-  新規作成。
+  first release
 
 
 [EOF]

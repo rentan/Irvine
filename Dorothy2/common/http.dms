@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Http
-//version=20140716.0
+//version=20140815.0
 //hint=new Http ()
 //match=
 //author=rentan
@@ -421,7 +421,8 @@ Http.prototype._isRedirect = function (code) {
   if (code == 301     // Moved Permanently
    || code == 302     // Found
    || code == 303     // See Other
-   || code == 307) {  // Temporary Redirect
+   || code == 307     // Temporary Redirect
+   || code == 308) {  // Permanent Redirect
     return true;
   }
 
@@ -484,34 +485,62 @@ Http.prototype._readResponseBody = function () {
   // chunked
   (this.verbose >= 2) && println ('decode chunk');
 
-  var data = '';
-  var readData = '';
-  for (;;) {
-    var chunk_size = h.readln ();
-    readData += chunk_size + "\n";
+  var encoded = new StringBuffer (h.read ());
+  var decoded = '';
 
-    // pixiv で "\n1000" になることがあるので空白文字を除去
-    chunk_size = chunk_size.trim ();
+  var hex = /[\da-f]/i;
 
-    if (!/^([0-9a-f]+)/i.test (chunk_size)) {
-      this.data = readData + h.read ();
-      this.capture ();
+  try {
+    for (var idx = 0;;) {
+      var c, chunkSize = '';
 
-      throw '不正なチャンクサイズ: ' + chunk_size;
+      while (hex.test (c = encoded [idx++])) {
+        chunkSize += c;
+      }
+      if (!chunkSize) {
+        throw 'missing chunk-size';
+      }
+
+      if (c == ';') {
+        // chunk-ext を読み飛ばす
+        while (encoded.charCodeAt [idx] != 13) {
+          ++idx;
+        }
+        c = encoded [idx++];
+      }
+
+      c += encoded [idx++];
+      if (c != "\n") {
+        throw 'missing CRLF at end of chunk-size';
+      }
+
+      chunkSize = parseInt ('0x' + chunkSize);
+      if (chunkSize <= 0) {
+        break;  // last-chunk
+      }
+
+      if (encoded.length < (idx + chunkSize)) {
+        throw 'no enough chunk-data in buffer';
+      }
+      decoded += encoded.substr (idx, chunkSize);
+      idx += chunkSize;
+
+      c = encoded [idx++];
+      c += encoded [idx++];
+      if (c != "\n") {
+        throw 'missing CRLF at end of chunk-data';
+      }
     }
-    chunk_size = parseInt ('0x' + RegExp.$1);
-    if (chunk_size == 0) {
-      break;    // 終了
-    }
 
-    var chunk = h.read (chunk_size);  // サイズ分だけ読み込む
-    data += chunk;
-    readData += chunk + "\n----chunk----\n";
-
-    h.readln ();  // CRLF を読み捨てる
+    // trailer-part と最後の CRLF は調べない
+  }
+  catch (e) {
+    this.saveFile ({ filename: 'http_chenked_dump.bin', data: encoded.text });
+    println ('encoded.length = ' + encoded.length + ', idx = ' + idx);
+    throw e;
   }
 
-  return data;
+  return decoded;
 };
 
 
@@ -660,8 +689,8 @@ Http.prototype._doRequest = function (method, url, opt) {
     url = nextUrl;
 
     // POST からのリダイレクト後は GET にする
-    if (method == 'POST') {
-      method = 'HEAD';
+    if (this.responseHeader.code != 308 && method == 'POST') {
+      method = 'GET';
       postdata = '';
     }
   }
