@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20140808.0
+//version=20140815.0
 //hint=pixiv 別バージョン
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?)
 //author=rentan
@@ -640,7 +640,7 @@ function dl_index_p (list, http) {
   if (/<li\s+class="current">\d+<\/li><\/ul><span\s+class="next"><\/span>/.test (http.data)) {
     return false;
   }
-  if (/<nav\s+class="column-menu">.*?<\/nav>\s*<div>\s*<style/.test (http.data)) {
+  if (/<nav\s+class="column-menu">.*?<\/nav>\s*<div/.test (http.data)) {
     // 作品数が少なくて1ページだけの場合
     return false;
   }
@@ -790,7 +790,7 @@ function dl_novel_index_p (list, http) {
   if (/<li\s+class="current">\d+<\/li><\/ul><span\s+class="next"><\/span>/.test (http.data)) {
     return false;
   }
-  if (/<div\s+class="clear"><\/div><\/div><ul\s+class="novel-items">/.test (http.data)) {
+  if (/<nav\s+class="column-order-menu">\s*<\/nav>/.test (http.data)) {
     // 作品数が少なくて1ページだけの場合
     return false;
   }
