@@ -1,0 +1,32 @@
+common\getterobject.dms  for Dorothy2
+
+
+Usage
+=====
+
+  common_load ('getterobject');
+
+  // constructor
+  void function MyObject () {
+  };
+
+  GetterObject.expand (MyObject);
+
+  var myobj = new MyObject ();
+
+
+GetterObject object's methods
+=============================
+
+expand (obj)
+  obj ... object: object to expand
+
+
+ChangeLog
+=========
+
+2014-08-16  version 20140816.0  rentan at rentan.org
+  first release
+
+
+[EOF]

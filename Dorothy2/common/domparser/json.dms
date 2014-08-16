@@ -1,10 +1,10 @@
 //Dorothy2
 //caption=DOMParser/JSON
-//version=20140331.0
+//version=20140816.0
 //hint=
 //match=
 //author=rentan
-//path=common
+//path=common\domparser
 //end
 
 /*

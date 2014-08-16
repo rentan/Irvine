@@ -1,9 +1,7 @@
-common\domparser\xml.dms  for Dorothy2
+common\domparser\pseudo_xml.dms  for Dorothy2
 
 
-DOMParser/XML
-
-Because there is an EInvalidPointer error occurs, it is not practical.
+DOMParser/XML pseudo version
 
 
 Usage
@@ -29,14 +27,15 @@ Usage
     }
   }
 
-See following document for details.
+See following documents for details.
 - Dorothy2\common\domparser\core.txt
+- Dorothy2\common\domparser\xml.txt
 
 
 ChangeLog
 =========
 
-2014-03-31  version 20140331.0  rentan at rentan.org
+2014-08-16  version 20140816.0  rentan at rentan.org
   first release
 
 

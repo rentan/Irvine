@@ -1,10 +1,10 @@
 //Dorothy2
 //caption=DOMParser/core
-//version=20140613.0
+//version=20140816.0
 //hint=new DOMParser()
 //match=
 //author=rentan
-//path=common
+//path=common\domparser
 //end
 
 /*

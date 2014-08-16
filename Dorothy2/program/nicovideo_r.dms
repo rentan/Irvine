@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ニコニコ動画_r
-//version=20140806.0
+//version=20140816.0
 //hint=
 //match=^http://www\.nicovideo\.jp/watch\/([a-z]{2})?\d+
 //author=rentan
@@ -45,19 +45,16 @@ function () {
 //------------------------------- NicoVideo --------------------------------
 
 
-common_load ('browsercookie', 'domparser\xml', 'http');
+common_load ('browsercookie', 'domparser\pseudo_xml', 'getterobject', 'http');
 
 
 // コンストラクタ
 void function NicoVideo (opt) {
-  if (nameOf (this) != 'NicoVideo') {
-    alert ('new なしで NicoVideo() が呼ばれました。');
-    exit ();
-  }
-
   opt = opt || { };
   this._bcookie = new BrowserCookie (opt.hasKey ('cookie') ? opt.cookie : { });
 };
+
+GetterObject.expand (NicoVideo);
 
 
 // プロパティ初期値
@@ -74,54 +71,9 @@ NicoVideo.prototype.user_id = null;
 NicoVideo.prototype.nickname = null;
 NicoVideo.prototype.channel_no = null;  // チャンネル番号 \d+
 
-NicoVideo.prototype.comment = '';
-NicoVideo.prototype.http = null;
 
 // 内部で使用
 NicoVideo.prototype._topUrl = 'http://www.nicovideo.jp/';
-
-// .get() の戻り値
-NicoVideo.prototype.OK = 0;
-NicoVideo.prototype.NG = 1;
-NicoVideo.prototype.RETRY = 2;
-NicoVideo.prototype.UNKNOWN = 3;
-NicoVideo.prototype.MIS = 4;
-
-
-// .get() の戻り値に応じて終了処理
-NicoVideo.prototype.end = function (r) {
-  if (r == this.RETRY) {
-    return retry ();
-  }
-  if (r != this.OK && r != this.MIS) {
-    exit ();
-  }
-};
-
-
-// 内部で使用: HTTP アクセスでエラーした場合の戻り値の選択
-NicoVideo.prototype._httpError = function () {
-  var http = this.http;
-
-  var c = http && http.code;
-  if (c) {
-    this.comment = http.statusLine;
-  }
-
-  return (c == 0 || c == 503) ? this.RETRY : this.NG;
-};
-
-
-// 内部で使用: メッセージ表示&commentに保存
-NicoVideo.prototype._p = function (s) {
-  println (this.comment = nameOf (this) + ': ' + s);
-  return false;
-};
-
-NicoVideo.prototype._unknown = function (s) {
-  this._p (s);
-  return this.UNKNOWN;
-};
 
 
 // 内部で使用: ブラウザから Cookie を読み込む
@@ -208,6 +160,10 @@ NicoVideo.prototype._analyzeThumbinfo = function () {
 
     var resp = getElement (document, 'nicovideo_thumb_response');
     var status = resp.getAttribute ('status');
+
+    if (nameOf (document) === 'PseudoXmlDocument') {
+      resp = document;
+    }
 
     if (status == null) {
       throw 'status="..." がありません。';
@@ -378,8 +334,7 @@ NicoVideo.prototype.getId = function (url) {
 NicoVideo.prototype.get = function (url) {
   this.id = this.getId (url);
   if (!this.id) {
-    this._p ('未対応の URL です。');
-    return this.MIS;
+    return this._mis ();
   }
   this.pageUrl = this._topUrl + 'watch/' + this.id;
 
@@ -421,10 +376,9 @@ function downloadVideo (video, url, zen2han) {
   var ext = '.' + video.movie_type;
   nb.setFilename (ini.Filename.Video, ext);
 
-  urlinfo.url = video.videoUrl;
-  headers.Host = (new URL (video.videoUrl)).host;
+  Dorothy.setUrl (video.videoUrl);
+
   headers.Cookie = video.cookie;
-  headers.Referer = '';
   headers ['Accept-Language'] = 'ja';
 }
 

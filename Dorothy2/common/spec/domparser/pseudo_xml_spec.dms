@@ -1,0 +1,92 @@
+//Dorothy2
+//caption=DOMParser/XML (pseudo version) spec
+//version=20140816.0
+//hint=http://yasmine.dorothy.test/common/spec/domparser/pseudo_xml_spec.dms
+//match=
+//author=rentan
+//path=common\spec\domparser
+//end
+
+//Åıxyzzyï∂éöâªÇØâÒî
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('domparser\pseudo_xml');
+
+
+var src = file_load (yasmine.specDir + 'xml_sm22391404.xml');
+var document = new DOMPseudoXml (src).document;
+
+
+describe ('.getElementById()', function () {
+  it ('returns null if id not found', function () {
+    var element = document.getElementById ('notfoundid');
+    expect (element).toBeNull ();
+  });
+
+  it ('returns element', function () {
+    var s = '<?xml version="1.0" encoding="UTF-8"?><abc id="def">test</abc><foo id="bar" />';
+    var doc = new DOMPseudoXml (s).document;
+
+    var element = doc.getElementById ('def');
+    expect (element).not.toBeNull ();
+    expect (nameOf (element)).toBe ('Element');
+    if (element) {
+      expect (element.tagName).toBe ('abc');
+      expect (element.id).toBe ('def');
+    }
+
+    element = doc.getElementById ('bar');
+    expect (element).not.toBeNull ();
+    expect (nameOf (element)).toBe ('Element');
+    if (element) {
+      expect (element.tagName).toBe ('foo');
+      expect (element.id).toBe ('bar');
+    }
+  });
+});
+
+
+describe ('.getElementsByTagName()', function () {
+  it ('returns empty array if tag not found', function () {
+    var elements = document.getElementsByTagName ('notfoundtag');
+    expect (elements.length).toBe (0);
+  });
+
+  it ('returns array of found elements', function () {
+    var elements = document.getElementsByTagName ('title');
+    expect (elements.length).toBe (1);
+
+    var title = elements [0];
+    expect (title.childNodes.length).toBe (1);
+
+    var yen = String.fromCharCode (0xc2, 0xa5);
+    var tt = "ÉeÉXÉg < test > & &amp; &quot; \" ' \\ \\\\ ".toUTF8 ();
+    tt += yen + " \\\" \\'  !#$%()-=^~|@`[{;+:*]},./?_";
+
+    var t = title.firstChild;
+    expect (t.nodeName).toBe ('#text');
+    expect (t.nodeValue).toBe (tt);
+  });
+
+});
+
+
+// EOF

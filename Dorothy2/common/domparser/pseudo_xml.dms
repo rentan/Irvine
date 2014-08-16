@@ -1,0 +1,170 @@
+//Dorothy2
+//caption=DOMParser/XML (pseudo version)
+//version=20140816.0
+//hint=
+//match=
+//author=rentan
+//path=common\domparser
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+common_load ('domparser\core');
+
+
+//--------------------------- PseudoXmlDocument ----------------------------
+
+
+// コンストラクタ
+void function PseudoXmlDocument (text) {
+  this.childNodes = { length: 0 };
+
+  this._src = text;
+};
+
+
+(function (p) {
+  Node._defineNodeType (p);
+  p.nodeType = p.DOCUMENT_NODE;
+  p.nodeName = '#document';
+
+  p.parentNode = null;
+  p.firstChild = p.lastChild = null;
+
+  p.documentElement = null;
+}) (PseudoXmlDocument.prototype);
+
+
+PseudoXmlDocument.prototype.destroy = Document.prototype.destroy;
+
+PseudoXmlDocument.prototype.appendChild = Document.prototype.appendChild;
+
+PseudoXmlDocument.prototype.hasChildNodes = Document.prototype.hasChildNodes;
+
+
+// 実体参照を復号する
+PseudoXmlDocument.prototype._decodeCharRef = function (text) {
+  var toChar = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+
+  var src = new StringBuffer (text);
+  src.index = 0;
+  var endPos = src.length;
+
+  var t = '';
+  while (src.index < endPos) {
+    var n = src.indexOf ('&', src.index);
+
+    if (n == -1) {
+      // 終端文字より手前に & がなければ、残りを出力して終わり
+      t += src.substring (src.index, endPos);
+      break;
+    }
+
+    // & の手前まで出力
+    t += src.substring (src.index, n);
+
+    var semi = src.indexOf (';', n);
+    if (0 < semi) {
+      var ref = src.substring (n + 1, semi);
+      if (toChar.hasKey (ref)) {
+        t += toChar [ref];
+        src.index = semi + 1;
+        continue;
+      }
+    }
+
+    // 未定義の実体参照
+    t += '&';
+    src.index = n + 1;
+  }
+
+  return t;
+};
+
+
+PseudoXmlDocument.prototype._parseAttributes = function (text, element) {
+  var self = this;
+  text.replace (/(^|\s)([a-z0-9_:]+)=['"]([^'"]*)['"]/g, function (s, p1, name, value) {
+    element.setAttribute (name, self._decodeCharRef (value));
+  });
+};
+
+
+PseudoXmlDocument.prototype.getElementById = function (id) {
+  var re = new RegExp ("<([a-z][^\\s>]*)\\s+(([^>]*\\s)?id=['\"]" + id + "['\"][^>]*)(/>|>(.*?)</\\1>)");
+
+  if (!re.test (this._src)) {
+    return null;
+  }
+  var tagName = RegExp.$1;
+  var attrs = RegExp.$2;
+  var inner = RegExp.$5 || '';
+
+  var element = new Element (tagName);
+  this._parseAttributes (attrs, element);
+
+  var child = new Text (this._decodeCharRef (inner));
+  element.appendChild (child);
+
+  return element;
+};
+
+
+PseudoXmlDocument.prototype.getElementsByTagName = function (tagName) {
+  var re = new RegExp ('<' + tagName + '(\s[^>]*)?(/>|>(.*?)</' + tagName + '>)', 'g');
+
+  var elements = [ ];
+
+  var self = this;
+  this._src.replace (re, function (s, attrs, p2, inner) {
+    var element = new Element (tagName);
+    self._parseAttributes (attrs, element);
+
+    var child = new Text (self._decodeCharRef (inner));
+    element.appendChild (child);
+
+    elements.push (element);
+  });
+
+  return elements;
+};
+
+
+//------------------------------ DOMPseudoXml ------------------------------
+
+
+// コンストラクタ
+void function DOMPseudoXml (text) {
+  this.document = new PseudoXmlDocument (text);
+};
+
+
+// DOMParser に登録
+DOMParser.prototype._add (
+   'XML',
+   /^(text\/|application\/(xhtml\+)?|image\/svg\+)xml$/,
+   function (str) { return new DOMPseudoXml (str).document; }
+);
+
+
+}) ()
+
+
+// EOF
