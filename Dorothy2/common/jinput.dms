@@ -154,7 +154,7 @@ JInput.prototype.inputText = function (args) {
       result.open ('r');
 
       var t = result.read ();
-      this.text = (t [0] == '=') ? t.slice (1) : null;
+      this.text = (t.length && t [0] == '=') ? t.slice (1) : null;
 
       result.close ();
       result.remove ();

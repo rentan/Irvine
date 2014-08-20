@@ -1,131 +1,62 @@
-common\jinput.dms
-common\jinput.hta
+common\jinput.dms  for Dorothy2
+      \jinput.hta
 
 
-ダイアログを表示して文字列を入力するオブジェクトです。
-
-指定した文字列や画像をダイアログ内に表示することができます。
-
-
-使用方法
-========
+Usage
+=====
 
   common_load ('jinput');
   var jinput = new JInput ();
   var text = jinput.inputText ();
 
 
-Jinput オブジェクトのプロパティ
-===============================
+Jinput object's properties
+==========================
 
 text ... string
-  最後に入力された文字列。初期値は null。
 
 
-JInput オブジェクトのメソッド
-=============================
+JInput object's methods
+=======================
 
-コンストラクタ
+constructor
 new JInput ()
-  戻り値 ... JInput インスタンス
+  return value ... JInput instance
 
-  JInput インスタンスを作成し、初期化して返す。
-
-  例: var jinput = new JInput ();
+  e.g.  var jinput = new JInput ();
 
 inputText (hta_opt)
-  hta_opt ... array または object: ダイアログの指定
-  戻り値 ... string または null。
-
-  ダイアログを表示しユーザの入力を待つ。入力された文字列を UTF-8 形式で返す。
-  キャンセル及びエラー時は null を返す。
-
-  hta_opt は以下の形式のオブジェクト、またはオブジェクトの配列として指定
-  する。不要な項目は省略できる。
+  hta_opt ... array or object: dialog option
+  return value ... string or null
 
   hta_opt = {
-    title: 'ダイアログのタイトル',
-    width: ダイアログの幅,
-    height: ダイアログの高さ,
+    title: 'dialog title',
+    width: dialog_width,
+    height: dialog_height,
 
-    limit: 自動終了するまでの秒数,
-    extend: キー入力後に自動終了するまでの秒数,
+    limit: seconds to abort automatically,
+    extend: seconds to abort after input,
 
-    min: 最小文字数(規定値 1)
-    max: 最大文字数(規定値 255)
+    min: min text length (default: 1)
+    max: max text length (default: 255)
 
-    image: '画像データ',  // バイナリデータを string 型で指定
+    image: 'image-data',  // binary data as string
 
-    p: '表示する文字列'
+    p: 'text to print'
   };
 
-  image と p を両方指定する場合は
-    hta_opt = [ { image: '...' }, { p: 'abc' } ];
-  のように配列を使い別々のオブジェクトに分けること。
-
-  表示する文字列は
-    hta_opt = { p: [ 'abc', 'xyz' ] };
-  のように p の値を配列にすることで複数指定できる。
-
 synchronize (func)
-  func ... function: コールバック関数(引数、戻り値なし)
-  戻り値 ... なし
-
-  Mutex (名称=inputCaptcha) を用いて排他的に、func で指定したコール
-  バック関数を呼び出す。他のダウンロードスレッドで先に実行されていた
-  場合は、終了するまで待機する。
-
-  以下の関数とも排他制御が適用される。
-    common\Input\inputCaptcha.dms .... inputCaptcha()
-    common\Input\inputCaptcha2.dms ... inputCaptcha2()
-    common\Input\inputText.dms ....... inputText()
+  func ... function: callback function (no arguments, no return value)
 
 
-仕様・制限事項
-==============
+ChangeLog
+=========
 
-・Excel がインストールされていると、ダイアログを最前面固定表示します。
-
-・誤操作防止の為、テキストボックスに入力されている文字が最小文字数より
-  少ない場合は OK ボタンで終了しません。
-  閉じるボタンでの終了はできます。
-
-・min: 0 を指定すればテキストボックスが空でも OK ボタンで終了します。
-
-・現状では画像の指定は1ファイルのみです。
-
-・inputText() 実行時に、Dorothy.temp で示されるフォルダに以下の一時ファイル
-  を作成し、終了時に削除します。
-  jinput.txt ... 結果が格納されるテキストファイル
-  jinput ... 画像ファイル
-
-
-変更履歴
-========
-
-2014-08-08  version 20140808.0  rentan at rentan.org
-  .synchronize(): メソッド追加。
-
-2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
-
-2014-01-07  version 3.0
-  common\call.dms の代わりに common\exec.dms を使うようにした。
-  インデントを2スペースに変更。
-
-2013-11-23  version 2.1
-  Excel がインストールされていない環境でエラーが発生する不具合を修正。
-    thanks to http://toro.2ch.net/test/read.cgi/win/1371715233/554
-
-2013-07-13  version 2.0
-  最小文字数、最大文字数を指定可能にした。
-
-  キャンセル、エラー時の戻り値を null に変更。最小文字数 0 の時に
-  空文字列で OK ボタンをクリックした場合は空文字列が返される。
+2014-08-20  version 20140820.0  rentan at rentan.org
+  fix EIndexError when click cancel button
 
 2013-03-02  version 1.0
-  新規作成。
+  first release
 
 
 [EOF]
