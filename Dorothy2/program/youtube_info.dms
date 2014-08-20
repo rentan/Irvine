@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/動画情報
-//version=20140729.0
+//version=20140820.0
 //hint=
 //match=^https?://(www\.)?youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -222,18 +222,15 @@ YouTubeSig.prototype.decrypt = function (sig) {
 
 //------------------------------ YouTubeVideo ------------------------------
 
-common_load ('http', 'domparser\xml', 'utf8');
+common_load ('http', 'domparser\xml', 'getterobject', 'utf8');
 
 
 // コンストラクタ
 void function YouTubeVideo (opt) {
-  if (nameOf (this) != 'YouTubeVideo') {
-    alert ('new なしで YouTubeVideo() が呼ばれました。');
-    exit ();
-  }
-
   this.debug = debug;
 };
+
+GetterObject.expand (YouTubeVideo);
 
 
 // プロパティ初期値
@@ -247,9 +244,6 @@ YouTubeVideo.prototype.dashmpdError = '';
 YouTubeVideo.prototype.author = '';
 YouTubeVideo.prototype.title = '';
 YouTubeVideo.prototype.time = '';
-YouTubeVideo.prototype.comment = '';
-
-YouTubeVideo.prototype.http = null;
 
 YouTubeVideo.prototype.signature = null;
 YouTubeVideo.prototype.assetsjs = null;
@@ -260,57 +254,6 @@ YouTubeVideo.prototype.flashUrl = '';
 
 // 内部で使用
 YouTubeVideo.prototype._topUrl = 'https://www.youtube.com/';
-
-
-// .get() の戻り値
-YouTubeVideo.prototype.OK = 0;
-YouTubeVideo.prototype.NG = 1;
-YouTubeVideo.prototype.RETRY = 2;
-YouTubeVideo.prototype.UNKNOWN = 3;
-YouTubeVideo.prototype.MIS = 4;
-
-
-// .get() の戻り値に応じて終了処理
-YouTubeVideo.prototype.end = function (r) {
-  if (r == this.RETRY) {
-    return retry ();
-  }
-  if (r != this.OK && r != this.MIS) {
-    exit ();
-  }
-};
-
-
-// 内部で使用: HTTP アクセスでエラーした場合の戻り値の選択
-YouTubeVideo.prototype._httpError = function () {
-  var http = this.http;
-
-  var c = http && http.code;
-  if (c) {
-    this.comment = http.statusLine;
-  }
-
-  return (c == 0 || c == 503) ? this.RETRY : this.NG;
-};
-
-
-// 内部で使用: メッセージ表示&commentに保存
-YouTubeVideo.prototype._p = function (s) {
-  println (this.comment = nameOf (this) + ': ' + s);
-  return false;
-};
-
-
-YouTubeVideo.prototype._unknown = function (s) {
-  this._p (s);
-  return this.UNKnown;
-};
-
-
-YouTubeVideo.prototype._ng = function (s) {
-  this._p (s);
-  return this.NG;
-};
 
 
 // 内部で使用: Strings をファイルに保存する
@@ -1040,10 +983,9 @@ YouTubeVideo.prototype.get = function (url) {
     return this.UNKNOWN;
   }
   r = this._fetchSignatureScript ();
-  if (r != this.OK) {
-    return r;
+  if (r == this.OK) {
+    r = this._getDashmpd ();
   }
-  r = this._getDashmpd ();
   if (r != this.OK) {
     return r;
   }
@@ -1127,7 +1069,7 @@ YouTubeVideo.prototype.getFileSize = function (fmt, sep) {
 
 // 既知の itag の一覧
 YouTubeVideo.prototype.knownItags = [
-  272,271,264,248,247,246,245,244,243,242,172,171,
+  278,272,271,264,248,247,246,245,244,243,242,172,171,
   160,141,140,139,138,137,136,135,134,133,
   102,101,100,85,84,83,82,
   78,59,46,45,44,43,38,37,36,35,34,22,18,17,5
@@ -1358,9 +1300,8 @@ function downloadVideo (video, priority) {
   println ('itag=' + fmt.itag + ' をダウンロードします。');
   nb.setFilename (ini.Filename.Video, fmt.ext);
 
-  urlinfo.url = fmt.url;
-  headers.Host = (new URL (fmt.url)).host;
-  headers.Cookie = '';
+  Dorothy.setUrl (fmt.url);
+
   headers.Referer = video.flashUrl;
   headers ['Accept-Language'] = 'ja';
 
