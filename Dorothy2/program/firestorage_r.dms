@@ -1,0 +1,177 @@
+//Dorothy2
+//caption=firestorage_r
+//version=2014-08-20
+//hint=
+//match=^https?://(secure\.)?firestorage\.(jp|com)/download/.
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function (scriptMode) {
+
+  common_load ('rutil', 'additem');
+
+  // 設定ファイルの読み込み
+  var defaultIni = {
+    AddItem: AddItem.prototype.iniTemplate
+  };
+  var ini = defaultIni;
+
+
+//------------------------------ FireStorage -------------------------------
+
+common_load ('getterobject', 'htmlform', 'http', 'utf8');
+
+
+// コンストラクタ
+void function FireStorage () {
+};
+
+GetterObject.expand (FireStorage);
+
+
+FireStorage.prototype.url = '';
+
+
+// 内部で使用: パスワードを入力する
+FireStorage.prototype._inputPassword = function () {
+  common_load ('jinput');
+
+  var htaOpt = {
+    title: Dorothy.matchFile,
+    width: 700,
+    height: 160,
+    p: [ this.url.replace (/^https?:\/\//, ''), 'ダウンロードパスワード' ]
+  };
+
+  var t = (new JInput ()).inputText (htaOpt);
+  return t && t.trim ();
+};
+
+
+// 内部で使用: パスワード入力画面を処理する
+FireStorage.prototype._passPasswordForm = function (retryUrl) {
+  var http = this.http;
+
+  for (;;) {
+    var form = (new HtmlForms (http)).getFormByElementType ('Password');
+    if (!form) {
+      break;
+    }
+
+    var p = this._inputPassword ();
+    if (p == null) {
+      return this.NG;
+    }
+
+    if (!form.change ('pass', p)) {
+      http.capture ();
+      return this._ng ('<input name="pass"> が見つかりません。');
+    }
+
+    if (!http.exec (form.submit ())) {
+      return this._httpError ();
+    }
+
+    // パスワード間違いなら前のページを再取得する
+    if (/<p>\s*(Password does not match|Invalid ticket key)/m.test (http.data)) {
+      http = this.http = new Http ();
+      if (!http.get (retryUrl)) {
+        return this._httpError ();
+      }
+    }
+
+  }
+
+  return this.OK;
+};
+
+
+// 内部で使用: ダウンロード URL を抽出する
+FireStorage.prototype._extractDownloadLink = function () {
+  var self = this;
+  function add (s, u, f) {
+    self._add ({ Url: u, Filename: (new Utf8 (f)).toSJIS () });
+  }
+
+  var re = /<a\s+href="(https?:\/\/[^"]+)"[^>]*id="downloadlink"[^>]*>([^<]+)/g;
+  http.data.replace (re, add);
+
+  if (!this.urls.length) {
+    http.capture ();
+    return this._unknown ('ダウンロードリンクが見つかりません。');
+  }
+
+  return this.OK;
+};
+
+
+// ファイル URL を取得する
+FireStorage.prototype.get = function (url) {
+  this.url = url;
+  this.urls = [ ];
+
+  var http = this.http = new Http ();
+
+  // エラーメッセージを検出しやすいように英語サイトに接続する
+  url = url.replace (/^(https?:\/\/[^\/]+)\.jp\//, '$1.com/');
+
+  if (!http.get (url)) {
+    return this._httpError ();
+  }
+
+  // Access to the download page
+  if (/<a\s+href="(\/index\.cgi\?act=download[^"]*)"/.test (http.data)) {
+    if (!http.get (RegExp.$1)) {
+      return this._httpError ();
+    }
+  }
+
+  var r = this._passPasswordForm (url);
+  if (r != this.OK) {
+    return r;
+  }
+
+  return this._extractDownloadLink ();
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
+  }
+
+
+  var storage = new FireStorage ();
+  var r = storage.get (urlinfo.url);
+  if (r != storage.OK) {
+    return storage.end (r);
+  }
+
+  var additem = new AddItem (ini.AddItem);
+  additem.reQueue (storage.urls) || exit ();
+
+}
+
+
+// EOF

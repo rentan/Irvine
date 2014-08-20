@@ -1,0 +1,21 @@
+firestorage_r.dms  for Dorothy2
+
+
+Usage
+=====
+
+Use normally.
+
+Please read the following documents.
+
+- Dorothy2\document\common\additem.txt
+
+
+ChangeLog
+=========
+
+2014-08-20  version 20140820.0  rentan at rentan.org
+  first release
+
+
+[EOF]
