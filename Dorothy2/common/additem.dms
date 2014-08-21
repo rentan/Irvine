@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=AddItem
-//version=20140521.0
+//version=20140820.0
 //hint=new AddItem ()
 //match=
 //author=rentan
@@ -324,6 +324,28 @@ AddItem.prototype.send = function (list) {
 
   println ('AddItem.send: 未対応の動作モードです: ' + m);
   return false;
+};
+
+
+// リストを Irvine に登録して、現在のアイテムを削除終了させる
+//   1アイテムかつ !force なら現在のアイテムに上書きする
+AddItem.prototype.reQueue = function (list, force) {
+  if (force || list.length > 1) {
+    if (this.send (list)) {
+      Util.remove_this ();
+      return true;
+    }
+
+    return false;
+  }
+
+  var item = list [0];
+
+  Dorothy.setUrl (item.Url);
+  if (item.hasKey ('Filename')) {
+    Dorothy.setFilename (item.Filename);
+  }
+  return true;
 };
 
 
