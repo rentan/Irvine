@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={0D313B7E-9959-4F23-9AEC-64276F111EDB}
 caption=Dorothy2R 設定
-version=20140729
+version=20140822
 hint=Dorothy2R 設定
 event=OnMainMenuClick
 match=
@@ -1419,35 +1419,9 @@ DorothySetting.edit = function (file) {
 
 // 文字列が UTF-8 か調べる
 DorothySetting._isUtf8 = function (s) {
-  var sb = new StringBuffer (s);
+  var re = /^([\x00-\x7f]+|[\xc2-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf]{2}|[\xf0-\xf7][\x80-\xbf]{3})+/g;
 
-  // 長い UTF-8 文字列で非常に時間がかかってしまうので
-  // 適当なところで打ち切る
-  var len = Math.min (sb.length, 1000);
-
-  sb.append (String.fromCharCode (0xff));
-
-  for (var i = 0; i < len; ) {
-    var cc = sb.charCodeAt (i++);
-
-    if (cc <= 0x7f) {
-      continue;
-    }
-    if ((cc <= 0xc1) || (0xf8 <= cc)) {
-      return false;
-    }
-
-    // UTF-8 の2バイト目以降の値として正しいか
-    var bytes = (cc <= 0xdf) ? 1 : (cc <= 0xef) ? 2 : 3;
-    do {
-      cc = sb.charCodeAt (i++);
-      if ((cc < 0x80) || (0xbf < cc)) {
-        return false;
-      }
-    } while (--bytes);
-  }
-
-  return true;
+  return s.replace (re, '').length == 0;
 };
 
 

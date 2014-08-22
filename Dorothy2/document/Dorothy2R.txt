@@ -126,6 +126,11 @@ Dorothy.loadDorothyIni ();
 変更履歴
 ========
 
+2014-08-22  version 20140822.0  rentan at rentan.org
+scripts\Dorothy2R_set.dms
+  DorothySetting._isUtf8() を正規表現による判定に変更。
+  参考: http://peace.2ch.net/test/read.cgi/win/1394240473/745
+
 2014-08-15  version 20140815.0  rentan at rentan.org
 Dorothy2\system\menu\help\document.dms
   doc.dfm のスプリッタとラジオボタンを削除するようにした。
