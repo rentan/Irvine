@@ -1,42 +1,17 @@
-common\domparser\pseudo_xml.dms  for Dorothy2
+common\domparser\pseudo_xml.dms
 
 
-DOMParser/XML pseudo version
+DOMParser/XML の擬似的、簡易的な実装です。
+完全な実装ではありません。
+
+動作テストが不十分です。
 
 
-Usage
-=====
-
-  var text = '<foo><bar /></foo>';
-  var type = 'text/xml';
-
-  common_load ('domparser\xml');
-
-  var domparser = new DOMParser ();
-  var document;
-
-  try {
-    document = domparser.parseFromString (text, type);
-
-    var e = document.getElementsByTagName ('bar');
-  }
-  finally {
-    if (document) {
-      document.destroy ();
-      document = null;
-    }
-  }
-
-See following documents for details.
-- Dorothy2\common\domparser\core.txt
-- Dorothy2\common\domparser\xml.txt
-
-
-ChangeLog
-=========
+変更履歴
+========
 
 2014-08-16  version 20140816.0  rentan at rentan.org
-  first release
+  新規作成。
 
 
 [EOF]

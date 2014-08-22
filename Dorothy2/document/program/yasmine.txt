@@ -1,76 +1,76 @@
 yasmine.dms
 
 
-ã‚¹ã‚¯ãƒªãƒ—ãƒˆé–‹ç™ºè€…ç”¨ã®æ”¯æ´ãƒ„ãƒ¼ãƒ«ã§ã™ã€‚
-Dorothy2 ã® common ãƒ•ã‚¡ã‚¤ãƒ«ã®ãƒ¦ãƒ‹ãƒƒãƒˆãƒ†ã‚¹ãƒˆã‚’å®Ÿè¡Œã—ã¾ã™ã€‚
+ƒXƒNƒŠƒvƒgŠJ”­Ò—p‚Ìx‰‡ƒc[ƒ‹‚Å‚·B
+Dorothy2 ‚Ì common ƒtƒ@ƒCƒ‹‚Ìƒ†ƒjƒbƒgƒeƒXƒg‚ğÀs‚µ‚Ü‚·B
 
-JavaScript ç”¨ãƒ†ã‚¹ãƒˆãƒ•ãƒ¬ãƒ¼ãƒ ãƒ¯ãƒ¼ã‚¯ã® Jasmine ã«ä¼¼ã›ã¦ã‚ã‚Šã¾ã™ãŒã€
-å¤šãã®æ©Ÿèƒ½ãŒæœªå®Ÿè£…ã€éäº’æ›ã§ã™ã€‚æ‰‹æŠœããªéƒ¨åˆ†ã‚‚å¤šã€…ã‚ã‚Šã¾ã™ã€‚
+JavaScript —pƒeƒXƒgƒtƒŒ[ƒ€ƒ[ƒN‚Ì Jasmine ‚É—‚¹‚Ä‚ ‚è‚Ü‚·‚ªA
+‘½‚­‚Ì‹@”\‚ª–¢À‘•A”ñŒİŠ·‚Å‚·Bè”²‚«‚È•”•ª‚à‘½X‚ ‚è‚Ü‚·B
 
 
-ä½¿ç”¨æ–¹æ³•
+g—p•û–@
 ========
 
-1. spec ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ä½œæˆã™ã‚‹ã€‚
-   ä¾‹: Dorothy2\common\spec\foobar_spec.dms
+1. spec ƒtƒ@ƒCƒ‹‚ğì¬‚·‚éB
+   —á: Dorothy2\common\spec\foobar_spec.dms
 
-2. common ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ä½œæˆã™ã‚‹ã€‚
-   ä¾‹: Dorothy2\common\foobar.dms
+2. common ƒtƒ@ƒCƒ‹‚ğì¬‚·‚éB
+   —á: Dorothy2\common\foobar.dms
 
-3. Irvine ã§ãƒ†ã‚¹ãƒˆç”¨ã® URL ã‚’ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰å®Ÿè¡Œã™ã‚‹ã€‚
-   ä¾‹: http://yasmine.dorothy.test/common/spec/foobar_spec.dms
+3. Irvine ‚ÅƒeƒXƒg—p‚Ì URL ‚ğƒ_ƒEƒ“ƒ[ƒhÀs‚·‚éB
+   —á: http://yasmine.dorothy.test/common/spec/foobar_spec.dms
 
-4. å¤±æ•—ã™ã‚‹ã¨ãƒ­ã‚°ãƒ•ã‚¡ã‚¤ãƒ«ã¨ spec ãƒ•ã‚¡ã‚¤ãƒ«ãŒãƒ†ã‚­ã‚¹ãƒˆã‚¨ãƒ‡ã‚£ã‚¿ã§
-   é–‹ã‹ã‚Œã‚‹ã®ã§ã€ä¿®æ­£ã—ã¦å®Ÿè¡Œã‚’ç¹°ã‚Šè¿”ã™ã€‚
+4. ¸”s‚·‚é‚ÆƒƒOƒtƒ@ƒCƒ‹‚Æ spec ƒtƒ@ƒCƒ‹‚ªƒeƒLƒXƒgƒGƒfƒBƒ^‚Å
+   ŠJ‚©‚ê‚é‚Ì‚ÅAC³‚µ‚ÄÀs‚ğŒJ‚è•Ô‚·B
 
 
-å¯¾å¿œ URL
+‘Î‰ URL
 ========
 
 http://yasmine.dorothy.test/common/spec/*.dms
-  Dorothy2\common\spec\*.dms ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã‚“ã§ãƒ†ã‚¹ãƒˆã‚’å®Ÿè¡Œã™ã‚‹ã€‚
+  Dorothy2\common\spec\*.dms ƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚ñ‚ÅƒeƒXƒg‚ğÀs‚·‚éB
 
 http://yasmine.dorothy.test/program/spec/*.dms
-  Dorothy2\program\spec\*.dms ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã‚“ã§ãƒ†ã‚¹ãƒˆã‚’å®Ÿè¡Œã™ã‚‹ã€‚
+  Dorothy2\program\spec\*.dms ƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚ñ‚ÅƒeƒXƒg‚ğÀs‚·‚éB
 
 http://yasmine.dorothy.test/arguments
-  OnHttpRequest ã«æ¸¡ã•ã‚ŒãŸå¼•æ•°ã‚’ãƒ†ã‚­ã‚¹ãƒˆãƒ•ã‚¡ã‚¤ãƒ« arguments.txt
-  ã«ä¿å­˜ã™ã‚‹ã€‚
+  OnHttpRequest ‚É“n‚³‚ê‚½ˆø”‚ğƒeƒLƒXƒgƒtƒ@ƒCƒ‹ arguments.txt
+  ‚É•Û‘¶‚·‚éB
 
 
-ä»•æ§˜ãƒ»åˆ¶é™äº‹é …
+d—lE§ŒÀ–€
 ==============
 
-ãƒ»DMonkey ã®ä»•æ§˜ä¸Šã€Jasmine ã¨åŒã˜è¨˜è¿°ãŒå‡ºæ¥ãªã„ãƒ‘ã‚¿ãƒ¼ãƒ³ãŒã‚ã‚Šã¾ã™ã€‚
+EDMonkey ‚Ìd—lãAJasmine ‚Æ“¯‚¶‹Lq‚ªo—ˆ‚È‚¢ƒpƒ^[ƒ“‚ª‚ ‚è‚Ü‚·B
 
   NG ... expect ({ }.foo).toBeUndefined ();
   OK ... expect ({ }.hasKey ('foo')).toBe (false);
 
 
-å¤‰æ›´å±¥æ­´
+•ÏX—š—ğ
 ========
 
 2014-07-14  rentan at rentan.org  version 20140714.0
 Dorothy2\common\yasmine.dms
-  Dorothy2\program\spec\*.dms ã‚’å®Ÿè¡Œã§ãã‚‹ã‚ˆã†ã«ã—ãŸã€‚
+  Dorothy2\program\spec\*.dms ‚ğÀs‚Å‚«‚é‚æ‚¤‚É‚µ‚½B
 
 Dorothy2\common\yasmine.dms
-  Yasmine._util._eq(): é…åˆ—ã®æ·»å­—è¦ç´ ã‚’æ¯”è¼ƒã—ã¦ã„ãªã„ä¸å…·åˆã‚’ä¿®æ­£ã€‚
+  Yasmine._util._eq(): ”z—ñ‚Ì“Yš—v‘f‚ğ”äŠr‚µ‚Ä‚¢‚È‚¢•s‹ï‡‚ğC³B
 
 2014-06-21  rentan at rentan.org
 Dorothy2\common\yasmine.dms  version 20140621.0
-  Yasmine.prototype._loadScript: è¡Œé ­(ã‚¤ãƒ³ãƒ‡ãƒ³ãƒˆãªã—)ã® expect()
-  ã‚‚å—ã‘ä»˜ã‘ã‚‹ã‚ˆã†ã«ã—ãŸã€‚
+  Yasmine.prototype._loadScript: s“ª(ƒCƒ“ƒfƒ“ƒg‚È‚µ)‚Ì expect()
+  ‚àó‚¯•t‚¯‚é‚æ‚¤‚É‚µ‚½B
 
-  Yasmine.prototype._util._eq: ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ãƒ¡ã‚½ãƒƒãƒ‰ã¯åŒæ–¹
-  function ãªã‚‰åŒä¸€ã¨è¦‹ãªã™ã‚ˆã†ã«ã—ãŸã€‚
+  Yasmine.prototype._util._eq: ƒIƒuƒWƒFƒNƒg‚Ìƒƒ\ƒbƒh‚Í‘o•û
+  function ‚È‚ç“¯ˆê‚ÆŒ©‚È‚·‚æ‚¤‚É‚µ‚½B
 
 2014-06-13  rentan at rentan.org
 Dorothy2\program\yasmine.dms  version 20140613.0
 Dorothy2\common\yasmine.dms  version 20140613.0
 Dorothy2\common\spec\testcasetext.dms  version 20140613.0
-ã»ã‹ spec ãƒ•ã‚¡ã‚¤ãƒ«ã€ãƒ†ã‚¹ãƒˆã‚±ãƒ¼ã‚¹ã®ãƒ†ã‚­ã‚¹ãƒˆ
-  æ–°è¦ä½œæˆã€‚
+‚Ù‚© spec ƒtƒ@ƒCƒ‹AƒeƒXƒgƒP[ƒX‚ÌƒeƒLƒXƒg
+  V‹Kì¬B
 
 
 [EOF]

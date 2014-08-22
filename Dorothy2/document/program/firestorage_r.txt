@@ -1,21 +1,27 @@
-firestorage_r.dms  for Dorothy2
+firestorage_r.dms
 
 
-Usage
-=====
-
-Use normally.
-
-Please read the following documents.
-
-- Dorothy2\document\common\additem.txt
+firestorage 用のスクリプトです。
 
 
-ChangeLog
-=========
+使用方法
+========
+
+設定機能はありません。
+
+アイテム追加は AddItem の既定値に従って実行されます。
+
+以下のドキュメントも参照して下さい。
+
+・アイテム追加
+  Dorothy2\document\common\additem.txt
+
+
+仕様・制限事項
+==============
 
 2014-08-20  version 20140820.0  rentan at rentan.org
-  first release
+  新規作成。
 
 
 [EOF]

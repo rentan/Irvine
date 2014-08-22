@@ -1,36 +1,58 @@
-common\domparser\core.dms  for Dorothy2
+common\domparser\core.dms
 
 
-DOMParser incomlete implementation
+DOMParser の擬似的な実装です。
+完全な実装ではありません。
 
-Because there is an EInvalidPointer error occurs, it is not practical.
+まだ仕様が確定していません。
+バージョンアップに伴い仕様が変更される可能性があります。
 
+動作テストが不十分です。
 
-Usage
-=====
-
-See following document for details.
-- Dorothy2\common\domparser\xml.txt
-
-
-DOMParser object's properties
-=============================
+EInvalidPointer エラーが発生することがあるため、実用的では
+ありません。
 
 
-DOMParser object's methods
-==========================
+使用方法
+========
 
-constructor
+common\domparser\xml.dms などから読み込まれます。
+詳しくはそちらを参照して下さい。
+
+スクリプト終了時に
+  EInvalidPointer: Invalid pointer operation
+というエラーが発生してスクリプトが異常終了することがあります。
+(DMonkey のガベージコレクタ関係の不具合?)
+
+document のデストラクタとして .destroy() というメソッドを定義
+してあり、これを呼び出した上で document への参照も削除すると、
+多少発生確率が下がるような気がしますが気のせいかもしれません。
+
+
+DOMParser オブジェクトのプロパティ
+==================================
+
+なし
+
+
+DOMParser オブジェクトのメソッド
+================================
+
+コンストラクタ
 new DOMParser ()
-  return value ... DOMParser instance
+  戻り値 ... DOMParser インスタンス
+
+  DOMParser インスタンスを作成して返す。
 
 parseFromString (str, type)
-  str ... string: text
+  str ... string: テキスト
   type ... string: Content-Type
 
+  str で指定された文字列を、type で指定された形式と見なしてパースします。
 
-Node object's properties
-========================
+
+Node オブジェクトのプロパティ
+=============================
 
 ELEMENT_NODE
 TEXT_NODE
@@ -41,14 +63,28 @@ DOCUMENT_TYPE_NODE
 DOCUMENT_FRAGMENT_NODE
 
 
-ChangeLog
-=========
+仕様・制限事項
+==============
+
+・内部で下記のオブジェクトを定義して使用しています。
+
+NamedNodeMap
+Document
+Element
+Text
+ProcessingInstruction
+Comment
+
+
+変更履歴
+========
 
 2014-06-13  version 20140613.0  rentan at rentan.org
-  add initialization method between .getElementsBy*() and ._getElements()
+  .getElementsBy*() から ._getElements() の呼び出しの間に
+  初期化メソッドを挟むようにした。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  first release
+  新規作成。
 
 
 [EOF]

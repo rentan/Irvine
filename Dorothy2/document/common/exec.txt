@@ -1,10 +1,10 @@
 common\exec.dms
 
 
-子プロセスを実行するオブジェクトです。
+�q�v���Z�X�����s����I�u�W�F�N�g�ł��B
 
 
-使用方法
+�g�p���@
 ========
 
   common_load ('exec');
@@ -19,64 +19,64 @@ common\exec.dms
     stat = -1;
   }
 
-または簡易形式で
+�܂��͊ȈՌ`����
 
   commono_load ('exec');
   var stat = Exec ('explorer.exe');
 
 
-Exec オブジェクトのプロパティ
+Exec �I�u�W�F�N�g�̃v���p�e�B
 =============================
 
-仕様が固まっていないため省略。
+�d�l���ł܂��Ă��Ȃ����ߏȗ��B
 
 
-Exec オブジェクトのメソッド
+Exec �I�u�W�F�N�g�̃��\�b�h
 ===========================
 
-コンストラクタ
+�R���X�g���N�^
 new Exec ()
-  戻り値 ... Exec インスタンス
+  �߂�l ... Exec �C���X�^���X
 
-  Exec インスタンスを作成して返す。
+  Exec �C���X�^���X���쐬���ĕԂ��B
 
 exec (app, cmd, dir)
-  app ... string: プログラムのパス
-  cmd ... string: コマンドライン引数
-  dir ... string: 実行時のカレントフォルダ
-  戻り値 ... number: プログラムの終了コード
+  app ... string: �v���O�����̃p�X
+  cmd ... string: �R�}���h���C������
+  dir ... string: ���s���̃J�����g�t�H���_
+  �߂�l ... number: �v���O�����̏I���R�[�h
 
-  プログラムを実行して終了コードを返します。実行に失敗した場合は
-  例外が発生します。
+  �v���O���������s���ďI���R�[�h��Ԃ��܂��B���s�Ɏ��s�����ꍇ��
+  ��O���������܂��B
 
-簡易実行モード
+�ȈՎ��s���[�h
 Exec (app, cmd, ...)
-  app ... string: プログラムのパス
-  cmd ... string: コマンドライン引数(省略可、複数指定可)
-  戻り値 ... number: プログラムの終了コード
+  app ... string: �v���O�����̃p�X
+  cmd ... string: �R�}���h���C������(�ȗ��A�����w���)
+  �߂�l ... number: �v���O�����̏I���R�[�h
 
-  Exec() を new 演算子なしで呼び出すと、プログラムを直接実行して
-  終了コードを返します。実行に失敗した場合は -1 が返ります。
+  Exec() �� new ���Z�q�Ȃ��ŌĂяo���ƁA�v���O�����𒼐ڎ��s����
+  �I���R�[�h��Ԃ��܂��B���s�Ɏ��s�����ꍇ�� -1 ���Ԃ�܂��B
 
-  cmd の後に引数を指定すると cmd にスペースで連結されてプログラム
-  に渡されます。
+  cmd �̌�Ɉ������w�肷��� cmd �ɃX�y�[�X�ŘA������ăv���O����
+  �ɓn����܂��B
 
-  カレントフォルダは Dorothy.temp になります。
+  �J�����g�t�H���_�� Dorothy.temp �ɂȂ�܂��B
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
 
-変更履歴
+�ύX����
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
 2014-01-10  version 1.0
-  新規作成。
+  �V�K�쐬�B
 
 
 [EOF]

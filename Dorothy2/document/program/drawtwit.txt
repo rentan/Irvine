@@ -1,74 +1,74 @@
 drawtwit.dms
 
 
-drawTwit 用のスクリプトです。
+drawTwit �p�̃X�N���v�g�ł��B
 
-使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分
-ご注意下さい。
+�g�����ɂ���Ă͐ڑ���T�[�o�ɍ������ׂ��|���Ă��܂����Ƃ�����̂ŁA�\��
+�����Ӊ������B
 
-一括ダウンロード時に HTML 解析に失敗するようなことがあるかも知れないので、
-ファイルを取りこぼしていないか必ず確認して下さい。
+�ꊇ�_�E�����[�h���� HTML ��͂Ɏ��s����悤�Ȃ��Ƃ����邩���m��Ȃ��̂ŁA
+�t�@�C������肱�ڂ��Ă��Ȃ����K���m�F���ĉ������B
 
 
-使用方法
+�g�p���@
 ========
 
-以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
-  ツール → メインメニュー → 動画ダウンロード設定２
-  プログラムを右クリック → 設定
+�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
+  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
+  �v���O�������E�N���b�N �� �ݒ�
 
 
-対応 URL
+�Ή� URL
 ========
 
 http://drawtwit.com/\w+/
-  画像の一覧ページ
-  その作者の全作品をダウンロード。
+  �摜�̈ꗗ�y�[�W
+  ���̍�҂̑S��i���_�E�����[�h�B
 
-  1ページ目だけダウンロードしたい場合は ?page=1 を付ける。
+  1�y�[�W�ڂ����_�E�����[�h�������ꍇ�� ?page=1 ��t����B
 
 http://drawtwit.com/\w+/?page=\d+
-  画像の一覧ページ
-  そのページに表示されている全作品をダウンロード。
+  �摜�̈ꗗ�y�[�W
+  ���̃y�[�W�ɕ\������Ă���S��i���_�E�����[�h�B
 
 http://drawtwit.com/\w+
-  画像のページ
-  先頭の画像のみダウンロード（コメント画像はダウンロードしない）。
+  �摜�̃y�[�W
+  �擪�̉摜�̂݃_�E�����[�h�i�R�����g�摜�̓_�E�����[�h���Ȃ��j�B
 
 http://drawtwit.com/\w+#\w+
-  画像のページの特定イラスト（コメント）
-  フラグメント識別子で指定された画像だけダウンロード。
+  �摜�̃y�[�W�̓���C���X�g�i�R�����g�j
+  �t���O�����g���ʎq�Ŏw�肳�ꂽ�摜�����_�E�����[�h�B
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
 
-変更履歴
+�ύX����
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
-  古い形式のファイル名変数 %ILLUST_ID% を削除。
+  �Â��`���̃t�@�C�����ϐ� %ILLUST_ID% ���폜�B
 
 2012-11-19
-  微調整。
+  �������B
 
 2012-07-11
-  大幅に変更。
+  �啝�ɕύX�B
 
-  ファイル名変数 %ID% %ILLUST_ID% から変更
+  �t�@�C�����ϐ� %ID% %ILLUST_ID% ����ύX
 
 2012-03-29
-  common\{http,utf8}.dms を使うようにした。
+  common\{http,utf8}.dms ���g���悤�ɂ����B
 
-  画像と anm ファイルをダウンロードする時、画像はキューに追加せず
-  現在のアイテムを上書きするようにした。
+  �摜�� anm �t�@�C�����_�E�����[�h���鎞�A�摜�̓L���[�ɒǉ�����
+  ���݂̃A�C�e�����㏑������悤�ɂ����B
 
 2012-01-20
-  初期バージョン。
+  �����o�[�W�����B
 
 
 [EOF]

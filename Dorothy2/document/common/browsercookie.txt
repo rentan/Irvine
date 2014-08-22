@@ -1,52 +1,52 @@
 common\browsercookie.dms
 
 
-Web ブラウザから Cookie を読み込むためのオブジェクトです。
+Web �u���E�U���� Cookie ��ǂݍ��ނ��߂̃I�u�W�F�N�g�ł��B
 
-まだ仕様が確定していません。
-バージョンアップに伴い仕様が変更される可能性があります。
+�܂��d�l���m�肵�Ă��܂���B
+�o�[�W�����A�b�v�ɔ����d�l���ύX�����\��������܂��B
 
-動作テストが不十分です。
+����e�X�g���s�\���ł��B
 
 
-対応ブラウザ
-  IE              Internet Explorer 保護モード自動識別
-  IE_protected    IE 保護モード有効
-  IE_unprotected  IE 保護モード無効
+�Ή��u���E�U
+  IE              Internet Explorer �ی샂�[�h��������
+  IE_protected    IE �ی샂�[�h�L��
+  IE_unprotected  IE �ی샂�[�h����
   Firefox         Mozilla Firefox
   Chrome          Google Chrome
-  CEF             Chromium Embedded Framework ベースのブラウザ
+  CEF             Chromium Embedded Framework �x�[�X�̃u���E�U
 
 
-使用方法(一般ユーザ向け)
+�g�p���@(��ʃ��[�U����)
 ========================
 
-Firefox、Chrome、CEF の Cookie を読み込む場合は、下記サイトから
-sqlite3.dll をダウンロードして Dorothy2\bin フォルダに置いて下さい。
+Firefox�AChrome�ACEF �� Cookie ��ǂݍ��ޏꍇ�́A���L�T�C�g����
+sqlite3.dll ���_�E�����[�h���� Dorothy2\bin �t�H���_�ɒu���ĉ������B
   http://www.sqlite.org/
 
-初回使用時に以下のファイルに共通設定を規定値で保存するので、必要なら
-適宜変更して下さい。
+����g�p���Ɉȉ��̃t�@�C���ɋ��ʐݒ���K��l�ŕۑ�����̂ŁA�K�v�Ȃ�
+�K�X�ύX���ĉ������B
   Dorothy2\user\browsercookie.ini
 
-個別設定に対応しているスクリプトでは、各スクリプト側の設定でも変更
-出来ます。
+�ʐݒ�ɑΉ����Ă���X�N���v�g�ł́A�e�X�N���v�g���̐ݒ�ł��ύX
+�o���܂��B
 
 Browser=
-  ブラウザの種類、冒頭の対応ブラウザ参照。
+  �u���E�U�̎�ށA�`���̑Ή��u���E�U�Q�ƁB
 
 FirefoxCookie=
-  Firefox の Cookie ファイルのパス。Auto の場合は自動取得。
+  Firefox �� Cookie �t�@�C���̃p�X�BAuto �̏ꍇ�͎����擾�B
 
 ChromeCookie=
-  Google Chrome の Cookie ファイルのパス。Auto の場合は自動取得。
+  Google Chrome �� Cookie �t�@�C���̃p�X�BAuto �̏ꍇ�͎����擾�B
 
 CefCookie=
-  CEF の Cookie ファイルのパス。Browser=CEF の場合は、個別設定か
-  共通設定で必ず指定する必要があります。
+  CEF �� Cookie �t�@�C���̃p�X�BBrowser=CEF �̏ꍇ�́A�ʐݒ肩
+  ���ʐݒ�ŕK���w�肷��K�v������܂��B
 
 
-使用方法(スクリプト作成者向け)
+�g�p���@(�X�N���v�g�쐬�Ҍ���)
 ==============================
 
   common_load ('browsercookie');
@@ -58,7 +58,7 @@ CefCookie=
   var cookie = bcookie.import (o);
 
 
-BrowserCookie オブジェクトのプロパティ
+BrowserCookie �I�u�W�F�N�g�̃v���p�e�B
 ======================================
 
 browser ... string
@@ -68,18 +68,18 @@ cefcookie ... string
 maxSize ... number
 iniTemplate ... object
 
-詳細は省略。
+�ڍׂ͏ȗ��B
 
 
-BrowserCookie オブジェクトのメソッド
+BrowserCookie �I�u�W�F�N�g�̃��\�b�h
 ====================================
 
-コンストラクタ
+�R���X�g���N�^
 new BrowserCookie (opt)
-  opt ... object: プロパティ指定値(省略可)
-  戻り値 ... BrowserCookie インスタンス
+  opt ... object: �v���p�e�B�w��l(�ȗ���)
+  �߂�l ... BrowserCookie �C���X�^���X
 
-  BrowserCookie インスタンスを作成して返す。
+  BrowserCookie �C���X�^���X���쐬���ĕԂ��B
 
 import (obj)
 importIE (obj)
@@ -94,72 +94,72 @@ getShellFolder (name)
 getFirefoxCookiePath ()
 getChromeCookiePath ()
 
-詳細は省略。
+�ڍׂ͏ȗ��B
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
-・内部で bcSQLite3 オブジェクトを定義して使用しています。
+�E������ bcSQLite3 �I�u�W�F�N�g���`���Ďg�p���Ă��܂��B
 
-・Chrome、CEF の Cookie ファイルは version 7 のみ対応しています。
+�EChrome�ACEF �� Cookie �t�@�C���� version 7 �̂ݑΉ����Ă��܂��B
 
-・Chrome と CEF は Cookie ファイルの指定方法が違うだけです。
+�EChrome �� CEF �� Cookie �t�@�C���̎w����@���Ⴄ�����ł��B
 
-・Chrome ではブラウザが保持している Cookie がファイルに保存されるまで
-  多少時間がかかることがあるようです。
+�EChrome �ł̓u���E�U���ێ����Ă��� Cookie ���t�@�C���ɕۑ������܂�
+  �������Ԃ������邱�Ƃ�����悤�ł��B
 
-・セッションオンリー Cookie はファイルに保存されないと思われるので、
-  ブラウザでのログイン時に「次回から自動的にログイン」といったチェック
-  を入れる必要があるかも知れません。
+�E�Z�b�V�����I�����[ Cookie �̓t�@�C���ɕۑ�����Ȃ��Ǝv����̂ŁA
+  �u���E�U�ł̃��O�C�����Ɂu���񂩂玩���I�Ƀ��O�C���v�Ƃ������`�F�b�N
+  ������K�v�����邩���m��܂���B
 
-・レジストリ HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\
-  Shell Folders\Cookies の値が正しくないなどの理由で、Firefox と Chrome
-  の自動取得が失敗するかも知れません。その場合は Cookie ファイルのパス
-  を手動で指定して下さい。
+�E���W�X�g�� HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\
+  Shell Folders\Cookies �̒l���������Ȃ��Ȃǂ̗��R�ŁAFirefox �� Chrome
+  �̎����擾�����s���邩���m��܂���B���̏ꍇ�� Cookie �t�@�C���̃p�X
+  ���蓮�Ŏw�肵�ĉ������B
 
 
-変更履歴
+�ύX����
 ========
 
 2014-04-03  version 20140403.0  rentan at rentan.org
-  BrowserCookie._sql(): Cookie ファイルにデータが一つもない時に正しく
-  エラー処理しない不具合を修正。
-  第3引数(カラムのデータ種別の配列)を必須に変更。
+  BrowserCookie._sql(): Cookie �t�@�C���Ƀf�[�^������Ȃ����ɐ�����
+  �G���[�������Ȃ��s����C���B
+  ��3����(�J�����̃f�[�^��ʂ̔z��)��K�{�ɕύX�B
 
-  BrowserCookie.import*(): debug 有効時、取得した Cookie を表示する。
+  BrowserCookie.import*(): debug �L�����A�擾���� Cookie ��\������B
 
-  BrowserCookie: エラー処理を整理。
+  BrowserCookie: �G���[�����𐮗��B
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
 2014-02-27  version 4.0
-  Firefox で profiles.ini を読んでプロファイルを調べるようにした。
+  Firefox �� profiles.ini ��ǂ�Ńv���t�@�C���𒲂ׂ�悤�ɂ����B
 
-  Google Chrome 33 で Cookie ファイルの形式が version 7 に変更
-  されたのに対応。
+  Google Chrome 33 �� Cookie �t�@�C���̌`���� version 7 �ɕύX
+  ���ꂽ�̂ɑΉ��B
 
-  sqlite3.dll が古い場合は推奨バージョンを表示するようにした。
-  (ただし現時点では必要バージョンと同じ 3.8.0 にしてあるので
-   表示されることはありません。)
+  sqlite3.dll ���Â��ꍇ�͐����o�[�W������\������悤�ɂ����B
+  (�����������_�ł͕K�v�o�[�W�����Ɠ��� 3.8.0 �ɂ��Ă���̂�
+   �\������邱�Ƃ͂���܂���B)
 
 2013-12-08  version 3.1
-  共通設定ファイルの雛形にコメントを追加。
+  ���ʐݒ�t�@�C���̐��`�ɃR�����g��ǉ��B
 
 2013-09-27  version 3.0
-  Firefox/Chrome の Cookie ファイルをコピーせず直接開くようにした。
-  インデントを2スペースに変更。
+  Firefox/Chrome �� Cookie �t�@�C�����R�s�[�������ڊJ���悤�ɂ����B
+  �C���f���g��2�X�y�[�X�ɕύX�B
 
 2013-03-07  version 2.0
-  BrowserCookie.prototype._sql: エラー表示の関数名を間違えていた
-  不具合を修正。
+  BrowserCookie.prototype._sql: �G���[�\���̊֐������ԈႦ�Ă���
+  �s����C���B
 
-  デバッグモードでなくても常にブラウザ種別を表示するようにした。
+  �f�o�b�O���[�h�łȂ��Ă���Ƀu���E�U��ʂ�\������悤�ɂ����B
 
 2012-11-19  version 1.0
-  新規作成。
+  �V�K�쐬�B
 
 
 [EOF]

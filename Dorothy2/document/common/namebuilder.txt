@@ -1,10 +1,10 @@
 common\namebuilder.dms
 
 
-ファイル名生成用のオブジェクトです。
+�t�@�C���������p�̃I�u�W�F�N�g�ł��B
 
 
-使用方法
+�g�p���@
 ========
 
   common_load ('namebuilder');
@@ -14,165 +14,165 @@ common\namebuilder.dms
   Dorothy.fileName = nb.assemble ('%TITLE% - %ID%', url);
 
 
-NameBuilder オブジェクトのプロパティ
+NameBuilder �I�u�W�F�N�g�̃v���p�e�B
 ====================================
 
-プロパティを設定するとファイル名変数として変換対象になります。
+�v���p�e�B��ݒ肷��ƃt�@�C�����ϐ��Ƃ��ĕϊ��ΏۂɂȂ�܂��B
 
-プロパティ名は全て大文字か、全て小文字のみ(数字も可)で、大文字の方が
-優先されます。ただしファイル名変数として記述する時は全て大文字のみです。
-  '%TITLE%' と書くと .TITLE または .title が参照されますが、%title%
-  はエラーになります。
+�v���p�e�B���͑S�đ啶�����A�S�ď������̂�(��������)�ŁA�啶���̕���
+�D�悳��܂��B�������t�@�C�����ϐ��Ƃ��ċL�q���鎞�͑S�đ啶���݂̂ł��B
+  '%TITLE%' �Ə����� .TITLE �܂��� .title ���Q�Ƃ���܂����A%title%
+  �̓G���[�ɂȂ�܂��B
 
-プロパティの値に数値、Utf8 オブジェクトを設定するとファイル名生成時に
-自動的に文字列に変換されます。また関数を設定すると、その関数を呼び出した
-戻り値を、必要なら文字列に変換した上で変数として使用します。
+�v���p�e�B�̒l�ɐ��l�AUtf8 �I�u�W�F�N�g��ݒ肷��ƃt�@�C������������
+�����I�ɕ�����ɕϊ�����܂��B�܂��֐���ݒ肷��ƁA���̊֐����Ăяo����
+�߂�l���A�K�v�Ȃ當����ɕϊ�������ŕϐ��Ƃ��Ďg�p���܂��B
 
 
-NameBuilder オブジェクトのメソッド
+NameBuilder �I�u�W�F�N�g�̃��\�b�h
 ==================================
 
-コンストラクタ
+�R���X�g���N�^
 new NameBuilder (opt)
-  opt ... object: プロパティ指定値(省略可)
-  戻り値 ... NameBuilder インスタンス
+  opt ... object: �v���p�e�B�w��l(�ȗ���)
+  �߂�l ... NameBuilder �C���X�^���X
 
-  NameBuilder インスタンスを作成して返す。
+  NameBuilder �C���X�^���X���쐬���ĕԂ��B
 
-  例:
+  ��:
   var nb = new NameBuilder ({ zen2han: true });
 
-  オプションに ymdhms: true を指定すると、プロパティ yyyy mm dd
-  hh mi ss が設定される(値は全て null)。また、メソッド YY が設定
-  される(yyyy から下2桁を取り出す)。
+  �I�v�V������ ymdhms: true ���w�肷��ƁA�v���p�e�B yyyy mm dd
+  hh mi ss ���ݒ肳���(�l�͑S�� null)�B�܂��A���\�b�h YY ���ݒ�
+  �����(yyyy ���牺2�������o��)�B
 
 normalize (s)
-  s ... string: ファイル名(Shift_JIS)
-  戻り値 ... string
+  s ... string: �t�@�C����(Shift_JIS)
+  �߂�l ... string
 
-  ファイル名に使用できない文字を変換して返す。
+  �t�@�C�����Ɏg�p�ł��Ȃ�������ϊ����ĕԂ��B
 
 trim (s)
-  s ... string: ファイル名(Shift_JIS)
-  戻り値 ... string
+  s ... string: �t�@�C����(Shift_JIS)
+  �߂�l ... string
 
-  ファイル名中の不適切な空白記号を除去して返す。
+  �t�@�C�������̕s�K�؂ȋ󔒋L�����������ĕԂ��B
 
 setYmdhms (t)
-  t ... string: 日時
-  戻り値 ... boolean
+  t ... string: ����
+  �߂�l ... boolean
 
-  日時表記を解釈して各プロパティ(yyyy mm dd hh mi ss)に代入する。
-  成功したら true、失敗したら false を返す。
+  �����\�L�����߂��Ċe�v���p�e�B(yyyy mm dd hh mi ss)�ɑ������B
+  ���������� true�A���s������ false ��Ԃ��B
 
 definePPZ (origin)
-  origin ... number: 開始ページ番号
-  戻り値 ... なし
+  origin ... number: �J�n�y�[�W�ԍ�
+  �߂�l ... �Ȃ�
 
-  NameBuilder.P() および NameBuilder.PZ() 関数を定義する。
+  NameBuilder.P() ����� NameBuilder.PZ() �֐����`����B
 
 zeroPadding (n, max, offset) {
-  n ... number: 変換する数値
-  max ... number: 最大桁数を表す数値
-  offset ... number: n と max に加算される数値(省略可)
-  戻り値 ... string
+  n ... number: �ϊ����鐔�l
+  max ... number: �ő包����\�����l
+  offset ... number: n �� max �ɉ��Z����鐔�l(�ȗ���)
+  �߂�l ... string
 
-  offset が指定された場合は、まず n と max に加算されて以下の計算
-  が行われる。
+  offset ���w�肳�ꂽ�ꍇ�́A�܂� n �� max �ɉ��Z����Ĉȉ��̌v�Z
+  ���s����B
 
-  max を10進数文字列に変換した場合の桁数に合わせて、n をゼロ詰めの
-  10進数文字列に変換して返す。
+  max ��10�i��������ɕϊ������ꍇ�̌����ɍ��킹�āAn ���[���l�߂�
+  10�i��������ɕϊ����ĕԂ��B
 
 assemble (fmt, ext)
-  fmt ... string: ファイル名形式
-  ext ... string: 拡張子
-  戻り値 ... string
+  fmt ... string: �t�@�C�����`��
+  ext ... string: �g���q
+  �߂�l ... string
 
-  fmt で指定したファイル名形式に従ってファイル名を生成する。ext
-  で指定した文字列が末尾に繋げられる。ext に URL を指定した場合は
-  拡張子部分を抽出した上でファイル名に繋げられる。
+  fmt �Ŏw�肵���t�@�C�����`���ɏ]���ăt�@�C�����𐶐�����Bext
+  �Ŏw�肵�������񂪖����Ɍq������Bext �� URL ���w�肵���ꍇ��
+  �g���q�����𒊏o������Ńt�@�C�����Ɍq������B
 
 buildFilename (fmt, ext)
-  fmt ... string: ファイル名形式
-  ext ... string: 拡張子
-  戻り値 ... object: { Filename: ファイル名, [Folder: フォルダ名] }
+  fmt ... string: �t�@�C�����`��
+  ext ... string: �g���q
+  �߂�l ... object: { Filename: �t�@�C����, [Folder: �t�H���_��] }
 
-  fmt で指定したファイル名形式に従ってファイル名を生成する。ext
-  で指定した文字列が末尾に繋げられる。ext に URL を指定した場合は
-  拡張子部分を抽出した上でファイル名に繋げられる。
+  fmt �Ŏw�肵���t�@�C�����`���ɏ]���ăt�@�C�����𐶐�����Bext
+  �Ŏw�肵�������񂪖����Ɍq������Bext �� URL ���w�肵���ꍇ��
+  �g���q�����𒊏o������Ńt�@�C�����Ɍq������B
 
-  fmt にファイル名コマンドが含まれる場合、ファイル名から取り除かれた
-  上で実行される。
+  fmt �Ƀt�@�C�����R�}���h���܂܂��ꍇ�A�t�@�C���������菜���ꂽ
+  ��Ŏ��s�����B
     [[md=...]]
-      ダウンロードファイルを指定フォルダに保存する。フォルダが存在
-      しない場合は作成される。フォルダ名が 戻り値の Folder プロパティ
-      に格納される。
+      �_�E�����[�h�t�@�C�����w��t�H���_�ɕۑ�����B�t�H���_������
+      ���Ȃ��ꍇ�͍쐬�����B�t�H���_���� �߂�l�� Folder �v���p�e�B
+      �Ɋi�[�����B
     [[cd=...]]
-      md と同じ。
+      md �Ɠ����B
 
 setFilename (fmt, ext)
-  fmt ... string: ファイル名形式
-  ext ... string: 拡張子
+  fmt ... string: �t�@�C�����`��
+  ext ... string: �g���q
 
-  buildFilename() を実行し、その結果を item.filename 及び item.folder
-  に設定する。
+  buildFilename() �����s���A���̌��ʂ� item.filename �y�� item.folder
+  �ɐݒ肷��B
 
-  ただし、item.filename が事前に設定済みで [[rename]] を含まない場合は
-  上書きしない(その場合でも拡張子がない時は追加する)。
+  �������Aitem.filename �����O�ɐݒ�ς݂� [[rename]] ���܂܂Ȃ��ꍇ��
+  �㏑�����Ȃ�(���̏ꍇ�ł��g���q���Ȃ����͒ǉ�����)�B
 
 contentTypeToExt (ctype)
-  ctype ... string: Content-Type の値
-  戻り値 ... string
+  ctype ... string: Content-Type �̒l
+  �߂�l ... string
 
-  Content-Type に対応する拡張子を返す。文字列の代わりに Http
-  オブジェクトを渡すと、レスポンスヘッダの content-type の値を参照する。
+  Content-Type �ɑΉ�����g���q��Ԃ��B������̑���� Http
+  �I�u�W�F�N�g��n���ƁA���X�|���X�w�b�_�� content-type �̒l���Q�Ƃ���B
 
 contentToExt (data)
-  data ... string: データ
-  戻り値 ... string
+  data ... string: �f�[�^
+  �߂�l ... string
 
-  データ内容に対応する拡張子を返す。文字列の代わりに Http オブジェクト
-  を渡すと data プロパティの値を参照する。
+  �f�[�^���e�ɑΉ�����g���q��Ԃ��B������̑���� Http �I�u�W�F�N�g
+  ��n���� data �v���p�e�B�̒l���Q�Ƃ���B
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
 
-変更履歴
+�ύX����
 ========
 
 2014-07-18  version 20140718.0  rentan at rentan.org
-  setFilename(): Dorothy.setFilename() を使うようにした。
+  setFilename(): Dorothy.setFilename() ���g���悤�ɂ����B
 
 2014-06-08  version 20140608.0  rentan at rentan.org
-  setFilename(): Dorothy.getItemFilename() を使うようにした。
+  setFilename(): Dorothy.getItemFilename() ���g���悤�ɂ����B
 
 2014-05-23  version 20140523.0  rentan at rentan.org
-  ._extractExt(): トップレベルドメインや、[?#] 以降の文字列を拡張子
-  として見なすことがある不具合を修正。
+  ._extractExt(): �g�b�v���x���h���C����A[?#] �ȍ~�̕�������g���q
+  �Ƃ��Č��Ȃ����Ƃ�����s����C���B
 
-  .setFilename(): item.filename に [[rename]] が含まれる時に
-  ファイル名を上書きしない(動作が逆になっている)不具合を修正。
+  .setFilename(): item.filename �� [[rename]] ���܂܂�鎞��
+  �t�@�C�������㏑�����Ȃ�(���삪�t�ɂȂ��Ă���)�s����C���B
 
 2014-05-21  version 20140521.0  rentan at rentan.org
-  .buildFilename(), .setFilename(): 新規作成。
+  .buildFilename(), .setFilename(): �V�K�쐬�B
 
 2014-05-09  version 20140509.0  rentan at rentan.org
-  setYmdhms(): ゼロサプレスされた時刻(hh)に対応。
+  setYmdhms(): �[���T�v���X���ꂽ����(hh)�ɑΉ��B
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
 2013-09-27  version 3.0
-  definePPZ(): 新規。
+  definePPZ(): �V�K�B
 
 2012-11-19  version 2.0
-  zeroPadding(): 新規。
+  zeroPadding(): �V�K�B
 
 2012-07-11  version 1.0
-  新規作成。
+  �V�K�쐬�B
 
 
 [EOF]

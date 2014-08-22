@@ -1,17 +1,17 @@
 rentan_pack.dms
 
 
-ã„ãã¤ã‹ã®ã‚µã‚¤ãƒˆç”¨ã‚¹ã‚¯ãƒªãƒ—ãƒˆã®è©°ã‚åˆã‚ã›ã€‚
+‚¢‚­‚Â‚©‚ÌƒTƒCƒg—pƒXƒNƒŠƒvƒg‚Ì‹l‚ß‡‚í‚¹B
 
 
-ä½¿ç”¨æ–¹æ³•
+g—p•û–@
 ========
 
-è¨­å®šæ©Ÿèƒ½ã¯ã‚ã‚Šã¾ã›ã‚“ãŒã€ã‚¹ã‚¯ãƒªãƒ—ãƒˆã‚’æ›¸ãæ›ãˆãŸå ´åˆã¯è¨­å®šç”»é¢ã‹ã‚‰
-//match= è¡Œã®æ›´æ–°ãŒå‡ºæ¥ã¾ã™ã€‚
+İ’è‹@”\‚Í‚ ‚è‚Ü‚¹‚ñ‚ªAƒXƒNƒŠƒvƒg‚ğ‘‚«Š·‚¦‚½ê‡‚Íİ’è‰æ–Ê‚©‚ç
+//match= s‚ÌXV‚ªo—ˆ‚Ü‚·B
 
 
-å¯¾å¿œ URL
+‘Î‰ URL
 ========
 
 http://(ftp|download).vector.co.jp/
@@ -21,47 +21,47 @@ http://websunday.net/download/wallpaper/
 http://www.enterbrain.co.jp/fb/pc/(14gallery/14images|20omake/wallpaper)/
 http://www.chuable.net/
 
-ä»¥ä¸‹ã¯ã‚³ãƒ¡ãƒ³ãƒˆã‚¢ã‚¦ãƒˆã—ã¦ã‚ã‚Šã¾ã™ã€‚
+ˆÈ‰º‚ÍƒRƒƒ“ƒgƒAƒEƒg‚µ‚Ä‚ ‚è‚Ü‚·B
 
 http://i-bbs.sijex.net/imageDisp.jsp
 http://image.i-bbs.sijex.net/bbs/
 http://my.vector.co.jp/servlet/System.FileDownload/download/
 
 
-ä»•æ§˜ãƒ»åˆ¶é™äº‹é …
+d—lE§ŒÀ–€
 ==============
 
 
-å¤‰æ›´å±¥æ­´
+•ÏX—š—ğ
 ========
 
 2014-07-29  version 20140729.0  rentan at rentan.org
-  script Mode å¼•æ•°ã§å‹•ä½œãƒ¢ãƒ¼ãƒ‰ã‚’åˆ‡ã‚Šæ›¿ãˆã‚‹ã‚ˆã†ã«ã—ãŸã€‚
+  script Mode ˆø”‚Å“®ìƒ‚[ƒh‚ğØ‚è‘Ö‚¦‚é‚æ‚¤‚É‚µ‚½B
 
 2014-07-16  version 20140716.0  rentan at rentan.org
-  microsoft_tw å‰Šé™¤ã€chuable è¿½åŠ ã€‚
+  microsoft_tw íœAchuable ’Ç‰ÁB
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ã‚’é©ç”¨ã€‚
-  ã“ã®ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ UTF-8 ã«å¤‰æ›´ã€‚
+  GNU GPL v3 or later ‚ğ“K—pB
+  ‚±‚Ìƒtƒ@ƒCƒ‹‚ğ UTF-8 ‚É•ÏXB
 
-  rentan_pack.set ã§ common\EZDialog.dms ã‚’ä½¿ã‚ãªã„ã‚ˆã†ã«ã—ãŸã€‚
+  rentan_pack.set ‚Å common\EZDialog.dms ‚ğg‚í‚È‚¢‚æ‚¤‚É‚µ‚½B
 
 2013-04-28
-  ãƒ•ã‚¡ãƒŸé€šæ–‡åº«ã® URL å¤‰æ›´ã«å¯¾å¿œã€‚
+  ƒtƒ@ƒ~’Ê•¶ŒÉ‚Ì URL •ÏX‚É‘Î‰B
 
 2012-10-22
-  ã‚µãƒ³ãƒ‡ãƒ¼GENE-X ã®å¯¾å¿œ URL ãŒå›ºå®šã«ãªã£ã¦ã„ãŸä¸å…·åˆã‚’ä¿®æ­£ã€‚
+  ƒTƒ“ƒf[GENE-X ‚Ì‘Î‰ URL ‚ªŒÅ’è‚É‚È‚Á‚Ä‚¢‚½•s‹ï‡‚ğC³B
 
 2012-03-29
-  è¨­å®šãƒ—ãƒ­ã‚°ãƒ©ãƒ ã‚’ redirect.dms ã¨ rentan_pack.dms ã§å…±é€šåŒ–ã€‚
-  ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ã‚’ä¿å­˜ã™ã‚‹å ´æ‰€ã‚’ backup ãƒ•ã‚©ãƒ«ãƒ€ã«å¤‰æ›´ã€‚
+  İ’èƒvƒƒOƒ‰ƒ€‚ğ redirect.dms ‚Æ rentan_pack.dms ‚Å‹¤’Ê‰»B
+  ƒoƒbƒNƒAƒbƒv‚ğ•Û‘¶‚·‚éêŠ‚ğ backup ƒtƒHƒ‹ƒ_‚É•ÏXB
 
-  ä»¥ä¸‹ã®ã‚µã‚¤ãƒˆã‚’è¿½åŠ ã€‚
-    WEBã‚µãƒ³ãƒ‡ãƒ¼ ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰ãƒ»ã‚¹ã‚¿ã‚¸ã‚ª
+  ˆÈ‰º‚ÌƒTƒCƒg‚ğ’Ç‰ÁB
+    WEBƒTƒ“ƒf[ ƒ_ƒEƒ“ƒ[ƒhEƒXƒ^ƒWƒI
 
 2012-01-20
-  åˆæœŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã€‚
+  ‰Šúƒo[ƒWƒ‡ƒ“B
 
 
 [EOF]

@@ -1,87 +1,116 @@
 Dorothy2R by rentan
 
 
-Dorothy2R is modified version without permission of xor's Dorothy2.
-This is not intended for general use users.
+xor さんの Dorothy2 を、勝手に改変したものです。
+一般ユーザ向けではありません。
 
-Behavior is incompatible with Dorothy2.
-Site script works almost.
+Dorothy2 という素晴らしいソフトウェアを公開してくださった xor さんに
+感謝いたします。
 
-Do not request support about Dorothy2R to xor author of Dorothy2.
+動作が非互換なので注意して下さい。
+各サイト用のスクリプトはだいたい動作します。
+
+Dorothy2R に関する問い合わせを、Dorothy2 の作者である xor さんにしないこと。
 
 
-Environment
-===========
+動作環境
+========
 
 Windows Vista/7/8/8.1
 Irvine 1.3.1
-Dorothy2 latest version
+Dorothy2 最新版
 
 
-Usage
-=====
+使用方法
+========
 
-1. Install Dorothy2 to perfection.
+1. Dorothy2 の最新版が完全に動作する環境を構築する。
 
-2. Copy files to Dorothy2 folder.
+2. 各ファイルを対応フォルダにコピー。
 
-3. Check scripts at Irvine option setting dialog.
+3. Irvine 本体のオプション設定で各スクリプトにチェックを入れる。
 
-4. Uncheck Dorothy2A.dms at folder setting dialog.
+4. フォルダ設定で Dorothy2A.dms のチェックを外す。
 
-5. Check scripts at folder setting dialog.
+5. フォルダ設定で各スクリプトにチェックを入れる。
 
-6. Save setting by "Doroty2R setting".
-   (This creates scripts\Dorothy2R_ini.dms)
+6. 「Dorothy2R 設定」で上書き保存。
+   (これにより scripts\Dorothy2R_ini.dms が生成されます)
 
 
-Caution with Dorothy2
+Dorothy2 併用時の注意
 =====================
 
-- Do not check both Dorothy2A.dms and Dorothy2R_a.dms at same folder.
+・一つのフォルダの設定で Dorothy2A.dms と Dorothy2R_a.dms の両方に
+  チェックを入れないで下さい。
 
-- Save setting even by "douga donwload2 setting" not only
-  "Dorothy2R setting".
-
-
-Limitations
-===========
-
-- Use Dorothy2B.dms if needed.
-
-- Since not load xor.dms, scripts that rely on xor.dms does not work.
-
-- changeFileName() returns argument. Use NameBuilder#normalize() and/or
-  Utf8#decodeCharRef() instead of it.
+・「Dorothy2R 設定」では Dorothy2A.dms は更新されないので
+  「動画ダウンロード２設定」の方でも上書き保存して下さい。
 
 
-Dorothy object extentin
-=======================
+仕様・制限事項
+==============
+
+・Dorothy2B.dms に相当するスクリプトはありません。必要なら Dorothy2B.dms
+  がそのまま使えるはずです。
+
+・xor.dms を読み込まないようにしているので、それに依存するスクリプトは
+  動作しません(把握できていません)。
+
+・changeFileName() が引数をそのまま返すダミー関数になっています。代わりに
+  NameBuilder#normalize() や Utf8#decodeCharRef() を使って下さい。
+
+
+Dorothy オブジェクト拡張
+========================
 
 Dorothy.isDOA ... boolean
+  DOA からの実行時に true になる。
 
 Dorothy.doaVersion ... number
+  DOA のバージョン。Dorothy.isDOA == true の場合のみ定義される。
 
 Dorothy.edit (file)
-  file ... string: filename (full path)
-  return value ... nothing
+  file ... string: ファイルのフルパス名
+  戻り値 ... なし
+
+  file で指定したファイルをテキストエディタで開く(Irvine のオブション設定
+  で指定されていない場合は notepad.exe)。
 
 Dorothy.getSaveFolder ()
-  return value ... string: folder name (full path)
+  戻り値 ... string: フルパス名
+
+  ダウンロードしたファイルが保存されるパス名を返す。
 
 Dorothy.createSaveFolder (path)
-  path ... string: folder name
-  return value ... string: created folder name (full path)
+  path ... string: フォルダ名。
+  戻り値 ... string: 作成したフォルダ名(フルパス)。
+
+  保存フォルダ内にフォルダを作成する。
 
 Dorothy.getItemFilename ()
-  return value ... string: item.filename
+  戻り値 ... string: item.filename の値
+
+  item.filename に設定されている保存ファイル名を返す。
+
+  値が指定されている場合でも、無視する設定値の場合は空文字列を返す。
+  該当するものとしては [[rename]] があるが、現在は無効化されており
+  単に item.filename をそのまま返すだけの関数となっている。
 
 Dorothy.setUrl (url, referer)
   url ... string: URL
-  referer ... string: referer (omittable)
+  referer ... string: リファラ(省略可)
+
+  urlinfo.url に URL を、headers.Host にホスト名を設定し、headers.Cookie
+  を空にする。また、referer 指定時は headers.Referer に設定する。
 
 Dorothy.setFilename (filename)
-  filename ... string: filename
+  filename ... string: ファイル名
+
+  item.filename にファイル名を設定する。
+
+  ファイル名にユーザーが指定したファイル名コマンドが含まれない場合に、
+  Dorothy.fileName への書き込みの代わりに呼び出す。
 
 
 Dorothy.search.init ()
@@ -91,155 +120,159 @@ Dorothy.loadProgram ()
 Dorothy.validateCommon ()
 Dorothy.init ()
 Dorothy.loadDorothyIni ();
+  システム側開発者向けのため省略。
 
 
-ChangeLog
-=========
+変更履歴
+========
 
 2014-08-15  version 20140815.0  rentan at rentan.org
 Dorothy2\system\menu\help\document.dms
-  remove splitter and radio button in doc.dfm
-
-  translate into English this file (sorry for my broken English)
+  doc.dfm のスプリッタとラジオボタンを削除するようにした。
 
 2014-07-29  version 20140729.0  rentan at rentan.org
 scripts\Dorothy2R_set.dms
-  update Dorothy.rVersion
+  Dorothy.rVersion を更新。
 
 scripts\Dorothy2R_a.dms
-  add joint()
+  xor.dms joint() の互換関数を実装。
 
 Dorothy2/common/spec/dorothy2r_spec.dms
-  new script
+  新規作成。
 
 scripts\Dorothy2R_doa_list.dms
-  minor changes
+  少し読みやすく。
 
 2014-07-19  version 20140719.0  rentan at rentan.org
 scripts\Dorothy2R_set.dms
-  implement editor()
+  editor() がメニューから実行するコマンド内で使用されていたので、
+  とりあえずの対処として再実装。
 
 2014-07-18  version 20140718.0  rentan at rentan.org
 scripts\Dorothy2R_a.dms
-  add program_load()
-  add Dorothy.setUrl(), .setFilename()
+  program_load() を再実装。
+  Dorothy.setUrl(), .setFilename() を追加。
 
 scripts\Dorothy2R_set.dms
-  update Dorothy.rVersion to 20140718
+  Dorothy.rVersion を 20140718 に変更。
 
 2014-07-02  version 20140702.0  rentan at rentan.org
 scripts\Dorothy2R_set.dms
-  support document written in UTF-8
-  add DorothySetting object
+  UTF-8 で記述されたドキュメントを表示する際に化けないようにした。
+  DorothySetting オブジェクトを追加。
 
 Dorothy2\system\menu\help\document.dms
-  new script replacing Dorothy2's doc.dms version 1.0
+  新規作成。Dorothy2 の doc.dms version 1.0 に相当。
 
 2014-06-26  version 20140626  rentan at rentan.org
 scripts\Dorothy2R_doa_list.dms
-  add folderdata.HttpMethod emulation
+  folderdata.HttpMethod の偽装を追加。
 
 2014-06-11  rentan at rentan.org
 scripts\Dorothy2R_a.dms  version 20140611
-  fix headers.Host when using nulUrl
+  nulUrl を使用した自動削除時に headers.Host を書き換えていなかった不具合
+  を修正。
 
 2014-06-08  rentan at rentan.org
 scripts\Dorothy2R_a.dms  version 20140608
-  add Dorothy.getItemFilename()
+  Dorothy.getItemFilename(): 新規メソッド。
 
-  minor changes about Dorothy.fileName
+  Dorothy.fileName の設定まわりを整理。
 
 2014-05-21  rentan at rentan.org
 
 scripts\Dorothy2R_a.dms  version 20140521
-  add Dorothy.getSaveFolder(), .createSaveFolder()
-  add Dorothy.isDOA
+  Dorothy.getSaveFolder(), .createSaveFolder(): メソッド追加。
+  Dorothy.isDOA: 新規プロパティ。
 
-  remake Dorothy.fileName
-  change [[cd=...]] save behaviro as [[md=...]]
-  Dorothy2R use nulUrl/nulProxy when remove
+  Dorothy.fileName の処理を作り直し。
+  [[cd=...]] を [[md=...]] と同じ動作に変更。
+  remove 時に nulUrl/nulProxy を Dorothy2R 本体で設定するようにした。
 
 scripts\Dorothy2R_set.dms  version 20140521
-  update Dorothy.rVersion
+  Dorothy.rVersion を更新。
 
 scripts\Dorothy2R_listmenu.dms  version 20140521
-  unify calling text editor to editFiles()
+  テキストエディタ呼び出しを editFiles() に統一。
 
 scripts\Dorothy2R_doa_list.dms  version 20140521
-  set Dorothy.isDOA to true
-  update Dorothy.doaVersion to 0.23
+  Dorothy.isDOA を true にする。
+  Dorothy.doaVersion を 0.23 に変更。
 
-  DOA.link receives array when DOA.status == DOA_LK
+  DOA.status == DOA_LK の時に DOA.link に配列を渡せるようにした。
+  複数の URL が格納されていれば DOA_LS として扱う。
 
 2014-05-12  rentan at rentan.org
 
 scripts\Dorothy2R_doa_list.dms  version 20140512
-  fix status line
+  ステータス行の結果表示が正しくない不具合を修正。
 
 2014-05-07  rentan at rentan.org
 
 scripts\Dorothy2R_ini.dms
-  independent user setting script generated by Dorothy2R_set.dms
+  ユーザ設定の独立スクリプト。Dorothy2R_set.dms により生成される。
 
-  change Dorothy.matchList structure
+  Dorothy.matchList: オブジェクト構造を変更。
 
-  define Dorothy.temp from Dorothy.path or string literal
+  Dorothy.temp: Dorothy.path から算出する。ユーザー定義時は文字列。
 
-  add Dorothy.rVersion
+  Dorothy.rVersion: Dorothy2R のバージョン番号(整数)を追加。
+  スクリプト間のバージョン確認については仕様未確定につき未実装。
 
-  add Dorothy.nulUrl, Dorothy.nulProxy
+  Dorothy.nulUrl, Dorothy.nulProxy: 追加。仕様未確定。
 
 scripts\Dorothy2R_a.dms  version 20140507
-  new script based on Dorothy2's Dorothy2A.dms version 0.31
-  implementation part of xor is a work of his
+  Dorothy2 の Dorothy2A.dms version 0.31 を元に作成。
+  xor さんの記述部分については氏の著作権です。
 
-  change script structure
-  separate user setting to Dorothy2R_ini.dms
-  do not load xor.dms
+  スクリプト構造を大幅に変更。
+  ユーザ設定を Dorothy2R_ini.dms に分離。
+  xor.dms を読み込まないようにした。
 
-  remove common_reload(), program_load(), reset()
+  common_reload(), program_load(), reset(): 削除。
 
-  implement irvinePath as object
-  add changeFileName() as dummy function
+  irvinePath: オブジェクトとして実装。
+  changeFileName(): 引数を変換せずそのまま返すダミー関数として追加。
 
-  add Dorothy.init(), Dorothy.loadDorothyIni(), Dorothy.search.init(),
-  Dorothy.search.next()
+  Dorothy.init(), Dorothy.loadDorothyIni(), Dorothy.search.init(),
+  Dorothy.search.next(): 新規メソッド。Dorothy2R_listmenu.dms のような
+  Dorothy2R の周辺スクリプト用。
 
-  add Dorothy.edit()
+  Dorothy.edit(): 新規メソッド。
 
 scripts\Dorothy2R_set.dms  version 20140507
-  new script based on Dorothy2's Dorothy2set.dms version 0.19
-  implementation part of xor is a work of his
+  Dorothy2 の Dorothy2set.dms version 0.19 を元に作成。
+  xor さんの記述部分については氏の著作権です。
 
-  define Dorothy2 basic functions by Dorothy2R_a.dms
-  save user setting to Dorothy2R_ini.dms
-  remove clone feature
-  do not save header.ini
+  Dorothy2 基本機能を自前で定義せず、Dorothy2R_a.dms を読み込む。
+  ユーザ設定を Dorothy2R_ini.dms に保存するようにした。
+  その関係でクローン機能を削除。
+  header.ini を保存しないようにした。
 
 scripts\Dorothy2R_listmenu.dms  version 20140507
-  new script based on Dorothy2's Dorothy2ListMenu.dms version 0.42
+  新規作成。Dorothy2 の Dorothy2ListMenu.dms version 0.42 に相当。
 
-  define Dorothy2 basic functions by Dorothy2R_a.dms
-  load user setting from Dorothy2R_ini.dms
+  Dorothy2 基本機能を自前で定義せず、Dorothy2R_a.dms を読み込む。
+  ユーザ設定を Dorothy2R_ini.dms から読み込む。
 
 scripts\Dorothy2R_doa_list.dms  version 20140507
-  new script based on Dorothy2's DOA.dms version 0.23
-  implementation part of xor is a work of his
+  Dorothy2 の DOA.dms version 0.23 を元に作成。
+  xor さんの記述部分については氏の著作権です。
 
-  move functions into OnListMenuClick()
-  do not load xor.dms
+  関数を OnListMenuClick() 内に移動。
+  xor.dms を読み込まないようにした。
 
-  add Dorothy.doaVersion
-  add dummy to folderdata.Folder
+  Dorothy.doaVersion: DOA 本体のバージョン番号を追加。
+  folderdata.Folder: ダミー情報を追加。
 
 scripts\Dorothy2R_doa_tree.dms  version 20140507
-  new script based on Dorothy2's xor100813_2.dms version 0
+  新規作成。Dorothy2 の xor100813_2.dms version 0 に相当。
 
 Dorothy2\system\menu\set\usersetting.dms  version 20140507.0
-  new script
+  新規作成。
 
-  unified features same as Dorothy2's user_name.dms version 1.0
-  and common.dms version 1.0
+  Dorothy2 の user_name.dms version 1.0 と common.dms version 1.0
+  に相当する機能も統合した。
 
 
 [EOF]

@@ -1,124 +1,124 @@
 tinami.dms
 
 
-TINAMI 用のスクリプトです。
+TINAMI �p�̃X�N���v�g�ł��B
 
-使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分
-ご注意下さい。
+�g�����ɂ���Ă͐ڑ���T�[�o�ɍ������ׂ��|���Ă��܂����Ƃ�����̂ŁA�\��
+�����Ӊ������B
 
-一括ダウンロード時に HTML 解析に失敗するようなことがあるかも知れないので、
-ファイルを取りこぼしていないか必ず確認して下さい。
+�ꊇ�_�E�����[�h���� HTML ��͂Ɏ��s����悤�Ȃ��Ƃ����邩���m��Ȃ��̂ŁA
+�t�@�C������肱�ڂ��Ă��Ȃ����K���m�F���ĉ������B
 
 
-使用方法
+�g�p���@
 ========
 
-以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
-  ツール → メインメニュー → 動画ダウンロード設定２
-  プログラムを右クリック → 設定
+�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
+  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
+  �v���O�������E�N���b�N �� �ݒ�
 
 
-対応 URL
+�Ή� URL
 ========
 
 http://img.tinami.com/
-  画像ファイル
+  �摜�t�@�C��
 
 http://www.tinami.com/view/\d+
-  作品ページ
-  漫画の場合は全画像をダウンロード。
-  小説の場合はそのページ自体（HTML）と全画像をダウンロード。
+  ��i�y�[�W
+  ����̏ꍇ�͑S�摜���_�E�����[�h�B
+  �����̏ꍇ�͂��̃y�[�W���́iHTML�j�ƑS�摜���_�E�����[�h�B
 
 http://www.tinami.com/search/list?prof_id=\d+
-  作品一覧のページ
-  そのページに表示されている全作品をダウンロード。
+  ��i�ꗗ�̃y�[�W
+  ���̃y�[�W�ɕ\������Ă���S��i���_�E�����[�h�B
 
 http://www.tinami.com/creator/profile/\d+
-  プロフィールのページ
-  その作者の全作品をダウンロード。
+  �v���t�B�[���̃y�[�W
+  ���̍�҂̑S��i���_�E�����[�h�B
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
-・ログインの必要な作品は Internet Explorer（保護モード無効）でログインしておく
-  必要があります。
+�E���O�C���̕K�v�ȍ�i�� Internet Explorer�i�ی샂�[�h�����j�Ń��O�C�����Ă���
+  �K�v������܂��B
 
 
-変更履歴
+�ύX����
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
-  古い形式のファイル名変数を削除。
+  �Â��`���̃t�@�C�����ϐ����폜�B
     %CONT_ID% %MANGA_PAGES% %MANGA_P% %MANGA_PZ%
 
 2013-07-13
-  モデル作品の複数画像に対応。設定ファイルを使用している場合は
-  [Filename] Model= に %P% などを追加して下さい。
+  ���f����i�̕����摜�ɑΉ��B�ݒ�t�@�C�����g�p���Ă���ꍇ��
+  [Filename] Model= �� %P% �Ȃǂ�ǉ����ĉ������B
 
-  ファイル名変数(過去の形式も残してあります)
-    %PAGES%  %MANGA_PAGES% から変更
-    %P%      %MANGA_P% から変更
-    %PZ%     %MANGA_PZ% から変更
+  �t�@�C�����ϐ�(�ߋ��̌`�����c���Ă���܂�)
+    %PAGES%  %MANGA_PAGES% ����ύX
+    %P%      %MANGA_P% ����ύX
+    %PZ%     %MANGA_PZ% ����ύX
 
 2012-11-19
-  Cookie 取得ライブラリを common\browsercookie.dms に変更し、
-  IE(保護モード)、Firefox、Chrome、CEF に対応。
+  Cookie �擾���C�u������ common\browsercookie.dms �ɕύX���A
+  IE(�ی샂�[�h)�AFirefox�AChrome�ACEF �ɑΉ��B
 
-  PageOrigin=0 の時 %MANGA_PZ% に余計な 0 が付くことがある不具合を修正。
+  PageOrigin=0 �̎� %MANGA_PZ% �ɗ]�v�� 0 ���t�����Ƃ�����s����C���B
 
 2012-07-11
-  大幅に変更。
+  �啝�ɕύX�B
 
-  ファイル名変数 %ID% %CONT_ID% から変更
+  �t�@�C�����ϐ� %ID% %CONT_ID% ����ύX
 
 2012-03-29
-  common\{http,utf8}.dms を使うようにした。
+  common\{http,utf8}.dms ���g���悤�ɂ����B
 
-  一覧ページを処理した後のダミー URL (Google) にも Google の Cookie を
-  読み込んで設定していた不具合を修正。
+  �ꗗ�y�[�W������������̃_�~�[ URL (Google) �ɂ� Google �� Cookie ��
+  �ǂݍ���Őݒ肵�Ă����s����C���B
 
 2012-01-19
-  Dorothy.userPath、Dorothy.userIniPath を使うようにした。
-  .ini ファイルの読み込みを common\fnutil.dms に実装。
-  commmon\HTML.dms を使うようにした。
+  Dorothy.userPath�ADorothy.userIniPath ���g���悤�ɂ����B
+  .ini �t�@�C���̓ǂݍ��݂� common\fnutil.dms �Ɏ����B
+  commmon\HTML.dms ���g���悤�ɂ����B
 
-  画像がダウンロード出来なくなっていたのを修正。
+  �摜���_�E�����[�h�o���Ȃ��Ȃ��Ă����̂��C���B
 
 2011-12-05
-  ヘッダの match= を修正。コメント（フィルタリング設定）を修正。
+  �w�b�_�� match= ���C���B�R�����g�i�t�B���^�����O�ݒ�j���C���B
 
-  remove_this() を common/fnutil.dms に移動。
-  ソースの簡素化のため、common_load() を冒頭で一括して行うようにした。
+  remove_this() �� common/fnutil.dms �Ɉړ��B
+  �\�[�X�̊ȑf���̂��߁Acommon_load() ��`���ňꊇ���čs���悤�ɂ����B
 
 2011-09-06
-  簡易設定機能を追加（.ini ファイルを開く）。
+  �ȈՐݒ�@�\��ǉ��i.ini �t�@�C�����J���j�B
 
-  動作には関係ないソースコードの変更:
-    { saveas: ～ } を { Filename: ～ } に変更。
+  ����ɂ͊֌W�Ȃ��\�[�X�R�[�h�̕ύX:
+    { saveas: �` } �� { Filename: �` } �ɕύX�B
 
 2011-08-31
-  作品一覧のページを指定した場合は、そのページ内の全作品をダウンロード
-  するようにした。また、プロフィールページを指定した場合は、その作者の
-  全作品をダウンロードするようにした。
+  ��i�ꗗ�̃y�[�W���w�肵���ꍇ�́A���̃y�[�W���̑S��i���_�E�����[�h
+  ����悤�ɂ����B�܂��A�v���t�B�[���y�[�W���w�肵���ꍇ�́A���̍�҂�
+  �S��i���_�E�����[�h����悤�ɂ����B
 
-  R-15 作品のダウンロードに対応。なお、作品一覧やプロフィールページから
-  ダウンロードするなら、ユーザープロフィールの編集で「アダルトコンテンツ
-  の表示」を「する」に設定しておくとよい（「しない」だと検索結果に表示
-  されないので）。
+  R-15 ��i�̃_�E�����[�h�ɑΉ��B�Ȃ��A��i�ꗗ��v���t�B�[���y�[�W����
+  �_�E�����[�h����Ȃ�A���[�U�[�v���t�B�[���̕ҏW�Łu�A�_���g�R���e���c
+  �̕\���v���u����v�ɐݒ肵�Ă����Ƃ悢�i�u���Ȃ��v���ƌ������ʂɕ\��
+  ����Ȃ��̂Łj�B
 
-  リストダウンロード処理を common\download_list.dms に分離。
+  ���X�g�_�E�����[�h������ common\download_list.dms �ɕ����B
 
-  ファイル名生成処理を common\filename.dms に分離。文字参照の変換を
-  character_references() ではなく自前で行うようにした。
+  �t�@�C�������������� common\filename.dms �ɕ����B�����Q�Ƃ̕ϊ���
+  character_references() �ł͂Ȃ����O�ōs���悤�ɂ����B
 
-  POST 処理を common\post.dms で行うようにした。
+  POST ������ common\post.dms �ōs���悤�ɂ����B
 
 2011-08-12
-  初期バージョン。
+  �����o�[�W�����B
 
 
 [EOF]

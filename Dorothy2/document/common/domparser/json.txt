@@ -1,14 +1,34 @@
-common\domparser\json.dms  for Dorothy2
+common\domparser\json.dms
 
 
-DOMParser/JSON
+DOMParser/JSON のオレオレ定義な実装です。
+
+まだ仕様が確定していません。
+バージョンアップに伴い仕様が変更される可能性があります。
+
+動作テストが不十分です。
+
+EInvalidPointer エラーが発生することがあるため、実用的では
+ありません。
 
 
-ChangeLog
-=========
+使用方法
+========
+
+省略。
+
+
+仕様・制限事項
+==============
+
+・内部で DOMJson オブジェクトを定義して使用しています。
+
+
+変更履歴
+========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  first release
+  新規作成。
 
 
 [EOF]

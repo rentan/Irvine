@@ -1,91 +1,91 @@
 twitter_r.dms
 
 
-Twitter 用のスクリプトです。
+Twitter �p�̃X�N���v�g�ł��B
 
 
-使用方法
+�g�p���@
 ========
 
-以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
-  ツール → メインメニュー → 動画ダウンロード設定２
-  プログラムを右クリック → 設定
+�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
+  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
+  �v���O�������E�N���b�N �� �ݒ�
 
 
-対応 URL
+�Ή� URL
 ========
 
 https://twitter.com/[^/]+/status(es)?/\d+
-  ツイート
-  そのツイートに添付されている画像/動画をダウンロード。
+  �c�C�[�g
+  ���̃c�C�[�g�ɓY�t����Ă���摜/������_�E�����[�h�B
 
 https?://twitter.com/[^/]+/media
-  画像/動画一覧
-  画像/動画一覧に表示される作品をダウンロード。
+  �摜/����ꗗ
+  �摜/����ꗗ�ɕ\��������i���_�E�����[�h�B
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
 
-変更履歴
+�ύX����
 ========
 
 2014-07-29  version 20140729.0  rentan at rentan.org
-  script Mode 引数で動作モードを切り替えるようにした。
+  script Mode �����œ��샂�[�h��؂�ւ���悤�ɂ����B
 
 2014-07-18  version 20140718.0  rentan at rentan.org
-  .getImage() を .get() にリネーム。
-  .setFilename() を削除。
+  .getImage() �� .get() �Ƀ��l�[���B
+  .setFilename() ���폜�B
 
 2014-07-14  version 20140714.0  rentan at rentan.org
-  リプライ形式のツイートをダウンロードすると %USER_NAME% と %TITLE%
-  が正しくない不具合を修正。
+  ���v���C�`���̃c�C�[�g���_�E�����[�h����� %USER_NAME% �� %TITLE%
+  ���������Ȃ��s����C���B
     thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/527
 
-  Dorothy2\program\spec\twitter_r_spec.dms を新規作成。
+  Dorothy2\program\spec\twitter_r_spec.dms ��V�K�쐬�B
 
 2014-07-02  version 20140702.0  rentan at rentan.org
-  動画に対応。
+  ����ɑΉ��B
 
 2014-06-12  version 20140612.0  rentan at rentan.org
-  /media 指定時に
+  /media �w�莞��
     {"max_id":"-1","has_more_items":true,"items_html":""}
-  という JSON が返ってきたら正常終了とするようにした。
-  (それより古いツイートは取得していません)
+  �Ƃ��� JSON ���Ԃ��Ă����琳��I���Ƃ���悤�ɂ����B
+  (������Â��c�C�[�g�͎擾���Ă��܂���)
     thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/386
 
 2014-06-11  version 20140611.0  rentan at rentan.org
-  /media 指定時に最後のブロック内のツイートを無視する不具合を修正。
+  /media �w�莞�ɍŌ�̃u���b�N���̃c�C�[�g�𖳎�����s����C���B
     thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/377
 
 2014-05-25  version 20140525.0  rentan at rentan.org
-  /media 指定時にエラーが発生しても正常終了してしまう不具合を修正。
-  従来は :large 画像をダウンロードしていたが、より高解像度の :orig
-  をダウンロードするようにした。
+  /media �w�莞�ɃG���[���������Ă�����I�����Ă��܂��s����C���B
+  �]���� :large �摜���_�E�����[�h���Ă������A��荂�𑜓x�� :orig
+  ���_�E�����[�h����悤�ɂ����B
 
 2014-05-21  version 20140521.0  rentan at rentan.org
-  NameBuilder#buildFilename(), setFilename() を使うようにした。
+  NameBuilder#buildFilename(), setFilename() ���g���悤�ɂ����B
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  複数画像に対応。
-  プログラム構造を改善。
+  �����摜�ɑΉ��B
+  �v���O�����\�������P�B
 
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
 2013-11-27
-  サイト側の変更に対応。
-  //match= を変更しています。
+  �T�C�g���̕ύX�ɑΉ��B
+  //match= ��ύX���Ă��܂��B
 
 2013-04-17
-  URL や HTML、JSON の変更に対応。
+  URL �� HTML�AJSON �̕ύX�ɑΉ��B
 
 2012-11-19
-  HTML の変更に対応。
+  HTML �̕ύX�ɑΉ��B
 
 2012-09-18
-  初期バージョン。
+  �����o�[�W�����B
 
 
 [EOF]

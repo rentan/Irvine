@@ -1,42 +1,42 @@
 instagram_r.dms
 
 
-Instagram 用のスクリプトです（27.140 氏の instagram.27.140.dms とは別物）。
+Instagram �p�̃X�N���v�g�ł��i27.140 ���� instagram.27.140.dms �Ƃ͕ʕ��j�B
 
 
-使用方法
+�g�p���@
 ========
 
-以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
-  ツール → メインメニュー → 動画ダウンロード設定２
-  プログラムを右クリック → 設定
+�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
+  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
+  �v���O�������E�N���b�N �� �ݒ�
 
 
-対応 URL
+�Ή� URL
 ========
 
 http://instagr(.am|am.com)/p/[^/]+
-  画像のページ
+  �摜�̃y�[�W
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
 
-変更履歴
+�ύX����
 ========
 
 2014-05-21  version 20140521.0  rentan at rentan.org
-  HTML の変更に対応。
+  HTML �̕ύX�ɑΉ��B
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
-  HTML の変更に対応。
+  HTML �̕ύX�ɑΉ��B
 
 2012-10-22
-  初期バージョン。
+  �����o�[�W�����B
 
 
 [EOF]

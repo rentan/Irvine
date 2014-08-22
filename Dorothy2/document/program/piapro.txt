@@ -1,125 +1,125 @@
 piapro.dms
 
 
-piapro 用のスクリプトです。
+piapro �p�̃X�N���v�g�ł��B
 
-使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分ご
-注意下さい。
+�g�����ɂ���Ă͐ڑ���T�[�o�ɍ������ׂ��|���Ă��܂����Ƃ�����̂ŁA�\����
+���Ӊ������B
 
-一括ダウンロード時に HTML 解析に失敗するようなことがあるかも知れないので、
-ファイルを取りこぼしていないか必ず確認して下さい。
+�ꊇ�_�E�����[�h���� HTML ��͂Ɏ��s����悤�Ȃ��Ƃ����邩���m��Ȃ��̂ŁA
+�t�@�C������肱�ڂ��Ă��Ȃ����K���m�F���ĉ������B
 
 
-使用方法
+�g�p���@
 ========
 
-以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
-  ツール → メインメニュー → 動画ダウンロード設定２
-  プログラムを右クリック → 設定
+�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
+  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
+  �v���O�������E�N���b�N �� �ݒ�
 
-Rename=false にした場合は、フォルダ設定 → キューフォルダ → ファイル名の
-重複の設定を、「許可する」を選択し、「確認する」のチェックは外しておいた
-方がよいです(関連ファイルの処理で ?view=... が複数登録されるので)。
+Rename=false �ɂ����ꍇ�́A�t�H���_�ݒ� �� �L���[�t�H���_ �� �t�@�C������
+�d���̐ݒ���A�u������v��I�����A�u�m�F����v�̃`�F�b�N�͊O���Ă�����
+�����悢�ł�(�֘A�t�@�C���̏����� ?view=... �������o�^�����̂�)�B
 
 
-対応 URL
+�Ή� URL
 ========
 
 http://piapro.jp/[a-zA-Z][_0-9a-zA-Z]{3,24}
 http://piapro.jp/my_page/?view=content
-  ユーザーページ トップまたは投稿作品
-  その作者の全作品をダウンロード。
+  ���[�U�[�y�[�W �g�b�v�܂��͓��e��i
+  ���̍�҂̑S��i���_�E�����[�h�B
 
 http://piapro.jp/content_list/
-  ユーザーページまたはコラボページ → 各作品種類(オンガク等)
-  開始位置またはページ番号が指定されていればそのページ、
-  そうでなければ全ページの作品をダウンロード。
+  ���[�U�[�y�[�W�܂��̓R���{�y�[�W �� �e��i���(�I���K�N��)
+  �J�n�ʒu�܂��̓y�[�W�ԍ����w�肳��Ă���΂��̃y�[�W�A
+  �����łȂ���ΑS�y�[�W�̍�i���_�E�����[�h�B
 
-  1ページ目だけダウンロードしたい場合は &start_rec=0 または
-  &page=1 を付ける。
+  1�y�[�W�ڂ����_�E�����[�h�������ꍇ�� &start_rec=0 �܂���
+  &page=1 ��t����B
 
 http://piapro.jp/collabo_list/
-  ユーザーページ コラボ活動 → 各作品種類(オンガク等)
+  ���[�U�[�y�[�W �R���{���� �� �e��i���(�I���K�N��)
 
-  ページ番号が指定されていればそのページ、そうでなければ全ページの
-  作品をダウンロード。
+  �y�[�W�ԍ����w�肳��Ă���΂��̃y�[�W�A�����łȂ���ΑS�y�[�W��
+  ��i���_�E�����[�h�B
 
-  1ページ目だけダウンロードしたい場合は &page=1 を付ける。
+  1�y�[�W�ڂ����_�E�����[�h�������ꍇ�� &page=1 ��t����B
 
-  なおコラボ活動のトップページの場合は、エラー終了します。
+  �Ȃ��R���{�����̃g�b�v�y�[�W�̏ꍇ�́A�G���[�I�����܂��B
 
 http://piapro.jp/collabo/
-  コラボページ トップまたは投稿作品
-  そのコラボの全作品をダウンロード。
+  �R���{�y�[�W �g�b�v�܂��͓��e��i
+  ���̃R���{�̑S��i���_�E�����[�h�B
 
-  ※コラボによっては数百～数千作品もあるので注意。
+  ���R���{�ɂ���Ă͐��S�`�����i������̂Œ��ӁB
 
 http://piapro.jp/content/[0-9a-zA-Z]{16}
 http://piapro.jp/t/[-_0-9a-zA-Z]+
-  作品の HTML ページ
+  ��i�� HTML �y�[�W
 
 http://piapro.jp/download/
-  ファイルまたは関連データ
+  �t�@�C���܂��͊֘A�f�[�^
 
-  Cookie の設定のみ行います。ファイル名を指定したい場合は、作品の
-  HTML ページをダウンロードして下さい。
+  Cookie �̐ݒ�̂ݍs���܂��B�t�@�C�������w�肵�����ꍇ�́A��i��
+  HTML �y�[�W���_�E�����[�h���ĉ������B
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
-・設定で指定したブラウザでログインしておく必要があります。
+�E�ݒ�Ŏw�肵���u���E�U�Ń��O�C�����Ă����K�v������܂��B
 
-・ユーザーページ(トップまたは投稿作品)を指定した時、コラボ活動の作品は
-  ダウンロードされません。
+�E���[�U�[�y�[�W(�g�b�v�܂��͓��e��i)���w�肵�����A�R���{�����̍�i��
+  �_�E�����[�h����܂���B
 
 
-変更履歴
+�ύX����
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
-  古い形式のファイル名変数 %CONTENT_ID% %CONTENT_SHORT% を削除。
+  �Â��`���̃t�@�C�����ϐ� %CONTENT_ID% %CONTENT_SHORT% ���폜�B
 
 2013-07-13
-  サイト仕様の変更に対応。
+  �T�C�g�d�l�̕ύX�ɑΉ��B
 
-  ユーザーページ コラボ活動のトップページはエラー終了するようにした。
-  リンク先に作品が見つからなかった場合にもともと存在しないのか、抽出
-  できなかったかの区別ができないため。
+  ���[�U�[�y�[�W �R���{�����̃g�b�v�y�[�W�̓G���[�I������悤�ɂ����B
+  �����N��ɍ�i��������Ȃ������ꍇ�ɂ��Ƃ��Ƒ��݂��Ȃ��̂��A���o
+  �ł��Ȃ��������̋�ʂ��ł��Ȃ����߁B
 
 2012-11-19
-  Cookie 取得ライブラリを common\browsercookie.dms に変更し、
-  IE(保護モード)、Firefox、Chrome、CEF に対応。
+  Cookie �擾���C�u������ common\browsercookie.dms �ɕύX���A
+  IE(�ی샂�[�h)�AFirefox�AChrome�ACEF �ɑΉ��B
 
 2012-07-11
-  大幅に変更。
+  �啝�ɕύX�B
 
-  /t/～ 形式の「前のバージョン」の URL に対応。
+  /t/�` �`���́u�O�̃o�[�W�����v�� URL �ɑΉ��B
 
 2012-04-15
-  common\http.dms の仕様変更に対応。
+  common\http.dms �̎d�l�ύX�ɑΉ��B
 
 2012-03-29
-  common\{http,utf8}.dms を使うようにした。
-  ctype2ext.dms を使わないようにした。
+  common\{http,utf8}.dms ���g���悤�ɂ����B
+  ctype2ext.dms ���g��Ȃ��悤�ɂ����B
 
 2011-12-18
-  Dorothy.userPath、Dorothy.userIniPath を使うようにした。
-  .ini ファイルの読み込みを common\fnutil.dms に実装。
+  Dorothy.userPath�ADorothy.userIniPath ���g���悤�ɂ����B
+  .ini �t�@�C���̓ǂݍ��݂� common\fnutil.dms �Ɏ����B
 
 2011-12-05
-  ユーザーページからのダウンロードが出来ない不具合を修正。
+  ���[�U�[�y�[�W����̃_�E�����[�h���o���Ȃ��s����C���B
 
-  ヘッダの match= を修正。コメント（フィルタリング設定）を修正。
+  �w�b�_�� match= ���C���B�R�����g�i�t�B���^�����O�ݒ�j���C���B
 
-  remove_this() を common/fnutil.dms に移動。
-  ソースの簡素化のため、common_load() を冒頭で一括して行うようにした。
+  remove_this() �� common/fnutil.dms �Ɉړ��B
+  �\�[�X�̊ȑf���̂��߁Acommon_load() ��`���ňꊇ���čs���悤�ɂ����B
 
 2011-09-06
-  初期バージョン。
+  �����o�[�W�����B
 
 
 [EOF]

@@ -1,65 +1,65 @@
 getuploader_r.dms
 
 
-uploader.jp (*.getuploader.com) 用のスクリプトです。getuploader_ts.dms の
-後継バージョンで、コードは新規に書き下ろしたものです。
+uploader.jp (*.getuploader.com) �p�̃X�N���v�g�ł��Bgetuploader_ts.dms ��
+��p�o�[�W�����ŁA�R�[�h�͐V�K�ɏ������낵�����̂ł��B
 
 
-使用方法
+�g�p���@
 ========
 
-以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
-  ツール → メインメニュー → 動画ダウンロード設定２
-  プログラムを右クリック → 設定
+�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
+  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
+  �v���O�������E�N���b�N �� �ݒ�
 
-Timestamp=true の設定で使用する場合は、Touch= に touch コマンドのフルパス名
-を設定して下さい。
+Timestamp=true �̐ݒ�Ŏg�p����ꍇ�́ATouch= �� touch �R�}���h�̃t���p�X��
+��ݒ肵�ĉ������B
 
-Irvine にアイテムを追加する際、URL の末尾に ?password=PASSWORD のように
-パスワードを設定できます。
+Irvine �ɃA�C�e����ǉ�����ہAURL �̖����� ?password=PASSWORD �̂悤��
+�p�X���[�h��ݒ�ł��܂��B
 
 
-対応 URL
+�Ή� URL
 ========
 
 http://u[^/.]+.getuploader.com/[^/]+/download/\d+
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
-・Irvine にダウンロードさせるのではなく、スクリプト内でダウンロード、ファイル
-  書き出ししています。
+�EIrvine �Ƀ_�E�����[�h������̂ł͂Ȃ��A�X�N���v�g���Ń_�E�����[�h�A�t�@�C��
+  �����o�����Ă��܂��B
 
-・touch コマンドは gnupack のもので動作確認しています。Cygwin や MinGW(MSYS)
-  のものは試していませんが、動作するかも知れません。
+�Etouch �R�}���h�� gnupack �̂��̂œ���m�F���Ă��܂��BCygwin �� MinGW(MSYS)
+  �̂��͎̂����Ă��܂��񂪁A���삷�邩���m��܂���B
 
-・～/download/1234/foo.zip といった URL で指定された場合は、リネームを防ぐため
-  ファイル名部分を削り ～/download/1234/ でダウンロードを再実行します。よって
-  可能なら最初からファイル名なしで指定した方が効率的です。
+�E�`/download/1234/foo.zip �Ƃ����� URL �Ŏw�肳�ꂽ�ꍇ�́A���l�[����h������
+  �t�@�C������������� �`/download/1234/ �Ń_�E�����[�h���Ď��s���܂��B�����
+  �\�Ȃ�ŏ�����t�@�C�����Ȃ��Ŏw�肵�����������I�ł��B
 
 
-変更履歴
+�ύX����
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
 2014-01-10
-  common\call.dms の代わりに common\exec.dms を使うようにした。
+  common\call.dms �̑���� common\exec.dms ���g���悤�ɂ����B
 
 2013-11-23
-  saveFolder() を使わないようにした。
+  saveFolder() ���g��Ȃ��悤�ɂ����B
 
 2013-07-13
-  閲覧パスワードの入力に対応。
+  �{���p�X���[�h�̓��͂ɑΉ��B
 
 2013-06-10
-  年齢確認に対応。
+  �N��m�F�ɑΉ��B
 
 2013-03-02
-  新規作成。
+  �V�K�쐬�B
 
 
 [EOF]

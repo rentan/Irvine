@@ -1,52 +1,52 @@
 poco2.dms
 
 
-www.poco2.jp 用のスクリプトです。
+www.poco2.jp �p�̃X�N���v�g�ł��B
 
-使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分
-ご注意下さい。
+�g�����ɂ���Ă͐ڑ���T�[�o�ɍ������ׂ��|���Ă��܂����Ƃ�����̂ŁA�\��
+�����Ӊ������B
 
-一括ダウンロード時に XML 解析に失敗するようなことがあるかも知れないので、
-ファイルを取りこぼしていないか必ず確認して下さい。
+�ꊇ�_�E�����[�h���� XML ��͂Ɏ��s����悤�Ȃ��Ƃ����邩���m��Ȃ��̂ŁA
+�t�@�C������肱�ڂ��Ă��Ȃ����K���m�F���ĉ������B
 
-このスクリプトは各サイトの利用規約で許諾されている範囲でのみ使用できます。
+���̃X�N���v�g�͊e�T�C�g�̗��p�K��ŋ�������Ă���͈͂ł̂ݎg�p�ł��܂��B
 
 
-使用方法
+�g�p���@
 ========
 
-設定機能はないので、カスタマイズしたい場合はスクリプトを書き換えて下さい。
+�ݒ�@�\�͂Ȃ��̂ŁA�J�X�^�}�C�Y�������ꍇ�̓X�N���v�g�����������ĉ������B
 
 
-対応 URL
+�Ή� URL
 ========
 
 http://www.poco2.jp/viewer/play.php?partid=.
 http://www.poco2.jp/(comic|novel)/[^/]+/
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
 
-変更履歴
+�ύX����
 ========
 
 2014-05-08  version 20140508.0  rentan at rentan.org
-  作品紹介ページを指定した場合は最新話をダウンロードするようにした。
+  ��i�Љ�y�[�W���w�肵���ꍇ�͍ŐV�b���_�E�����[�h����悤�ɂ����B
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  コンストラクタで .nameBuilder に空オブジェクトを設定するようにした。
+  �R���X�g���N�^�� .nameBuilder �ɋ�I�u�W�F�N�g��ݒ肷��悤�ɂ����B
 
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
 2013-10-14
-  Poco2Viewer オブジェクトを作り直し。
-  インデントを2スペースに変更。
+  Poco2Viewer �I�u�W�F�N�g����蒼���B
+  �C���f���g��2�X�y�[�X�ɕύX�B
 
 2013-07-13
-  初期バージョン。
+  �����o�[�W�����B
 
 
 [EOF]

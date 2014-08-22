@@ -1,13 +1,20 @@
-common\domparser\xml.dms  for Dorothy2
+common\domparser\xml.dms
 
 
-DOMParser/XML
+DOMParser/XML の擬似的な実装です。
+完全な実装ではありません。
 
-Because there is an EInvalidPointer error occurs, it is not practical.
+まだ仕様が確定していません。
+バージョンアップに伴い仕様が変更される可能性があります。
+
+動作テストが不十分です。
+
+EInvalidPointer エラーが発生することがあるため、実用的では
+ありません。
 
 
-Usage
-=====
+使用方法
+========
 
   var text = '<foo><bar /></foo>';
   var type = 'text/xml';
@@ -29,15 +36,22 @@ Usage
     }
   }
 
-See following document for details.
-- Dorothy2\common\domparser\core.txt
+詳しくは common\domparser\core.txt を参照して下さい。
 
 
-ChangeLog
-=========
+仕様・制限事項
+==============
+
+・内部で DOMXml オブジェクトを定義して使用しています。
+
+・パースに非常に時間がかかります。
+
+
+変更履歴
+========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  first release
+  新規作成。
 
 
 [EOF]

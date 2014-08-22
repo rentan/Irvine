@@ -1,10 +1,10 @@
 common\htmlform.dms
 
 
-HTML のフォームを扱うためのオブジェクトです。
+HTML �̃t�H�[�����������߂̃I�u�W�F�N�g�ł��B
 
 
-使用方法
+�g�p���@
 ========
 
   var src = '<form name="f1">...</form> <form name="f2">...</form>';
@@ -14,55 +14,55 @@ HTML のフォームを扱うためのオブジェクトです。
   var form = forms.getFormByName ('key');
 
 
-HtmlForms オブジェクト
-  HTML ソースコードを解析し、それに含まれるフォームを全て HtmlForm
-  オブジェクトとして取り込みます。
+HtmlForms �I�u�W�F�N�g
+  HTML �\�[�X�R�[�h����͂��A����Ɋ܂܂��t�H�[����S�� HtmlForm
+  �I�u�W�F�N�g�Ƃ��Ď�荞�݂܂��B
 
-  HtmlForm オブジェクトの数は length プロパティで、それぞれのオブジェクトは
-  '0' ... 'n' プロパティ(n は length - 1)で参照できます。
-  ただし HtmlForms オブジェクトは配列ではないため Array.pop() などのメソッド
-  は使えません。
+  HtmlForm �I�u�W�F�N�g�̐��� length �v���p�e�B�ŁA���ꂼ��̃I�u�W�F�N�g��
+  '0' ... 'n' �v���p�e�B(n �� length - 1)�ŎQ�Ƃł��܂��B
+  ������ HtmlForms �I�u�W�F�N�g�͔z��ł͂Ȃ����� Array.pop() �Ȃǂ̃��\�b�h
+  �͎g���܂���B
 
-HtmlForm オブジェクト
-  単一の <form> 要素を解析して取り込みます。HtmlForms のコンストラクタから
-  呼び出されますが、直接使うことも出来ます。
+HtmlForm �I�u�W�F�N�g
+  �P��� <form> �v�f����͂��Ď�荞�݂܂��BHtmlForms �̃R���X�g���N�^����
+  �Ăяo����܂����A���ڎg�����Ƃ��o���܂��B
 
 HtmlFormSelect
-  単一の <select> 要素を解析して取り込みます。HtmlForm のコンストラクタから
-  呼び出されます。
+  �P��� <select> �v�f����͂��Ď�荞�݂܂��BHtmlForm �̃R���X�g���N�^����
+  �Ăяo����܂��B
 
 
-HtmlForms オブジェクトのプロパティ
+HtmlForms �I�u�W�F�N�g�̃v���p�e�B
 ==================================
 
 length ... number
-  このオブジェクトに含まれる HtmlForm オブジェクトの数。
+  ���̃I�u�W�F�N�g�Ɋ܂܂�� HtmlForm �I�u�W�F�N�g�̐��B
 
-'0' ～ ... HtmlForm
-  HtmlForm オブジェクト。length == 0 の場合は存在しない。
+'0' �` ... HtmlForm
+  HtmlForm �I�u�W�F�N�g�Blength == 0 �̏ꍇ�͑��݂��Ȃ��B
 
 
-HtmlForms オブジェクトのメソッド
+HtmlForms �I�u�W�F�N�g�̃��\�b�h
 ================================
 
-コンストラクタ
+�R���X�g���N�^
 new HtmlForms (src, opt_url)
-  src ... Http または string
-  opt_url ... string: URL(省略可)
-  戻り値 ... HtmlForms インスタンス
+  src ... Http �܂��� string
+  opt_url ... string: URL(�ȗ���)
+  �߂�l ... HtmlForms �C���X�^���X
 
-  HtmlForms インスタンスを作成して返す。
+  HtmlForms �C���X�^���X���쐬���ĕԂ��B
 
-  src に Http オブジェクトを指定すると、src.data からコメント部分を
-  削除した HTML ソースを解析する。また、opt_url が省略されていれば
-  src.baseUrl を HTML の存在する URL として取り込む。
+  src �� Http �I�u�W�F�N�g���w�肷��ƁAsrc.data ����R�����g������
+  �폜���� HTML �\�[�X����͂���B�܂��Aopt_url ���ȗ�����Ă����
+  src.baseUrl �� HTML �̑��݂��� URL �Ƃ��Ď�荞�ށB
 
-  src に文字列を指定することもできるが、その場合はコメント部分の削除
-  は行われない。
+  src �ɕ�������w�肷�邱�Ƃ��ł��邪�A���̏ꍇ�̓R�����g�����̍폜
+  �͍s���Ȃ��B
 
-  例:
+  ��:
   var http = new Http ();
-  http.get (～);
+  http.get (�`);
   var forms = new HtmlForms (http);
   for (var i = 0; i < forms.length; ++i) {
     println (nameOf (forms [i]));
@@ -74,24 +74,24 @@ getFormByName (val)
 getFormByClass (val)
 getFormByAction (val)
 getFormByMethod (val)
-  val ... string: 属性値
-  戻り値 ... HtmlForm または null
+  val ... string: �����l
+  �߂�l ... HtmlForm �܂��� null
 
-  <form> タグの属性値が val で指定した値と一致するフォームを探し、
-  先頭のものを返す。見つからなければ null を返す。
+  <form> �^�O�̑����l�� val �Ŏw�肵���l�ƈ�v����t�H�[����T���A
+  �擪�̂��̂�Ԃ��B������Ȃ���� null ��Ԃ��B
 
-  getFormByMethod() は属性値の大文字小文字は同一視される。
+  getFormByMethod() �͑����l�̑啶���������͓��ꎋ�����B
 
 getFormsById (val)
 getFormsByName (val)
 getFormsByClass (val)
 getFormsByAction (val)
 getFormsByMethod (val)
-  val ... string: 属性値
-  戻り値 ... HtmlForm の配列または null
+  val ... string: �����l
+  �߂�l ... HtmlForm �̔z��܂��� null
 
-  <form> タグの属性値が val で指定した値と一致するフォームを全て探し、
-  配列として返す。見つからなければ null を返す。
+  <form> �^�O�̑����l�� val �Ŏw�肵���l�ƈ�v����t�H�[����S�ĒT���A
+  �z��Ƃ��ĕԂ��B������Ȃ���� null ��Ԃ��B
 
 getFormByElementId (val)
 getFormByElementName (val)
@@ -99,17 +99,17 @@ getFormByElementTagName (val)
 getFormByElementClass (val)
 getFormByElementType (val)
 getFormByElementValue (val)
-  val ... string: 属性値
-  戻り値 ... HtmlForm または null
+  val ... string: �����l
+  �߂�l ... HtmlForm �܂��� null
 
-  <form> 要素内にある <input> <select> <textarea> タグの属性値が
-  val で指定した値と一致するフォームを探し、先頭のものを返す。
-  見つからなければ null を返す。
+  <form> �v�f���ɂ��� <input> <select> <textarea> �^�O�̑����l��
+  val �Ŏw�肵���l�ƈ�v����t�H�[����T���A�擪�̂��̂�Ԃ��B
+  ������Ȃ���� null ��Ԃ��B
 
-  getFormByElementType() は属性値の大文字小文字は同一視される。
+  getFormByElementType() �͑����l�̑啶���������͓��ꎋ�����B
 
-  getFormByElementTagName() はタグ名と比較する。大文字小文字は
-  同一視される。
+  getFormByElementTagName() �̓^�O���Ɣ�r����B�啶����������
+  ���ꎋ�����B
 
 getFormsByElementId (val)
 getFormsByElementName (val)
@@ -117,22 +117,22 @@ getFormsByElementTagName (val)
 getFormsByElementClass (val)
 getFormsByElementType (val)
 getFormsByElementValue (val)
-  val ... string: 属性値
-  戻り値 ... HtmlForm の配列または null
+  val ... string: �����l
+  �߂�l ... HtmlForm �̔z��܂��� null
 
-  <form> 要素内にある <input> <select> <textarea> タグの属性値が
-  val で指定した値と一致するフォームを全て探し、配列として返す。
-  見つからなければ null を返す。
+  <form> �v�f���ɂ��� <input> <select> <textarea> �^�O�̑����l��
+  val �Ŏw�肵���l�ƈ�v����t�H�[����S�ĒT���A�z��Ƃ��ĕԂ��B
+  ������Ȃ���� null ��Ԃ��B
 
 
-HtmlForm オブジェクトのプロパティ
+HtmlForm �I�u�W�F�N�g�̃v���p�e�B
 =================================
 
-url ... string または null
-  コンストラクタの opt_url 引数で指定した URL。省略した場合は null。
+url ... string �܂��� null
+  �R���X�g���N�^�� opt_url �����Ŏw�肵�� URL�B�ȗ������ꍇ�� null�B
 
 outerHTML ... string
-  コンストラクタの src 引数で指定した HTML ソース。
+  �R���X�g���N�^�� src �����Ŏw�肵�� HTML �\�[�X�B
 
 'accept-charset' ... string
 action ... string
@@ -142,26 +142,26 @@ id ... string
 method ... string
 name ... string
 target ... string
-  <form> タグの属性値。指定されていない場合は空文字列。
+  <form> �^�O�̑����l�B�w�肳��Ă��Ȃ��ꍇ�͋󕶎���B
 
-elements ... 配列
-  フォーム要素のタグの配列。
+elements ... �z��
+  �t�H�[���v�f�̃^�O�̔z��B
   <input> <select> <textarea> <button>
 
 
-HtmlForm オブジェクトのメソッド
+HtmlForm �I�u�W�F�N�g�̃��\�b�h
 ===============================
 
-コンストラクタ
+�R���X�g���N�^
 new HtmlForm (src, opt_url)
   src ... string
-  opt_url ... string: URL(省略可)
-  戻り値 ... HtmlForm インスタンス
+  opt_url ... string: URL(�ȗ���)
+  �߂�l ... HtmlForm �C���X�^���X
 
-  HtmlForm インスタンスを作成して返す。
+  HtmlForm �C���X�^���X���쐬���ĕԂ��B
 
-  src には <form> 要素の HTML ソースを指定する。コメント部分の
-  削除は行われない。
+  src �ɂ� <form> �v�f�� HTML �\�[�X���w�肷��B�R�����g������
+  �폜�͍s���Ȃ��B
 
 getElementById (val)
 getElementByName (val)
@@ -169,16 +169,16 @@ getElementByTagName (val)
 getElementByClass (val)
 getElementByType (val)
 getElementByValue (val)
-  val ... string: 属性値
-  戻り値 ... タグのオブジェクトまたは null
+  val ... string: �����l
+  �߂�l ... �^�O�̃I�u�W�F�N�g�܂��� null
 
-  elements 配列からタグの属性値が val で指定した値と一致するもの
-  を探し、先頭のものを返す。見つからなければ null を返す。
+  elements �z�񂩂�^�O�̑����l�� val �Ŏw�肵���l�ƈ�v�������
+  ��T���A�擪�̂��̂�Ԃ��B������Ȃ���� null ��Ԃ��B
 
-  getElementByType() は属性値の大文字小文字は同一視される。
+  getElementByType() �͑����l�̑啶���������͓��ꎋ�����B
 
-  getElementByTagName() はタグ名と比較する。大文字小文字は同一視
-  される。
+  getElementByTagName() �̓^�O���Ɣ�r����B�啶���������͓��ꎋ
+  �����B
 
 getElementsById (val)
 getElementsByName (val)
@@ -186,11 +186,11 @@ getElementsByTagName (val)
 getElementsByClass (val)
 getElementsByType (val)
 getElementsByValue (val)
-  val ... string: 属性値
-  戻り値 ... タグのオブジェクトの配列または null
+  val ... string: �����l
+  �߂�l ... �^�O�̃I�u�W�F�N�g�̔z��܂��� null
 
-  elements 配列からタグの属性値が val で指定した値と一致するもの
-  を全て探し、配列として返す。見つからなければ null を返す。
+  elements �z�񂩂�^�O�̑����l�� val �Ŏw�肵���l�ƈ�v�������
+  ��S�ĒT���A�z��Ƃ��ĕԂ��B������Ȃ���� null ��Ԃ��B
 
 removeElementById (val)
 removeElementByName (val)
@@ -198,12 +198,12 @@ removeElementByTagName (val)
 removeElementByClass (val)
 removeElementByType (val)
 removeElementByValue (val)
-  val ... string: 属性値
-  戻り値 ... タグのオブジェクトまたは null
+  val ... string: �����l
+  �߂�l ... �^�O�̃I�u�W�F�N�g�܂��� null
 
-  elements 配列からタグの属性値が val で指定した値と一致するもの
-  を探し、先頭のものを削除してそのオブジェクトを返す。見つからな
-  ければ null を返す。
+  elements �z�񂩂�^�O�̑����l�� val �Ŏw�肵���l�ƈ�v�������
+  ��T���A�擪�̂��̂��폜���Ă��̃I�u�W�F�N�g��Ԃ��B�������
+  ����� null ��Ԃ��B
 
 removeElementsById (val)
 removeElementsByName (val)
@@ -211,66 +211,66 @@ removeElementsByTagName (val)
 removeElementsByClass (val)
 removeElementsByType (val)
 removeElementsByValue (val)
-  val ... string: 属性値
-  戻り値 ... タグのオブジェクトの配列または null
+  val ... string: �����l
+  �߂�l ... �^�O�̃I�u�W�F�N�g�̔z��܂��� null
 
-  elements 配列からタグの属性値が val で指定した値と一致するもの
-  を全て探し、削除してそのオブジェクトを配列として返す。見つから
-  なければ null を返す。
+  elements �z�񂩂�^�O�̑����l�� val �Ŏw�肵���l�ƈ�v�������
+  ��S�ĒT���A�폜���Ă��̃I�u�W�F�N�g��z��Ƃ��ĕԂ��B������
+  �Ȃ���� null ��Ԃ��B
 
 add (obj)
-  obj ... object: タグ名、属性値
-  戻り値 ... object
+  obj ... object: �^�O���A�����l
+  �߂�l ... object
 
-  obj で指定した引数に従って <input> <textarea> タグのオブジェクト
-  を作成し、elements 配列に追加してそのオブジェクトを返す。
+  obj �Ŏw�肵�������ɏ]���� <input> <textarea> �^�O�̃I�u�W�F�N�g
+  ���쐬���Aelements �z��ɒǉ����Ă��̃I�u�W�F�N�g��Ԃ��B
 
-  obj オブジェクトは以下の形式で指定する。
+  obj �I�u�W�F�N�g�͈ȉ��̌`���Ŏw�肷��B
     obj = {
-      tagName: タグ名,    // 'input' または 'textarea'
-      属性名: 属性値,
+      tagName: �^�O��,    // 'input' �܂��� 'textarea'
+      ������: �����l,
       ...
     };
 
 change (name, val)
-  name ... string: name 属性値
-  val ... string: 書き込む値
-  戻り値 ... タグのオブジェクトまたは null
+  name ... string: name �����l
+  val ... string: �������ޒl
+  �߂�l ... �^�O�̃I�u�W�F�N�g�܂��� null
 
-  elements 配列からタグの name 属性値が name で指定した値と一致する
-  ものを探し、先頭のオブジェクトの value 属性値を val で指定した値に
-  書き換えて、そのオブジェクトを返す。見つからなければ null を返す。
+  elements �z�񂩂�^�O�� name �����l�� name �Ŏw�肵���l�ƈ�v����
+  ���̂�T���A�擪�̃I�u�W�F�N�g�� value �����l�� val �Ŏw�肵���l��
+  ���������āA���̃I�u�W�F�N�g��Ԃ��B������Ȃ���� null ��Ԃ��B
 
 submit (element)
-  element ... object: 送信ボタンとして使用するタグのオブジェクト
-                (省略可)
-  戻り値 ... object
+  element ... object: ���M�{�^���Ƃ��Ďg�p����^�O�̃I�u�W�F�N�g
+                (�ȗ���)
+  �߂�l ... object
 
-  フォームを送信するためのデータを求め、オブジェクトとして返す。
+  �t�H�[���𑗐M���邽�߂̃f�[�^�����߁A�I�u�W�F�N�g�Ƃ��ĕԂ��B
 
-  戻り値は以下の形式。Http.exec() の引数としてそのまま渡すことが出来る。
+  �߂�l�͈ȉ��̌`���BHttp.exec() �̈����Ƃ��Ă��̂܂ܓn�����Ƃ��o����B
     result = {
-      method: メソッド,  // 'get' または 'post'
+      method: ���\�b�h,  // 'get' �܂��� 'post'
       url: URL,
-      postdata: 送信データ  // 'post' の場合のみ
+      postdata: ���M�f�[�^  // 'post' �̏ꍇ�̂�
     };
 
-  フォーム内のパラメータは、GET メソッドの場合は url に、POST
-  メソッドの場合は postdata に反映される。
+  �t�H�[�����̃p�����[�^�́AGET ���\�b�h�̏ꍇ�� url �ɁAPOST
+  ���\�b�h�̏ꍇ�� postdata �ɔ��f�����B
 
-  element として <input type="submit"> または <input type="image">
-  のタグのオブジェクトを指定すると、そのタグをクリックしたものとして
-  送信するデータを求める。省略した場合はそれらのタグのパラメータは
-  送信されない(<input type="text"> で Enter キーを押した場合の動作)。
+  element �Ƃ��� <input type="submit"> �܂��� <input type="image">
+  �̃^�O�̃I�u�W�F�N�g���w�肷��ƁA���̃^�O���N���b�N�������̂Ƃ���
+  ���M����f�[�^�����߂�B�ȗ������ꍇ�͂����̃^�O�̃p�����[�^��
+  ���M����Ȃ�(<input type="text"> �� Enter �L�[���������ꍇ�̓���)�B
 
-HtmlFormSelect オブジェクトのプロパティ
+HtmlFormSelect �I�u�W�F�N�g�̃v���p�e�B
 =======================================
 
 outerHTML ... string
-  コンストラクタの src 引数で指定した HTML ソース。
+  �R���X�g���N�^�� src �����Ŏw�肵�� HTML �\�[�X�B
 
 tagName ... string
-  タグ名 'select'。
+  �^�O�� 'select'�B
 
 disabled ... boolean
 multiple ... boolean
@@ -278,13 +278,13 @@ class ... string
 id ... string
 name ... string
 size ... string
-  <select> タグの属性値。
+  <select> �^�O�̑����l�B
 
 type ... string
-  常に空文字列(HtmlForm.elements 配列の仕様統一のため)。
+  ��ɋ󕶎���(HtmlForm.elements �z��̎d�l����̂���)�B
 
-options ... 配列
-  <option> タグの配列。
+options ... �z��
+  <option> �^�O�̔z��B
 
   [
     {
@@ -295,77 +295,77 @@ options ... 配列
       type: ''
       tagName: 'option',
       disabled: boolean,
-      selected: boolean  // 書き込み禁止
+      selected: boolean  // �������݋֎~
     },
     ...
   ]
 
 selectedIndex ... number
-  選択されている <option> タグのうちもっとも小さい番号。
-  multiple == true、かつ、一つも選択されていない場合は -1。
+  �I������Ă��� <option> �^�O�̂��������Ƃ��������ԍ��B
+  multiple == true�A���A����I������Ă��Ȃ��ꍇ�� -1�B
 
-  書き込み禁止。選択状態を変更したい場合は必ず select() メソッド
-  を使うこと。
+  �������݋֎~�B�I����Ԃ�ύX�������ꍇ�͕K�� select() ���\�b�h
+  ���g�����ƁB
 
 
-HtmlFormSelect オブジェクトのメソッド
+HtmlFormSelect �I�u�W�F�N�g�̃��\�b�h
 =====================================
 
-コンストラクタ
+�R���X�g���N�^
 new HtmlFormSelect (src)
   src ... string
-  戻り値 ... HtmlFormSelect インスタンス
+  �߂�l ... HtmlFormSelect �C���X�^���X
 
-  HtmlFormSelect インスタンスを作成して返す。
+  HtmlFormSelect �C���X�^���X���쐬���ĕԂ��B
 
-  src には <select> 要素の HTML ソースを指定する。コメント部分の
-  削除は行われない。
+  src �ɂ� <select> �v�f�� HTML �\�[�X���w�肷��B�R�����g������
+  �폜�͍s���Ȃ��B
 
 select (option, b)
-  option ... object: <option> タグのオブジェクト
-  b ... boolean: 選択状態
-  戻り値 ... boolean
+  option ... object: <option> �^�O�̃I�u�W�F�N�g
+  b ... boolean: �I�����
+  �߂�l ... boolean
 
-  option で指定した <option> タグを、b == true であれば選択し、
-  それ以外の場合は選択解除する。
+  option �Ŏw�肵�� <option> �^�O���Ab == true �ł���ΑI�����A
+  ����ȊO�̏ꍇ�͑I����������B
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
 
-変更履歴
+�ύX����
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
 2013-11-23  version 5.0
-  <button> に対応。
+  <button> �ɑΉ��B
 
-  <form> の閉じタグ(</form>)がない場合に末尾まで取り込むようにした。
+  <form> �̕��^�O(</form>)���Ȃ��ꍇ�ɖ����܂Ŏ�荞�ނ悤�ɂ����B
 
-  <input type='image'> で座標ではなく value の値を送ってしまう
-  不具合を修正(name.x=0&name.y=0 を送信するようにした)。
+  <input type='image'> �ō��W�ł͂Ȃ� value �̒l�𑗂��Ă��܂�
+  �s����C��(name.x=0&name.y=0 �𑗐M����悤�ɂ���)�B
 
-  タグの属性値で一般的なもの以外は無視するようにした。
-  (<input hasKey='foo'> のような記述への対策)
+  �^�O�̑����l�ň�ʓI�Ȃ��̈ȊO�͖�������悤�ɂ����B
+  (<input hasKey='foo'> �̂悤�ȋL�q�ւ̑΍�)
 
-  インデントを2スペースに変更。
+  �C���f���g��2�X�y�[�X�ɕύX�B
 
 2012-11-19  version 4.0
-  微調整。
+  �������B
 
 2012-10-22  version 3.0
-  HtmlForms.getForm(s)ByElement*(): 新規。
-  HtmlForm.getElement(s)ByTagName(): 新規。
+  HtmlForms.getForm(s)ByElement*(): �V�K�B
+  HtmlForm.getElement(s)ByTagName(): �V�K�B
 
 2012-07-29  version 2.0
-  <input type="checkbox"> に対応。
+  <input type="checkbox"> �ɑΉ��B
 
 2012-07-11  version 1.0
-  新規作成。
+  �V�K�쐬�B
 
 
 [EOF]

@@ -1,8 +1,11 @@
-common\getterobject.dms  for Dorothy2
+common\getterobject.dms
 
 
-Usage
-=====
+youtube_info.dms などから使用しているオブジェクトです。
+
+
+使用方法
+========
 
   common_load ('getterobject');
 
@@ -15,18 +18,20 @@ Usage
   var myobj = new MyObject ();
 
 
-GetterObject object's methods
-=============================
+GetterObject オブジェクトのプロパティ
+=====================================
 
 expand (obj)
-  obj ... object: object to expand
+  obj ... object: 拡張するオブジェクト
+
+  obj を拡張します。
 
 
-ChangeLog
-=========
+変更履歴
+========
 
 2014-08-16  version 20140816.0  rentan at rentan.org
-  first release
+  新規作成。
 
 
 [EOF]

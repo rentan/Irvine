@@ -1,73 +1,73 @@
 redirect.dms
 
 
-各種 URL 転送サイト用のスクリプトです。
+�e�� URL �]���T�C�g�p�̃X�N���v�g�ł��B
 
-Irvine のフィルタリング機能を転送先 URL に適用させるため、新しいアイテム
-を追加して転送元のアイテムは削除します。
+Irvine �̃t�B���^�����O�@�\��]���� URL �ɓK�p�����邽�߁A�V�����A�C�e��
+��ǉ����ē]�����̃A�C�e���͍폜���܂��B
 
-以下のいずれにも該当しない場合は使う意味はありません。
-・Irvine のフィルタリング機能を転送先の URL に適用させたい場合
-・p.tl など、302 以外の方法で転送するサイトを処理したい場合
-  (302 で転送するサイトは Irvine 自体で処理できるのでスクリプト不要)
+�ȉ��̂�����ɂ��Y�����Ȃ��ꍇ�͎g���Ӗ��͂���܂���B
+�EIrvine �̃t�B���^�����O�@�\��]����� URL �ɓK�p���������ꍇ
+�Ep.tl �ȂǁA302 �ȊO�̕��@�œ]������T�C�g�������������ꍇ
+  (302 �œ]������T�C�g�� Irvine ���̂ŏ����ł���̂ŃX�N���v�g�s�v)
 
-他のスクリプトが期待通りに動かない場合はこのスクリプトを無効にして原因
-の切り分けを行なって下さい。
+���̃X�N���v�g�����Ғʂ�ɓ����Ȃ��ꍇ�͂��̃X�N���v�g�𖳌��ɂ��Č���
+�̐؂蕪�����s�Ȃ��ĉ������B
 
 
-使用方法
+�g�p���@
 ========
 
-設定ファイルには対応していないので、動作のカスタマイズは直接スクリプト
-ファイルを書き換える必要があります。
+�ݒ�t�@�C���ɂ͑Ή����Ă��Ȃ��̂ŁA����̃J�X�^�}�C�Y�͒��ڃX�N���v�g
+�t�@�C��������������K�v������܂��B
 
-1) redirect.dms の編集
+1) redirect.dms �̕ҏW
 
-redirect.dms をテキストエディタで開きます。
+redirect.dms ���e�L�X�g�G�f�B�^�ŊJ���܂��B
 
-ファイル先頭近くにある
+�t�@�C���擪�߂��ɂ���
     Site: {
-から
+����
     }
-の間でサイト毎の有効(true)、無効(false)を切り替えることができます。
+�̊ԂŃT�C�g���̗L��(true)�A����(false)��؂�ւ��邱�Ƃ��ł��܂��B
 
-編集完了したらファイルを保存します。
+�ҏW����������t�@�C����ۑ����܂��B
 
-2) //match= の更新
+2) //match= �̍X�V
 
-以下の手順で設定ダイアログを開きます。
-  ツール → メインメニュー → 動画ダウンロード設定２
-  プログラムを右クリック → 設定
+�ȉ��̎菇�Őݒ�_�C�A���O���J���܂��B
+  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
+  �v���O�������E�N���b�N �� �ݒ�
 
-「//match= 更新」ボタンをクリックします。
+�u//match= �X�V�v�{�^�����N���b�N���܂��B
 
-「OK」ボタンで設定ダイアログを閉じます。
+�uOK�v�{�^���Őݒ�_�C�A���O����܂��B
 
-3) Dorothy2 のデータの更新
+3) Dorothy2 �̃f�[�^�̍X�V
 
-動画ダウンロード設定２の画面で編集 → データを再読込みを実行してから
-保存します。
+����_�E�����[�h�ݒ�Q�̉�ʂŕҏW �� �f�[�^���ēǍ��݂����s���Ă���
+�ۑ����܂��B
 
 
-動作について
+����ɂ���
 ============
 
-転送先 URL を新しいアイテムとして Irvine に追加し、実行中のアイテムは
-ダミー URL をダウンロードして自動削除します。
+�]���� URL ��V�����A�C�e���Ƃ��� Irvine �ɒǉ����A���s���̃A�C�e����
+�_�~�[ URL ���_�E�����[�h���Ď����폜���܂��B
 
-設定を ReQueue=false に変更すると元のアイテムのまま処理を続行します。
-(転送先が複数の場合は常にアイテムを追加します)
+�ݒ�� ReQueue=false �ɕύX����ƌ��̃A�C�e���̂܂܏����𑱍s���܂��B
+(�]���悪�����̏ꍇ�͏�ɃA�C�e����ǉ����܂�)
 
-以下のドキュメントも参照して下さい。
+�ȉ��̃h�L�������g���Q�Ƃ��ĉ������B
 
-・アイテム追加
+�E�A�C�e���ǉ�
   Dorothy2\document\common\additem.txt
 
 
-対応 URL
+�Ή� URL
 ========
 
-http://[0-9a-zA-Z]+.linkbucks.com/  ほか linkbucks 系サイト
+http://[0-9a-zA-Z]+.linkbucks.com/  �ق� linkbucks �n�T�C�g
 http://adf.ly/
 http://bit.ly/
 http://extlink.blogsys.jp/
@@ -87,117 +87,117 @@ http://wk.tk/
 http://ws1.y-bbs.net/
 
 
-仕様・制限事項
+�d�l�E��������
 ==============
 
-・フォルダ設定 → HTTP(1) → HTTP メソッドを GET に設定する必要があります。
+�E�t�H���_�ݒ� �� HTTP(1) �� HTTP ���\�b�h�� GET �ɐݒ肷��K�v������܂��B
 
 
-変更履歴
+�ύX����
 ========
 
 2014-07-29  version 20140729.0  rentan at rentan.org
-  script Mode 引数で動作モードを切り替えるようにした。
+  script Mode �����œ��샂�[�h��؂�ւ���悤�ɂ����B
 
 2014-07-16  version 20140716.0  rentan at rentan.org
-  linkbucks 系の仕様変更に対応。
+  linkbucks �n�̎d�l�ύX�ɑΉ��B
     thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/542
 
 2014-06-11  version 20140611.0  rentan at rentan.org
-  rutil で User-Agent のチェックを強化したのに伴い、linkbucks 系の
-  User-Agent 差し替え機能を削除。
+  rutil �� User-Agent �̃`�F�b�N�����������̂ɔ����Alinkbucks �n��
+  User-Agent �����ւ��@�\���폜�B
 
 2014-05-21  version 20140521.0  rentan at rentan.org
-  linkbucks 系で User-Agent が Mozilla/4.* の場合は Mozilla/5.0
-  の User-Agent に差し替えるようにした(403 Forbidden 対策)。
+  linkbucks �n�� User-Agent �� Mozilla/4.* �̏ꍇ�� Mozilla/5.0
+  �� User-Agent �ɍ����ւ���悤�ɂ���(403 Forbidden �΍�)�B
 
-  doaConstructor(): DOA_item_add() を使わずに Dorothy2R DOA の
-  拡張機能にまかせるようにした(Dorothy2 純正の DOA では動作しない)。
+  doaConstructor(): DOA_item_add() ���g�킸�� Dorothy2R DOA ��
+  �g���@�\�ɂ܂�����悤�ɂ���(Dorothy2 ������ DOA �ł͓��삵�Ȃ�)�B
 
 2014-05-12  version 20140512.0  rentan at rentan.org
-  freegaysitepass.com に対応。
+  freegaysitepass.com �ɑΉ��B
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
+  GNU GPL v3 or later ��K�p�B
+  ���̃t�@�C���� UTF-8 �ɕύX�B
 
-  redirect.set で common\EZDialog.dms を使わないようにした。
+  redirect.set �� common\EZDialog.dms ���g��Ȃ��悤�ɂ����B
 
-  linkbucks 系で loadTargetUrl 形式に対応。
+  linkbucks �n�� loadTargetUrl �`���ɑΉ��B
 
 2014-01-24
-  linkbucks 系でサブドメイン形式からサブディレクトリ形式への転送
-  を挟むケースに対応。
+  linkbucks �n�ŃT�u�h���C���`������T�u�f�B���N�g���`���ւ̓]��
+  �����ރP�[�X�ɑΉ��B
 
-  wk.tk に対応。
-  zpag.es を削除。
+  wk.tk �ɑΉ��B
+  zpag.es ���폜�B
 
 2013-11-29
-  内部構造を変更し、主要機能を UrlRedirector オブジェクトとして
-  独立化。複数 URL への転送に対応。
+  �����\����ύX���A��v�@�\�� UrlRedirector �I�u�W�F�N�g�Ƃ���
+  �Ɨ����B���� URL �ւ̓]���ɑΉ��B
 
-  lix.in に対応。
+  lix.in �ɑΉ��B
 
 2013-08-19
-  adf.ly の難読化形式に対応。
+  adf.ly �̓�ǉ��`���ɑΉ��B
     thanks to http://toro.2ch.net/test/read.cgi/win/1371715233/57
 
 2013-07-13
-  ow.ly の転送 URL 以外を無視するようにした。
-  adf.ly の暗号・難読化された形式をエラーにするようにした。
+  ow.ly �̓]�� URL �ȊO�𖳎�����悤�ɂ����B
+  adf.ly �̈Í��E��ǉ����ꂽ�`�����G���[�ɂ���悤�ɂ����B
 
 2013-06-18
-  linkbucks の別ドメインに対応。
+  linkbucks �̕ʃh���C���ɑΉ��B
     thanks to http://toro.2ch.net/test/read.cgi/win/1348568425/927
 
-  adf.ly の var zzz= 形式に対応。
+  adf.ly �� var zzz= �`���ɑΉ��B
     thanks to http://toro.2ch.net/test/read.cgi/win/1348568425/950
 
-  サイトの有効無効をスクリプト冒頭の default_ini.Site オブジェクトで
-  切り替えられるようにした。
+  �T�C�g�̗L���������X�N���v�g�`���� default_ini.Site �I�u�W�F�N�g��
+  �؂�ւ�����悤�ɂ����B
 
-  ほかサイト側の仕様変更に対応など修正いろいろ。
+  �ق��T�C�g���̎d�l�ύX�ɑΉ��ȂǏC�����낢��B
 
 2013-06-10
-  https://t.co/ への対応が不完全だった不具合を修正。
+  https://t.co/ �ւ̑Ή����s���S�������s����C���B
 
 2013-04-17
-  https://t.co/ に対応(従来は http:// のみだった)。
+  https://t.co/ �ɑΉ�(�]���� http:// �݂̂�����)�B
 
 2012-12-04
-  ReQueue=true の時、アイテムにコメントが設定されていればそれを新しい
-  アイテムに引き継ぐようにした(無い場合は従来通り元の URL を設定)。
+  ReQueue=true �̎��A�A�C�e���ɃR�����g���ݒ肳��Ă���΂����V����
+  �A�C�e���Ɉ����p���悤�ɂ���(�����ꍇ�͏]���ʂ茳�� URL ��ݒ�)�B
 
-  ws1.y-bbs.net を修正。
+  ws1.y-bbs.net ���C���B
 
 2012-11-19
-  ソースコード整理のみ。
+  �\�[�X�R�[�h�����̂݁B
 
 2012-08-02
-  エラー時にダウンロードスレッドを終了するようにした。
+  �G���[���Ƀ_�E�����[�h�X���b�h���I������悤�ɂ����B
 
 2012-07-29
-  adf.ly p.tl の仕様変更に対応。
+  adf.ly p.tl �̎d�l�ύX�ɑΉ��B
 
 2012-07-11
-  common\{rutil,additem}.dms を使うようにした。
+  common\{rutil,additem}.dms ���g���悤�ɂ����B
 
 2012-03-29
-  common\http.dms を使うようにした。
+  common\http.dms ���g���悤�ɂ����B
 
-  設定プログラムを redirect.dms と rentan_pack.dms で共通化。
-  バックアップを保存する場所を backup フォルダに変更。
+  �ݒ�v���O������ redirect.dms �� rentan_pack.dms �ŋ��ʉ��B
+  �o�b�N�A�b�v��ۑ�����ꏊ�� backup �t�H���_�ɕύX�B
 
-  http://adf.ly/go/～ のアドレスに対応。
+  http://adf.ly/go/�` �̃A�h���X�ɑΉ��B
 
 2012-02-15
-  tobeto.be を追加。
+  tobeto.be ��ǉ��B
 
 2012-01-24
-  zpag.es でリロード前に待機時間を入れた。効果があるかは不明。
+  zpag.es �Ń����[�h�O�ɑҋ@���Ԃ���ꂽ�B���ʂ����邩�͕s���B
 
 2012-01-20
-  初期バージョン。
+  �����o�[�W�����B
 
 
 [EOF]
