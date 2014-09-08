@@ -3,7 +3,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
 <title>JInput</title>
 <!--
-//version=20140331.0
+//version=20140908.0
 //author=rentan
 -->
 
@@ -110,7 +110,7 @@ function Contents (id) {
   this.div = document.getElementById (id);
 }
 
-Contents.prototype.image = function (src) {
+Contents.prototype.img = function (src) {
   var g = document.createElement ('img');
   g.src = src;
 
@@ -119,6 +119,10 @@ Contents.prototype.image = function (src) {
   g.removeAttribute ('height');
 
   this.div.appendChild (g);
+};
+
+Contents.prototype.image = function (src) {
+  this.img (src);
 };
 
 Contents.prototype.p = function (text) {
@@ -160,7 +164,7 @@ function analyzeArg (param, id) {
     var k = RegExp.$1;
     var v = RegExp.$2;
 
-    if (/^(image|p)$/.test (k)) {
+    if (/^(img|image|p)$/.test (k)) {
       contents [k] (v);
     }
     else if (/^(limit|extend|width|height|min|max)$/.test (k)) {

@@ -51,15 +51,16 @@ inputText (hta_opt)
     limit: 自動終了するまでの秒数,
     extend: キー入力後に自動終了するまでの秒数,
 
-    min: 最小文字数(規定値 1)
-    max: 最大文字数(規定値 255)
+    min: 最小文字数(規定値 1),
+    max: 最大文字数(規定値 255),
 
+    img: '画像URL',
     image: '画像データ',  // バイナリデータを string 型で指定
 
     p: '表示する文字列'
   };
 
-  image と p を両方指定する場合は
+  img、image、p などを複数指定する場合は
     hta_opt = [ { image: '...' }, { p: 'abc' } ];
   のように配列を使い別々のオブジェクトに分けること。
 
@@ -92,7 +93,7 @@ synchronize (func)
 
 ・min: 0 を指定すればテキストボックスが空でも OK ボタンで終了します。
 
-・現状では画像の指定は1ファイルのみです。
+・現状では画像データの指定は1ファイルのみです。
 
 ・inputText() 実行時に、Dorothy.temp で示されるフォルダに以下の一時ファイル
   を作成し、終了時に削除します。
@@ -102,6 +103,9 @@ synchronize (func)
 
 変更履歴
 ========
+
+2014-09-08  version 20140908.0  rentan at rentan.org
+  .inputText() に img: '画像URL' オプションを追加。
 
 2014-08-20  version 20140820.0  rentan at rentan.org
   キャンセルボタンで終了すると EIndexError になる不具合を修正。
