@@ -1,8 +1,7 @@
 getuploader_r.dms
 
 
-uploader.jp (*.getuploader.com) 用のスクリプトです。getuploader_ts.dms の
-後継バージョンで、コードは新規に書き下ろしたものです。
+uploader.jp (*.getuploader.com) 用のスクリプトです。
 
 
 使用方法
@@ -12,11 +11,46 @@ uploader.jp (*.getuploader.com) 用のスクリプトです。getuploader_ts.dms の
   ツール → メインメニュー → 動画ダウンロード設定２
   プログラムを右クリック → 設定
 
-Timestamp=true の設定で使用する場合は、Touch= に touch コマンドのフルパス名
-を設定して下さい。
+Irvine にアイテムを追加する際、URL の末尾に ?password=PASSWORD
+のようにパスワードを設定できます。
 
-Irvine にアイテムを追加する際、URL の末尾に ?password=PASSWORD のように
-パスワードを設定できます。
+
+タイムスタンプ設定
+==================
+
+設定により、ダウンロードしたファイルのタイムスタンプを、アップロード
+日時に変更することが出来ます。
+
+・Timestamp=
+  タイムスタンプを変更しません。
+
+・Timestamp=Touch
+  touch コマンドを呼び出してタイムスタンプを変更します。
+
+  Touch= に touch コマンドのフルパス名を設定して下さい。
+
+  touch コマンドは gnupack のもので動作確認しています。Cygwin や
+  MinGW(MSYS) のものは試していませんが、動作するかも知れません。
+
+  Irvine にダウンロードさせるのではなく、スクリプト内でファイル本体
+  をダウンロードし、ファイルに書き出した後に touch コマンドを実行
+  するという動作になります。
+
+  ～/download/1234/foo.zip といった URL で指定された場合は、リネームを
+  防ぐためファイル名部分を削り ～/download/1234/ でダウンロードを再実行
+  します。よって可能なら最初からファイル名なしで指定した方が効率的です。
+
+・Timestamp=ThreadStorage
+  ※ 実験的な機能です。
+  ※ ThreadStorage が実装されていない環境では指定できません。
+  ※ Dorothy2R OnHttpResponse スクリプトを有効にする必要があります。
+  ※ 分からなければ指定しないで下さい。
+
+  OnHttpResponse イベントで Last-Modified ヘッダを設定することにより
+  タイムスタンプを変更します。
+
+  getuploader_r.dms から OnHttpResponse イベントにデータを受け渡すために
+  Dorothy2R 拡張機能の ThreadStorage を使用します。
 
 
 対応 URL
@@ -28,19 +62,18 @@ http://u[^/.]+.getuploader.com/[^/]+/download/\d+
 仕様・制限事項
 ==============
 
-・Irvine にダウンロードさせるのではなく、スクリプト内でダウンロード、ファイル
-  書き出ししています。
-
-・touch コマンドは gnupack のもので動作確認しています。Cygwin や MinGW(MSYS)
-  のものは試していませんが、動作するかも知れません。
-
-・～/download/1234/foo.zip といった URL で指定された場合は、リネームを防ぐため
-  ファイル名部分を削り ～/download/1234/ でダウンロードを再実行します。よって
-  可能なら最初からファイル名なしで指定した方が効率的です。
-
 
 変更履歴
 ========
+
+2014-09-13  version 20140913.0  rentan at rentan.org
+  大幅に書き直し。getterobject を使うようにした。
+  実験的に ThreadStorage と OnHttpResponse によるタイムスタンプ変更
+  機能を実装。
+
+  過去版との互換のため、Timestamp= の設定は以下のように解釈します。
+    false → タイムスタンプ設定なし
+    true  → Touch
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
