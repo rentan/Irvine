@@ -1,0 +1,83 @@
+common\threadstorage.dms
+
+
+ダウンロードスレッドごとにデータを保存するオブジェクトです。
+
+下記関数を参考にさせていただいています。
+  http://peace.2ch.net/test/read.cgi/win/1394240473/791
+
+
+使用方法
+========
+
+// データを保存するスクリプト
+  common_load ('threadstorage');
+  var s = new ThreadStorage (Dorothy.temp + 'storage.ini');
+
+  s.setItem ('foo', '123');
+
+// データを読み込むスクリプト
+  common_load ('threadstorage');
+  var s = new ThreadStorage (Dorothy.temp + 'storage.ini');
+
+  var v = s.getItem ('foo');
+  s.removeItem ('foo');
+
+
+ThreadStorage オブジェクトのプロパティ
+======================================
+
+iniPath ... string
+  Ini ファイルのフルパス名。コンストラクタに渡した引数と同じ。
+
+
+ThreadStorage オブジェクトのメソッド
+====================================
+
+コンストラクタ
+new ThreadStorage (ini)
+  ini ... Ini ファイルのフルパス名
+  戻り値 ... ThreadStorage インスタンス
+
+  ThreadStorage インスタンスを作成して返す。
+
+.getItem (key)
+  key ... string: キー名
+  戻り値 ... string or null
+
+  データを読み込んで返す。キーがない場合は null を返す。
+
+.setItem (key, value)
+  key ... string: キー名
+  value ... string: 値
+  戻り値 ... なし
+
+  データを保存する。
+
+.removeItem (key)
+  key ... string: キー名
+  戻り値 ... なし
+
+  データを削除する。
+
+.clear ()
+  戻り値 ... なし
+
+  すべてのデータを削除する。
+
+
+仕様・制限事項
+==============
+
+・Ini ファイルは削除されません。Irvine の終了時に削除するなどして
+  古いデータが残らないようにして下さい。
+
+
+変更履歴
+========
+
+2014-09-13  version 20140913.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R spec
-//version=20140729.0
+//version=20140908.0
 //hint=http://yasmine.dorothy.test/common/spec/dorothy2r_spec.dms
 //match=
 //author=rentan
@@ -79,6 +79,120 @@ describe ('joint()', function () {
           : 'ñ¢ëŒâûÇÃà¯êîí∑Ç≈Ç∑: ' + args;
 
     expect (r).toBe (result);
+  });
+});
+
+
+describe ('Dorothy.createProgramMatcher', function () {
+  it ('returns matcher object', function () {
+    expect (Dorothy.hasKey ('createProgramMatcher')).toBe (true);
+
+    var m = Dorothy.createProgramMatcher ();
+
+    expect (typeof m).toBe ('object');
+    expect (m.hasKey ('find')).toBe (true);
+    expect (m.hasKey ('rewind')).toBe (true);
+  });
+});
+
+
+var matchList1 = [
+  { f: 'foo', re: /^http:\/\/example\.com\/foo/ },
+  { f: 'bar', re: /^http:\/\/example\.com\// }
+];
+
+var matchList2 = [
+  { f: 'aaa', re: /./ },
+  { f: 'bbb', re: /^h/ }
+];
+
+describe ('matcher.find', function () {
+  var matchListBackup;
+
+  beforeEach (function () {
+    matchListBackup = Dorothy.matchList;
+  });
+
+  afterEach (function () {
+    Dorothy.matchList = matchListBackup;
+    matchListBackup = null;
+  });
+
+  it ('returns null if no program matched', function () {
+    var m, found;
+
+    Dorothy.matchList = [ ];
+    m = Dorothy.createProgramMatcher ();
+    found = m.find ('http://example.jp/');
+    expect (found).toBeNull ();
+
+    expect (Dorothy.matchFile).toBe ('');
+    expect (Dorothy.matchType).toBe ('');
+    expect (Dorothy.userPath).toBeNull ();
+    expect (Dorothy.userIniPath).toBeNull ();
+
+    Dorothy.matchList = matchList1;
+    m = Dorothy.createProgramMatcher ();
+    found = m.find ('http://example.jp/');
+    expect (found).toBeNull ();
+  });
+
+  it ('returns matched program', function () {
+    var m, found;
+
+    Dorothy.matchList = matchList1;
+    m = Dorothy.createProgramMatcher ();
+    found = m.find ('http://example.com/foo');
+
+    expect (found).toBe (matchList1 [0]);
+
+    expect (Dorothy.matchFile).toBe ('foo');
+    expect (Dorothy.matchType).toBe ('url');
+    expect (Dorothy.userPath).toBe (Dorothy.path + 'user\foo\');
+    expect (Dorothy.userIniPath).toBe (Dorothy.userPath + 'foo.ini');
+
+    found = m.find ('http://example.com/');
+    expect (found).toBe (matchList1 [1]);
+
+    found = m.find ('http://example.com/');
+    expect (found).toBeNull ();
+  });
+
+  it ('ignores /./ program if created with ignoreDot=true', function () {
+    var m, found;
+
+    Dorothy.matchList = matchList2;
+    m = Dorothy.createProgramMatcher (true);
+    found = m.find ('http://example.com/');
+
+    expect (found).toBe (matchList2 [1]);
+  });
+});
+
+
+describe ('matcher.rewind', function () {
+  var matchListBackup;
+
+  beforeEach (function () {
+    matchListBackup = Dorothy.matchList;
+  });
+
+  afterEach (function () {
+    Dorothy.matchList = matchListBackup;
+    matchListBackup = null;
+  });
+
+  it ('change index to 0', function () {
+    var m, found;
+
+    Dorothy.matchList = matchList1;
+    m = Dorothy.createProgramMatcher ();
+    found = m.find ('http://example.com/');
+    expect (found).toBe (matchList1 [1]);
+
+    m.rewind ();
+    found = m.find ('http://example.com/foo');
+    expect (found).toBe (matchList1 [0]);
   });
 });
 

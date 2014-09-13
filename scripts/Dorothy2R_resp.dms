@@ -1,0 +1,90 @@
+/*
+スクリプト初期化データ
+guid={F984DA71-6062-4DA1-9A75-C326B24B1647}
+caption=Dorothy2R OnHttpResponse
+version=20140913.0
+hint=Dorothy2R OnHttpResponse
+event=OnHttpResponse
+match=
+author=rentan
+synchronize=0
+*/
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+// スレッドストレージ関係の処理
+function processThreadStorage (headers) {
+  var replaced = false;
+
+  var st = Dorothy.getThreadStorage ();
+
+  // header.HHH=VVV データがあればヘッダに設定する
+  function setHeader (name) {
+    var key = 'headers.' + name;
+
+    var value = st.getItem (key);
+    if (isNull (value)) {
+      return;
+    }
+
+    st.removeItem (key);
+
+    println ('headers>' + name + ': ' + value);
+    headers [name] = value;
+    replaced = true;
+  }
+
+  setHeader ('Last-Modified');
+
+  return replaced;
+}
+
+
+// HTTP(S)レスポンスイベント
+function OnHttpResponse (urlinfo, headers, item, folderdata, optiondata) {
+  // Dorothy2R_a.dms 実行
+  (function () {
+    var f = new File (WScript.Path + 'scripts\Dorothy2R_a.dms');
+    try {
+      f.open ('r');
+      eval ('(function(){' + f.read () + '})()');
+      f.close ();
+    }
+    catch (e) {
+      f.close ();
+      alert (e + "\n" + f.path);
+      exit ();
+    }
+  }) ();
+
+
+  // Dorothy オブジェクト初期化
+  function ev () { eval (arguments [0]); }
+  Dorothy.loadDorothyIni ();
+  Dorothy.init ({ version: 'xxxx', eval: ev });
+
+
+  // メイン処理
+  println ('Dorothy2R version ' + Dorothy.rVersion + ' OnHttpResponse');
+
+  return processThreadStorage (headers);
+}
+
+
+// EOF

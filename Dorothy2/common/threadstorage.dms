@@ -1,0 +1,227 @@
+//Dorothy2
+//caption=ThreadStorage
+//version=20140913.0
+//hint=new ThreadStorage()
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+(function () {
+
+
+// コンストラクタ
+void function ThreadStorage (ini) {
+  this.iniPath = ini;
+};
+
+
+// 管理用のセクション定数
+ThreadStorage.prototype._sysSec = 'System';
+ThreadStorage.prototype._pidKey = 'ProcessId';
+
+
+ThreadStorage.prototype._dll = (function () {
+  var dll = new DynaCall ();
+
+  dll.register ('kernel32.dll', 'GetCurrentProcessId', 'f=s', 'r=l');
+  dll.register ('kernel32.dll', 'GetCurrentThreadId', 'f=s', 'r=l');
+
+  dll.register ('kernel32.dll', 'OpenThread', 'f=s', 'i=ubl', 'r=h');
+  dll.register ('kernel32.dll', 'GetExitCodeThread', 'f=s', 'i=hs', 'r=b');
+  dll.register ('kernel32.dll', 'CloseHandle', 'f=s', 'i=h', 'r=b');
+
+  return dll;
+}) ();
+
+
+// プロセスID、スレッドIDを取得する
+(function (p) {
+  var dll = p._dll;
+
+  var pid = dll.GetCurrentProcessId ();
+  var tid = dll.GetCurrentThreadId ();
+
+  p._pid = pid + '';
+  p._tidSec = 'Thread_' + tid;
+
+}) (ThreadStorage.prototype);
+
+
+// Ini オブジェクトに追加するプロパティ、メソッド
+//
+// .dirty -> boolean
+//   内容を書き換えた時に true にする。
+//   処理の最後に .update() が呼び出される。
+//
+// .keyExists (sec, key) -> boolean
+//   キーがあるかどうかを返す
+
+
+// 内部で使用: Ini#keyExists()
+ThreadStorage.prototype._IniKeyExists = function (sec, key) {
+  return this.readSection (sec).indexOf (key) >= 0;
+};
+
+
+// 内部で使用: Mutex を用いてアトミックにコールバック関数を呼び出す
+ThreadStorage.prototype._sync = function (f) {
+  var mutex = new Mutex (this.iniPath);
+  try {
+    mutex.lock ();
+
+    var ini = new Ini (this.iniPath);
+    ini.keyExists = this._IniKeyExists;
+
+    var r = f (ini);
+
+    if (ini.hasKey ('dirty')) {
+      ini.update ();
+    }
+    return r;
+  }
+  finally {
+    mutex.unlock ();
+  }
+};
+
+
+// 内部で使用: スレッドが生存しているか調べる
+ThreadStorage.prototype._isThreadAlive = function (tid) {
+  var THREAD_QUERY_INFORMATION = 0x40;
+  var STILL_ACTIVE = 0x103;
+
+  var dll = this._dll;
+  var handle = dll.OpenThread (THREAD_QUERY_INFORMATION, false, tid);
+  if (!handle) {
+    return false;
+  }
+
+  var code = new Struct('v:u');
+  var r = dll.GetExitCodeThread (handle, code);
+  dll.CloseHandle (handle);
+
+  return r && code.v == STILL_ACTIVE;
+};
+
+
+// 内部で使用: 生存していないスレッドのデータを削除する
+ThreadStorage.prototype._expire = false;
+ThreadStorage.prototype._removeExpiredData = function (ini) {
+  if (this._expire) {
+    return;
+  }
+  this._expire = true;
+
+  var secs = ini.readSections ();
+  for (var sec in secs) {
+    sec = secs [sec];
+    if (!/^Thread_(\d+)$/.test (sec)) {
+      continue;
+    }
+    var tid = parseInt (RegExp.$1);
+
+    if (this._isThreadAlive (tid)) {
+      continue;
+    }
+
+    ini.eraseSection (sec).dirty = true;
+  }
+};
+
+
+// 内部で使用: Ini ファイルを初期化する
+ThreadStorage.prototype._init = function (ini) {
+  for (var sec in ini.readSections ()) {
+    ini.eraseSection (sec);
+  }
+
+  ini.write (this._sysSec, this._pidKey, this._pid).dirty = true;
+};
+
+
+// 内部で使用: 無効なデータを全て削除する
+ThreadStorage.prototype._removeInvalidData = function (ini) {
+  var pid = ini.read (this._sysSec, this._pidKey, '');
+
+  // Ini ファイルがないか、違う PID ならファイルごと初期化
+  if (pid != this._pid) {
+    return this._init (ini);
+  }
+
+  this._removeExpiredData (ini);
+};
+
+
+// データを取得する
+ThreadStorage.prototype.getItem = function (key) {
+  return this._sync (function (ini) {
+    if (ini.keyExists (this._tidSec, key)) {
+      return Base64.decode (ini.read (this._tidSec, key, ''));
+    }
+    return null;
+  });
+};
+
+
+// データを保存する
+ThreadStorage.prototype.setItem = function (key, data) {
+  this._sync (function (ini) {
+    this._removeInvalidData (ini);
+
+    ini.write (this._tidSec, key, Base64.encode (data)).dirty = true;
+  });
+};
+
+
+// データを削除する
+ThreadStorage.prototype.removeItem = function (key) {
+  this._sync (function (ini) {
+    this._removeInvalidData (ini);
+
+    if (ini.keyExists (this._tidSec, key)) {
+      ini.deleteKey (this._tidSec, key).dirty = true;
+
+      // 空のセクションが残らないように、最後のキーを削除したらセクションごと消す
+      if (!ini.sectionExists (this._tidSec)) {
+        ini.eraseSection (this._tidSec);
+      }
+    }
+  });
+};
+
+
+// データを全て削除する
+ThreadStorage.prototype.clear = function () {
+  this._sync (function (ini) {
+    this._removeInvalidData (ini);
+
+    if (ini.sectionExists (this._tidSec)) {
+      ini.eraseSection (this._tidSec).dirty = true;
+    }
+  });
+};
+
+
+}) ()
+
+
+// EOF

@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={0D313B7E-9959-4F23-9AEC-64276F111EDB}
 caption=Dorothy2R 設定
-version=20140822
+version=20140913
 hint=Dorothy2R 設定
 event=OnMainMenuClick
 match=
@@ -1564,7 +1564,6 @@ function OnMainMenuClick (irvine, action) {
     Dorothy.programDir = Dorothy.path + 'program\';
 
 
-    // setting.ini は存在しない可能性があるので read の第3引数は省略しないこと
     var ini = new Ini (Dorothy.path + 'system\setting.ini');
     function usr (key) {
       return ini.read ('user', key, '');
@@ -1610,10 +1609,10 @@ function OnMainMenuClick (irvine, action) {
 
   // Dorothy オブジェクト初期化
   function ev () { eval (arguments [0]); }
-  Dorothy.init ({ version: 'xxxx', eval: ev });
-  Dorothy.rVersion = 20140729;
-
   Dorothy._loadSettingIni ();
+  Dorothy.init ({ version: 'xxxx', eval: ev });
+  Dorothy.rVersion = 20140913;
+
   defineDorothy2Path ();
 
 

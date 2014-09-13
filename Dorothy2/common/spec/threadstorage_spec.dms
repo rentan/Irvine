@@ -1,0 +1,139 @@
+//Dorothy2
+//caption=ThreadStorage spec
+//version=20140913.0
+//hint=http://yasmine.dorothy.test/common/spec/threadstorage_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//Åıxyzzyï∂éöâªÇØâÒî
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('threadstorage');
+
+
+var INI_PATH = Dorothy.temp + 'threadstorage_spec.ini';
+
+
+describe ('ThreadStorage', function () {
+  it ('has iniPath property', function () {
+    var st = new ThreadStorage (INI_PATH);
+
+    expect (st.hasKey ('iniPath')).toBe (true);
+    expect (st.iniPath).toBe (INI_PATH);
+  });
+});
+
+
+describe ('.getItem()', function () {
+  var st;
+  beforeEach (function () {
+    st = new ThreadStorage (INI_PATH);
+  });
+
+  it ('returns null if item does not found', function () {
+    expect (st.getItem ('foo')).toBeNull ();
+  });
+
+  it ('returns string data', function () {
+    st.setItem ('foo', '123');
+    expect (st.getItem ('foo')).toBe ('123');
+
+    st.setItem ('foo', '');
+    expect (st.getItem ('foo')).toBe ('');
+  });
+});
+
+
+describe ('.setItem()', function () {
+  var st;
+  beforeEach (function () {
+    st = new ThreadStorage (INI_PATH);
+  });
+
+  it ('saves string data to storage', function () {
+    st.setItem ('bar', 'abc');
+    expect (st.getItem ('bar')).toBe ('abc');
+  });
+
+  it ('overwrites existing data', function () {
+    st.setItem ('bar', 'abc');
+    st.setItem ('bar', 'xyz');
+    expect (st.getItem ('bar')).toBe ('xyz');
+  });
+
+  it ('can save binary data', function () {
+    var BIN_LENGTH = 256;
+    var bin = '';
+    for (var i = 0; i < BIN_LENGTH; ++i) {
+      bin += String.fromCharCode (i);
+    }
+    expect (bin.sizeOf ()).toBe (BIN_LENGTH);
+
+    st.setItem ('foo', bin);
+    var b = st.getItem ('foo');
+    expect (b).toBe (bin);
+    expect (b.sizeOf ()).toBe (BIN_LENGTH);
+  });
+});
+
+
+describe ('.removeItem()', function () {
+  var st;
+  beforeEach (function () {
+    st = new ThreadStorage (INI_PATH);
+  });
+
+  it ('removes data', function () {
+    st.setItem ('foo', '123');
+    st.setItem ('bar', '456');
+    st.setItem ('baz', '789');
+
+    st.removeItem ('bar');
+    expect (st.getItem ('foo')).toBe ('123');
+    expect (st.getItem ('bar')).toBeNull ();
+    expect (st.getItem ('baz')).toBe ('789');
+  });
+});
+
+
+describe ('.clear()', function () {
+  var st;
+  beforeEach (function () {
+    st = new ThreadStorage (INI_PATH);
+  });
+
+  it ('removes all data', function () {
+    st.setItem ('foo', '123');
+    st.setItem ('bar', '456');
+    st.setItem ('baz', '789');
+
+    st.clear ();
+
+    expect (st.getItem ('foo')).toBeNull ();
+    expect (st.getItem ('bar')).toBeNull ();
+    expect (st.getItem ('baz')).toBeNull ();
+  });
+});
+
+
+// EOF

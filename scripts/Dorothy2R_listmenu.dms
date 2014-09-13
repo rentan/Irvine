@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={52ad722b-b5ff-4362-8aba-278b6aaaf93e}
 caption=Dorothy2R サイト設定
-version=20140521
+version=20140913
 hint=Shiftでプログラム編集、Tabで全ファイル編集
 event=OnListMenuClick
 match=
@@ -48,8 +48,8 @@ function OnListMenuClick (irvine, action) {
 
   // Dorothy オブジェクト初期化
   function ev () { eval (arguments [0]); }
-  Dorothy.init ({ version: 'xxxx', eval: ev });
   Dorothy.loadDorothyIni ();
+  Dorothy.init ({ version: 'xxxx', eval: ev });
 
 
   // グローバル変数として参照できるようにする
@@ -135,8 +135,8 @@ function OnListMenuClick (irvine, action) {
     return alert ('アイテムが選択されていません。');
   }
 
-  Dorothy.search.init (true);
-  if (!Dorothy.search.next (item.url.replace (/^(ttps?:)/, 'h$1'))) {
+  _.url = item.url.replace (/^(ttps?:)/, 'h$1');
+  if (!Dorothy.createProgramMatcher (true).find (_.url)) {
     return alert ('対応する Dorothy2 スクリプトがありません。');
   }
 

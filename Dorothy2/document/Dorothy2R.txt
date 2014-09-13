@@ -30,7 +30,7 @@ Dorothy2 最新版
 
 3. Irvine 本体のオプション設定で各スクリプトにチェックを入れる。
 
-4. フォルダ設定で Dorothy2A.dms のチェックを外す。
+4. フォルダ設定で Dorothy2A.dms、Dorothy2B.dms のチェックを外す。
 
 5. フォルダ設定で各スクリプトにチェックを入れる。
 
@@ -41,8 +41,9 @@ Dorothy2 最新版
 Dorothy2 併用時の注意
 =====================
 
-・一つのフォルダの設定で Dorothy2A.dms と Dorothy2R_a.dms の両方に
-  チェックを入れないで下さい。
+・一つのキューフォルダで Dorothy2 と Dorothy2R を両方使用すること
+  はできません。Dorothy2 用のキューフォルダと Dorothy2R 用のキュー
+  フォルダを別々に設定して下さい。
 
 ・「Dorothy2R 設定」では Dorothy2A.dms は更新されないので
   「動画ダウンロード２設定」の方でも上書き保存して下さい。
@@ -51,14 +52,13 @@ Dorothy2 併用時の注意
 仕様・制限事項
 ==============
 
-・Dorothy2B.dms に相当するスクリプトはありません。必要なら Dorothy2B.dms
-  がそのまま使えるはずです。
-
 ・xor.dms を読み込まないようにしているので、それに依存するスクリプトは
   動作しません(把握できていません)。
 
-・changeFileName() が引数をそのまま返すダミー関数になっています。代わりに
-  NameBuilder#normalize() や Utf8#decodeCharRef() を使って下さい。
+・changeFileName() が引数をそのまま返すダミー関数になっています。
+  代わりに下記関数などを使って下さい。
+    NameBuilder#normalize() ... ファイル名に使用できない文字の置換
+    Utf8#decodeCharRef() ...... 文字参照の変換
 
 
 Dorothy オブジェクト拡張
@@ -112,9 +112,14 @@ Dorothy.setFilename (filename)
   ファイル名にユーザーが指定したファイル名コマンドが含まれない場合に、
   Dorothy.fileName への書き込みの代わりに呼び出す。
 
+Dorothy.getThreadStorage ()
+  戻り値 ... object: ThreadStorage
 
-Dorothy.search.init ()
-Dorothy.search.next ()
+  ThreadStorage インスタンスを返す。
+
+  Ini ファイルは %Dorothy.temp%\thread_storage.ini を使用する。
+
+Dorothy.createProgramMatcher ()
 Dorothy.validateProgram ()
 Dorothy.loadProgram ()
 Dorothy.validateCommon ()
@@ -125,6 +130,40 @@ Dorothy.loadDorothyIni ();
 
 変更履歴
 ========
+
+2014-09-13  version 20140913.0  rentan at rentan.org
+  実験的にスレッドストレージ機能を実装。
+
+scripts\Dorothy2R_a.dms
+  Dorothy.init() で Dorothy.temp ディレクトリを作成するようにした。
+  そのため、Dorothy.init() より先に Dorothy.loadDorothyIni() を
+  呼び出す仕様に変更した。
+
+  Dorothy.createProgramMatcher() を追加。
+  問題がなければ Dorothy.search.* は後ほど削除する予定。
+
+  Dorothy.getThreadStorage() を追加。
+  Dorothy.fileName == 'remove' の時、削除指示を xor.ini ではなく
+  スレッドストレージに書き込むようにした。
+
+  Dorothy.* メソッドの定義ルーチンを整理。
+
+scripts\Dorothy2R_listmenu.dms
+  Dorothy.createProgramMatcher() を使うようにした。
+
+scripts\Dorothy2R_set.dms
+  rVersion を 20140913 に更新。
+
+scripts\Dorothy2R_done.dms
+  新規作成。スレッドストレージに Remove=true があればダウンロード
+  したファイルを削除する。
+
+  Dorothy2 における Dorothy2B.dms に相当。
+
+scripts\Dorothy2R_resp.dms
+  新規作成。スレッドストレージに headers.Last-Modified の値が
+  あればヘッダに書き込む。
+
 
 2014-08-22  version 20140822.0  rentan at rentan.org
 scripts\Dorothy2R_set.dms
