@@ -1,49 +1,56 @@
 ustream_rec.dms
 
 
-Ustream �̘^��f�[�^�p�̃X�N���v�g�ł��B���C�u�f���ɂ͑Ή����Ă��܂���B
+Ustream の録画データ用のスクリプトです。ライブ映像には対応していません。
 
 
-�g�p���@
+使用方法
 ========
 
-�ʏ�ʂ�ł��B
+以下の手順で設定ファイル(.ini)が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
 
 
-�Ή� URL
+対応 URL
 ========
 
-http://(www.)?ustream.tv/recorded/\d+
+http://www.ustream.tv/recorded/\d+
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�E����f�[�^�� URL ���擾����菇���Č��ł��Ȃ��������߁A�\���̂���
-  URL �ɑ΂����ԂɃA�N�Z�X���Ē��ׂĂ���A�m��܂Ŏ኱���Ԃ�������܂��B
+・動画形式の指定は対応していません。
 
 
-�ύX����
+変更履歴
 ========
 
+2014-09-17  version 20140917.0  rentan at rentan.org
+  作り直し。
+  ファイル名変数は %ID% %TITLE% のみ対応。
+
+  thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/770
+
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
-  �Â��`���̃t�@�C�����ϐ� %VIDEO_ID% ���폜�B
+  古い形式のファイル名変数 %VIDEO_ID% を削除。
 
-  ustream_rec.set �� Util.ini_copy_edit() �ɂ��ȈՐݒ�ɕύX�B
+  ustream_rec.set を Util.ini_copy_edit() による簡易設定に変更。
 
 2012-11-19
-  �������B
+  微調整。
 
 2012-07-11
-  �啝�ɕύX�B
+  大幅に変更。
 
-  [General] VodpEnd �� 24 �ɕύX�B
+  [General] VodpEnd を 24 に変更。
 
 2012-03-29
-  �����o�[�W�����B
+  初期バージョン。
 
 
 [EOF]

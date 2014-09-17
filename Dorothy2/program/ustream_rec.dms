@@ -1,8 +1,8 @@
 //Dorothy2
 //caption=Ustream/recorded
-//version=20140331.0
+//version=20140917.0
 //hint=録画データのみ
-//match=^http://(www\.)?ustream\.tv/recorded/\d+
+//match=^http://www\.ustream\.tv/recorded/\d+
 //author=rentan
 //path=program
 //priority=500
@@ -25,19 +25,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-function () {
+function (scriptMode) {
 
-  common_load ('rutil', 'http', 'namebuilder', 'utf8');
+  common_load ('rutil', 'namebuilder');
 
   // 設定ファイルの読み込み
   var default_ini = {
     General: {
-      Zen2Han: true,
-      FormatPriority: 'mp4,flv',
-      VodpStart: 1,
-      VodpEnd: 24,
-      PdStart: 1,
-      PdEnd: 30
+      Zen2Han: true
     },
     Filename: {
       Recorded: '%TITLE% ust_%ID%'
@@ -46,231 +41,94 @@ function () {
   var ini = Util.ini_load (default_ini);
 
 
-//---------------------- 下請け ----------------------//
+//---------------------------- UstreamRecorded -----------------------------
 
 
-// ini.General.FormatPriority を配列化する
-function format_priority (s) {
-  // 空白や , で分割
-  var fmts = s.replace (/[\s,]+/g, ' ').trim ().split (' ');
+common_load ('getterobject', 'http', 'utf8');
 
-  // 空文字列を削除
-  for (var i in fmts) {
-    if (fmts [i].length == 0) {
-      fmts.delete (i);
-    }
+
+// コンストラクタ
+void function UstreamRecorded () {
+  this.urls = [ ];
+};
+
+
+GetterObject.expand (UstreamRecorded);
+
+
+UstreamRecorded.prototype.id = null;
+UstreamRecorded.prototype.title = null;
+
+
+// 内部で使用: 視聴ページを取得して解析する
+UstreamRecorded.prototype._scanWatchPage = function (url) {
+  var http = this.http = new Http ();
+
+  if (!http.get (url)) {
+    return this._httpError ();
   }
 
-  return fmts;
-}
-
-
-// 視聴ページの HTML 内から動画 URL を探す（存在しない場合もあり）
-function search_livehttpurl (html) {
-  var vurls = { };
-
-  // JavaScript コードから抽出
-  if (!/ustream\.vars\.liveHttpUrl\s*=\s*"([^"]+)"/.test (html)) {
-    return null;
+  if (!/<meta\s+property="og:title"[^>]*content="([^"]+)"/.test (http.data)) {
+    return this._unknown ('タイトルが見つかりません。');
   }
-  var liveHttpUrl = RegExp.$1;
-  println ('liveHttpUrl = ' + liveHttpUrl);
-alert ("liveHttpUrl found\n\n" + liveHttpUrl);
+  this.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
 
-  // 拡張子を切り出し
-  if (!/\.(\w+)$/.test (liveHttpUrl)) {
-    println ('liveHttpUrl のデータ形式が不明です。');
-    return null;
+  return this.OK;
+};
+
+
+
+// ファイル URL を取得する
+UstreamRecorded.prototype.get = function (url) {
+  this.urls = [ ];
+  this.id = '';
+  this.title = '';
+
+  if (!/^\/recorded\/(\d+)([?#].*)?$/.test ((new URL (url)).path)) {
+    return this._mis ();
   }
-  var ext = RegExp.$1;
-alert (ext);
+  this.id = RegExp.$1;
 
-  vurls [ext] = liveHttpUrl;
-
-  // .mp4 があれば .flv も必ずあるらしい
-  if (ext == 'mp4') {
-    vurls ['flv'] = liveHttpUrl.replace (/\.mp4$/, '.flv');
+  var r = this._scanWatchPage (url);
+  if (r != this.OK) {
+    return r;
   }
 
-  return vurls;
-}
+  var http = this.http = new Http ();
 
-
-// 指定 URL が存在するか調べる
-function is_exist (url) {
-  var http = new Http ({ autoRedirect: true, verbose: 0 });
-
-  return http.head (url);
-}
-
-
-// 動画 URL を求める
-//  可能性のある URL の一覧を作成 → HEAD して存在確認 → 最初に見つかった URL を返す
-function search_video_url (video_id, channel_id) {
-  var vurls = { };
-
-  // テンプレート URL の変数を値に置換
-  function replace_value (t, i) {
-    var v6 = Math.floor (video_id / 1000000).toString ();
-    var v3 = Math.floor (video_id / 1000).toString ();
-
-    return t.replace (/{v6}/g, v6)
-      .replace (/{v3}/g, v3)
-      .replace (/{v}/g, video_id)
-      .replace (/{c}/g, channel_id)
-      .replace (/{i}/g, i.toString ())
-      .replace (/{i2}/g, format ('%.2d', i));
+  var u = 'http://tcdn.ustream.tv/video/' + this.id;
+  var loc = http.getLocation (u);
+  if (!loc) {
+    return this._httpError ();
   }
 
-  // 動画データ（が存在する可能性がある）URL のリストを作成
-  function make_list (template, start, end) {
-    var list = [ ];
+  return this._add ({ Url: loc });
+};
 
-    var reverse = 0;
-    if (start > end) {
-      reverse = start + end;
 
-      var tmp = end;  // swap (start, end)
-      end = start;    // start < end にする
-      start = tmp;
-    }
+// ダウンロード情報を Dorothy 側に設定する
+UstreamRecorded.prototype.setUrlAndFilename = function (nb, fmt) {
+  var item = this.urls [0];
+  Dorothy.setUrl (item.Url);
 
-    for (var i = start; i <= end; ++i) {
-      var n = reverse ? (reverse - i) : i;
-      var t = replace_value (template, n);
-      list.push (t);
-    }
+  nb.id = this.id;
+  nb.title = this.title;
+  nb.setFilename (fmt, item.Url);
+};
 
-    return list;
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  var getter = new UstreamRecorded ();
+
+  var r = getter.get (urlinfo.url);
+  if (r != getter.OK) {
+    return getter.end (r);
   }
-
-  // vodp*.ustream.tv のリストを作成
-  //  nslookup vodp**.ustream.tv で名前解決できる最大値を VodpEnd にする
-  function make_vodp_list () {
-    var t = 'http://vodp{i2}.ustream.tv/0/1/{v6}/{v3}/{v}/1_{c}_{v}.flv';
-    var start = parseInt (ini.General.VodpStart);
-    var end = parseInt (ini.General.VodpEnd);
-
-    return make_list (t, start, end);
-  }
-
-  // ustream.vo.llnwd.net のリストを作成
-  //  PdEnd の最大値を調べる方法はないっぽい
-  function make_llnwd_list () {
-    var t = 'http://ustream.vo.llnwd.net/pd{i}/0/1/{v6}/{v3}/{v}/1_{c}_{v}.flv';
-    var start = parseInt (ini.General.PdStart);
-    var end = parseInt (ini.General.PdEnd);
-
-    return make_list (t, start, end);
-  }
-
-  var url_list = make_vodp_list ().concat (make_llnwd_list ());
-  // alert (url_list.join ("\n"));
-
-  // リストの URL を調べて、存在する URL を特定する
-  println ('動画ファイルの検索を開始します。');
-  for (var i in url_list) {
-    var url_flv = url_list [i];
-    var url_mp4 = url_flv.replace (/\.flv$/, '.mp4');
-
-    if (is_exist (url_flv)) {
-      // .flv が見つかった
-      vurls ['flv'] = url_flv;
-
-      // 更に .mp4 もないか調べてみる
-      if (is_exist (url_mp4)) {
-        // .mp4 も見つかった
-        vurls ['mp4'] = url_mp4;
-      }
-
-      println ('動画ファイルが見つかりました。');
-      return vurls;
-    }
-  }
-
-  // 見つからなかった
-  return null;
-}
-
-
-//-------------------- メイン処理 --------------------//
-
 
   var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
-
-  // ファイル名の生成に使える情報
-  nb.user_name = null;   // ユーザー名
-  nb.channel_id = null;  // チャンネル番号
-
-  nb.id = null;     // 動画番号
-  nb.title = null;  // 題名
-
-
-  // 動画番号を抽出
-  if (!/\/(\d+)([\/?#].*)?$/.test (urlinfo.url)) {
-    println ('未対応の URL です。');
-    return;
-  }
-  nb.id = RegExp.$1;
-
-  // 視聴ページを読み込み
-  var page_url = 'http://www.ustream.tv/recorded/' + nb.id;
-  var http = new Http ();
-  if (!http.get (page_url)) {
-    return http.retry_or_die ();
-  }
-
-  // ユーザー名を抽出
-  if (/<a\s+href="\/user\/([^"]+)">/.test (http.data)) {
-    nb.user_name = RegExp.$1;
-  }
-
-  // チャンネルIDを抽出
-  if (!/<div\s+id="(EventHeader|SocialBar)"\s+data-cid="(\d+)"/.test (http.data)) {
-    http.die ('チャンネルIDが見つかりません。');
-  }
-  nb.channel_id = RegExp.$2;
-
-  // 題名を抽出
-  if (/<meta\s+name="title"\s+content="([^"]*)"/.test (http.data)) {
-    nb.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
-  }
-
-  // 動画 URL を求める
-  var vurls = search_livehttpurl (http.data) || search_video_url (nb.id, nb.channel_id);
-  if (!vurls) {
-    http.die ('動画の URL を検出できませんでした。');
-  }
-
-  // 形式の優先度順に動画 URL を選ぶ
-  var formats = format_priority (ini.General.FormatPriority);
-  if (formats.length == 0) {
-    http.die ('設定の [General] FormatPriority に動画形式が指定されていません。');
-  }
-
-  var video_url = null;
-  for (var i in formats) {
-    var fmt = formats [i];
-    if (vurls.hasKey (fmt)) {
-      video_url = vurls [fmt];
-      // println (fmt + ' 形式: ' + video_url);
-      break;
-    }
-    // println (fmt + ' 形式なし');
-  }
-  if (!video_url) {
-    http.die ('指定形式の動画データがありません。');
-  }
-
-
-  // 成功
-  Dorothy.fileName = nb.assemble (ini.Filename.Recorded, video_url);
-
-  urlinfo.url = video_url;
-  headers.Host = (new URL (video_url)).host;
-  headers.Cookie = '';
-  headers.Referer = page_url;
-  headers ['Accept-Language'] = 'ja';
+  getter.setUrlAndFilename (nb, ini.Filename.Recorded);
 }
 
 
