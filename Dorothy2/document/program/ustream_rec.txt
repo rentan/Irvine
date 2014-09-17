@@ -7,24 +7,31 @@ Ustream の録画データ用のスクリプトです。ライブ映像には対応していません。
 使用方法
 ========
 
-通常通りです。
+以下の手順で設定ファイル(.ini)が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
 
 
 対応 URL
 ========
 
-http://(www.)?ustream.tv/recorded/\d+
+http://www.ustream.tv/recorded/\d+
 
 
 仕様・制限事項
 ==============
 
-・動画データの URL を取得する手順を再現できなかったため、可能性のある
-  URL に対し順番にアクセスして調べており、確定まで若干時間がかかります。
+・動画形式の指定は対応していません。
 
 
 変更履歴
 ========
+
+2014-09-17  version 20140917.0  rentan at rentan.org
+  作り直し。
+  ファイル名変数は %ID% %TITLE% のみ対応。
+
+  thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/770
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
