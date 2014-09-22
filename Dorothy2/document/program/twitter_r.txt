@@ -27,9 +27,15 @@ https?://twitter.com/[^/]+/media
 仕様・制限事項
 ==============
 
+・Internet Explorer でログインしておく必要があります。
+
 
 変更履歴
 ========
+
+2014-09-22  version 20140922.0  rentan at rentan.org
+  非ログイン状態でも動作するようにした。
+  (あまり検証していないので非推奨)
 
 2014-07-29  version 20140729.0  rentan at rentan.org
   script Mode 引数で動作モードを切り替えるようにした。

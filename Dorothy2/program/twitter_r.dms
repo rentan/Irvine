@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20140729.0
+//version=20140922.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -175,7 +175,7 @@ Twitter.prototype._analyzeTweet = function (http) {
   nb.twitter_id = RegExp.$1;
   nb.id = RegExp.$3;
 
-  if (!/<div\s+[^>]*class="permalink-inner\s+permalink-tweet-container[^>]*>(.*?)<div\s+[^>]*class="inline-reply-tweetbox/.test (http.data)) {
+  if (!/<div\s+[^>]*class="permalink-inner\s+permalink-tweet-container[^>]*>(.*?)<div\s+[^>]*class="permalink-footer/.test (http.data)) {
     return this._p ('<div class="permalink-inner permalink-tweet-container"> Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÅB');
   }
   var html = RegExp.$1;
