@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={BC220934-7214-48CA-9A7A-736A95B25C0F}
 caption=Dorothy2R DOA
-version=20140729
+version=20140913
 hint=
 event=OnListMenuClick
 match=
@@ -54,8 +54,8 @@ function OnListMenuClick (irvine, action) {
 
   // Dorothy オブジェクト初期化
   function ev () { eval (arguments [0]); }
-  Dorothy.init ({ version: 'xxxx', eval: ev });
   Dorothy.loadDorothyIni ();
+  Dorothy.init ({ version: 'xxxx', eval: ev });
 
   Dorothy.isDOA = true;
   Dorothy.doaVersion = 0.23;
