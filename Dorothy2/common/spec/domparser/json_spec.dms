@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DOMParser/JSON spec
-//version=20140613.0
+//version=20140926.0
 //hint=http://yasmine.dorothy.test/common/spec/domparser/json_spec.dms
 //match=
 //author=rentan
@@ -153,6 +153,36 @@ describe ('json parse 4', function () {
     e = array.childNodes [2];
     expect (e.nodeName).toBe ('false');
     expect (e.nodeValue).toBe (false);
+
+    document.destroy ();
+    document = null;
+  });
+});
+
+
+describe ('assert bug fix', function () {
+  it ('E notation number', function () {
+    var src = "
+[ 6.022e23, 6.022E23 , -6.022e23, 6.022e+23, 6.022e-23, [6.022e23], { \"n\":6.022e23} ]
+    ";
+
+    var domjson = null;
+    expect (function () { domjson = new DOMJson (src); }).not.toThrow ();
+    if (domjson == null) {
+      return;
+    }
+
+    var document = domjson.document;
+    var array = document.firstChild.childNodes;
+
+    expect (array [0].nodeValue).toBe (6.022e23);
+    expect (array [1].nodeValue).toBe (6.022E23);
+    expect (array [2].nodeValue).toBe (-6.022e23);
+    expect (array [3].nodeValue).toBe (6.022e+23);
+    expect (array [4].nodeValue).toBe (6.022e-23);
+
+    expect (array [5].firstChild.nodeValue).toBe (6.022e23);
+    expect (array [6].firstChild.nodeValue).toBe (6.022e23);
 
     document.destroy ();
     document = null;

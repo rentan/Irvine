@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DOMParser/JSON
-//version=20140816.0
+//version=20140926.0
 //hint=
 //match=
 //author=rentan
@@ -238,15 +238,16 @@ DOMJson.prototype._parseNumber = function (src) {
       // ¬”“_+¬”•”
       ++src.index;
       seekToDigitsEnd ('¬”•”‚Ì”š‚ª‚È‚¢');
-    }
 
-    if (src.length <= src.index) {
-      return;
+      if (src.length <= src.index) {
+        return;
+      }
+      cc = src.charCodeAt (src.index);
     }
-    cc = src.charCodeAt (src.index);
 
     if ((cc | 0x20) == 0x65) {
       // w”•”
+      ++src.index;
       if (src.index < src.length) {
         cc = src.charCodeAt (src.index);
         if (cc == 0x2b || cc == 0x2d) {
