@@ -20,6 +20,9 @@ firestorage 用のスクリプトです。
 仕様・制限事項
 ==============
 
+2014-09-27  version 20140927.0  rentan at rentan.org
+  パスワード入力キャンセル時は NG ではなく EXIT を返すようにした。
+
 2014-08-20  version 20140820.0  rentan at rentan.org
   新規作成。
 

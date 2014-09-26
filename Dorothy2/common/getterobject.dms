@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=GetterObject.*
-//version=20140816.0
+//version=20140927.0
 //hint=
 //match=
 //author=rentan
@@ -36,6 +36,7 @@ GetterObject = {
   RETRY: 2,
   UNKNOWN: 3,
   MIS: 4,
+  EXIT: 5,
 
 
   comment: '',
@@ -78,6 +79,13 @@ GetterObject = {
   },
 
 
+  // URL を追加して正常終了
+  _add: function (url) {
+    this.urls.push (url);
+    return this.OK;
+  },
+
+
   // .get() の戻り値に応じて終了処理
   end: function (r) {
     if (r == this.RETRY) {
@@ -86,13 +94,6 @@ GetterObject = {
     if (r != this.OK && r != this.MIS) {
       exit ();
     }
-  },
-
-
-  // URL を追加して正常終了
-  _add: function (url) {
-    this.urls.push (url);
-    return this.OK;
   }
 
 };
@@ -108,6 +109,7 @@ GetterObject.expand = function (obj) {
     'RETRY',
     'UNKNOWN',
     'MIS',
+    'EXIT',
     'comment',
     'http',
     '_p',

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=firestorage_r
-//version=2014-08-20
+//version=20140927.0
 //hint=
 //match=^https?://(secure\.)?firestorage\.(jp|com)/download/.
 //author=rentan
@@ -79,7 +79,7 @@ FireStorage.prototype._passPasswordForm = function (retryUrl) {
 
     var p = this._inputPassword ();
     if (p == null) {
-      return this.NG;
+      return this.EXIT;
     }
 
     if (!form.change ('pass', p)) {

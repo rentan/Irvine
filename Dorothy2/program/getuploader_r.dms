@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=getuploader_r
-//version=20140913.0
+//version=20140927.0
 //hint=getuploader.com (uploader.jp)
 //match=^http://u[^/.]+\.getuploader\.com/[^/]+/download/\d+
 //author=rentan
@@ -137,7 +137,7 @@ GetUploader.prototype._inputSecAuthForm = function (form) {
     var htaOpt = this._createJInputOpt (this.http.baseUrl);
     t = this._inputPassword (htaOpt, '閲覧パスワード');
     if (t === null) {
-      return this.NG;
+      return this.EXIT;
     }
   }
   pw.value = t;
@@ -220,7 +220,7 @@ GetUploader.prototype._inputDownloadPasswordForm = function (form) {
     var htaOpt = this._createJInputOpt (this.http.baseUrl, f);
     t = this._inputPassword (htaOpt, 'ダウンロードパスワード');
     if (t === null) {
-      return this.NG;
+      return this.EXIT;
     }
   }
   pw.value = t;

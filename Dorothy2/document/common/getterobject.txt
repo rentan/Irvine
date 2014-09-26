@@ -30,6 +30,9 @@ expand (obj)
 変更履歴
 ========
 
+2014-09-27  version 20140927.0  rentan at rentan.org
+  .EXIT を追加。
+
 2014-08-16  version 20140816.0  rentan at rentan.org
   新規作成。
 
