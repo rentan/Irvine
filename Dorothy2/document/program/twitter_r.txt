@@ -33,6 +33,9 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2014-09-27  version 20140927.0  rentan at rentan.org
+  サイト側の変更(ツイート本文が見つかりません。エラー)に対応。
+
 2014-09-22  version 20140922.0  rentan at rentan.org
   非ログイン状態でも動作するようにした。
   (あまり検証していないので非推奨)
