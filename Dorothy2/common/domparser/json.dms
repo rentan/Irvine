@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DOMParser/JSON
-//version=20140926.0
+//version=20140928.0
 //hint=
 //match=
 //author=rentan
@@ -161,42 +161,111 @@ DOMJson.prototype._parseObject = function (src) {
 };
 
 
+DOMJson.prototype._unescapeMap = {
+  'b': "\b", 'f': "\f", 't': "\t", '"': '"', '\': '\', '/': '/',
+  'r': "\r", 'n': String.fromCharCode (10)
+};
+
 // string をパースする
 // 他と違って DOM オブジェクトではなく文字列で返す
 DOMJson.prototype._parseString = function (src) {
+  var r = new StringBuffer ();
+  var fromUnicode = Utf8.prototype.fromUnicode;
+
   // 開始の "
-  var startPos = ++src.index;
+  ++src.index;
 
-  while (src.index < src.length) {
-    var quotPos = src.indexOf ('"', src.index);
-    var escPos = src.indexOf ('\', src.index);
+  var cc, i;
+  for (;;) {
+    var startPos = src.index;
 
-    if (quotPos == -1) {
-      // " が無ければ閉じていない
-      break;
-    }
-    // " があっても \" かも知れないので、まだ未確定
-
-    if (escPos == -1 || quotPos < escPos) {
-      // " より手前に \ が無ければ、その " が終端
-      src.index = quotPos + 1;
-
-      var s = src.substring (startPos, quotPos);
-      return (new Utf8 (s)).unescape ().toUTF8 ();
+    // " \ 制御文字 以外の文字が続く間ポインタを進める
+    for (i = startPos; ; ++i) {
+      cc = src.charCodeAt (i);
+      if (cc == 0x22 || cc == 0x5c || cc < 0x20 || isNaN (cc)) {
+        break;
+      }
     }
 
-    // escPos < quotPos
-    // \ の直後の1バイト(u の場合は更に4桁16進数)を飛ばす
-    // 手抜きで直後の文字を検証していない
-    src.index = escPos + 2;
+    // ポインタを進めた間の文字を処理済みバッファへコピー
+    if (startPos < i) {
+      r.append (src.substring (startPos, i));
+      src.index = i;
+    }
 
-    // ↑
-    // テキスト末尾が \ だった場合に src.length より大きくなるが
-    // すぐにループ脱出して補正されるので構わない
+    // 出現したメタキャラクタごとに処理
+
+    // 終了の "
+    if (cc == 0x22) {
+      ++src.index;
+      return r.text;
+    }
+
+    // \ エスケープシーケンス
+    if (cc == 0x5c) {
+      if (src.length <= ++i) {  // \ の次の文字
+        break;
+      }
+      var c = src [i++];
+
+      if (c != 'u') {
+        // \u 以外のエスケープシーケンス
+        if (!this._unescapeMap.hasKey (c)) {
+          this._throw ('不正なエスケープシーケンス', src);
+        }
+
+        r.append (this._unescapeMap [c]);
+        src.index = i;
+        continue;
+      }
+
+      // \uXXXX ... \u0000～\uffff
+      var s = src.substr (i, 4);
+      if (!/^[0-9a-f]{4}/i.test (s)) {
+        this._throw ('不正なUnicodeエスケープシーケンス', src);
+      }
+
+      s = parseInt ('0x' + s);  // 0～0xffff
+      src.index = i = i + 4;
+
+      // 基本言語面の文字、またはいきなり low surrogate
+      if ((s & 0xfc00) != 0xd800) {
+        r.append (fromUnicode (s));
+        continue;
+      }
+
+      // high surrogate が来たら、次に low surrogate が来るはず
+      var s2 = src.substr (i, 6);  //  \uXXXX のはず
+
+      if (!/^\\u[0-9a-fA-F]{4}/.test (s2)) {
+        // \uXXXX が来なかった
+        r.append (fromUnicode (s));
+        continue;
+      }
+
+      s2 = parseInt ('0x' + s2.slice (2));  //  0～0xffff
+
+      if ((s2 & 0xfc00) != 0xdc00) {
+        // low surrogate ではないものが来た(基本言語面または high surrogate)
+        r.append (fromUnicode (s));
+        continue;
+      }
+
+      // 適正なペアが揃った
+      r.append (fromUnicode (0x10000 + ((s & 0x03ff) << 10) + (s2 & 0x03ff)));
+      src.index = i + 6;
+      continue;
+    }
+
+    if (cc < 0x20) {
+      this._throw ('文字列中に制御文字がある', src);
+    }
+
+    break;
   }
 
-  src.index = src.length;
-  this._throw ('文字列が閉じていない', src);  // テキスト末尾に到達
+  // " が現れないまま末尾に到達した
+  this._throw ('文字列が閉じていない', src);
 };
 
 
@@ -221,9 +290,19 @@ DOMJson.prototype._parseNumber = function (src) {
   }
 
   function seekToNumberEnd () {
+    var cc;
+
     // 符号 - のみ
     if (src.charCodeAt (src.index) == 0x2d) {
       ++src.index;
+    }
+
+    // 整数部が 0 以外の場合は、先頭に 0 を置けない
+    if (src.charCodeAt (src.index) == 0x30) {
+      cc = src.charCodeAt (src.index + 1);
+      if (0x30 <= cc && cc <= 0x39) {
+        this._throw ('0の直後に数字がある', src);
+      }
     }
 
     // 整数部
@@ -232,7 +311,7 @@ DOMJson.prototype._parseNumber = function (src) {
     if (src.length <= src.index) {
       return;
     }
-    var cc = src.charCodeAt (src.index);
+    cc = src.charCodeAt (src.index);
 
     if (cc == 0x2e) {
       // 小数点+小数部
@@ -330,16 +409,10 @@ DOMJson.prototype._parse = function (text) {
   src.index = 0;
 
   this._skipBlank (src);
-  var prev = { index: src.index };
-
   var element = this._parseValue (src);
-  if (!/^(object|array)$/.test (element.nodeName)) {
-    this._throw ('ルート要素が{}/[]ではない', prev);
-  }
-
   this._skipBlank (src);
   if (src.index < src.length) {
-    this._throw ('ルート要素が単独の{}/[]ではない', src);
+    this._throw ('ルート要素の後ろに不正な文字', src);
   }
 
   this.document.appendChild (element);

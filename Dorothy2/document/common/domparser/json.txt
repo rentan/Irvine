@@ -27,6 +27,13 @@ EInvalidPointer エラーが発生することがあるため、実用的では
 変更履歴
 ========
 
+2014-09-28  version 20140928.0  rentan at rentan.org
+  頭に余計な 0 が付いた数値は例外を投げる。
+    thanks to dhxljh
+
+  JSON で定義されていないエスケープシーケンスは例外を投げる。
+  ルート要素は配列、オブジェクト以外でも許容する。
+
 2014-09-26  version 20140926.0  rentan at rentan.org
   指数形式の数値で「指数部の数字がない」例外が発生する不具合を修正。
     thanks to dhxljh
