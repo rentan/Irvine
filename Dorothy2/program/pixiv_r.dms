@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20140815.0
+//version=20141003.0
 //hint=pixiv 別バージョン
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?)
 //author=rentan
@@ -277,27 +277,6 @@ function get_spec_from_html (http) {
 }
 
 
-// HTML から各種情報を取得する(イラスト、漫画)
-//  成功時は画像 URL、HTTP エラー時 null を返す
-//  情報が見つからなければ強制終了する
-function get_img_spec_from_html (http) {
-  if (!get_spec_from_html (http)) {
-    return null;
-  }
-
-  // 画像 URL を探す
-  if (!/<img\s+src="(http:\/\/i\d+\.pixiv\.net\/img\d+\/img\/([^\/]+)\/\d+(_[0-9a-f]+)?(_m)?\.[^"]*)"/.test (http.data)) {
-    http.die ('画像 URL が見つかりません。');
-  }
-  var img_url = RegExp.$1;
-
-  // 原寸画像の URL を返す（ただし漫画の場合は存在しない）
-  img_url = img_url.replace (/_m(\.[^\/.]*)$/, '$1');
-
-  return img_url;
-}
-
-
 // illust_id から各種情報を取得する
 //  成功した場合は Http オブジェクト、失敗した場合は null を返す
 function get_spec_from_illustid (illust_id) {
@@ -307,7 +286,7 @@ function get_spec_from_illustid (illust_id) {
     return retry ();
   }
 
-  if (!get_img_spec_from_html (http)) {
+  if (!get_spec_from_html (http)) {
     return null;
   }
 
@@ -325,29 +304,9 @@ function get_manga_img_referer (page) {
 }
 
 
-// 漫画の画像が _big 付きかどうかを調べる
-function get_manga_size (url) {
-  url = url.replace (/\?.*$/, '').replace (/\.([^\/.]+)$/, '_big_p0.$1');
-
-  var http = new Http ();
-  http.setRequestHeader ('Referer', get_manga_img_referer ());
-  if (http.head (url)) {
-    // _big ファイルが存在する
-    nb.manga_size = '_big';
-  }
-  else if (http.code == 404) {
-    nb.manga_size = '';
-  }
-  else {
-    return http.retry_or_die ();
-  }
-
-  return true;
-}
-
-
 // <ul class="meta"><li>2012年07月18日 19:21</li><li>825×595</li>
 // <ul class="meta"><li>2012年08月02日 17:34</li><li>漫画 22P</li>
+// <ul class="meta"><li>2014年9月30日 00:06</li><li>複数枚投稿 14P</li>
 
 // 漫画のページ数を取得する
 //  mode=medium ページの HTML だけで取得可能
@@ -355,9 +314,9 @@ function get_manga_pages (http) {
   if (!/<ul\s+class="meta">\s*<li>.*?<\/li>\s*<li>(.*?)<\/li>/.test (http.data)) {
     http.die ('<ul class="meta"> が見つかりません。');
   }
-  var t = RegExp.$1;  // \d+×\d+ または 漫画 \d+P
+  var t = RegExp.$1;  // \d+×\d+ または 複数枚投稿 \d+P
 
-  var re = new RegExp ('^漫画\s+(\d+)P$'.toUTF8 ());
+  var re = new RegExp ('^複数枚投稿\s+(\d+)P$'.toUTF8 ());
   if (re.test (t)) {
     nb.pages = parseInt (RegExp.$1);
   }
@@ -368,16 +327,20 @@ function get_manga_pages (http) {
 
 // 漫画の画像 URL と保存ファイル名の一覧を作る
 //  [ { Url: 画像 URL, Filename: 保存ファイル名 }, { ... }, ... ]
-function make_manga_list (img_url, pages) {
-  var n = img_url.lastIndexOf ('.');
-  var base = img_url.slice (0, n) + nb.manga_size + '_p';
-  var ext = img_url.slice (n);
-
+function make_manga_list (urls, referer) {
   var list = [ ];
+
+  var fmt = ini.Filename ['Manga2'];
+
+  var pages = urls.length;
   for (var i = 0; i < pages; ++i) {
     nb.p = i;
-    var itemData = nb.buildFilename (ini.Filename ['Manga2'], img_url);
-    itemData.Url = base + i.toString () + ext;
+
+    var u = urls [i];
+    var itemData = nb.buildFilename (fmt, u);
+    itemData.Url = u;
+    itemData.Referer = referer;
+
     list.push (itemData);
   }
 
@@ -385,14 +348,46 @@ function make_manga_list (img_url, pages) {
 }
 
 
-// 漫画のページを解析して全ての画像をダウンロード
-function dl_manga_p (http) {
-  var img_url = get_img_spec_from_html (http);
-  if (!img_url || !get_manga_size (img_url)) {
+// 漫画の原寸画像のURLを取得して配列で返す
+// http は mode=medium のページをgetした直後の状態であること
+function get_manga_image_urls (http) {
+  var big = http.previousUrl.replace (/([?&]mode)=medium/, '$1=manga');
+
+  if (!http.get (big)) {
     return retry ();
   }
 
-  var list = make_manga_list (img_url, nb.pages);
+  var urls = [ ];
+
+  http.data.replace (/data-src="(http:\/\/i\d*\.pixiv\.net\/[^"]+)/g, function (s, url) {
+    urls.push (url);
+    return '';
+  });
+
+  if (urls.length == 0) {
+    http.capture ();
+    http.die ('画像URLが見つかりません。');
+  }
+
+  return urls;
+}
+
+
+// 漫画のページを解析して全ての画像をダウンロード
+function dl_manga_p (http) {
+  if (!get_spec_from_html (http)) {
+    return retry ();
+  }
+
+  var urls = get_manga_image_urls (http);
+  if (!urls) {
+    return retry ();
+  }
+  if (urls.length != nb.pages) {
+    http.die ('漫画の画像枚数が一致しませんでした。');
+  }
+
+  var list = make_manga_list (urls, http.previousUrl);
 
   additem.send (list) || exit ();
   Util.remove_this ();
@@ -419,21 +414,37 @@ function dl_manga (url) {
 }
 
 
-// イラストのページを解析して画像をダウンロード
-function dl_illust_p (http, img_specified) {
-  var img_url = get_img_spec_from_html (http);
-  if (!img_url) {
+// イラストの原寸画像のURLを取得する
+// http は mode=medium のページをgetした直後の状態であること
+function get_illust_image_url (http) {
+  var big = http.previousUrl.replace (/([?&]mode)=medium/, '$1=big');
+
+  if (!http.get (big)) {
     return retry ();
   }
+
+  if (/<img\s+src="(http:\/\/i\d*\.pixiv\.net\/[^"]+)/.test (http.data)) {
+    return RegExp.$1;
+  }
+
+  http.capture ();
+  http.die ('画像URLが見つかりません。');
+}
+
+
+// イラストのページを解析して画像をダウンロード
+function dl_illust_p (http, img_specified) {
+  if (!get_spec_from_html (http)) {
+    return retry ();
+  }
+
+  var img_url = get_illust_image_url (http);
 
   // 画像URL指定時は Illust を使用(未設定ならページURL指定時と同様に Illust2)
   var fmt = (img_specified && ini.Filename ['Illust']) || ini.Filename ['Illust2'];
   nb.setFilename (fmt, img_url);
 
-  urlinfo.url = img_url;
-  headers.Host = (new URL (img_url)).host;
-  headers.Cookie = '';
-  headers.Referer = http.previousUrl.replace (/([?&]mode)=medium/, '$1=big');
+  Dorothy.setUrl (img_url, http.previousUrl);
   headers ['Accept-Language'] = 'ja';
 }
 
