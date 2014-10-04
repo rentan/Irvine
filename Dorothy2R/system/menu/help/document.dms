@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ドキュメント
-//version=20140815.0
+//version=20140926.0
 //hint=
 //match=
 //author=rentan
@@ -25,17 +25,67 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-function () {
-  var formText = file_load (dorothy2_system_menu_help + 'doc.dfm');
-  formText = formText.replace (/^\s*object\s+Splitter2:\s*TSplitter.*?^\s*end\s*$/mg, '');
-  formText = formText.replace (/^\s*object\s[^:]*:\s*TRadioButton.*?^\s*end\s*$/mg, '');
+function (file) {
+  var docView = this._documentForm;
 
-  var form = DorothySetting._documentForm = new VCLForm (true);
-  form.loadFromText (formText);
+  // 表示中ならそれをアクティブにする
+  if (docView) {
+    docView.showFile (file);
+    docView.setFocus ();
+    return;
+  }
+
+  docView = this._documentForm = new VCLForm (true);
+
+  var dfm = file_load (dorothy2_system_menu_help + 'doc.dfm');
+  dfm = dfm.replace (/^\s*object\s+Splitter2:\s*TSplitter.*?^\s*end\s*$/mg, '');
+  dfm = dfm.replace (/^\s*object\s[^:]*:\s*TRadioButton.*?^\s*end\s*$/mg, '');
+
+  docView.loadFromText (dfm);
+  docView._settingForm = this;
+
+
+  // ツリーリストが変更されたらファイルの中身をテキスト表示する
+  docView.TreeView1.onChange = function (sender, node) {
+    var s = '';
+    if (File.exists (node.path)) {
+      var s = this.parent._settingForm.loadFileToSJIS (node.path);
+    }
+
+    this.parent.Memo1.Lines.assign (s);
+  };
+
+  // フォームが閉じられたら参照を削除する
+  docView.onClose = function () {
+    // SettingForm から docView への参照を削除
+    this._settingForm._documentForm = null;
+
+    // docView から SettingForm への参照を削除
+    this._settingForm = null;
+  };
+
+
+  // 指定したファイルを表示する
+  docView.showFile = function (file) {
+    if (!file) {
+      return;
+    }
+
+    var items = this.TreeView1.Items;
+    var len = items.Count;
+
+    for (var i = 0; i < len; ++i) {
+      if (items [i].path == file) {
+        this.TreeView1.Selected = items [i];
+        return;
+      }
+    }
+  };
+
 
   // TreeView1 にノードを追加
   function add (node, name, path) {
-    var items = form.TreeView1.Items;
+    var items = docView.TreeView1.Items;
 
     var childNode = node ? items.addChild (node, name) : items.add (node, name);
     childNode.path = path;
@@ -44,7 +94,9 @@ function () {
   }
 
   // フォルダ内のフォルダとファイルを追加する
-  function getDocuments (dir, node) {
+  function getDocuments (path, node) {
+    var dir = new Directory (path);
+
     if (!dir.exists ()) {
       alert ('フォルダがありません。');
       return;
@@ -61,7 +113,7 @@ function () {
       var name = d.replace (/^.*\\/, '');
       var childNode = add (node, name, f);
 
-      getDocuments (new Directory (d), childNode);
+      getDocuments (d, childNode);
     }
 
     var files = dir.files;
@@ -77,25 +129,10 @@ function () {
     }
   }
 
-  getDocuments (new Directory (Dorothy.path + 'document'), null);
+  getDocuments (this.DOCUMENT, null);
 
-  // ツリーリストが変更されたらファイルの中身をテキスト表示する
-  form.TreeView1.onChange = function (sender, node) {
-    var s = '';
-    if ((new File (node.path)).exists ()) {
-      var s = DorothySetting.loadFileToSJIS (node.path);
-    }
-
-    var form = DorothySetting._documentForm;
-    form.Memo1.Lines.assign (s);
-  };
-
-  // フォームが閉じられたら参照を削除する
-  form.onClose = function () {
-    DorothySetting._documentForm = null;
-  };
-
-  form.show ();
+  docView.showFile (file);
+  docView.show ();
   eventLoop ();
 }
 

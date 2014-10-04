@@ -1,0 +1,1617 @@
+//Dorothy2
+//caption=SettingForm
+//version=20141005.0
+//hint=
+//match=
+//author=rentan
+//path=system
+//end
+
+// based on Dorothy2set.dms version 0.19 by xor
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+(function () {
+
+
+// Dorothy2R 設定用フォーム
+var SettingForm = new VCLForm ();
+
+SettingForm.showSettingForm = function (ev) {
+  this.initDorothy (ev);
+
+  this.definePath ();
+  this.defineGlobalPath ();
+  this.defineGlobalFunc ();
+  this.bindCallback ();
+
+  this.loadFromText (this.formDfm);
+  this.loadSettingIni ();
+  this.initForm ();
+
+  this.showModal ();
+};
+
+SettingForm.initDorothy = function (ev) {
+  // Dorothy2R_a.dms 実行
+  (function () {
+    var f = new File (WScript.Path + 'scripts\Dorothy2R_a.dms');
+    try {
+      f.open ('r');
+      eval ('(function(){' + f.read () + '})()');
+      f.close ();
+    }
+    catch (e) {
+      f.close ();
+      alert (e + "\n" + f.path);
+      exit ();
+    }
+  }) ();
+
+  // 基本フォルダ設定
+  Dorothy.path = WScript.Path + 'Dorothy2\';
+  Dorothy.temp = Dorothy.path + 'temp\';
+  Dorothy.programDir = Dorothy.path + 'program\';
+
+  // Dorothy オブジェクト初期化
+  Dorothy.init ({ version: 'xxxx', eval: ev });
+  Dorothy.rVersion = 20141005;
+
+  debug = false;
+  mode = { };
+};
+
+
+// パス定義
+SettingForm.definePath = function () {
+  var map = {
+    USER:     'user\',
+    SETTING:  'setting\',
+    DOCUMENT: 'document\',
+    DOCUMENT_PROGRAM: 'document\program\',
+
+    DOROTHY_INI: 'system\Dorothy.ini',
+    SETTING_INI: 'system\setting.ini',
+    SAVED_INI:   'system\ini\',
+
+    MISC_SCRIPT:  'system\menu\',
+    NEW_PROGRAM:  'system\menu\new\',
+    NEW_SETTING:  'system\menu\setting\',
+    EDIT_MODE:    'system\menu\edit\',
+    USER_SETTING: 'system\menu\set\',
+    PACKAGE:      'system\menu\package\',
+    TOOL:         'system\menu\tool',
+
+    NEW_PROJECT_DMS:  'system\menu\project\new_project.dms',
+    EDIT_PROJECT_DMS: 'system\menu\project\edit_project.dms',
+    OUT_PROJECT_DMS:  'system\menu\project\out_project.dms',
+
+    DNDFILE_DMS:      'system\DDfile.dms',
+    DNDTEXT_DMS:      'system\DDtext.dms',
+    DIALOGEDITOR_DMS: 'system\Dialog\dialogEditor.dms',
+    VERSION_DMS:      'system\menu\help\ver.dms'
+  };
+
+  var d = Dorothy.path;
+  for (var key in map) {
+    this [key] = d + map [key];
+  }
+
+  // Dorothy2R 専用
+  var map2 = {
+    USER_SETTING_2R: 'system\menu\set\',
+    DOCUMENT_DMS:    'system\menu\help\document.dms'
+  };
+
+  var r = d.replace (/\\Dorothy2\\$/, '\\Dorothy2R\\');
+  for (key in map2) {
+    this [key] = r + map2 [key];
+  }
+};
+
+
+// パス名グローバル変数の定義
+SettingForm.defineGlobalPath = function () {
+  dorothy2_path = Dorothy.path;
+  dorothy2_temp = Dorothy.temp;
+  dorothy2_document    = dorothy2_path + 'document\';
+  dorothy2_common      = dorothy2_path + 'common\';
+  dorothy2_program     = dorothy2_path + 'program\';
+  dorothy2_setting     = dorothy2_path + 'setting\';
+  dorothy2_system      = dorothy2_path + 'system\';
+  dorothy2_project     = dorothy2_path + 'project\';
+  dorothy2_projectdata = dorothy2_path + 'projectdata\';
+  dorothy2_bin         = dorothy2_path + 'bin\';
+  dorothy2_user        = dorothy2_path + 'user\';
+  dorothy2_system_menu         = dorothy2_system + 'menu\';
+  dorothy2_system_menu_new     = dorothy2_system_menu + 'new\';
+  dorothy2_system_menu_setting = dorothy2_system_menu + 'setting\';
+  dorothy2_system_menu_edit    = dorothy2_system_menu + 'edit\';
+  dorothy2_system_menu_project = dorothy2_system_menu + 'project\';
+  dorothy2_system_menu_tool    = dorothy2_system_menu + 'tool\';
+  dorothy2_system_menu_set     = dorothy2_system_menu + 'set\';
+  dorothy2_system_menu_package = dorothy2_system_menu + 'package\';
+  dorothy2_system_menu_help    = dorothy2_system_menu + 'help\';
+  dorothy2_system_ini          = dorothy2_system + 'ini\';
+
+  irvine_script_path = WScript.Path + 'scripts\';
+};
+
+
+// グローバル関数の定義
+SettingForm.defineGlobalFunc = function () {
+  editor = function (path) {
+    Dorothy.edit (path);
+  };
+
+  // system\menu\set\Modem.dms から使われている
+  script_file_read = this.bind (function (path) {
+    return this.loadScriptHeader (path);
+  });
+
+  // xor.dms の代替
+  extractFilePath = function (path) {
+    return File.extractDir (path);
+  };
+};
+
+
+// コールバック関数用のバインド
+//   バインドされた関数を一度実行すると apply モードに設定されるので、
+//   元の関数を直接呼び出さないこと(call/apply での呼び出しは可能)。
+//   基本的にはバインドで生成された関数だけを使う。
+SettingForm.bind = function (f) {
+  return (function (self, f) {
+    return function () {
+      return f.apply (self, arguments);
+    };
+  }) (this, f);
+};
+
+// コールバック関数をバインドする
+//   同名のキー名に上書きするので元の関数を外から呼ぶことはできなくなる。
+SettingForm.bindCallback = function () {
+  var list = [
+    'saveFormDesign',
+    'msg',
+    'updateContext',
+    'dndFile',
+    'dndUrl',
+
+    'newDocument',
+    'newMiscScript',
+    'newSetScript',
+    'editProgram',
+    'editDocument',
+    'editSetScript',
+    'editScript',
+    'saveIni',
+    'loadIni',
+    'save',
+    'saveAndExit',
+    'exitSettingForm',
+
+    'selectAll',
+    'deselectAll',
+    'reload',
+    'toggleDebugMode',
+
+    'newProject',
+    'editProject',
+    'outputProject',
+
+    'documentViewer',
+    'showVersion',
+
+    'programSetting',
+    'showDocument',
+    'editProjectFiles',
+
+    '_createMenu_onClick'
+  ];
+
+  var len = list.length;
+  for (var i = 0; i < len; ++i) {
+    var name = list [i];
+    this [name] = this.bind (this [name]);
+  }
+};
+
+
+// フォームの位置等を保存する
+SettingForm.formDesignSection = 'formdesign';
+SettingForm.formDesignKeys = [ 'Width', 'Height', 'Left', 'Top' ];
+
+// 保存するデータを返す(無変更なら null)
+SettingForm.getChangedDesign = function (ini, sec) {
+  var design = [ ];
+  var changed = null;
+
+  // フォーム位置・サイズ
+  var keys = this.formDesignKeys;
+  for (var i = 0; i < keys.length; ++i) {
+    var key = keys [i];
+    var v = this [key];
+
+    design.push ({ key: key, value: v });
+
+    if (v != ini.read (sec, key, '')) {
+      changed = true;
+    }
+  }
+
+  // リスト項目の幅
+  var columns = this.ListView1.Columns;
+  var len = columns.Count;
+  for (i = 0; i < len; ++i) {
+    var key = 'Columns_' + i;
+    var width = columns.items (i).Width;
+
+    design.push ({ key: key, value: width });
+
+    if (width != ini.read (sec, key, '')) {
+      changed = true;
+    }
+  }
+
+  return changed && design;
+};
+
+// setting.ini にウィンドウ位置・サイズを保存する
+SettingForm.saveFormDesign = function () {
+  // Shift キーが押されていれば保存しない
+  if (Keyboard.shift) {
+    return;
+  }
+
+  var ini = new Ini (this.SETTING_INI);
+  var sec = this.formDesignSection;
+
+  var design = this.getChangedDesign (ini, sec);
+  if (!design) {
+    // 無変更ならファイルを更新しない
+    return;
+  }
+
+  var len = design.length;
+  for (var i = 0; i < len; ++i) {
+    var kv = design [i];
+    ini.write (sec, kv.key, kv.value);
+  }
+
+  ini.update ();
+};
+
+
+// setting.ini からウィンドウ位置・サイズを読んでフォームに設定する
+SettingForm.loadFormDesign = function (ini) {
+  var sec = this.formDesignSection;
+
+  // フォーム位置・サイズ
+  var keys = this.formDesignKeys;
+  for (var i = 0; i < keys.length; ++i) {
+    var key = keys [i];
+    var v = ini.read (sec, key, '');
+
+    if (v) {
+      this [key] = v;
+    }
+  }
+
+  // リスト項目の幅
+  var columns = this.ListView1.Columns;
+  var len = columns.Count;
+  for (i = 0; i < len; ++i) {
+    var key = 'Columns_' + i;
+    var width = ini.read (sec, key, '');
+
+    if (width) {
+      columns.items (i).Width = width;
+    }
+  }
+};
+
+
+// setting.ini を読んで Dorothy オブジェクトに設定する
+SettingForm.loadSettingIni = function () {
+  var ini = new Ini (this.SETTING_INI);
+  function usr (key) {
+    return ini.read ('user', key, '');
+  }
+
+  Dorothy.temp = usr ('temp') || Dorothy.tmep;
+
+  // system\menu\～.dms で USER_NAME が使われている
+  USER_NAME = Dorothy.userName = usr ('name');
+
+  // Dorothy2R 拡張
+  Dorothy.nulUrl = usr ('nulurl');
+  Dorothy.nulProxy = usr ('nulproxy');
+
+
+  // 圧縮・展開ツール
+  COMPRESSION = ini.read ('arc', 'compression', '');
+  EXTRACT = ini.read ('arc', 'extract', '');
+
+
+  // フォームの位置等
+  this.loadFormDesign (ini);
+
+
+  // Dorothy2set.dms 0.19 で追加された common 置き換え機能
+  Dorothy.common_sp = ini.read ('common', 'common_sp', '') == '1';
+  Dorothy.common_show = ini.read ('common', 'common_show', '') == '1';
+  Dorothy.common_name = ini.read ('common', 'common_name', '');
+};
+
+
+// フォーム定義テキスト
+SettingForm.formDfm = "
+object Form1: TForm1
+  Left = 400
+  Top = 200
+  Width = 738
+  Height = 619
+  Caption = 'Dorothy2R 設定'
+  Color = clBtnFace
+  DragMode = dmAutomatic
+  Font.Charset = SHIFTJIS_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'ＭＳ Ｐゴシック'
+  Font.Style = []
+  Menu = menuMain
+  OldCreateOrder = False
+  Position = poDesigned
+  ShowHint = True
+  DesignSize = (
+    730
+    573)
+  PixelsPerInch = 96
+  TextHeight = 12
+  object ListView1: TListView
+    Left = 0
+    Top = 0
+    Width = 723
+    Height = 541
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    Checkboxes = True
+    Columns = <
+      item
+        Caption = 'キャプション'
+        Width = 200
+      end
+      item
+        Caption = '優先度'
+        Width = 50
+      end
+      item
+        Caption = 'バージョン'
+        Width = 90
+      end
+      item
+        Caption = '作者'
+        Width = 70
+      end
+      item
+        Caption = '説明'
+        Width = 290
+      end>
+    ReadOnly = True
+    RowSelect = True
+    PopupMenu = popupmenuProgram
+    TabOrder = 0
+    ViewStyle = vsReport
+  end
+  object StatusBar1: TStatusBar
+    Left = 0
+    Top = 554
+    Width = 730
+    Height = 19
+    AutoHint = True
+    Panels = <>
+    ParentShowHint = False
+    ShowHint = True
+    SimplePanel = True
+  end
+  object popupmenuProgram: TPopupMenu
+    Left = 104
+    Top = 104
+    object popupEditProgram: TMenuItem
+      Caption = '編集'
+    end
+    object popupSetting: TMenuItem
+      Caption = '設定'
+    end
+    object popupDocument: TMenuItem
+      Caption = 'ドキュメント'
+    end
+    object popupProject: TMenuItem
+      Caption = 'プロジェクト'
+    end
+  end
+  object menuMain: TMainMenu
+    Left = 16
+    object menuFile: TMenuItem
+      Caption = 'ファイル(&F)'
+      object menuNewProgram: TMenuItem
+        Caption = '新規作成(&N)'
+      end
+      object menuNewDocument: TMenuItem
+        Caption = 'ドキュメント作成'
+        Enabled = False
+      end
+      object menuNewSetting: TMenuItem
+        Caption = '設定スクリプト作成'
+        Enabled = False
+      end
+      object menuNewMiscScript: TMenuItem
+        Caption = 'その他のスクリプト作成'
+      end
+      object menuEditProgram: TMenuItem
+        Caption = 'スクリプト編集'
+        Enabled = False
+      end
+      object menuEditDocument: TMenuItem
+        Caption = 'ドキュメント編集'
+        Enabled = False
+      end
+      object menuEditSetting: TMenuItem
+        Caption = '設定スクリプト編集'
+        Enabled = False
+      end
+      object menuEditScript: TMenuItem
+        Caption = 'その他のスクリプトを編集'
+      end
+      object menuFileSep1: TMenuItem
+        Caption = '-'
+      end
+      object menuSaveIni: TMenuItem
+        Caption = '設定保存'
+        object menuSaveIniNew: TMenuItem
+          Caption = '新規'
+        end
+        object menuSaveIniSep1: TMenuItem
+          Caption = '-'
+        end
+      end
+      object menuLoadIni: TMenuItem
+        Caption = '設定読み込み'
+      end
+      object menuFileSep2: TMenuItem
+        Caption = '-'
+      end
+      object menuClone: TMenuItem
+        Caption = 'クローン'
+        Enabled = False
+      end
+      object menuFileSep3: TMenuItem
+        Caption = '-'
+      end
+      object menuSave: TMenuItem
+        Caption = '上書き保存(&S)'
+      end
+      object menuFileSep4: TMenuItem
+        Caption = '-'
+      end
+      object menuSaveExit: TMenuItem
+        Caption = '保存して終了'
+      end
+      object menuExit: TMenuItem
+        Caption = '終了(&X)'
+      end
+    end
+    object menuEdit: TMenuItem
+      Caption = '編集(&E)'
+      object menuSelectAll: TMenuItem
+        Caption = '全て選択'
+      end
+      object menuDeselectAll: TMenuItem
+        Caption = '全て解除'
+      end
+      object menuPriority: TMenuItem
+        Caption = '優先度を変える'
+        Enabled = False
+      end
+      object menuReload: TMenuItem
+        Caption = 'データを再読み込み'
+      end
+      object menuEditSep1: TMenuItem
+        Caption = '-'
+      end
+      object menuDebugMode: TMenuItem
+        Caption = 'デバッグモード'
+        Checked = True
+      end
+    end
+    object menuProject: TMenuItem
+      Caption = 'プロジェクト'
+      object menuNewProject: TMenuItem
+        Caption = 'プロジェクト新規作成'
+      end
+      object menuEditProject: TMenuItem
+        Caption = 'プロジェクト編集'
+      end
+      object menuOutputProject: TMenuItem
+        Caption = 'プロジェクトファイル出力'
+      end
+    end
+    object menuSetting: TMenuItem
+      Caption = '設定'
+    end
+    object menuPackage: TMenuItem
+      Caption = 'パッケージ'
+      Enabled = False
+    end
+    object menuTool: TMenuItem
+      Caption = 'ツール'
+      Enabled = False
+    end
+    object menuHelp: TMenuItem
+      Caption = 'ヘルプ'
+      object menuDocument: TMenuItem
+        Caption = 'ドキュメント'
+      end
+      object menuVersion: TMenuItem
+        Caption = 'バージョン'
+      end
+    end
+  end
+end
+";
+
+
+// フォーム(ウィンドウ)初期化
+SettingForm.initForm = function () {
+
+  // メニューを初期化
+  this.initNewProgramMenu ();
+  this.initNewSetScriptMenu ();
+  this.initLoadIniMenu ();
+  this.initSaveIniMenu ();
+  this.initModeMenu ();
+  this.initSettingMenu ();
+  this.initPackageMenu ();
+  this.initToolMenu ();
+
+  // ファイルメニュー
+  this.menuFile.onClick = this.updateContext;
+  this.menuNewDocument.onClick = this.newDocument;
+  this.menuNewMiscScript.onClick = this.newMiscScript;
+  this.menuEditProgram.onClick = this.editProgram;
+  this.menuEditDocument.onClick = this.editDocument;
+  this.menuEditSetting.onClick = this.editSetScript;
+  this.menuEditScript.onClick = this.editScript;
+  this.menuSave.onClick = this.save;
+  this.menuSaveExit.onClick = this.saveAndExit;
+  this.menuExit.onClick = this.exitSettingForm;
+
+  // 編集メニュー
+  this.menuSelectAll.onClick = this.selectAll;
+  this.menuDeselectAll.onClick = this.deselectAll;
+  this.menuReload.onClick = this.reload;
+  this.menuDebugMode.onClick = this.toggleDebugMode;
+
+  // プロジェクトメニュー
+  this.menuNewProject.onClick = this.newProject;
+  this.menuEditProject.onClick = this.editProject;
+  this.menuOutputProject.onClick = this.outputProject;
+
+  // ヘルプメニュー
+  this.menuDocument.onClick = this.documentViewer;
+  this.menuVersion.onClick = this.showVersion;
+
+  // プログラム一覧
+  this.ListView1.onContextPopup = this.updateContext;
+  this.ListView1.onDragDropFiles = this.dndFile;
+  this.ListView1.onDragDropText = this.dndUrl;
+  this.ListView1.acceptDrop = true;
+
+  // プログラムのコンテキストメニュー
+  this.popupEditProgram.onClick = this.editProgram;
+  this.popupSetting.onClick = this.programSetting;
+  this.popupDocument.onClick = this.showDocument;
+  this.popupProject.onClick = this.editProjectFiles;
+
+  // 終了時
+  this.onClose = this.saveFormDesign;
+
+  this.createProgramList ();
+};
+
+
+// ステータスバーメッセージ
+SettingForm.msg = function (text) {
+  this.StatusBar1.SimpleText = text;
+};
+
+
+// メニューの有効無効を、選択されたプログラムのファイル有無によって切り替える
+SettingForm.updateContext = function () {
+  var selected = false;
+  var set = false;
+  var doc = false;
+
+  var item = this.getSelectedItem ();
+  if (item) {
+    selected = true;
+    set = File.exists (this.SETTING + item.filename + '.set');
+    doc = File.exists (this.DOCUMENT_PROGRAM + item.filename + '.txt');
+  }
+
+  this.popupEditProgram.Enabled = selected;
+  this.popupSetting.Enabled = set;
+  this.popupDocument.Enabled = doc;
+  this.popupProject.Enabled = selected;
+  this.menuNewDocument.Enabled = selected && !doc;
+  this.menuNewSetting.Enabled = selected && !set;
+  this.menuEditProgram.Enabled = selected;
+  this.menuEditDocument.Enabled = doc;
+  this.menuEditSetting.Enabled = set;
+};
+
+// 選択中のアイテムを返す
+SettingForm.getSelectedItem = function () {
+  var listview = this.ListView1;
+
+  if (listview.SelCount == 0) {
+    return null;
+  }
+  return listview.Items [listview.Selected.Index];
+};
+
+
+// ファイルD&D
+SettingForm.dndFile = function (sender, x, y, files) {
+  msg (files);
+
+  this.execScriptFile (this.DNDFILE_DMS, files);
+};
+
+
+// テキストD&D
+SettingForm.dndUrl = function (sender, x, y, url) {
+  msg (url);
+
+  this.execScriptFile (this.DNDTEXT_DMS, url);
+};
+
+
+// ファイル  編集  プロジェクト  設定  パッケージ  ツール  ヘルプ
+// ========
+
+
+// 新規作成のスクリプトをメニューに登録する
+//   system\menu\new\*.dms
+SettingForm.initNewProgramMenu = function () {
+  var menu = this.createMenu ();
+  menu.add (this.NEW_PROGRAM);
+  menu.register (this.menuNewProgram);
+};
+
+
+// ドキュメント新規作成
+SettingForm.newDocument = function () {
+  this.editDocument ();
+};
+
+
+// 設定スクリプト新規作成のスクリプトをメニューに登録する
+//   system\menu\setting\*.dms
+SettingForm.initNewSetScriptMenu = function () {
+  var menu = this.createMenu ();
+  menu.add (this.NEW_SETTING, { onclick: this.newSetScript });
+  menu.register (this.menuNewSetting);
+};
+
+// 設定スクリプト新規作成
+SettingForm.newSetScript = function (menuItem) {
+  msg ('設定スクリプト作成');
+
+  var item = this.getSelectedItem ();
+  if (!item) {
+    return;
+  }
+
+  var header = this.loadScriptHeader (Dorothy.programDir + item.filename + '.dms');
+  this.execScriptFile (menuItem.path, header);
+};
+
+
+// その他のスクリプトを新規作成
+SettingForm.newMiscScript = function () {
+  msg ('その他のスクリプトを作成');
+
+  var item = this.getSelectedItem ();
+  var path = item ? (this.USER + item.filename + '\') : this.MISC_SCRIPT;
+
+  var dir = new Directory (path);
+  if (!dir.exists ()) {
+    dir.make ();
+  }
+
+  var file = Dialog.openFile ('その他のスクリプトを作成', path + '*.*');
+  if (!file) {
+    return;
+  }
+
+  if (File.extractExt (file) == '.dfm') {
+    return this.dialogEditor (file);
+  }
+  Dorothy.edit (file);
+};
+
+
+// ダイアログエディタを呼び出す
+//   スクリプトが見当たらないため動作未確認
+SettingForm.dialogEditor = function (dfm) {
+  return this.execScriptFile (this.DIALOGEDITOR_DMS, 'path', dfm);
+};
+
+
+// プログラム編集
+SettingForm.editProgram = function () {
+  msg ('編集');
+
+  var item = this.getSelectedItem ();
+  if (item) {
+    Dorothy.edit (Dorothy.programDir + item.filename + '.dms');
+  }
+};
+
+
+// ドキュメント編集
+SettingForm.editDocument = function () {
+  msg ('ドキュメント編集');
+
+  var item = this.getSelectedItem ();
+  if (item) {
+    Dorothy.edit (this.DOCUMENT_PROGRAM + item.filename + '.txt');
+  }
+};
+
+
+// 設定スクリプト編集
+SettingForm.editSetScript = function () {
+  msg ('設定スクリプト編集');
+
+  var item = this.getSelectedItem ();
+  if (item) {
+    Dorothy.edit (this.SETTING + item.filename + '.set');
+  }
+};
+
+
+// その他のスクリプトを編集
+SettingForm.editScript = function () {
+  msg ('その他のスクリプトを編集');
+
+  var path = this.MISC_SCRIPT;
+
+  var item = this.getSelectedItem ();
+  if (item) {
+    var u = this.USER + item.filename + '\';
+    if (Directory.exists (u)) {
+      path = u;
+    }
+  }
+
+  var file = Dialog.openFile ('その他のスクリプトを編集', path + '*.*');
+  if (!file) {
+    return;
+  }
+
+  if (!File.exists (file)) {
+    alert ('ファイルがありません。');
+    return;
+  }
+
+  if (File.extractExt (file) == '.dfm') {
+    return this.dialogEditor (file);
+  }
+  Dorothy.edit (file);
+};
+
+
+// 設定保存のファイルをメニューに登録する
+//   system\ini\*.ini
+SettingForm.initSaveIniMenu = function () {
+  var path = this.SAVED_INI;
+  if (!Directory.exists (path)) {
+    return;
+  }
+
+  var n = this.menuSaveIniNew;
+  n.path = '*new*';
+  n.onClick = this.saveIni;
+
+  this.menuSaveIni.newBottomLine ();
+
+  var menu = this.createMenu ();
+  menu.add (path, { ext: 'ini', ignore: [ 'Dorothy.ini' ], onclick: this.saveIni });
+  menu.register (this.menuSaveIni);
+};
+
+// 設定保存
+SettingForm.saveIni = function (menuItem) {
+  msg ('設定保存中');
+
+  var path = menuItem.path;
+  if (path == '*new*') {
+    var dialog = new Dialog ('Ini ファイル|*.ini', 'すべてのファイル|*.*');
+    path = dialog.saveFile ('新規設定保存', this.SAVED_INI + '*.ini');
+    path = path && path.replace (/(\.ini)?$/, '.ini');
+  }
+  if (!path) {
+    return msg ('中止');
+  }
+
+  var ini = new Ini (path);
+
+  // [script] 各プログラムの有効無効のチェック状態
+  var section = 'script';
+  ini.eraseSection (section);
+
+  var listview = this.ListView1;
+  var len = listview.Items.Count;
+
+  for (var i = 0; i < len; ++i) {
+    var item = listview.Items [i];
+    ini.write (section, item.filename + '.dms', item.Checked ? '1' : '0');
+  }
+
+  // [mode] debug などのチェック状態
+  section = 'mode';
+  ini.eraseSection (section);
+
+  for (var key in mode) {
+    ini.write (section, key, mode [key] ? '1' : '0');
+  }
+
+  ini.update ();
+  this.initSaveIniMenu ();
+  this.initLoadIniMenu ();
+
+  msg (path + ' に保存しました。');
+};
+
+
+// 設定読み込みのファイルをメニューに登録する
+SettingForm.initLoadIniMenu = function () {
+  var path = this.SAVED_INI;
+  if (!Directory.exists (path)) {
+    return;
+  }
+
+  var menu = this.createMenu ();
+  menu.add (path, { ext: 'ini', ignore: [ 'Dorothy.ini' ], onclick: this.loadIni });
+  menu.register (this.menuLoadIni);
+};
+
+// 設定読み込み
+SettingForm.loadIni = function (menuItem) {
+  msg ('設定読込み中');
+
+  var ini = new Ini (menuItem.path);
+
+  // [script] 各プログラムの有効無効のチェック状態
+  var section = 'script';
+
+  var listview = this.ListView1;
+  var len = listview.Items.Count;
+
+  for (var i = 0; i < len; ++i) {
+    var item = listview.Items [i];
+    item.Checked = (ini.read (section, item.filename + '.dms', '0') == '1');
+  }
+
+  // [mode] debug などのチェック状態
+  // 対応する編集スクリプトのチェック状態も更新する
+  section = 'mode';
+
+  // mode オブジェクトを空にする
+  var keys = mode.getProperties ();
+  for (i = 0; i < keys.length; ++i) {
+    mode.removeKey (keys [i]);
+  }
+
+  var checked = ini.read (section, 'debug', '0') == '1';
+  mode.debug = this.menuDebugMode.Checked = checked;
+
+  for (var key in this.modeMenuItems) {
+    var menuItem = this.modeMenuItems [key];
+    mode [key] = menuItem.Checked = ini.read (section, key, '0') == '1';
+  }
+
+  msg (menuItem.path + ' から読み込みました。');
+};
+
+
+// 上書き保存 Dorothy.ini, Dorothy2R_ini.dms
+SettingForm.save = function () {
+  msg ('保存中');
+
+  var ini = new Ini (this.DOROTHY_INI);
+
+  var section = 'script';
+  ini.eraseSection (section);
+
+  var listview = this.ListView1;
+  for (var i in listview.Items) {
+    var item = listview.Items [i];
+    ini.write (section, item.filename + '.dms', item.checked ? '1' : '0');
+  }
+
+  var section = 'mode';
+  ini.eraseSection (section);
+  for (i in mode) {
+    ini.write (section, i, mode [i] ? '1' : '0');
+  }
+  ini.update ();
+
+
+  // Dorothy2R_ini.dms に書き込む文字列を用意する
+  var s = new Strings ();
+
+  // debug = ...;
+  for (var key in mode) {
+    var k = (key == 'debug') ? key : 'Dorothy.' + key;
+    s.add (k + ' = ' + mode [key] + ';');
+  }
+
+  // Dorothy = { key: value, ... };
+  function add (k, v) {
+    s.add ('Dorothy.' + k + ' = ' + v + ';');
+  }
+  function addq (k, v) {
+    add (k, "'" + v + "'");
+  }
+
+  s.add ("Dorothy = (typeof Dorothy == 'object') ? Dorothy : { version: 'uninitialized' };");
+  add ('rVersion', Dorothy.rVersion);
+
+  add ('path', "WScript.Path + 'Dorothy2\\'");
+  if (Dorothy.temp == Dorothy.path + 'temp\') {
+    add ('temp', "Dorothy.path + 'temp\\'");
+  }
+  else {
+    addq ('temp', Dorothy.temp);
+  }
+  add ('programDir', "Dorothy.path + 'program\\'");
+
+  addq ('userName', Dorothy.userName);
+
+  addq ('nulUrl', Dorothy.nulUrl);
+  addq ('nulProxy', Dorothy.nulProxy);
+
+  add ('common_sp', Dorothy.common_sp);
+  add ('common_show', Dorothy.common_show);
+  addq ('common_name', Dorothy.common_name);
+
+  // Dorothy.matchList = [ ... ];
+  var so = [ ];
+  for (i in listview.Items) {
+    var item = listview.Items [i];
+    if (!item.checked) {
+      continue;
+    }
+
+    var hd = this.loadScriptHeader (Dorothy.programDir + item.filename + '.dms');
+    hd = '/' + hd.match.replace (/\\(.)|(\/)/g, '\\$1$2') + '/';
+
+    so.add ([ item.priority, item.filename, hd ]);
+  }
+
+  // スクリプトの優先順にソート
+  so.sort (function (a, b) {
+    return (a [0] < b [0]);
+  });
+
+  s.add ('Dorothy.matchList = [');
+  var last_i = so.length - 1;
+  for (i = 0; i <= last_i; ++i) {
+    // var pri = 'p: ' + so [i] [0];
+    var file = 'f: "' + so [i] [1] + '"';
+    var re = 're: ' + so [i] [2];
+    var t = ('  { ' + file + ', ' + re + ' }') + ((i < last_i) ? ',' : '');
+    s.add (t);
+  }
+  s.add ('];');
+
+  // Dorothy2R_ini.dms に書き込む
+  var filename = 'Dorothy2R_ini.dms';
+  var file = new File ((new irvinePath ()).scripts + filename);
+  try{
+    if (file.exists ()) {
+      file.remove ();
+    }
+    file.open ('w');
+    file.write (s.text);
+  }
+  catch (e) {
+    alert (filename + ' の保存に失敗しました: ' + e);
+  }
+  finally {
+    file.close ();
+  }
+  msg ('保存終了');
+};
+
+
+// 保存して終了
+SettingForm.saveAndExit = function () {
+  this.save ();
+  this.exitSettingForm ();
+};
+
+
+// 終了
+SettingForm.exitSettingForm = function () {
+  msg ('終了');
+  this.close ();
+};
+
+
+// ファイル  編集  プロジェクト  設定  パッケージ  ツール  ヘルプ
+//           ====
+
+
+// 全て選択
+SettingForm.selectAll = function () {
+  msg ('全て選択');
+
+  var listview = this.ListView1;
+  var len = listview.Items.Count;
+
+  for (var i = 0; i < len; ++i) {
+    listview.Items [i].Checked = true;
+  }
+};
+
+// 全て解除
+SettingForm.deselectAll = function () {
+  msg ('全て解除');
+
+  var listview = this.ListView1;
+  var len = listview.Items.Count;
+
+  for (var i = 0; i < len; ++i) {
+    listview.Items [i].Checked = false;
+  }
+};
+
+
+// データを再読み込み
+SettingForm.reload = function () {
+  msg ('リロード');
+  this.createProgramList ();
+};
+
+
+// デバッグモード切り替え
+SettingForm.toggleDebugMode = function () {
+  mode.debug = this.menuDebugMode.Checked = !mode.debug;
+};
+
+
+// system\menu\edit\*.dms の形式は不明。
+// とりあえず以下のようなコードで動作するように整理した。
+// function () {
+//   var key = 'filename';
+//   var checked = mode.hasKey (key) ? !mode [key] : true;
+//   mode [key] = this.modeMenuItems (key).Checked = checked;
+// }
+
+// 編集(モード)のスクリプトをメニューに登録する
+//   system\menu\edit\*.dms
+SettingForm.initModeMenu = function () {
+
+  // mode オブジェクトで有効なキー名('debug' は除く) から MenuItem への参照
+  //   初期化時にファイル名から決定され、以後変更されない
+  this.modeMenuItems = { };
+
+  var ini = new Ini (this.DOROTHY_INI);
+  var section = 'mode';
+
+  // デバッグモードのチェック状態
+  var checked = ini.read (section, 'debug', '0') == '1';
+  mode.debug = this.menuDebugMode.Checked = checked;
+
+  var path = this.EDIT_MODE;
+  if (!Directory.exists (path)) {
+    return;
+  }
+
+  var menu = this.createMenu ();
+  menu.add (path);
+  menu.register (this.menuEdit);
+
+  // sysytem\menu\edit\*.dms のチェック状態(= mode の値)を読み込む
+  for (var i = 0; i < menu.length; ++i) {
+    var key = File.extractName (menu [i].path).replace (/\.[^.]*$/, '');
+
+    var checked = ini.read (section, key, '0') == '1';
+    mode [key] = menu [i].Checked = checked;
+
+    // 設定読み込みで .ini から読み込むためのキー名と
+    // menuItem への参照(チェック状態のオンオフ用)を記録しておく
+    this.modeMenuItems [key] = menu [i];
+  }
+};
+
+
+// ファイル  編集  プロジェクト  設定  パッケージ  ツール  ヘルプ
+//                 ============
+
+
+// プロジェクト新規作成
+SettingForm.newProject = function () {
+  this.execScriptFile (this.NEW_PROJECT_DMS);
+};
+
+
+// プロジェクト編集
+SettingForm.editProject = function () {
+  this.execScriptFile (this.EDIT_PROJECT_DMS);
+};
+
+
+// プロジェクトファイル出力
+SettingForm.outputProject = function () {
+  this.execScriptFile (this.OUT_PROJECT_DMS);
+};
+
+
+// ファイル  編集  プロジェクト  設定  パッケージ  ツール  ヘルプ
+//                               ====
+
+// 設定のスクリプトをメニューに登録する
+//   system\menu\set\*.dms
+//
+// header
+//   //Dorothy2
+//   //caption=
+//   //version=
+//   //hint=
+//   //author=
+//   //path=system\menu\set
+//   //end
+// body
+//   function(){}
+//
+SettingForm.initSettingMenu = function () {
+  var menu = this.createMenu ();
+
+  menu.add (this.USER_SETTING_2R);
+
+  // Dorothy2R 側で実装されているスクリプトは無視する
+  var ignore = [ 'window.dms' ];
+  if (menu.hasItem (this.USER_SETTING_2R + 'usersetting.dms')) {
+    ignore = ignore.concat ([ 'common.dms', 'user_name.dms', 'usersetting.dms' ]);
+  }
+  menu.add (this.USER_SETTING, { ignore: ignore });
+
+  menu.register (this.menuSetting);
+};
+
+
+// ファイル  編集  プロジェクト  設定  パッケージ  ツール  ヘルプ
+//                                     ==========
+
+// パッケージのスクリプトをメニューに登録する
+//   sysytem\menu\package\*.dms
+//
+// header
+//   //Dorothy2
+//   //caption=
+//   //version=
+//   //hint=
+//   //author=
+//   //path=system\menu\package
+//   //end
+// body
+//   function(){}
+//
+SettingForm.initPackageMenu = function () {
+  var menu = this.createMenu ();
+  menu.add (this.PACKAGE);
+  menu.register (this.menuPackage);
+};
+
+
+// ファイル  編集  プロジェクト  設定  パッケージ  ツール  ヘルプ
+//                                                 ======
+
+// ツールのスクリプトをメニューに登録する
+//   system\menu\tool\*.dms
+//
+// header
+//   //Dorothy2
+//   //caption=
+//   //version=
+//   //hint=
+//   //author=
+//   //path=tool
+//   //end
+// body
+//   function(){}
+//
+SettingForm.initToolMenu = function () {
+  var menu = this.createMenu ();
+  menu.add (this.TOOL);
+  menu.register (this.menuTool);
+};
+
+
+// ファイル  編集  プロジェクト  設定  パッケージ  ツール  ヘルプ
+//                                                         ======
+
+
+// ドキュメントビュアを表示
+SettingForm._documentForm = null;
+SettingForm.documentViewer = function () {
+  this.execScriptFile (this.DOCUMENT_DMS);
+};
+
+
+// バージョン情報を表示
+SettingForm.showVersion = function () {
+  this.execScriptFile (this.VERSION_DMS);
+};
+
+
+// [コンテキストメニュー]  編集  設定  ドキュメント  プロジェクト
+//                               ====
+
+// プログラムの設定機能を呼び出す
+SettingForm.programSetting = function () {
+  var item = this.getSelectedItem ();
+  if (!item) {
+    return;
+  }
+
+  var f = Dorothy.matchFile = item.filename;
+  Dorothy.userPath = this.USER + f + '\';
+  Dorothy.userIniPath = Dorothy.userPath + f + '.ini';
+
+  this.execScriptFile (this.SETTING + f + '.set');
+};
+
+
+// [コンテキストメニュー]  編集  設定  ドキュメント  プロジェクト
+//                                     ============
+
+// ドキュメント表示
+SettingForm.showDocument = function () {
+  var item = this.getSelectedItem ();
+  if (item) {
+    var file = this.DOCUMENT_PROGRAM + item.filename + '.txt';
+    this.execScriptFile (this.DOCUMENT_DMS, file);
+  }
+};
+
+
+// [コンテキストメニュー]  編集  設定  ドキュメント  プロジェクト
+//                                                   ============
+
+// プログラム編集 (user フォルダも編集)
+SettingForm.editProjectFiles = function () {
+  msg ('user編集');
+
+  var item = this.getSelectedItem ();
+  if (!item) {
+    return;
+  }
+
+  this.editFiles (Dorothy.programDir, item.filename + '.dms');
+  this.editFiles (this.USER + item.filename, '*.*', /\.(dms|bat|hta|html?)$/);
+  this.editFiles (this.SETTING, item.filename + '.set');
+  this.editFiles (this.DOCUMENT_PROGRAM, item.filename + '.txt');
+};
+
+
+// program スクリプトの一覧を作成する
+//   program\*.dms
+SettingForm.createProgramList = function () {
+  var dir = new Directory (Dorothy.programDir);
+  if (!dir.exists ()) {
+    alert ('初期設定を行ってください');
+    exit ();
+  }
+
+  var ini = new Ini (this.DOROTHY_INI);
+  var section = 'script';
+
+  var listview = this.ListView1;
+  listview.Items.clear ();
+
+  var items = 0;
+  var active = 0;
+
+  var files = dir.findFiles ('*.dms');
+
+  var len = files.length;
+  for (var i = 0; i < len; ++i) {
+    var path = files [i];
+    var filename = File.extractName (path);
+
+    if (filename.indexOf ('.dms#') >= 0) {
+      continue;
+    }
+
+    var hd = this.loadScriptHeader (path);
+    var checked = ini.read (section, filename, '0') == '1';
+
+    var a = listview.Items.add ();
+    a.Checked = checked;
+    a.Caption = hd.caption;
+    a.filename = filename.replace (/\.[^.]*$/, '');
+    a.priority = hd.priority;
+    a.version = hd.version;
+    a.author = hd.author;
+    a.hint = hd.hint;
+    a.SubItems.add (hd.priority);
+    a.SubItems.add (hd.version);
+    a.SubItems.add (hd.author);
+    a.SubItems.add (hd.hint);
+
+    ++items;
+    if (checked) {
+      ++active;
+    }
+  }
+
+  msg (items + ' items (active ' + active + ')');
+};
+
+
+// program スクリプトのヘッダを読み込む
+SettingForm.loadScriptHeader = function (path) {
+  var ans = {
+    caption: '',
+    author: '',
+    version: '',
+    hint: '',
+    match: '',
+    priority: '',
+    editor: '',
+    path: '',
+    filename: ''
+  };
+
+  var file = new File (path);
+  if (!file.exists ()) {
+    return ans;
+  }
+
+  ans.filename = file.extractName ().replace (/\.[^.]*$/, '');
+
+  try {
+    file.open ('r');
+    var data = file.read ();
+    file.close ();
+  }
+  catch (e) {
+    alert ("file open error\n\n" + path);
+    exit ();
+  }
+
+  var header = /^\/\/Dorothy2$(.*?)^\/\/end$/m.test (data) ? RegExp.$1 : '';
+
+  ans.author   =   /^\/\/author=(.*?)$/m.test (header) ? RegExp.$1 : '';
+  ans.caption  =  /^\/\/caption=(.*?)$/m.test (header) ? RegExp.$1 : '';
+  ans.version  =  /^\/\/version=(.*?)$/m.test (header) ? RegExp.$1 : '';
+  ans.hint     =     /^\/\/hint=(.*?)$/m.test (header) ? RegExp.$1 : '';
+  ans.match    =    /^\/\/match=(.*?)$/m.test (header) ? RegExp.$1 : '';
+  ans.priority = /^\/\/priority=(.*?)$/m.test (header) ? RegExp.$1 : '';
+  ans.editor   =   /^\/\/editor=(.*?)$/m.test (header) ? RegExp.$1 : '';
+
+  return ans;
+};
+
+
+// 文字列が UTF-8 か調べる
+SettingForm.isUtf8 = function (s) {
+  var sb = new StringBuffer (s);
+
+  // 長い UTF-8 文字列で非常に時間がかかってしまうので
+  // 適当なところで打ち切る
+  var len = Math.min (sb.length, 1000);
+
+  sb.append (String.fromCharCode (0xff));
+
+  for (var i = 0; i < len; ) {
+    var cc = sb.charCodeAt (i++);
+
+    if (cc <= 0x7f) {
+      continue;
+    }
+    if ((cc <= 0xc1) || (0xf8 <= cc)) {
+      return false;
+    }
+
+    // UTF-8 の2バイト目以降の値として正しいか
+    var bytes = (cc <= 0xdf) ? 1 : (cc <= 0xef) ? 2 : 3;
+    do {
+      cc = sb.charCodeAt (i++);
+      if ((cc < 0x80) || (0xbf < cc)) {
+        return false;
+      }
+    } while (--bytes);
+  }
+
+  return true;
+};
+
+
+// テキストファイルを読み込んで返す
+//   中身が UTF-8 の場合は Shift_JIS に変換する
+SettingForm.loadFileToSJIS = function (file) {
+  var s = file_load (file);
+  return this.isUtf8 (s) ? s.fromUTF8toSJIS () : s;
+};
+
+
+// フォルダ内のパターンで指定したファイルを全て編集する
+SettingForm.editFiles = function (dir, wildcard, re) {
+  var files = (new Directory (dir)).findFiles (wildcard);
+
+  for (var n = 0, i = 0; i < files.length; ++i) {
+    if (!re || re.test (files [i])) {
+      Dorothy.edit (files [i]);
+      ++n;
+    }
+  }
+
+  return n;
+};
+
+
+// スクリプトファイルを実行する
+SettingForm.execScriptFile = function (path) {
+  if (!File.exists (path)) {
+    alert ("ファイルがありません。\n\n" + path);
+    return;
+  }
+
+  try {
+    var f = eval (file_load (path));
+    f.apply (this, arguments.slice (1));
+  }
+  catch (e) {
+    alert (e);
+  }
+};
+
+
+// メニュー項目のクリック時コールバック関数が省略された場合の標準動作
+SettingForm._createMenu_onClick = function (menuItem) {
+  this.execScriptFile (menuItem.path);
+};
+
+// メニューに指定フォルダのファイルを追加
+//   onclick には SettingFrom#bind() でバインドした関数を
+//   指定すること(省略可能)。
+SettingForm._createMenu_add = function (path, opt) {
+  function getOpt (key, def) {
+    return (opt && opt.hasKey (key)) ? opt [key] : def;
+  }
+
+  var onclick = getOpt ('onclick', this._onclick);
+
+  var ext = getOpt ('ext', 'dms');
+  var re = new RegExp ('\.' + ext + '$');
+
+  var ignore = new Strings ();
+  ignore.assign (getOpt ('ignore', [ ]));
+
+  var files = (new Directory (path)).findFiles ('*.' + ext);
+  var len = files.length;
+
+  for (var i = 0; i < len; ++i) {
+    var f = new File (files [i]);
+    var filename = f.extractName ();
+
+    if (!re.test (filename) || ignore.indexOf (filename) >= 0) {
+      continue;
+    }
+
+    var item = new VCLMenuItem ();
+    item.path = f.path;
+    item.onClick = onclick;
+
+    // .dms ファイルならヘッダを読み込んでメニュー項目として表示させる
+    if (ext == 'dms') {
+      var h = this._settingForm.loadScriptHeader (f.path);
+      item.Caption = h.caption;
+      item.Hint = h.hint;
+    }
+    else {
+      item.Caption = filename.replace (/\.[^.]*$/, '');
+    }
+
+    this.push (item);
+  }
+};
+
+// メニューに項目を追加
+SettingForm._createMenu_addItem = function (path, opt) {
+  function getOpt (key, def) {
+    return (opt && opt.hasKey (key)) ? opt [key] : def;
+  }
+
+  var item = new VCLMenuItem ();
+  item.path = path;
+  item.Caption = getOpt ('caption', '');
+  item.onClick = onclick = getOpt ('onclick', this._onclick);
+
+  this.push (item);
+};
+
+// メニューを TMenuItem に登録
+SettingForm._createMenu_register = function (menuObject) {
+  var len = this.length;
+  for (var i = 0; i < len; ++i) {
+    menuObject.add (this [i]);
+  }
+
+  menuObject.Enabled = (menuObject.Count > 0);
+
+  // createMenu() で作った配列が解放されると要素の VCLMenuItem
+  // も参照されていない扱いになって道連れで解放されてしまうので、
+  // 寿命の長いオブジェクトから参照させておく。
+  menuObject._menuItem = this;
+
+  this._settingForm = null;
+};
+
+// メニューに指定ファイルが含まれるかを返す
+SettingForm._createMenu_hasItem = function (path) {
+  var len = this.length;
+  for (var i = 0; i < len; ++i) {
+    if (this [i].path == path) {
+      return true;
+    }
+  }
+  return false;
+};
+
+// メニュー(VCLMenuItem)の動的生成
+SettingForm.createMenu = function () {
+  var menu = [ ];
+  menu.add = this._createMenu_add;
+  menu.addItem = this._createMenu_addItem;
+  menu.register = this._createMenu_register;
+  menu.hasItem = this._createMenu_hasItem;
+
+  // .add() から loadScriptHeader() を呼び出せるように参照を記録
+  menu._settingForm = this;
+
+  menu._onclick = this._createMenu_onClick;
+
+  return menu;
+};
+
+
+return SettingForm;
+
+}) ()
+
+
+// EOF
