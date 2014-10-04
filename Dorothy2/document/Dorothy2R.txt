@@ -131,6 +131,62 @@ Dorothy.loadDorothyIni ();
 変更履歴
 ========
 
+2014-10-05  version 20141005.0  rentan at rentan.org
+
+Dorothy2R\
+  フォルダ新規作成。
+
+  Dorothy2R 専用のスクリプトを Dorothy2\～ フォルダに入れると
+  Dorothy2 でメニューに表示されてしまうなどの問題があったため
+  別のフォルダに置くようにした。
+
+Dorothy2R\system\menu\set\usersetting.dms
+Dorothy2R\system\menu\help\document.dms
+  Dorothy2\～ フォルダから移動。
+
+  今まで Dorothy2\～ 側に入れていた同名ファイルは削除して下さい。
+
+Dorothy2R\system\menu\help\document.dms
+  初期表示ファイルを指定できるようにした。コンテキストメニューの
+  ドキュメント表示機能もこのスクリプトを使うようにした。
+
+scripts\Dorothy2R_a.dms
+  Dorothy.search.* を削除。
+
+  Dorothy.temp ディレクトリの作成をやめた(Dorothy2 では作らない
+  ので個々のスクリプト側で作る必要があり、結局 Dorothy2R_a.dms
+  で作る意味が無かった)。
+
+  Dorothy.getThreadStorage() は Dorohty.temp にファイルを保存
+  するので、呼び出された時にディレクトリを作成する。
+
+scripts\Dorothy2R_set.dms
+  主要部分を settingform.dms に分離。
+
+Dorothy2R\system\settingform.dms
+  新規作成。SettingForm を Dorothy2R_set.dms から分離して整理。
+  rVersion を 20141005 に更新。
+
+  オリジナルは VCLForm を継承したクラスだが、動的に読み込んで
+  eval() するスクリプトではクラス定義が出来ないので、VCLForm
+  インスタンスにメソッドを直接追加する方法に変更。
+
+  終了時にウィンドウの位置・サイズ、カラムの幅を自動的に保存する。
+  Shift キーが押されていた場合は保存しない。
+
+  設定メニュー関連:
+
+  ・Dorothy2R\system\menu\set\ にあるスクリプトも表示する。
+
+  ・Dorothy2\system\menu\set\ にある以下のスクリプトは表示しない。
+    common.dms       # Dorothy2R\～\usersetting.dms に統合
+    user_name.dms    # 〃
+    usersetting.dms  # Dorothy2R\～ に移動
+    window.dms       # 自動保存
+
+  その他細かい部分をいろいろ変更。
+
+
 2014-09-13  version 20140913.0  rentan at rentan.org
   実験的にスレッドストレージ機能を実装。
 
