@@ -96,6 +96,9 @@ http://ws1.y-bbs.net/
 変更履歴
 ========
 
+2014-10-04  version 20141004.0  rentan at rentan.org
+  JCaptcha ではなく JInput を使うようにした。
+
 2014-07-29  version 20140729.0  rentan at rentan.org
   script Mode 引数で動作モードを切り替えるようにした。
 

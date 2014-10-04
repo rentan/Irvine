@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=URL転送サービス
-//version=20140729.0
+//version=20141004.0
 //hint=
 //match=^https?://((bit\.ly|ilix\.in|ime\.nu|jump\.2ch\.net|lix\.in|pinktower\.com|t\.co|wk\.tk)/.|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|baberepublic\.com|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|placepictures\.com|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|youfap\.me|yyv\.co|zff\.co|zxxo\.net)([/?#].*)?$)
 //author=rentan
@@ -540,82 +540,50 @@ UrlRedirector.prototype.ilixin = function (u, path) {
   common_load ('htmlform');
 
 
-  // ilix.in の CAPTCHA 処理
-  var ilixCaptcha = { provider: 'ilix.in' };
-  var capHttp = null;
+  // CAPTCHA 入力
+  function inputCaptcha (http, form) {
+    common_load ('jinput');
+    var cancelCommand = 'c';
+    var reloadCommand = 'r';
 
-  // 初期化
-  ilixCaptcha.init = function (p, o) {
-    this.textareaName = 'captcha';
-    return true;
-  };
-
-  // フォーム解析 & 初期化
-  ilixCaptcha.analyzeForm = function (p, form) {
-    return this.init (p.provider, { });
-  };
-
-  // 入力
-  ilixCaptcha.input = function (p, hta_opt) {
     // 画像サイズ 200x70
-    hta_opt.width = 360;
-    hta_opt.height = 180;
+    var htaOpt = {
+      title: 'ilix.in ' + Dorothy.matchFile,
+      width: 360,
+      height: 180
+    };
 
     for (;;) {
-      var img = capHttp.clone ();
-
       // 画像をダウンロード
+      var img = http.clone ();
       if (!img.get ('/captcha2/captcha.php')) {
-        return false;
+        return this.httpError ();
       }
 
       // 入力
-      hta_opt.image = img.data;
-      var code = this.inputText (hta_opt);
+      htaOpt.image = img.data;
+      var jinput = new JInput ();
+      var code = jinput.inputText (htaOpt);
       println ('code--->' + code);
 
-      if (code == this.cancelCommand || code == null) {
+      if (code == cancelCommand || code == null) {
         // キャンセル終了
-        return false;
+        return this.EXIT;
       }
-
-      if (code == this.reloadCommand) {
+      if (code == reloadCommand) {
         // 画像更新
         continue;
       }
 
       // とりあえず入力コード確定
       // ここではコードが正しいか判定できないので、間違っている可能性がある
-      this.textareaValue = code;
+      if (!form.change ('captcha', code)) {
+        return this.NG;
+      }
       break;
     }
 
-    return true;
-  };
-
-  // CAPTCHA なしなら false、ありなら入力して true を返す
-  function inputCaptcha (http, form) {
-    var captchaForm = form.getElementById ('captcha-form');
-    if (!captchaForm) {
-      return false;
-    }
-
-    common_load ('jcaptcha');
-
-    var cap = new JCaptcha ();
-    cap.register (ilixCaptcha);
-
-    capHttp = http;
-
-    if (!cap.analyzeForm (form)) {
-      http.capture ();
-      http.die ('CAPTCHA コードが見つかりません。');
-    }
-    if (!cap.inputForm (form)) {
-      exit ();
-    }
-
-    return true;
+    return this.OK;
   }
 
 
@@ -642,7 +610,14 @@ UrlRedirector.prototype.ilixin = function (u, path) {
     }
 
     // Captcha Off のリンクの場合でも、CAPTCHA が表示されることがある?
-    var captcha = inputCaptcha (http, form);
+
+    var captcha = (form.getElementById ('captcha-form') != null);
+    if (captcha) {
+      var r = inputCaptcha (http, form);
+      if (r != this.OK) {
+        return r;
+      }
+    }
 
     // 今のことろ待機しなくても平気
     // http://ilix.in/js_css/js1.js  seconds = 10;
