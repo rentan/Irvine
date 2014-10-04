@@ -1,0 +1,665 @@
+//Dorothy2
+//caption=esx/JSON
+//version=20141005.0
+//hint=
+//match=
+//author=rentan
+//path=common\esx
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+common_load ('utf8');
+
+
+//------------------------------- JSON.parse -------------------------------
+
+
+// コンストラクタ
+function JSONparse (reviver) {
+  this.reviver = (typeof reviver == 'function') ? reviver : null;
+}
+
+
+JSONparse.prototype._throw = function (e, src) {
+  throw 'JSON.parse: ' + e + ' at ' + src.index;
+};
+
+
+// 空白を飛ばす
+JSONparse.prototype._skipBlank = function (src) {
+  for (var i = src.index; i < src.length; ++i) {
+    var cc = src.charCodeAt (i);
+    if (cc != 0x20 && cc != 0x0a && cc != 0x0d && cc != 0x09) {
+      break;
+    }
+  }
+
+  src.index = i;
+};
+
+
+// array をパースする
+JSONparse.prototype._parseArray = function (src) {
+  // 開始の [
+  ++src.index;
+  this._skipBlank (src);
+
+  var array = [ ];
+
+  if (src.index < src.length && src.charCodeAt (src.index) == 0x5d) {
+    // [ ] 空配列
+    ++src.index;
+    return array;
+  }
+
+  for (var i = 0; src.index < src.length; ++i) {
+
+    if (this.reviver) {
+      var value = this.reviver (i + '', this._parseValue (src));
+      array.push (isUndefined (value) ? null : value);
+    }
+    else {
+      array.push (this._parseValue (src));
+    }
+
+    this._skipBlank (src);
+    if (src.length <= src.index) {
+      break;
+    }
+
+    var cc = src.charCodeAt (src.index++);
+    if (cc == 0x2c) {
+      // , 次の値が必ずある
+      this._skipBlank (src);
+      continue;
+    }
+    if (cc == 0x5d) {
+      // ] 終了
+      return array;
+    }
+
+    --src.index;
+    this._throw ('配列の値が連続している', src);
+  }
+
+  this._throw ('配列が閉じていない', src);  // テキスト末尾に到達
+};
+
+
+// object をパースする
+JSONparse.prototype._parseObject = function (src) {
+  // 開始の {
+  ++src.index;
+  this._skipBlank (src);
+
+  var obj = { };
+
+  if (src.index < src.length && src.charCodeAt (src.index) == 0x7d) {
+    // { } 空オブジェクト
+    ++src.index;
+    return obj;
+  }
+
+  while (src.index < src.length) {
+    if (src.charCodeAt (src.index) != 0x22) {
+      this._throw ('オブジェクトのメンバー名が文字列でない', src);
+    }
+    var name = this._parseString (src);
+
+    this._skipBlank (src);
+    if (src.length <= src.index || src.charCodeAt (src.index) != 0x3a) {
+      this._throw ('オブジェクトのメンバー名の直後が:でない', src);
+    }
+    ++src.index;
+    this._skipBlank (src);
+
+    if (this.reviver) {
+      var value = this.reviver (name, this._parseValue (src));
+      if (!isUndefined (value)) {
+        obj [name] = value;
+      }
+    }
+    else {
+      obj [name] = this._parseValue (src);
+    }
+
+    this._skipBlank (src);
+    if (src.length <= src.index) {
+      break;
+    }
+
+    var cc = src.charCodeAt (src.index++);
+    if (cc == 0x2c) {
+      // , 次の値が必ずある
+      this._skipBlank (src);
+      continue;
+    }
+    if (cc == 0x7d) {
+      // } 終了
+      return obj;
+    }
+
+    --src.index;
+    this._throw ('オブジェクトの値が連続している', src);
+  }
+
+  this._throw ('オブジェクトが閉じていない', src);  // テキスト末尾に到達
+};
+
+
+JSONparse.prototype._unescapeMap = {
+  'b': "\b", 'f': "\f", 't': "\t", '"': '"', '\': '\', '/': '/',
+  'r': "\r", 'n': String.fromCharCode (10)
+};
+
+// string をパースする
+JSONparse.prototype._parseString = function (src) {
+  var r = new StringBuffer ();
+  var fromUnicode = Utf8.prototype.fromUnicode;
+
+  // 開始の "
+  ++src.index;
+
+  var cc, i;
+  for (;;) {
+    var startPos = src.index;
+
+    // " \ 制御文字 以外の文字が続く間ポインタを進める
+    for (i = startPos; ; ++i) {
+      cc = src.charCodeAt (i);
+      if (cc == 0x22 || cc == 0x5c || cc < 0x20 || isNaN (cc)) {
+        break;
+      }
+    }
+
+    // ポインタを進めた間の文字を処理済みバッファへコピー
+    if (startPos < i) {
+      r.append (src.substring (startPos, i));
+      src.index = i;
+    }
+
+    // 出現したメタキャラクタごとに処理
+
+    // 終了の "
+    if (cc == 0x22) {
+      ++src.index;
+      return r.text;
+    }
+
+    // \ エスケープシーケンス
+    if (cc == 0x5c) {
+      if (src.length <= ++i) {  // \ の次の文字
+        break;
+      }
+      var c = src [i++];
+
+      if (c != 'u') {
+        // \u 以外のエスケープシーケンス
+        if (!this._unescapeMap.hasKey (c)) {
+          this._throw ('不正なエスケープシーケンス', src);
+        }
+
+        r.append (this._unescapeMap [c]);
+        src.index = i;
+        continue;
+      }
+
+      // \uXXXX ... \u0000～\uffff
+      var s = src.substr (i, 4);
+      if (!/^[0-9a-f]{4}/i.test (s)) {
+        this._throw ('不正なUnicodeエスケープシーケンス', src);
+      }
+
+      s = parseInt ('0x' + s);  // 0～0xffff
+      src.index = i = i + 4;
+
+      // 基本言語面の文字、またはいきなり low surrogate
+      if ((s & 0xfc00) != 0xd800) {
+        r.append (fromUnicode (s));
+        continue;
+      }
+
+      // high surrogate が来たら、次に low surrogate が来るはず
+      var s2 = src.substr (i, 6);  //  \uXXXX のはず
+
+      if (!/^\\u[0-9a-fA-F]{4}/.test (s2)) {
+        // \uXXXX が来なかった
+        r.append (fromUnicode (s));
+        continue;
+      }
+
+      s2 = parseInt ('0x' + s2.slice (2));  //  0～0xffff
+
+      if ((s2 & 0xfc00) != 0xdc00) {
+        // low surrogate ではないものが来た(基本言語面または high surrogate)
+        r.append (fromUnicode (s));
+        continue;
+      }
+
+      // 適正なペアが揃った
+      r.append (fromUnicode (0x10000 + ((s & 0x03ff) << 10) + (s2 & 0x03ff)));
+      src.index = i + 6;
+      continue;
+    }
+
+    if (cc < 0x20) {
+      this._throw ('文字列中に制御文字がある', src);
+    }
+
+    // isNaN (cc) == true ... バッファ末尾に到達した
+    break;
+  }
+
+  // " が現れないまま末尾に到達した
+  this._throw ('文字列が閉じていない', src);
+};
+
+
+// number をパースする
+// number = [ minus ] int [ frac ] [ exp ]
+JSONparse.prototype._parseNumber = function (src) {
+
+  function seekToDigitsEnd (errMes) {
+    var len = src.length;
+    for (var i = src.index; i < len; ++i) {
+      cc = src.charCodeAt (i);
+      if (cc < 0x30 || 0x39 < cc) {
+        break;
+      }
+    }
+
+    if (src.index == i) {
+      this._throw (errMes, src);
+    }
+
+    src.index = i;
+  }
+
+  function seekToNumberEnd () {
+    var cc;
+
+    // 符号 - のみ
+    if (src.charCodeAt (src.index) == 0x2d) {
+      ++src.index;
+    }
+
+    // 整数部が 0 以外の場合は、先頭に 0 を置けない
+    if (src.charCodeAt (src.index) == 0x30) {
+      cc = src.charCodeAt (src.index + 1);
+      if (0x30 <= cc && cc <= 0x39) {
+        this._throw ('0の直後に数字がある', src);
+      }
+    }
+
+    // 整数部
+    seekToDigitsEnd ('-の直後に数字がない');
+
+    if (src.length <= src.index) {
+      return;
+    }
+    cc = src.charCodeAt (src.index);
+
+    if (cc == 0x2e) {
+      // 小数点+小数部
+      ++src.index;
+      seekToDigitsEnd ('小数部の数字がない');
+
+      if (src.length <= src.index) {
+        return;
+      }
+      cc = src.charCodeAt (src.index);
+    }
+
+    if ((cc | 0x20) == 0x65) {
+      // 指数部
+      ++src.index;
+      if (src.index < src.length) {
+        cc = src.charCodeAt (src.index);
+        if (cc == 0x2b || cc == 0x2d) {
+          // 指数部の符号
+          ++src.index;
+        }
+      }
+      seekToDigitsEnd ('指数部の数字がない');
+    }
+  }
+
+  var start = src.index;
+  seekToNumberEnd ();
+
+  return parseFloat (src.substring (start, src.index));
+};
+
+
+// value をパースする
+// value = false / null / true / object / array / number / string
+JSONparse.prototype._parseValue = function (src) {
+  if (src.length <= src.index) {
+    this._throw ('テキスト末尾に到達', src);
+  }
+
+  var cc = src.charCodeAt (src.index);
+  if (cc == 0x5b) {
+    return this._parseArray (src);
+  }
+  if (cc == 0x7b) {
+    return this._parseObject (src);
+  }
+  if (cc == 0x22) {
+    return this._parseString (src);
+  }
+  if (cc == 0x2d || (0x30 <= cc && cc <= 0x39)) {
+    return this._parseNumber (src);
+  }
+
+
+  // 連続する英字の文字数
+  var len = src.length;
+  for (var i = src.index; i < len; ++i) {
+    cc = src.charCodeAt (i);
+    if (cc < 0x61 || 0x7a < cc) {
+      break;
+    }
+  }
+  var s = src.substring (src.index, i);
+
+  if (s == 'null') {
+    src.index = i;
+    return null;
+  }
+  if (s == 'true') {
+    src.index = i;
+    return true;
+  }
+  if (s == 'false') {
+    src.index = i;
+    return false;
+  }
+
+  this._throw ('不正なリテラル', src);
+};
+
+
+// JSON をパースする
+JSONparse.prototype.parse = function (text) {
+  var src = new StringBuffer (text);
+  src.index = 0;
+
+  this._skipBlank (src);
+  var value = this._parseValue (src);
+
+  if (this.reviver) {
+    value = this.reviver ('', value);
+  }
+
+  this._skipBlank (src);
+  if (src.index < src.length) {
+    this._throw ('ルート値の後ろに不正な文字', src);
+  }
+
+  return value;
+};
+
+
+//----------------------------- JSON.stringify -----------------------------
+
+
+// コンストラクタ
+function JSONstringify (replacer, space) {
+  this.replacer = null;
+  this.keyList = null;
+
+  if (typeof replacer == 'function') {
+    this.replacer = replacer;
+  }
+  else if (nameOf (replacer) == 'Array') {
+    this.keyList = new Strings ();
+    this.keyList.assign (replacer);
+  }
+
+  var t = typeof space;
+  var n = nameOf (space);
+
+  if (t == 'number' || n == 'Number') {
+    space = ' '.multiply (Math.min (space, 10));
+  }
+  else if (t == 'string' || t == 'String') {
+    space = space.slice (0, 10);
+  }
+  else {
+    space = '';
+  }
+
+  this.indent = space && String.fromCharCode (0x0a);
+  this.indentDelta = space;
+  this.colon = space ? ': ' : ':';
+}
+
+
+JSONstringify.prototype._throw = function (e) {
+  throw 'JSON.stringify: ' + e;
+};
+
+
+// 文字列 string, String
+JSONstringify.prototype._string = function (value) {
+  if (value == '') {
+    return '""';
+  }
+
+  var r = '';
+
+  var src = new StringBuffer (value);
+  src.index = 0;
+  var len = src.length;
+
+  var cc, i;
+  for (;;) {
+    var startPos = src.index;
+
+    // " \ 制御文字 以外の文字が続く間ポインタを進める
+    for (i = startPos; ; ++i) {
+      cc = src.charCodeAt (i);
+      if (cc == 0x22 || cc == 0x5c || cc < 0x20 || isNaN (cc)) {
+        break;
+      }
+    }
+
+    // ポインタを進めた間の文字を処理済みバッファへコピー
+    if (startPos < i) {
+      r += src.substring (startPos, i);
+      src.index = i;
+    }
+
+    // " と \ はエスケープする
+    if (cc == 0x22 || cc == 0x5c) {
+      r += '\' + src [src.index++];
+      continue;
+    }
+
+    // 制御文字
+    if (cc < 0x20) {
+      r += format ('\u%.4X', cc);
+      ++src.index;
+      continue;
+    }
+
+    // isNaN (cc) == true ... バッファ末尾に到達した
+    break;
+  }
+
+  return '"' + r + '"';
+};
+
+
+//数値 number, Number
+JSONstringify.prototype._number = function (value) {
+  return value.toString ();
+};
+
+
+// 配列 Array
+JSONstringify.prototype._array = function (stack, indent, value) {
+  var s = [ ];
+  stack.push (value);
+  var indent2 = indent + this.indentDelta;
+
+  var len = value.length;
+
+  for (var i = 0; i < len; ++i) {
+    var v = value [i];
+
+    if (this.replacer) {
+      v = this.replacer (i + '', v);
+    }
+
+    s.push (isUndefined (v) ? 'null' : this._value (stack, indent2, v));
+  }
+
+  stack.pop ();
+  return '[' + indent2 + s.join (',' + indent2) + indent + ']';
+};
+
+
+// オブジェクト object
+JSONstringify.prototype._object = function (stack, indent, value) {
+  var s = [ ];
+  stack.push (value);
+  var indent2 = indent + this.indentDelta;
+
+  for (var key in value) {
+    if (this.keyList && this.keyList.indexOf (key) == -1) {
+      continue;
+    }
+
+    var v = value [key];
+
+    if (this.replacer) {
+      v = this.replacer (key, v);
+    }
+
+    if (!isUndefined (v)) {
+      v = this._value (stack, indent2, v);
+      s.push (this._string (key) + this.colon + v);
+    }
+  }
+
+  stack.pop ();
+  return '{' + indent2 + s.join (',' + indent2) + indent + '}';
+};
+
+
+// 文字列化
+JSONstringify.prototype._value = function (stack, indent, value) {
+  // .hasKey() を持たない型を先に判別
+  if (value === null || isNaN (value)) {
+    return 'null';
+  }
+  if (isUndefined (value)) {
+    return 'undefined';
+  }
+
+  // .toJSON() があればそれを使う
+  if (value.hasKey ('toJSON') && typeof value.toJSON == 'function') {
+    return '"' + value.toJSON () + '"';
+  }
+
+  // boolean, Boolean
+  if (value === true) {
+    return 'true';
+  }
+  if (value === false) {
+    return 'false';
+  }
+
+  var t = typeof value;
+  if (t == 'function') {
+    return 'null';
+  }
+
+  var n = nameOf (value);
+  if (t == 'string' || n == 'String') {
+    return this._string (value);
+  }
+  if (t == 'number' || n == 'Number') {
+    return this._number (value);
+  }
+
+  // var a = { }; a.b = a; のような循環参照をエラーにする
+  var len = stack.length;
+  for (var i = 0; i < len; ++i) {
+    if (stack [i] == value) {
+      this._throw ('オブジェクトの参照が循環している');
+    }
+  }
+
+  if (n == 'Array') {
+    return this._array (stack, indent, value);
+  }
+  if (n == 'Date') {
+    common_load ('esx\date');
+    return '"' + value.toJSON () + '"';
+  }
+
+  if (t == 'object') {
+    return this._object (stack, indent, value);
+  }
+
+  this._throw ('変換できない値');
+};
+
+
+JSONstringify.prototype.stringify = function (value) {
+  if (this.replacer) {
+    value = this.replacer ('', value);
+  }
+
+  return this._value ([ ], this.indent, value);
+};
+
+
+//---------------------------------- JSON ----------------------------------
+
+
+// グローバルオブジェクトとして定義
+JSON = (function () {
+  function JSON () { }
+
+  JSON.prototype.parse = (function (JSONparse) {
+    return function (text, reviver) {
+      return (new JSONparse (reviver)).parse (text);
+    };
+  }) (JSONparse);
+
+  JSON.prototype.stringify = (function (JSONstringify) {
+    return function (value, replacer, space) {
+      return (new JSONstringify (replacer, space)).stringify (value);
+    };
+  }) (JSONstringify);
+
+  return new JSON ();
+}) ();
+
+
+}) ()
+
+
+// EOF

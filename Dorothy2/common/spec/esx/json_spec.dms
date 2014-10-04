@@ -1,0 +1,347 @@
+//Dorothy2
+//caption=esx/JSON spec
+//version=20141005.0
+//hint=http://yasmine.dorothy.test/common/spec/esx/json_spec.dms
+//match=
+//author=rentan
+//path=common\spec\esx
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('esx\json');
+
+var undef = { u }.u;
+
+
+describe ('JSON.parse', function () {
+  cases ([
+    // [ json, value ]
+    [ 'true', true ],
+    [ 'false', false ],
+    [ 'null', null ],
+
+    [ '0', 0 ],
+    [ '-0', 0 ],
+    [ '123', 123 ],
+    [ '-123', -123 ],
+    [ '0.5', 0.5 ],
+    [ '-0.5', -0.5 ],
+    [ '1.5e2', 150 ],
+    [ '-1.5e2', -150 ],
+    [ '100e-2', 1 ],
+    [ '-100e-2', -1 ],
+
+    [ '""', '' ],
+    [ '"abc"', 'abc' ]
+  ])
+  .it ('parses JSON string [ json, value ]', function (json, value) {
+    expect (JSON.parse (json)).toBe (value);
+  });
+
+  // オブジェクト構造は面倒なので stringify した結果で比較する
+  cases ([
+    // [ json, stringified_json ]
+    [ '[]', '[]' ],
+    [ '[true]', '[true]' ],
+    [ '{}', '{}' ],
+    [ '{"a":true}', '{"a":true}' ]
+  ])
+  .it ('parses JSON string (validate by JSON.stringify', function (json, value) {
+    var s = JSON.stringify (JSON.parse (json));
+    expect (s).toBe (value);
+  });
+
+  cases ([
+    [ ' true ', 'true' ],
+    [ '[ ]', '[]' ],
+    [ '[ false ]', '[false]' ],
+    [ '{ }', '{}' ],
+    [ '{ "a" : true }', '{"a":true}' ]
+  ])
+  .it ('ignores white space', function (json, value) {
+    var s = JSON.stringify (JSON.parse (json));
+    expect (s).toBe (value);
+  });
+
+  it ('callbacks reviver', function () {
+    function rev (key, value) {
+      return (key == 'b' || key == '1') ? 'replaced' : value;
+    }
+
+    var s = JSON.stringify (JSON.parse ('{"a":1,"b":2,"c":3}', rev));
+    expect (s).toBe ('{"a":1,"b":"replaced","c":3}');
+
+    var s = JSON.stringify (JSON.parse ('[1,2,3]', rev));
+    expect (s).toBe ('[1,"replaced",3]');
+  });
+
+  it ('removes undefined replaced by reviver in object', function () {
+    expect (isUndefined (undef)).toBe (true);
+
+    function rev (key, value) {
+      return (key == 'b' || key == '1') ? undef : value;
+    }
+
+    var s = JSON.stringify (JSON.parse ('{"a":1,"b":2,"c":3}', rev));
+    expect (s).toBe ('{"a":1,"c":3}');
+  });
+
+  it ('replaces undefined replaced by reviver in array to null', function () {
+    function rev (key, value) {
+      return (key == 'b' || key == '1') ? undef : value;
+    }
+
+    var s = JSON.stringify (JSON.parse ('[1,2,3]', rev));
+    expect (s).toBe ('[1,null,3]');
+  });
+});
+
+
+describe ('JSON.stringify', function () {
+  cases ([
+    // [ value, json ]
+    [ true, 'true' ],
+    [ false, 'false' ],
+    [ null, 'null' ],
+
+    [ 0, '0' ],
+    [ 123, '123' ],
+    [ -123, '-123' ],
+    [ 0.5, '0.5' ],
+    [ -0.5, '-0.5' ],
+
+    [ '', '""' ],
+    [ 'abc', '"abc"' ],
+
+    [ [ ], '[]' ],
+    [ [ true ], '[true]' ],
+    [ [ false, null ], '[false,null]' ],
+
+    [ { }, '{}' ],
+    [ { a: 1 }, '{"a":1}' ],
+    [ { a: 'foo', b: 'bar' }, '{"a":"foo","b":"bar"}' ]
+  ])
+  .it ('converts to JSON string [ value, json ]', function (value, json) {
+    expect (JSON.stringify (value)).toBe (json);
+  });
+
+  cases ([
+    [ [ { } ], '[{}]' ],
+    [ { a: [ ] }, '{"a":[]}' ],
+    [ [ 1, { a: [ true ] }, 2 ], '[1,{"a":[true]},2]' ],
+    [ { a: [ { z: false }, [ ] ], b: null }, '{"a":[{"z":false},[]],"b":null}' ]
+  ])
+  .it ('accepts nested object [ value, json ]', function (value, json) {
+    expect (JSON.stringify (value)).toBe (json);
+  });
+
+  cases ([
+    // [ constructor, destructor ]
+
+    [ function () {
+        var v = [ ];
+        v.push (v);
+        return v;
+      },
+      function (v) {
+        v [0] = null;
+        v.pop ();
+      }
+    ],
+
+    [ function () {
+        var v = { };
+        v.x = v;
+        return v;
+      },
+      function (v) {
+        v.x = null;
+        v.removeKey ('x');
+      }
+    ],
+
+    [ function () {
+        var v = [ [ ] ];
+        v [0].push (v);
+        return v;
+      },
+      function (v) {
+        v [0] [0] = null;
+        v [0].pop ();
+        v [0] = null;
+        v.pop ();
+      }
+    ],
+
+    [ function () {
+        var v = { a: { } };
+        v.a.b = v;
+        return v;
+      },
+      function (v) {
+        v.a.b = null;
+        v.a.removeKey ('b');
+        v.a = null;
+        v.removeKey ('a');
+      }
+    ]
+  ])
+  .it ('throws if nested reference', function (ctor, dtor) {
+    var value = ctor ();
+    expect (function () { JSON.stringify (value); }).toThrow ();
+    dtor (value);
+    value = null;
+  });
+
+  it ('converts undefined in array to null', function () {
+    var value = [ 1, undef, 2 ];
+    expect (JSON.stringify (value)).toBe ('[1,null,2]');
+  });
+
+  it ('ignores undefined in object', function () {
+    var value = { a: 1, b: undef, c: 2 };
+    expect (JSON.stringify (value)).toBe ('{"a":1,"c":2}');
+  });
+
+  cases ([
+    // [ value, json_without_quotes ]
+    [ '\', '\\' ],
+    [ '"', '\"' ],
+
+    [ String.fromCharCode (0x00), '\u0000' ],
+    [ String.fromCharCode (0x0d), '\u000D' ],
+    [ String.fromCharCode (0x0a), '\u000A' ],
+    [ String.fromCharCode (0x1f), '\u001F' ],
+    [ String.fromCharCode (0x20), ' ' ]
+  ])
+  .it ('escapes special chars [ value, json ]', function (value, json) {
+    expect (JSON.stringify (value)).toBe ('"' + json + '"');
+  });
+
+  it ('uses toJSON method instead', function () {
+    var value = { a: 1, toJSON: function () { return 'foo'; } };
+    var json = '"foo"';
+
+    expect (JSON.stringify (value)).toBe (json);
+  });
+
+  it ('callbacks replacer', function () {
+    var value = { a: 1, b: [ 'foo', 'bar' ], c: true };
+    var json = '{"a":"x","b":["baz","bar"]}';
+
+    function rep (key, value) {
+      var map = { a: 'x', c: undef, '0': 'baz' };
+      return map.hasKey (key) ? map [key] : value;
+    }
+
+    expect (JSON.stringify (value, rep)).toBe (json);
+  });
+
+  it ('only converts key specified by replacer as array', function () {
+    var value = { '': true, a: 1, b: 2, c: 3 };
+
+    var rep = [ 'a', 'c' ];
+    expect (JSON.stringify (value, rep)).toBe ('{"a":1,"c":3}');
+
+    rep = [ '', 'b' ];
+    expect (JSON.stringify (value, rep)).toBe ('{"":true,"b":2}');
+  });
+
+  var lf = String.fromCharCode (10);
+
+  it ('indents specified space in number', function () {
+    var value = [ true, [ [ null ], 1 ], false ];
+    var json = [
+'[',
+'_true,',
+'_[',
+'__[',
+'___null',
+'__],',
+'__1',
+'_],',
+'_false',
+']'
+].join (lf).replace (/_/g, ' ');
+    expect (JSON.stringify (value, null, 1)).toBe (json);
+
+    var space10 = '          ';
+    var value2 = { a: true, b: { c: { d: null }, e: 1 }, f: false };
+    var json2 = [
+'{',
+'_"a": true,',
+'_"b": {',
+'__"c": {',
+'___"d": null',
+'__},',
+'__"e": 1',
+'_},',
+'_"f": false',
+'}'
+].join (lf).replace (/_/g, space10);
+    expect (JSON.stringify (value2, null, 20)).toBe (json2);
+  });
+
+  it ('indents specified space in string', function () {
+    var value = [ true, [ [ null ], 1 ], false ];
+    var json = [
+'[',
+'_true,',
+'_[',
+'__[',
+'___null',
+'__],',
+'__1',
+'_],',
+'_false',
+']'
+].join (lf).replace (/_/g, '-');
+    expect (JSON.stringify (value, null, '-')).toBe (json);
+
+    var hyphen10 = '----------';
+    var value2 = { a: true, b: { c: { d: null }, e: 1 }, f: false };
+    var json2 = [
+'{',
+'_"a": true,',
+'_"b": {',
+'__"c": {',
+'___"d": null',
+'__},',
+'__"e": 1',
+'_},',
+'_"f": false',
+'}'
+].join (lf).replace (/_/g, hyphen10);
+    expect (JSON.stringify (value2, null, hyphen10 + '****')).toBe (json2);
+  });
+
+  it ('can stringify Date object', function () {
+    var d = new Date ();
+    d.setTime (1412123456789);
+
+    expect (JSON.stringify (d)).toBe ('"2014-10-01T00:30:56.789Z"');
+  });
+});
+
+
+// EOF

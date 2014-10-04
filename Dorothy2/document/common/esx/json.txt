@@ -1,0 +1,40 @@
+common\esx\json.dms
+
+
+JSON オブジェクトです。
+
+
+使用方法
+========
+
+  common_load ('esx\json');
+
+  var json = '{"a":true}';
+  var obj = JSON.parse (json);
+
+  var obj2 = [ true, false, null ];
+  var json2 = JSON.stringify (obj2);
+
+
+JSON オブジェクトのメソッド
+===========================
+
+parse (text, reviver)
+stringify (value, replacer, space)
+
+
+仕様・制限事項
+==============
+
+・例えば JSON.parse('{"hasKey":null}') を実行すると、得られた
+  オブジェクトの .hasKey() メソッドは使えません。
+
+
+変更履歴
+========
+
+2014-10-05  version 20141005.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]
