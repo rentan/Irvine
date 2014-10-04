@@ -1,0 +1,63 @@
+//Dorothy2
+//caption=esx/date
+//version=20141005.0
+//hint=
+//match=
+//author=rentan
+//path=common\esx
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+(function () {
+
+
+// ISO 8601 Extended Format 形式の文字列に変換する
+Date.prototype.toISOString = function () {
+  // Date のプロパティに format があるので Global. が必要
+  return Global.format ('%.4d-%.2d-%.2dT%.2d:%.2d:%.2d.%.3dZ',
+    this.getUTCFullYear (),
+    parseInt (this.getUTCMonth () + 1),
+    this.getUTCDate (),
+    this.getUTCHours (),
+    this.getUTCMinutes (),
+    this.getUTCSeconds (),
+    this.getUTCMilliseconds ()
+  );
+};
+
+
+// JSON 形式の文字列に変換する
+Date.prototype.toJSON = function () {
+  try {
+    return this.toISOString ();
+  }
+  catch (e) {
+    return null;
+  }
+};
+
+
+}) ()
+
+
+// EOF

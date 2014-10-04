@@ -1,0 +1,54 @@
+//Dorothy2
+//caption=esx/Date spec
+//version=20141005.0
+//hint=http://yasmine.dorothy.test/common/spec/esx/date_spec.dms
+//match=
+//author=rentan
+//path=common\spec\esx
+//end
+
+//Åıxyzzyï∂éöâªÇØâÒî
+
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('esx\date');
+
+
+describe ('Date#toISOString', function () {
+  it ('returns ISO 8601 Extended Format string', function () {
+    var d = new Date ();
+    d.setTime (1412123456789);
+
+    expect (d.toISOString ()).toBe ('2014-10-01T00:30:56.789Z');
+  });
+});
+
+
+describe ('Date#toJSON', function () {
+  it ('return JSON string', function () {
+    var d = new Date ();
+    d.setTime (1412123456789);
+
+    expect (d.toISOString ()).toBe ('2014-10-01T00:30:56.789Z');
+  });
+});
+
+
+// EOF
