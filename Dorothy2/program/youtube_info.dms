@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/“®‰æî•ñ
-//version=20140820.0
+//version=20141006.0
 //hint=
 //match=^https?://(www\.)?youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -322,25 +322,27 @@ YouTubeVideo.prototype._decodeVideoInfo = function (html) {
   html = RegExp.$1;
 
   var keys = [
-    { key: 'fmt_list' },
-    { key: 'url_encoded_fmt_stream_map' },
-    { key: 'dashmpd' },
-    { key: 'ypc_video_rental_bar_text' },
-    { key: 'length_seconds', num: true },
-    { key: 'url' },
-    { key: 'keywords' }
+    'fmt_list',
+    'url_encoded_fmt_stream_map',
+    'dashmpd',
+    'ypc_video_rental_bar_text',
+    'length_seconds',
+    'url',
+    'keywords'
   ];
 
   for (var i = 0; i < keys.length; ++i) {
-    var k = keys [i].key;
-
-    var q = keys [i].hasKey ('num') ? '(\d+)' : '"([^"]+)"';
-    var re = new RegExp ('"' + k + '"\s*:\s*' + q);
+    var k = keys [i];
+    var re = new RegExp ('"' + k + '"\s*:\s*"([^"]+)"');
 
     if (re.test (html)) {
       var v = re.$1.replace (/\\\//g, '/').replace (/\\u0026/g, '&');
       vi.push ({ key: k, value: v });
     }
+  }
+
+  if (this.debug) {
+    this._saveToFile ('vi', this.videoInfoToStrings ());
   }
 
   return true;
@@ -380,7 +382,10 @@ YouTubeVideo.prototype._getVideoSpec = function (html) {
   if (!s) {
     return this._p ('length_seconds ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB');
   }
-  var d = new Date (s * 1000);
+  if (!/^\d+$/.test (s)) {
+    return this._p ('length_seconds ‚ª”’l‚Å‚Í‚ ‚è‚Ü‚¹‚ñB');
+  }
+  var d = new Date (parseInt (s) * 1000);
   d.format = 'nn:ss';
   this.time = d.toString ();
 
@@ -477,10 +482,6 @@ YouTubeVideo.prototype._getVideoInfo = function () {
   }
   if (!this._decodeAdaptiveFmts (h.data)) {
     return this.UNKNOWN;
-  }
-
-  if (this.debug) {
-    this._saveToFile ('vi', this.videoInfoToStrings ());
   }
 
   return this.OK;

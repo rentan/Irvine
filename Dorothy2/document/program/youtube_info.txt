@@ -28,6 +28,9 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
 変更履歴
 ========
 
+2014-10-06  version 20141006.0  rentan at rentan.org
+  サイト側の変更に対応(length_seconds が見つかりません)。
+
 2014-08-20  version 20140820.0  rentan at rentan.org
   knownItags に 278 を追加。
   getterobject を使うようにした。
