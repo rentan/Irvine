@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R 互換拡張
-//version=20140815.0
+//version=20141006.0
 //hint=part of rutil.dms
 //match=
 //author=rentan
@@ -115,51 +115,68 @@ Dorothy.setFilename = function (filename) {
 //------------------- Dorothy2 本体のバージョンチェック --------------------
 
 
-function DorothyVersionValidator () {
-}
+var DorothyVersionValidator = { };
 
-DorothyVersionValidator.prototype.validateDoaVersion = function () {
+DorothyVersionValidator.old = function (version) {
+  var name = WScript.ScriptName;
+
+  var s = version ? name + " version " + version + "\n\n" : '';
+  s += name + " のバージョンが古すぎます。\n" +
+       "Dorothy2 の最新版を使用して下さい。";
+
+  Util.fatal (s);
+};
+
+// DOA.dms
+DorothyVersionValidator.doa = function () {
   Util.fatal ("このスクリプトは DOA では使用できません。");
 };
 
-// Dorothy2set.dms Dorothy2ListMenu.dms
-DorothyVersionValidator.prototype.validateDorothy2setVersion = function () {
-  if (!Dorothy.hasKey ('userPath')) {
-    Util.fatal ("Dorothy.userPath が定義されていません。\n" +
-      "Dorothy2 の最新版を使用して下さい。");
+// Dorothy2set.dms
+DorothyVersionValidator.dorothy2set = function () {
+  if (!Dorothy.hasKey ('common_sp')) {
+    this.old ();
+  }
+};
+
+// Dorothy2ListMenu.dms
+DorothyVersionValidator.dorothy2listmenu = function () {
+  if (!Dorothy.hasKey ('common_sp')) {
+    this.old ();
   }
 };
 
 // Dorothy2A.dms
-DorothyVersionValidator.prototype.validateDorothy2aVersion = function () {
+DorothyVersionValidator.dorothy2a = function () {
   var ver = parseFloat (Dorothy.version);
 
   if (!isFinite (ver) || ver < 0.31) {
-    var s = WScript.ScriptName;
-
-    Util.fatal (s + " version " + Dorothy.version + "\n\n" +
-      s + " のバージョンが古すぎます。\n" +
-      "Dorothy2 の最新版を使用して下さい。");
+    this.old (Dorothy.version);
   }
 };
 
-DorothyVersionValidator.prototype.validate = function () {
+DorothyVersionValidator.validate = function () {
   if (typeof Dorothy != 'object') {
-    Util.fatal ("Dorothy2 のバージョンが古すぎます。\nDorothy2 の最新版を使用して下さい。");
+    this.old ();
   }
 
   if (Dorothy.isDOA) {
-    this.validateDoaVersion ();
+    this.doa ();
   }
   else if (Dorothy.version == 'xxxx') {
-    this.validateDorothy2setVersion ();
+    if (typeof OnMainMenuClick == 'function') {
+      this.dorothy2set ();
+    }
+    else if (typeof OnListMenuClick == 'function') {
+      this.dorothy2listmenu ();
+    }
   }
   else {
-    this.validateDorothy2aVersion ();
+    this.dorothy2a ();
   }
 };
 
-(new DorothyVersionValidator ()).validate ();
+DorothyVersionValidator.validate ();
 
 
 }) ()
