@@ -1,0 +1,1368 @@
+//Dorothy2
+//caption=ネットインストール
+//version=20141006.0
+//hint=
+//match=
+//author=rentan
+//path=system\menu\package
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+function () {
+
+
+//------------------------------- NetInstall -------------------------------
+
+
+// コンストラクタ
+function NetInstall () {
+  this.initForm ('version 20141006.0');
+};
+
+
+// ユーザー設定ファイル
+NetInstall.prototype.iniPath = Dorothy.path + 'user\netinst.ini';
+
+NetInstall.prototype.formDesignKeys = [ 'Width', 'Height', 'Left', 'Top' ];
+
+NetInstall.prototype.defaultUrls = [
+  'https://github.com/rentan/Irvine/archive/master.zip'
+];
+
+
+// プロパティ初期値
+NetInstall.prototype.tempDir = null;
+NetInstall.prototype.archiveFilename = null;
+NetInstall.prototype.extractedDir = null;
+NetInstall.prototype.dorothyFiles = null;
+NetInstall.prototype.logFile = null;
+
+
+// コールバック関数用のバインド
+NetInstall.prototype.bind = function (f) {
+  return (function (self, f) {
+    return function () {
+      return f.apply (self, arguments);
+    };
+  }) (this, f);
+};
+
+// コールバック関数をバインドする
+NetInstall.prototype.bindCallback = function () {
+  var list = [
+    'closeForm',
+    'exitForm',
+    'status',
+    'dndFile',
+    'dndText',
+    'updateContext',
+    'openProgram',
+    'diffProgram',
+    'openDocument',
+    'diffDocument',
+    'selectAll',
+    'deselectAll',
+    'downloadAndAnalyze',
+    'install',
+    'openLogFile'
+  ];
+
+  var len = list.length;
+  for (var i = 0; i < len; ++i) {
+    var name = list [i];
+    this [name] = this.bind (this [name]);
+  }
+};
+
+
+// フォーム定義
+NetInstall.prototype.formDfm = "
+object Form1: TForm1
+  Left = 400
+  Top = 200
+  Width = 738
+  Height = 570
+  Caption = 'ネットインストール '
+  Color = clBtnFace
+  DragMode = dmAutomatic
+  Font.Charset = SHIFTJIS_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'ＭＳ Ｐゴシック'
+  Font.Style = []
+  Menu = menuMain
+  OldCreateOrder = False
+  Position = poDesigned
+  PixelsPerInch = 96
+  TextHeight = 12
+  object UrlComboBox: TComboBox
+    Top = 10
+    Left = 2
+    Width = 600
+    Height = 22
+    Anchors = [akLeft, akTop, akRight]
+    Style = csDropDownList
+    ItemHeight = 22
+  end
+  object ExecButton: TButton
+    Caption = 'ダウンロード'
+    Top = 7
+    Left = 617
+    Width = 100
+    Height = 26
+    Anchors = [akTop, akRight]
+    Default = True
+  end
+  object ProgramList: TListView
+    Left = 2
+    Top = 40
+    Width = 726
+    Height = 480
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    Checkboxes = True
+    Columns = <
+      item
+        Caption = 'キャプション'
+        Width = 200
+      end
+      item
+        Caption = '優先度'
+        Width = 50
+      end
+      item
+        Caption = 'インストール済'
+        Width = 90
+      end
+      item
+        Caption = 'バージョン'
+        Width = 90
+      end
+      item
+        Caption = '作者'
+        Width = 70
+      end
+      item
+        Caption = '説明'
+        Width = 200
+      end>
+    ReadOnly = True
+    RowSelect = True
+    ViewStyle = vsReport
+  end
+  object popupmenuProgram: TPopupMenu
+    object popupOpenProgram: TMenuItem
+      Caption = 'スクリプトを開く'
+    end
+    object popupDiffProgram: TMenuItem
+      Caption = 'スクリプトの差分'
+    end
+    object popupSep1: TMenuItem
+      Caption = '-'
+    end
+    object popupOpenDocument: TMenuItem
+      Caption = 'ドキュメントを開く'
+    end
+    object popupDiffDocument: TMenuItem
+      Caption = 'ドキュメントの差分'
+    end
+    object popupSep2: TMenuItem
+      Caption = '-'
+    end
+    object popupSelectAll: TMenuItem
+      Caption = '全て選択'
+    end
+    object popupDeselectAll: TMenuItem
+      Caption = '全て解除'
+    end
+  end
+  object StatusBar: TStatusBar
+    Left = 0
+    Top = 522
+    Width = 730
+    Height = 18
+    SimplePanel = True
+  end
+end";
+
+
+// フォーム初期化
+NetInstall.prototype.initForm = function (version) {
+  this.bindCallback ();
+
+  var form = this.form = new VCLForm ();
+  form.loadFromText (this.formDfm);
+  form.Caption += version;
+
+  this.loadIni ();
+  this.setUrlList ();
+  this.assertEnvironment ();
+
+  // ドラッグ&ドロップ
+  form.onDragDropFiles = this.dndFile;
+  form.onDragDropText = this.dndText;
+  form.acceptDrop = true;
+
+  // プログラム一覧
+  form.ProgramList.onContextPopup = this.updateContext;
+
+  // onClick 割り当て
+  var p = {
+    popupOpenProgram: 'openProgram',
+    popupDiffProgram: 'diffProgram',
+    popupOpenDocument: 'openDocument',
+    popupDiffDocument: 'diffDocument',
+    popupSelectAll: 'selectAll',
+    popupDeselectAll: 'deselectAll',
+    ExecButton: 'downloadAndAnalyze'
+  };
+  for (var key in p) {
+    form [key].onClick = this [p [key]];
+  }
+
+  // フォームを閉じる時の処理
+  form.onClose = this.closeForm;
+};
+
+
+// 環境、設定に問題がないか調べ、NGなら例外を投げる
+NetInstall.prototype.assertEnvironment = function () {
+  // Dorothy2set.dms 0.18 にはなくて 0.19 にあるプロパティを調べる
+  if (!Dorothy.hasKey ('common_sp')) {
+    throw 'Dorothy2 の最新版を使用して下さい。';
+  }
+
+  if (!this.settings.General.extractCommand) {
+    throw '解凍コマンドが未設定です。';
+  }
+};
+
+
+// フォームをモーダル表示
+NetInstall.prototype.showModal = function () {
+  this.form.showModal ();
+};
+
+
+// フォームを閉じる際の終了処理
+//   この関数から外に例外を投げるとフォームを閉じられなくなってしまうので
+//   注意すること。
+NetInstall.prototype.closeForm = function () {
+  try {
+    // Shift キーが押されていれば保存しない
+    if (!Keyboard.shift) {
+      this.saveIni ();
+    }
+  }
+  catch (e) {
+    alert (e);
+  }
+};
+
+
+// フォームを閉じる
+//   閉じるボタンや Alt+F4 以外から閉じたい時に呼び出す
+NetInstall.prototype.exitForm = function () {
+  this.form.close ();
+};
+
+
+// アラートを表示して falsse を返す
+NetInstall.prototype._alert = function (s) {
+  alert (s);
+  return false;
+};
+
+
+// ステータスバーに文字列を表示する
+NetInstall.prototype.status = function (s) {
+  this.form.StatusBar.SimpleText = s;
+};
+
+
+// 実行ボタンの動作を変更する
+NetInstall.prototype.setExecButton = function (caption, onclick) {
+  var btn = this.form.ExecButton;
+
+  btn.Caption = caption;
+  btn.onClick = onclick;
+  btn.Enabled = true;
+};
+
+
+// 実行ボタンを終了ボタンに変更する
+NetInstall.prototype.showExitButton = function () {
+  this.setExecButton ('終了', this.exitForm);
+};
+
+
+// 作業用ディレクトリを作成する
+NetInstall.prototype.createTempDir = function () {
+  var base = Dorothy.temp + 'netinst';
+
+  var DIR_MAX = 256;
+  for (var i = 0; i < DIR_MAX; ++i) {
+    var dir = new Directory (base + i);
+
+    var mutex = new Mutex (dir);
+    try {
+      mutex.lock ();
+
+      if (!dir.exists ()) {
+        dir.make ();
+        this.tempDir = dir.includePathDelimiter ();
+        return true;
+      }
+    }
+    finally {
+      mutex.unlock ();
+    }
+  }
+
+  return this._alert ('作業用ディレクトリを作成できませんでした。');
+};
+
+
+// ファイルのD&D
+//   コンボボックスにファイル名を追加してその項目を選択する
+NetInstall.prototype.dndFile = function (sender, x, y, files) {
+  var items = this.form.UrlComboBox.Items;
+  items.addStrings (files);
+
+  form.UrlComboBox.ItemIndex = items.indexOf (files [0]);
+
+  form.ExecButton.setFocus ();
+};
+
+
+// テキストのD&D
+NetInstall.prototype.dndText = function (sender, x, y, text) {
+  var sl = new Strings ();
+  sl.add (text);
+
+  this.dndFile (sender, x, y, sl);
+};
+
+
+// 選択中のアイテムを返す
+NetInstall.prototype.getSelectedItem = function () {
+  var listview = this.form.ProgramList;
+
+  if (listview.SelCount == 0) {
+    return null;
+  }
+  return listview.Items [listview.Selected.Index];
+};
+
+
+// コンテキストメニューの有効無効を設定
+NetInstall.prototype.updateContext = function () {
+  var selected = false;
+  var extractedDoc = false;
+  var currentProg = false;
+  var currentDoc = false;
+  var diff = this.settings.General.diffCommand != '';
+
+  var item = this.getSelectedItem ();
+  if (item) {
+    selected = true;
+    extractedDoc = (item.extractedDocument != null);
+    currentProg = (item.currentProgram != null);
+    currentDoc = (item.currentDocument != null);
+  }
+
+  var form = this.form;
+  form.popupOpenProgram.Enabled = selected;
+  form.popupDiffProgram.Enabled = currentProg && diff;
+  form.popupOpenDocument.Enabled = extractedDoc;
+  form.popupDiffDocument.Enabled = extractedDoc && currentDoc && diff;
+};
+
+
+// テキストファイルを開く
+NetInstall.prototype.openFile = function (file) {
+  if (!file) {
+    return;
+  }
+
+  if (Dorothy.hasKey ('edit')) {
+    return Dorothy.edit (file);
+  }
+  Win32.shellExecute ('open', '"notepad.exe"', '"' + file + '"');
+};
+
+
+// ファイルを実行する
+NetInstall.prototype.run = function (cmd, windowStyle, wait) {
+  var shell = new ActiveXObject ('WScript.Shell');
+  return shell.Run (cmd, windowStyle, wait);
+};
+
+
+// ファイル差分を開く
+NetInstall.prototype.openDiff = function (left, right) {
+  if (!left || !right) {
+    return;
+  }
+
+  var cmd = Global.format (this.settings.General.diffCommand, left, right);
+  var windowStyle = 4;
+  this.run (cmd, windowStyle, true);
+};
+
+
+// スクリプトを開く
+NetInstall.prototype.openProgram = function () {
+  var item = this.getSelectedItem ();
+  this.openFile (item && item.extractedProgram);
+};
+
+
+// ドキュメントを開く
+NetInstall.prototype.openDocument = function () {
+  var item = this.getSelectedItem ();
+  this.openFile (item && item.extractedDocument);
+};
+
+
+// スクリプトの差分
+NetInstall.prototype.diffProgram = function () {
+  var item = this.getSelectedItem ();
+  if (item) {
+    this.openDiff (item.currentProgram, item.extractedProgram);
+  }
+};
+
+
+// ドキュメントの差分
+NetInstall.prototype.diffDocument = function () {
+  var item = this.getSelectedItem ();
+  if (item) {
+    this.openDiff (item.currentDocument, item.extractedDocument);
+  }
+};
+
+
+// 全てのアイテムのチェック状態を設定
+NetInstall.prototype.setCheckedAll = function (value) {
+  var items = this.form.ProgramList.Items;
+
+  var len = items.Count;
+  for (var i = 0; i < len; ++i) {
+    items [i].Checked = value;
+  }
+};
+
+// 全て選択
+NetInstall.prototype.selectAll = function () {
+  this.setCheckedAll (true);
+};
+
+// 全て解除
+NetInstall.prototype.deselectAll = function () {
+  this.setCheckedAll (false);
+};
+
+
+// ダウンロード～解析まで実行
+NetInstall.prototype.downloadAndAnalyze = function () {
+  var form = this.form;
+  var url = form.UrlComboBox.Items [form.UrlComboBox.ItemIndex];
+
+  if (!this.download (url)) {
+    return;
+  }
+  if (!this.extract ()) {
+    return;
+  }
+  if (!this.analyze ()) {
+    return;
+  }
+  this.setProgramList ();
+
+  form.PopupMenu = form.popupmenuProgram;
+
+  this.status ('完了');
+
+  this.setExecButton ('インストール', this.install);
+};
+
+
+// File オブジェクトまたは URL を File のように扱えるオブジェクト
+NetInstall.prototype.createNetFile = function (url) {
+  if (/^[a-z]:\\./i.test (url)) {
+    return new File (url);
+  }
+
+  return {
+    _url: url,
+
+    extractName: function () {
+      return (new URL (this._url)).filename;
+    },
+
+    copyTo: function (saveAs) {
+      var http = new HTTPS ();
+      http.autoRedirect = true;
+      http.getFile (this._url, saveAs);
+    }
+  };
+};
+
+
+// ファイルを取得する
+NetInstall.prototype.download = function (url) {
+  var form = this.form;
+  form.UrlComboBox.Enabled = false;
+  form.ExecButton.Enabled = false;
+
+  if (!this.createTempDir ()) {
+    return false;
+  }
+
+  var tempDir = this.tempDir;
+  var netFile = this.createNetFile (url);
+  var saveAs = new File (tempDir + netFile.extractName ());
+
+  // 自分でディレクトリを作っているのであり得ないが念のため
+  if (saveAs.exists ()) {
+    return this._alert ('作業用ディレクトリに同名ファイルが存在しています。');
+  }
+
+  this.status ('ダウンロード中...');
+  try {
+    netFile.copyTo (saveAs.filename);
+  }
+  catch (e) {
+    return this._alert ('ダウンロードエラー: ' + e);
+  }
+
+  if (!saveAs.exists ()) {
+    return this._alert ('ダウンロードしたファイルが見つかりません。');
+  }
+
+  this.archiveFilename = saveAs.filename;
+  return true;
+};
+
+
+// ファイルを展開
+NetInstall.prototype.extract = function () {
+  this.status ('解凍中...');
+
+  var filename = this.archiveFilename;
+
+  var g = this.settings.General;
+  var cmd = Global.format (g.extractCommand, filename, this.tempDir);
+
+  if (this.run (cmd, g.extractWindowStyle, true) != 0) {
+    return this._alert ('解凍に失敗しました(' + r + ')。');
+  }
+
+  // ディレクトリが一つだけ作成されている筈
+  // (それ以外の書庫形式は非対応)
+  var dirs = (new Directory (this.tempDir)).directories;
+  if (dirs.length != 1) {
+    var err = dirs.length ? '複数あります' : 'ありません';
+    return this._alert ('未対応の書庫形式です(ディレクトリが' + err + ')。');
+  }
+
+  var dir = dirs [0];
+  if (File.extractName (dir) != 'Dorothy2') {
+    dir += '\Dorothy2';
+  }
+  if (!Directory.exists (dir)) {
+    return this._alert ('未対応の書庫形式です(Dorothy2 ディレクトリがありません)。');
+  }
+
+  this.extractedDir = dir + '\';
+
+  return true;
+};
+
+
+// 展開したファイルを解析
+NetInstall.prototype.analyze = function () {
+  this.status ('解析中...');
+
+  var dorothyFiles = new DorothyFiles (this.extractedDir);
+  this.dorothyFiles = dorothyFiles;
+
+  dorothyFiles.addPrograms ();
+
+  var sl = dorothyFiles.getErrorFileList ();
+  if (!sl.length) {
+    return true;
+  }
+
+  var s = 'ファイルが見つかりません。';
+  sl.insert (0, s);
+  sl.insert (1, '');
+
+  this.saveErrorLog (s, sl);
+  return false;
+};
+
+
+// ListView にプログラムを追加する
+NetInstall.prototype.addProgramList = function (program) {
+  var df = this.dorothyFiles.getProgramFile (program);
+
+  // 同名のファイルがインストール済みかどうか調べる
+  var currentFile = new DorothyFile (Dorothy.path, df.file);
+  var currentVer = currentFile.version;
+  currentVer = (df.version == currentVer) ? '→' : currentVer;
+
+  var listview = this.form.ProgramList;
+
+  var item = listview.Items.add ();
+
+  item.Checked = currentFile.exists;
+  item.Caption = df.caption;
+  item.SubItems.add (df.priority);
+  item.SubItems.add (currentVer);
+  item.SubItems.add (df.version);
+  item.SubItems.add (df.author);
+  item.SubItems.add (df.hint);
+
+  item.program = program;
+
+  function getExistFile (path) {
+    return File.exists (path) ? path : null;
+  }
+
+  var p = 'program\' + program;
+  var t = 'document\program\' + program.replace (/\.dms$/, '.txt');
+
+  item.extractedProgram = this.extractedDir + p;
+  item.extractedDocument = getExistFile (this.extractedDir + t);
+
+  item.currentProgram = getExistFile (Dorothy.path + p);
+  item.currentDocument = getExistFile (Dorothy.path + t);
+};
+
+
+// ListView にプログラム一覧を登録する
+NetInstall.prototype.setProgramList = function () {
+  var programs = this.dorothyFiles.programs;
+
+  var len = programs.length;
+  for (var i = 0; i < len; ++i) {
+    this.addProgramList (programs [i]);
+  }
+};
+
+
+// インストールするファイルの一覧を作る
+NetInstall.prototype.createInstallList = function () {
+  var dfList = new DorothyFileList (this.dorothyFiles);
+
+  var g = this.settings.General;
+  dfList.documentUtf8 = g.documentUtf8;
+  dfList.noCpy = g.noCopy;
+
+  var items = this.form.ProgramList.Items;
+  var len = items.Count;
+  for (var i = 0; i < len; ++i) {
+    var item = items [i];
+    if (item.Checked) {
+      dfList.addProgram (item.program);
+    }
+  }
+
+  return dfList;
+};
+
+
+// インストール実行
+NetInstall.prototype.install = function () {
+  var form = this.form;
+  form.ExecButton.Enabled = false;
+
+  this.status ('インストール中...');
+
+  var dfList = this.createInstallList ();
+  var r = dfList.copy ();
+
+  var s = 'コピー: %d, 上書き: %d, 同一: %d, スキップ: %d, エラー: %d';
+  s = Global.format (s, r.copy, r.update, r.same, r.skip, r.error);
+
+  var log = r.log;
+  log.insert (0, 'インストール結果');
+  log.insert (1, s);
+  log.insert (2, '');
+  this.saveLog (s, log, r.error > 0);
+};
+
+
+// ログファイルを表示する
+NetInstall.prototype.openLogFile = function () {
+  this.showExitButton ();
+
+  this.openFile (this.logFile);
+};
+
+
+// ログをファイルに保存し、実行ボタンをログ表示機能に変更する
+NetInstall.prototype.saveLog = function (st, strings, error) {
+  this.status (st);
+
+  this.logFile = this.tempDir + 'netinst_log.txt';
+  try {
+    strings.saveToFile (this.logFile);
+  }
+  catch (e) {
+    this.status (e);
+    return;
+  }
+
+  var caption = error ? 'エラー表示' : '詳細表示';
+  this.setExecButton (caption, this.openLogFile);
+};
+
+NetInstall.prototype.saveErrorLog = function (st, strings) {
+  return this.saveLog (st, strings, true);
+};
+
+
+// URL コンボボックスに項目を追加する
+NetInstall.prototype.setUrlList = function () {
+  var form = this.form;
+  var items = form.UrlComboBox.Items;
+
+  var list = this.settings.Url;
+  items.addStrings (list);
+
+  if (list.length) {
+    form.UrlComboBox.ItemIndex = items.indexOf (list [0]);
+  }
+};
+
+
+// 差分表示ソフトを検索して起動するためのコマンドラインを返す
+NetInstall.prototype.getDiffCommand = function () {
+  // WinMergeU.exe
+  var reg = new RegIni ('\Software\Thingamahoochie');
+  var e = reg.read ('WinMerge', 'Executable', '');
+
+  if (e && File.exists (e)) {
+    return  '"' + e + '" /e /ul /ur /wl /wr "%s" "%s"';
+  }
+
+  return '';
+};
+
+
+// ユーザー設定を読み込む
+NetInstall.prototype.loadIni = function () {
+  var ini = new Ini (this.iniPath);
+
+  var defaultDocUtf8 = '';
+
+  // 自分用の既定値
+  var name = Dorothy.userName || (typeof USER_NAME == 'undefined' ? '' : USER_NAME);
+  if (name == 'rentan') {
+    defaultDocUtf8 = 'true';
+  }
+
+
+  // 設定一般
+  var section = 'General';
+  var g = { };
+
+  g.documentUtf8 = ini.read (section, 'DocumentUtf8', defaultDocUtf8) == 'true';
+  g.noCopy = ini.read (section, 'NoCopy', '') == 'true';
+
+  g.extractCommand = (typeof EXTRACT == 'undefined') ? '' : EXTRACT;
+  var n = parseInt (ini.read (section, 'ExtractWindowStyle', '0'));
+  g.extractWindowStyle = isNaN (n) ? 0 : n;
+
+  var hasDiffKey = ini.readSection (section).indexOf ('Diff') != -1;
+  var diff = hasDiffKey ? '' : this.getDiffCommand ();
+  g.diffCommand = ini.read (section, 'Diff', diff);
+
+
+  // ダウンロードURL
+  section = 'Url';
+  var u = [ ];
+  var URL_MAX = 16;
+
+  for (var i = 0; i < URL_MAX; ++i) {
+    var url = ini.read (section, 'Url_' + i, '');
+    if (url) {
+      u.push (url);
+    }
+  }
+  if (u.length == 0) {
+    u = this.defaultUrls;
+  }
+
+
+  // フォーム位置・サイズ
+  section = 'FormDesign';
+  var fd = { };
+  var fdKeys = this.formDesignKeys;
+
+  var form = this.form;
+  for (var i = 0; i < fdKeys.length; ++i) {
+    var key = fdKeys [i];
+    var value = fd [key] = ini.read (section, key, '');
+
+    if (value) {
+      form [key] = value;
+    }
+  }
+
+  // リスト項目の幅
+  var columns = form.ProgramList.Columns;
+  var len = columns.Count;
+  for (i = 0; i < len; ++i) {
+    var key = 'Columns_' + i;
+    var value = fd [key] = ini.read (section, key, '');
+
+    if (value) {
+      columns.items (i).Width = value;
+    }
+  }
+
+
+  this.settings = { General: g, Url: u, FormDesign: fd };
+};
+
+
+// ユーザー設定を保存する
+NetInstall.prototype.saveIni = function () {
+  var ini = new Ini (this.iniPath);
+  ini.newFile = !File.exists (this.iniPath);
+
+  ini.rewrite = function (key, value, oldValue) {
+    value = value + '';
+
+    if (this.newFile || (arguments.length >= 3 && value != oldValue)) {
+      ini.write (this.section, key, value).dirty = true;
+    }
+  };
+
+
+  // 設定一般(新規作成時のみ)
+  ini.section = 'General';
+  var g = this.settings.General;
+
+  ini.rewrite ('DocumentUtf8', g.documentUtf8);
+  ini.rewrite ('NoCopy', g.noCopy);
+  ini.rewrite ('ExtractWindowStyle', g.extractWindowStyle);
+  ini.rewrite ('Diff', g.diffCommand);
+
+
+  // ダウンロードURL(新規作成時のみ)
+  ini.section = 'Url';
+  var u = this.settings.Url;
+
+  for (var i = 0; i < u.length; ++i) {
+    ini.rewrite ('Url_' + i, u [i]);
+  }
+
+
+  // フォーム位置・サイズ
+  ini.section = 'FormDesign';
+  var fd = this.settings.FormDesign;
+  var fdKeys = this.formDesignKeys;
+
+  var form = this.form;
+  for (i = 0; i < fdKeys.length; ++i) {
+    var key = fdKeys [i];
+    ini.rewrite (key, form [key], fd [key]);
+  }
+
+  // リスト項目の幅
+  var columns = form.ProgramList.Columns;
+  var len = columns.Count;
+  for (i = 0; i < len; ++i) {
+    var key = 'Columns_' + i;
+    ini.rewrite (key, columns.items (i).Width, fd [key]);
+  }
+
+
+  if (ini.hasKey ('dirty')) {
+    ini.update ();
+  }
+};
+
+
+//------------------------------ DorothyFiles ------------------------------
+
+
+// コンストラクタ
+function DorothyFiles (baseDir) {
+  this.baseDir = baseDir;
+
+  this.programs = [ ];
+  this.files = { };
+}
+
+// 指定ファイルの DorothyFile オブジェクトを返す
+DorothyFiles.prototype.getFile = function (file) {
+  return this.files.hasKey (file) ? this.files [file] : null;
+};
+
+// 指定プログラムの DorothyFile オブジェクトを返す
+DorothyFiles.prototype.getProgramFile = function (program) {
+  return this.getFile ('program\' + program);
+};
+
+
+// ファイルを追加する
+DorothyFiles.prototype.addFile = function (file) {
+  if (this.getFile (file)) {
+    // 既に登録されている
+    return;
+  }
+
+  var dorothyFile = new DorothyFile (this.baseDir, file, true);
+  this.files [file] = dorothyFile;
+
+  // このスクリプトから参照されているファイルを追加する
+  var req = dorothyFile.required;
+  var len = req.length;
+  for (var i = 0; i < len; ++i) {
+    this.addFile (req [i]);
+  }
+};
+
+
+// program フォルダのスクリプトを全て追加する
+DorothyFiles.prototype.addPrograms = function () {
+  var dir = new Directory (this.baseDir + 'program\');
+
+  var files = dir.findFiles ('*.dms');
+  var len = files.length;
+  for (var i = 0; i < len; ++i) {
+    var file = files [i];
+    var filename = File.extractName (file);
+
+    if (/\.dms$/.test (filename)) {
+      this.programs.push (filename);
+      this.addFile ('program\' + filename);
+    }
+  }
+
+  this.programs.sort ();
+};
+
+
+// 解析時にエラーが発生したファイル名の一覧を返す
+DorothyFiles.prototype.getErrorFileList = function () {
+  var list = new Strings ();
+
+  for (var file in this.files) {
+    var dorothyFile = this.files [file];
+
+    if (!dorothyFile.exists) {
+      list.add (dorothyFile.file);
+    }
+  }
+
+  list.sort ();
+  return list;
+};
+
+
+//------------------------------ DorothyFile -------------------------------
+
+
+// コンストラクタ
+function DorothyFile (baseDir, file, fullScan) {
+  this.required = [ ];
+
+  this.baseDir = baseDir;
+  this.file = file;
+
+  var f = new File (baseDir + file);
+  this.exists = f.exists ();
+
+  if (!this.exists) {
+    return;
+  }
+
+  var ext = f.extractExt ();
+  if (ext == '.dms' || ext == '.set') {
+    this._analyzeScript (fullScan);
+  }
+
+  if (fullScan) {
+    this._addRelatedFiles ();
+  }
+}
+
+
+DorothyFile.prototype.caption = '';
+DorothyFile.prototype.version = '';
+DorothyFile.prototype.hint = '';
+DorothyFile.prototype.match = '';
+DorothyFile.prototype.author = '';
+DorothyFile.prototype.priority = '';
+
+
+// ファイルが存在する場合は関連ファイルに追加する
+DorothyFile.prototype._addFileIfExists = function (file) {
+  if (File.exists (this.baseDir + file)) {
+    this.required.push (file);
+  }
+};
+
+
+// フォルダ内のファイルを関連ファイルに追加する
+DorothyFile.prototype._addFiles = function (dir, wildcard) {
+  var files = (new Directory (this.baseDir + dir)).findFiles (wildcard);
+
+  var len = files.length;
+  for (var i = 0; i < len; ++i) {
+    var file = File.extractName (files [i]);
+    this.required.push (dir + file);
+  }
+};
+
+
+// 関連ファイルを追加する
+DorothyFile.prototype._addRelatedFiles = function () {
+
+  if (/^program\\(.*)\.dms$/.test (this.file)) {
+    var prog = RegExp.$1;
+
+    this._addFileIfExists ('document\program\' + prog + '.txt');
+    this._addFileIfExists ('setting\' + prog + '.set');
+    this._addFiles ('user\' + prog + '\', '*.*');
+    return;
+  }
+
+  if (/^common\\(.*)\.dms$/.test (this.file)) {
+    var comm = RegExp.$1;
+
+    this._addFileIfExists ('document\common\' + comm + '.txt');
+    return;
+  }
+};
+
+
+// 保存するヘッダ値のリスト
+DorothyFile.prototype._headerProperties = (function () {
+  var sl = new Strings ();
+  sl.assign ([ 'caption', 'version', 'hint', 'match', 'author', 'priority' ]);
+
+  return sl;
+}) ();
+
+
+// スクリプト(.dms .set)を解析する
+DorothyFile.prototype._analyzeScript = function (fullScan) {
+  var sl = new Strings ();
+  try {
+    sl.loadFromFile (this.baseDir + this.file);
+
+    if (!/^\/\/Dorothy2/.test (sl [0])) {
+      return;
+    }
+    sl.delete (0);
+  }
+  catch (e) {
+    return;
+  }
+
+  var req = this.required;
+
+  // ヘッダを読み取る
+  while (sl.length) {
+    var line = sl [0];
+    sl.delete (0);
+
+    //end でヘッダ終了
+    if (/^\/\/end\s*$/.test (line)) {
+      break;
+    }
+
+    if (!/^\/\/([^=]+)=(.+)$/.test (line)) {
+      continue;
+    }
+    var key = RegExp.$1;
+    var value = RegExp.$2;
+
+    if (this._headerProperties.indexOf (key) != -1) {
+      this [key] = value;
+    }
+    else if (key == 'addition') {
+      req.push (value);
+    }
+  }
+
+  if (!fullScan) {
+    return;
+  }
+
+  // ヘッダ以外のテキスト(スクリプト本体)から common_load を探す
+  var dms = sl.text;
+
+  var re = /common_load\s*(\(.*?)\)\s*;/g;
+  var re2 = /[(,]\s*('[^']+'|"[^"]+")/g;
+
+  dms.replace (re, function (s, args) {
+    args.replace (re2, function (s, quotedName) {
+      var name = 'common\' + quotedName.replace (/^['"]|['"]$/g, '') + '.dms';
+      req.push (name);
+
+      return '';
+    });
+    return '';
+  });
+};
+
+
+//---------------------------- DorothyFileList -----------------------------
+
+
+// コンストラクタ
+function DorothyFileList (dorothyFiles) {
+  this.dorothyFiles = dorothyFiles;
+
+  this.files = new Strings ();
+  this.files.sorted = true;
+};
+
+
+// Dorothy2\document\*.txt を UTF-8 で書き込むかどうか
+DorothyFileList.prototype.documentUtf8 = false;
+
+// コピーしない(デバッグ用)
+DorothyFileList.prototype.noCopy = false;
+
+
+// リストにファイルを追加する
+DorothyFileList.prototype.addFile = function (file) {
+  if (this.files.indexOf (file) != -1) {
+    // 既に登録されている
+    return;
+  }
+
+  this.files.add (file);
+
+  var dorothyFile = this.dorothyFiles.getFile (file);
+  if (!dorothyFile) {
+    return;
+  }
+
+  // このスクリプトから参照されているファイルを追加する
+  var req = dorothyFile.required;
+  var len = req.length;
+  for (var i = 0; i < len; ++i) {
+    this.addFile (req [i]);
+  }
+};
+
+
+// リストに program スクリプトを追加する
+DorothyFileList.prototype.addProgram = function (program) {
+  return this.addFile ('program\' + program);
+};
+
+
+DorothyFileList.prototype.message = {
+  copy:   'copy   ',  // コピー
+  update: 'update ',  // 上書き
+  same:   'same   ',  // 同一内容
+  skip:   'skip   ',  // 変更あるが同一バージョンなので無視
+  error:  'error  '
+};
+
+
+// ファイルを読み込む
+DorothyFileList.prototype._readFile = function (file) {
+  try {
+    file.open ('r');
+    return file.read ();
+  }
+  finally {
+    file.close ();
+  }
+};
+
+
+// 文字列が UTF-8 か調べる
+DorothyFileList.prototype._isUtf8 = function (s) {
+  var sb = new StringBuffer (s);
+
+  // 長い UTF-8 文字列で非常に時間がかかってしまうので
+  // 適当なところで打ち切る
+  var len = Math.min (sb.length, 1000);
+
+  sb.append (String.fromCharCode (0xff));
+
+  for (var i = 0; i < len; ) {
+    var cc = sb.charCodeAt (i++);
+
+    if (cc <= 0x7f) {
+      continue;
+    }
+    if ((cc <= 0xc1) || (0xf8 <= cc)) {
+      return false;
+    }
+
+    // UTF-8 の2バイト目以降の値として正しいか
+    var bytes = (cc <= 0xdf) ? 1 : (cc <= 0xef) ? 2 : 3;
+    do {
+      cc = sb.charCodeAt (i++);
+      if ((cc < 0x80) || (0xbf < cc)) {
+        return false;
+      }
+    } while (--bytes);
+  }
+
+  return true;
+};
+
+
+// ファイルの文字コードを変換する
+DorothyFileList.prototype.convertEncoding = function (file) {
+  var text = this._readFile (file);
+  var fileIsUtf8 = this._isUtf8 (text);
+
+  if (fileIsUtf8 == this.documentUtf8) {
+    // UTF-8 → UTF-8、または Shift_JIS → Shift_JIS ならそのままでよい
+    return;
+  }
+
+  // UTF-8 → Shift_JIS、または Shift_JIS → UTF-8
+  text = fileIsUtf8 ? text.fromUTF8toSJIS () : text.toUTF8 ();
+
+  try {
+    file.open ('w');
+    file.write (text);
+  }
+  finally {
+    file.close ();
+  }
+};
+
+
+// ファイルをコピーする(下請け)
+DorothyFileList.prototype._copyFile = function (dorothyFile, fromDir, toDir) {
+  if (!dorothyFile) {
+    return { type: 'error', message: '内部エラー: dorothyFiles.getFile() == null' };
+  }
+
+  var filename = dorothyFile.file;
+  var fromFile = new File (fromDir + filename);
+  var toFile = new File (toDir + filename);
+
+  if (!fromFile.exists ()) {
+    return { type: 'error', message: '内部エラー: fromFile.exists() == false' };
+  }
+
+  // ドキュメントファイルの文字コードを指定の種類に変更
+  if (/^document\\.*\.txt$/.test (dorothyFile.file)) {
+    this.convertEncoding (fromFile);
+  }
+
+  // ファイルが存在しなければコピー
+  if (!toFile.exists ()) {
+    if (!this.noCopy) {
+      // ディレクトリがなければ作成する
+      var dir = new Directory (toFile.extractPath ());
+      if (!dir.exists ()) {
+        dir.make ();
+      }
+
+      fromFile.copyTo (toFile.filename);
+    }
+    return { type: 'copy' };
+  }
+
+  // 同じ内容のファイルが既にあればコピーしない
+  if (this._readFile (fromFile) == this._readFile (toFile)) {
+    return { type: 'same' };
+  }
+
+  // 内容が異なる場合でも、program\*.dms で //version= が同じならコピーしない
+  // (設定ファイルがなく、スクリプトを直接書き換える形式のスクリプトへの考慮)
+  if (/^program\\.*\.dms$/.test (filename)) {
+    var currentFile = new DorothyFile (Dorothy.path, filename);
+    if (currentFile.version == dorothyFile.version) {
+      return { type: 'skip' };
+    }
+  }
+
+  // 上書きコピー
+  if (!this.noCopy) {
+    fromFile.copyTo (toFile.filename);
+  }
+  return { type: 'update' };
+};
+
+
+// ファイルをコピーする
+DorothyFileList.prototype.copyFile = function (dorothyFile, fromDir, toDir) {
+  try {
+    return this._copyFile (dorothyFile, fromDir, toDir);
+  }
+  catch (e) {
+    return { type: 'error', message: e };
+  }
+};
+
+
+// リストのファイルをコピーする
+DorothyFileList.prototype.copy = function () {
+  var dorothyFiles = this.dorothyFiles;
+  var fromDir = dorothyFiles.baseDir;
+  var toDir = Dorothy.path;
+
+  var result = { copy: 0, update: 0, same: 0, skip: 0, error: 0 };
+  var log = new Strings ();
+
+  var files = this.files;
+  var len = files.length;
+  for (var i = 0; i < len; ++i) {
+    var dorothyFile = dorothyFiles.getFile (files [i]);
+
+    var r = this.copyFile (dorothyFile, fromDir, toDir);
+
+    ++result [r.type];
+    log.add (this.message [r.type] + dorothyFile.file);
+    if (r.hasKey ('message')) {
+      log.add ('  --->  ' + r.message);
+    }
+  }
+
+  result.log = log;
+  return result;
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  try {
+    var ni = new NetInstall ();
+    ni.showModal ();
+  }
+  catch (e) {
+    alert ('NetInstall: ' + e);
+  }
+}
+
+
+// EOF
