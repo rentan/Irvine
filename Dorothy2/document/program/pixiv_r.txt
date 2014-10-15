@@ -90,6 +90,11 @@ http://www.pixiv.net/novel/show.php?id=\d+
 変更履歴
 ========
 
+2014-10-15  version 20141015.0  rentan at rentan.org
+  サイト側の変更に対応。
+    - イラストの作品一覧で同じURLが重複して追加される。
+    - ブック形式で画像URLが見つからない。
+
 2014-10-03  version 20141003.0  rentan at rentan.org
   サイト側の変更(画像URLが見つかりません。)に対応。
 
