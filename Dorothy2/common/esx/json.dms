@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=esx/JSON
-//version=20141005.0
+//version=20141018.0
 //hint=
 //match=
 //author=rentan
@@ -556,10 +556,14 @@ JSONstringify.prototype._object = function (stack, indent, value) {
       v = this.replacer (key, v);
     }
 
-    if (!isUndefined (v)) {
-      v = this._value (stack, indent2, v);
-      s.push (this._string (key) + this.colon + v);
+    // undefined なら出力しない
+    // function なら出力しない(prototype オブジェクトは for in で関数が列挙される)
+    if (isUndefined (v) || typeof v === 'function') {
+      continue;
     }
+
+    v = this._value (stack, indent2, v);
+    s.push (this._string (key) + this.colon + v);
   }
 
   stack.pop ();
@@ -569,17 +573,16 @@ JSONstringify.prototype._object = function (stack, indent, value) {
 
 // 文字列化
 JSONstringify.prototype._value = function (stack, indent, value) {
-  // .hasKey() を持たない型を先に判別
+  // .toJSON() があればそれを使う
+  if (typeof value.toJSON === 'function') {
+    value = value.toJSON ();
+  }
+
   if (value === null || isNaN (value)) {
     return 'null';
   }
   if (isUndefined (value)) {
     return 'undefined';
-  }
-
-  // .toJSON() があればそれを使う
-  if (value.hasKey ('toJSON') && typeof value.toJSON == 'function') {
-    return '"' + value.toJSON () + '"';
   }
 
   // boolean, Boolean
@@ -596,30 +599,33 @@ JSONstringify.prototype._value = function (stack, indent, value) {
   }
 
   var n = nameOf (value);
-  if (t == 'string' || n == 'String') {
+  if (t === 'string' || n === 'String') {
     return this._string (value);
   }
-  if (t == 'number' || n == 'Number') {
+  if (t === 'number' || n === 'Number') {
     return this._number (value);
+  }
+
+  if (n === 'Date') {
+    common_load ('esx\date');
+    return '"' + value.toJSON () + '"';
+  }
+  if (n === 'StringBuffer' || n === 'StringList') {
+    return this._string (value.text);
   }
 
   // var a = { }; a.b = a; のような循環参照をエラーにする
   var len = stack.length;
   for (var i = 0; i < len; ++i) {
-    if (stack [i] == value) {
+    if (stack [i] === value) {
       this._throw ('オブジェクトの参照が循環している');
     }
   }
 
-  if (n == 'Array') {
+  if (n === 'Array') {
     return this._array (stack, indent, value);
   }
-  if (n == 'Date') {
-    common_load ('esx\date');
-    return '"' + value.toJSON () + '"';
-  }
-
-  if (t == 'object') {
+  if (t === 'object') {
     return this._object (stack, indent, value);
   }
 

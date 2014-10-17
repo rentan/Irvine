@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=esx/JSON spec
-//version=20141005.0
+//version=20141018.0
 //hint=http://yasmine.dorothy.test/common/spec/esx/json_spec.dms
 //match=
 //author=rentan
@@ -243,6 +243,23 @@ describe ('JSON.stringify', function () {
     var json = '"foo"';
 
     expect (JSON.stringify (value)).toBe (json);
+
+    var contact = {
+      firstname: "Jesper",
+      surname: "Aaberg",
+      phone: [ "555-0100", "555-0120" ],
+      toJSON: function () {
+        var rep = { };
+        for (var val in this) {
+          var v = this [val];
+          rep [val] = (typeof v === 'string') ? v.toUpperCase () : v;
+        }
+        return rep;
+      }
+    };
+    var contactJson = '{"firstname":"JESPER","phone":["555-0100","555-0120"],"surname":"AABERG"}';
+
+    expect (JSON.stringify (contact)).toBe (contactJson);
   });
 
   it ('callbacks replacer', function () {
@@ -335,11 +352,37 @@ describe ('JSON.stringify', function () {
     expect (JSON.stringify (value2, null, hyphen10 + '****')).toBe (json2);
   });
 
-  it ('can stringify Date object', function () {
+  it ('converts Date object to string', function () {
     var d = new Date ();
     d.setTime (1412123456789);
 
     expect (JSON.stringify (d)).toBe ('"2014-10-01T00:30:56.789Z"');
+  });
+
+  it ('converts StringBuffer object to string', function () {
+    var sb = new StringBuffer ('"foo bar"');
+
+    expect (JSON.stringify (sb)).toBe ('"\"foo bar\""');
+  });
+
+  it ('converts Strings object to string', function () {
+    var sl = new Strings ();
+    sl.add ('foo');
+    sl.add ('bar');
+    var json = '"foo\u000D\u000Abar\u000D\u000A"';
+
+    expect (JSON.stringify (sl)).toBe (json);
+  });
+
+  it ('ignores function in prototype object', function () {
+    function f () { }
+    var value = f.prototype;
+    value.n = 1;
+    value.s = 'abc';
+    value.m = function () { return true; };
+
+    var json = '{"s":"abc","n":1}';
+    expect (JSON.stringify (value)).toBe (json);
   });
 });
 

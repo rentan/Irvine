@@ -33,6 +33,12 @@ stringify (value, replacer, space)
 変更履歴
 ========
 
+2014-10-18  version 20141018.0  rentan at rentan.org
+JSON.stringify():
+  prototype オブジェクトで ENameError が発生する不具合を修正。
+  toJSON() の扱いが間違っていた不具合を修正。
+  StringBuffer、Strings に対応。
+
 2014-10-05  version 20141005.0  rentan at rentan.org
   新規作成。
 
