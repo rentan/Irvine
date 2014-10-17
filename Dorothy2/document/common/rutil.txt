@@ -67,6 +67,11 @@ Dorothy.setFilename (filename)
 変更履歴
 ========
 
+2014-10-18  version 20141018.0  rentan at rentan.org
+  Dorothy2R の場合の最低バージョンを 20141005 に更新。
+  Util.min_version() を追加。
+  common_xload() をフックしてバージョンチェックを行うようにした。
+
 2014-10-06  version 20141006.0  rentan at rentan.org
   Dorothy2 本体側の必須バージョンを変更。
     Dorothy2set.dms version 0.19 以上

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20141006.0
+//version=20141018.0
 //hint=utility
 //match=
 //author=rentan
@@ -198,12 +198,64 @@ Util.fatal = function (s) {
 };
 
 
+// rutil.dms のバージョンチェック
+Util.min_version = function (reqVer) {
+  var fileVer = parseFloat (Dorothy.common ['rutil'].version);
+
+  if (isNaN (fileVer) || fileVer < reqVer) {
+    Util.fatal ("common\\rutil.dms のバージョンが古すぎます。\n最新版を使用して下さい。");
+  }
+};
+
+
+// common_xload() にバージョンチェックを組み込む
+common_xload = (function (common_xload) {
+  var versions = {
+    'domparser\core': 20140816.0,
+    'domparser\json': 20140928.0,
+    'domparser\pseudo_xml': 20140816.0,
+    'domparser\xml': 20140816.0,
+
+    'esx\array': 20140714.0,
+    'esx\date': 20141005.0,
+    'esx\json': 20141005.0,
+
+    actibook: 20140331.0,
+    additem: 20140820.0,
+    browsercookie: 20140403.0,
+    exec: 20140331.0,
+    getterobject: 20140927.0,
+    htmlform: 20140331.0,
+    http: 20140815.0,
+    jinput: 20140908.0,
+    namebuilder: 20140718.0,
+    rutil_dorothy2r: 20141018.0,
+    threadstorage: 20140913.0,
+    utf8: 20140811.0,
+    utf8_charref: 20140811.0,
+    yasmine: 20140714.0
+  };
+
+  return function (name) {
+    common_xload (name);
+
+    if (versions.hasKey (name)) {
+      var fileVer = parseFloat (Dorothy.common [name].version);
+
+      if (isNaN (fileVer) || fileVer < versions [name]) {
+        Util.fatal ("common\\" + name + ".dms のバージョンが古すぎます。\n最新版を使用して下さい。");
+      }
+    }
+  };
+}) (common_xload);
+
+
 //----------------------- 実行環境が正しいか検証する -----------------------
 
 
 if (Dorothy.hasKey ('rVersion')) {
-  if (Dorothy.rVersion < 20140729) {
-    Util.fatal ("Dorothy2R のバージョンが古すぎます。\nDorothy2R の最新版を使用して下さい。");
+  if (Dorothy.rVersion < 20141005) {
+    Util.fatal ("Dorothy2R のバージョンが古すぎます。\n最新版を使用して下さい。");
   }
 }
 else {
