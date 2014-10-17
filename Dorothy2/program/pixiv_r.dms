@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20141015.0
+//version=20141018.0
 //hint=pixiv 別バージョン
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?)
 //author=rentan
@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function () {
 
   common_load ('rutil', 'additem', 'browsercookie', 'http', 'namebuilder', 'utf8');
+  Util.min_version (20141018.0);
 
   // 設定ファイルの読み込み
   var default_ini = {
@@ -350,33 +351,28 @@ function make_manga_list (urls, referer) {
 
 // 漫画の原寸画像のURLを取得して配列で返す
 // http は mode=medium のページをgetした直後の状態であること
-function get_manga_image_urls (http) {
-  var big = http.previousUrl.replace (/([?&]mode)=medium/, '$1=manga');
+function get_manga_image_urls (http, pages) {
+  var big = http.previousUrl.replace (/([?&]mode)=medium/, '$1=manga_big') + '&page=0';
 
   if (!http.get (big)) {
-    return retry ();
+    return null;
+  }
+
+  if (!/<img\s[^>]*src="(http:\/\/i\d*\.pixiv\.net\/[^"]+_p)0(\.[^."]*)"/.test (http.data)) {
+    http.capture ();
+    http.die ('画像URLが見つかりません。');
+  }
+  var head = RegExp.$1;
+  var tail = RegExp.$2;
+
+  if (/_big_p$/.test (head)) {
+    nb.manga_size = '_big';
   }
 
   var urls = [ ];
 
-  var re1 = /data-src="(http:\/\/i\d*\.pixiv\.net\/[^"]+)/g;
-  http.data.replace (re1, function (s, url) {
-    urls.push (url);
-    return '';
-  });
-
-  if (urls.length == 0) {
-    // ブック形式
-    var re2 = /\.images\s*\[\s*\d+\s*\]\s*=\s*"(http:\\\/\\\/i\d*\.pixiv\.net\\\/[^"]+)/g;
-    http.data.replace (re2, function (s, url) {
-      urls.push (url.replace (/\\/g, ''));
-      return '';
-    });
-  }
-
-  if (urls.length == 0) {
-    http.capture ();
-    http.die ('画像URLが見つかりません。');
+  for (var i = 0; i < pages; ++i) {
+    urls.push (head + i + tail);
   }
 
   return urls;
@@ -389,12 +385,9 @@ function dl_manga_p (http) {
     return retry ();
   }
 
-  var urls = get_manga_image_urls (http);
+  var urls = get_manga_image_urls (http, nb.pages);
   if (!urls) {
     return retry ();
-  }
-  if (urls.length != nb.pages) {
-    http.die ('漫画の画像枚数が一致しませんでした。');
   }
 
   var list = make_manga_list (urls, http.previousUrl);
