@@ -142,6 +142,13 @@ http://scripting.cocolog-nifty.com/blog/2007/11/post_4bb2.html
 変更履歴
 ========
 
+2014-10-28  version 20141028
+  ftp:// の URL エンコードを復号するようにした。
+  ただし %20～%7e 以外の文字が含まれる場合は復号しない。
+
+  ニコニコ動画の再生ページで「ページ内の全リンクをリスト追加」が
+  動作しない不具合を修正。
+
 2014-07-22  version 20140722
   ignore_img に clear.gif を追加。
   http://www.inoreader.com/ のリファラを送信しないようにした。

@@ -2,7 +2,7 @@
 caption=Irvineでダウンロード(&Z)
 hint=Irvineでリンクや画像をダウンロード
 contexts=55
-version=20140722
+version=20141028
 author=rentan
 -->
 
@@ -36,6 +36,8 @@ var config = {
   // Punycode 変換を行うか
   punycode: true,
 
+  // ftp:// で URL デコードを行うか
+  decode_ftp_url: true,
 
   // *_action に指定できる値
   //  'imgonly': 画像をダウンロード
@@ -178,14 +180,39 @@ function IrvineItemList () {
 
 IrvineItemList.prototype.referer = true;
 IrvineItemList.prototype.dialog = false;
-IrvineItemList.prototype.shiftJIS = false;
-IrvineItemList.prototype.punycode = false;
 
-IrvineItemList.prototype.setDefault = function (charset, punycode) {
-  var p = IrvineItemList.prototype;
 
-  p.shiftJIS = (charset === 'shift_jis');
-  p.punycode = punycode;
+IrvineItemList.prototype.config = {
+  shiftJIS: false,
+  encodePunycode: false,
+  decodeFtpUrl: false
+};
+
+IrvineItemList.prototype.setConfig = function (cfg) {
+  var config = IrvineItemList.prototype.config;
+
+  for (var key in cfg) {
+    if (cfg.hasOwnProperty (key)) {
+      config [key] = cfg [key];
+    }
+  }
+};
+
+
+// URLエンコードされたパスをデコードする
+IrvineItemList.prototype.decodePath = function (path) {
+  try {
+    return path.replace (/%([0-9a-f]{2})/ig, function (s, hex) {
+      var c = parseInt ('0x' + hex);
+      if (c < 0x20 || 0x7e < c) { //>
+        throw 'not ascii character';
+      }
+      return String.fromCharCode (c);
+    });
+  }
+  catch (e) {
+    return path;
+  }
 };
 
 
@@ -201,9 +228,10 @@ IrvineItemList.prototype.add = function (url) {
   var head = RegExp.$1;
   var host = RegExp.$4;
   var tail = RegExp.$5;
+  var scheme = RegExp.$2.toLowerCase ();
 
   // IDN なら Punycode 変換
-  if (this.punycode && /[^ -~]/.test (host)) {
+  if (this.config.encodePunycode && /[^ -~]/.test (host)) {
     try {
       host = punycode (host);
     }
@@ -212,8 +240,11 @@ IrvineItemList.prototype.add = function (url) {
 
   // パス名に U+0080 以上の文字があれば %xx エンコードする
   // (ただし保存ファイル名は文字化けする)
-  if (!this.shiftJIS && /[\u0080-\uffff]/.test (url)) {
+  if (!this.config.shiftJIS && /[\u0080-\uffff]/.test (url)) {
     tail = encodeURI (decodeURI (tail));
+  }
+  else if (scheme === 'ftp' && this.config.decodeFtpUrl) {
+    tail = this.decodePath (tail);
   }
 
   url = head + host + tail;
@@ -326,8 +357,16 @@ function get_abs_href (doc, e, atr) {
   // IE9 では不可
   // return e.getAttribute (atr, 4);
 
+  var href = null;
+  try {
+    href = e [atr];
+  }
+  catch (e) {
+    return '';
+  }
+
   var span = doc.createElement ('span');
-  span.innerHTML = '<a href="' + e [atr] + '">';
+  span.innerHTML = '<a href="' + href + '">';
   return span.firstChild.href;
 }
 
@@ -645,7 +684,12 @@ function do_action (doc, event, action) {
   var event = external.menuArguments.event;
   var doc = external.menuArguments.document;
 
-  (new IrvineItemList ()).setDefault (doc.charset, config.punycode);
+  var cfg = {
+    shiftJIS: doc.charset === 'shift_jis',
+    encodePunycode: config.punycode,
+    decodeFtpUrl: config.decode_ftp_url
+  };
+  (new IrvineItemList ()).setConfig (cfg);
 
   var list;
 
