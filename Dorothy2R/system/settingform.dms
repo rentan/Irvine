@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=SettingForm
-//version=20141005.0
+//version=20141028.0
 //hint=
 //match=
 //author=rentan
@@ -335,7 +335,7 @@ SettingForm.loadSettingIni = function () {
     return ini.read ('user', key, '');
   }
 
-  Dorothy.temp = usr ('temp') || Dorothy.tmep;
+  Dorothy.temp = usr ('temp') || Dorothy.temp;
 
   // system\menu\Å`.dms Ç≈ USER_NAME Ç™égÇÌÇÍÇƒÇ¢ÇÈ
   USER_NAME = Dorothy.userName = usr ('name');

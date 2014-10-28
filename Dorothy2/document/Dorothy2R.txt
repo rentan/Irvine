@@ -131,6 +131,12 @@ Dorothy.loadDorothyIni ();
 •ÏX—š—ğ
 ========
 
+2014-10-28  version 20141028.0  rentan at rentan.org
+
+Dorothy2R\system\settingform.dms
+  Dorothy.temp ‚ª `.tmep ‚É‚È‚Á‚Ä‚¢‚½‚Ì‚ğC³B
+    thanks to http://peace.2ch.net/test/read.cgi/win/1412399700/130
+
 2014-10-05  version 20141005.0  rentan at rentan.org
 
 Dorothy2R\
