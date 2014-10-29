@@ -1,8 +1,8 @@
 //Dorothy2
 //caption=twitpic_r
-//version=20140331.0
+//version=20141029.0
 //hint=Twitpic 別バージョン
-//match=^http://(www\.|web\d+\.)?twitpic\.com/[0-9a-z]+
+//match=^https?://(www\.|web\d+\.)?twitpic\.com/[0-9a-z]+
 //author=rentan
 //path=program
 //priority=500
@@ -50,28 +50,6 @@ function () {
 //---------------------- 下請け ----------------------//
 
 
-// full 画像の URL を取得する
-function get_full_img_url (cid) {
-  // View full size ページの HTML を取得
-  var url = 'http://twitpic.com/' + cid + '/full';
-  var http = new Http ();
-  if (!http.get (url)) {
-    http.retry_or_die ();
-    return null;
-  }
-
-  if (!/<div\s+id="media-full">(.*?)<\/div>/.test (http.data)) {
-    http.die ('<div id="media-full"> が見つかりません。');
-  }
-  var html = RegExp.$1;
-
-  if (!/<img\s+src="(https?:\/\/[^"]+)"/.test (html)) {
-    http.die ('full 画像の URL が見つかりません。');
-  }
-  return RegExp.$1;
-}
-
-
 // 画像または動画をダウンロード
 function dl_cid (cid) {
   nb.id = cid;
@@ -98,32 +76,20 @@ function dl_cid (cid) {
     title = (new Utf8 (RegExp.$1)).decodeCharRef ();
   }
 
+  var ext = null;
+
   // データの URL を探す
-  if (/<img\s+src="(https?:)?([^"]+)"[^>]*>\s*<\/div>\s*<div\s+id="media-caption">/.test (http.data)) {
-    // <div id="media-caption"> の手前に <img> があれば画像
-    content_url = 'http:' + RegExp.$2;
-    content_type = 'Photo';
-
-    if (/\/photos\/full\//.test (content_url)) {
-      // 小さい画像は full 画像が直接表示される
-    }
-    else if (/\/photos\/large\//.test (content_url)) {
-      // 縮小されていれば View full size ページから取得
-      content_url = get_full_img_url (cid);
-      if (content_url == null) {
-        return;
-      }
-    }
-    else {
-      http.die ('画像の URL が未知の形式です。');
-    }
-  }
-  else if (/<source\s+src="(https?:)?([^"]+)"\s+type='([^']*)'>/.test (http.data)) {
+  if (/<source\s+src="(https?:\/\/[^"]+)"/.test (http.data)) {
     // 動画
-    content_url = 'http:' + RegExp.$2;
+    content_url = RegExp.$1;
     content_type = 'Video';
+  }
+  else if (/<img\s[^>]*src="(https?:\/\/[^\/]+\/photos\/large\/[^"]+)"/.test (http.data)) {
+    // 画像
+    ext = (new URL (RegExp.$1)).filename.replace (/^.*\./, '.');
 
-    println ('動画形式: ' + RegExp.$3);
+    content_url = 'http://twitpic.com/show/large/' + cid;
+    content_type = 'Photo';
   }
   else {
     http.die ('画像または動画の URL が見つかりません。');
@@ -136,12 +102,9 @@ function dl_cid (cid) {
   }
 
   // ダウンロード情報を設定
-  Dorothy.fileName = nb.assemble (ini.Filename [content_type], content_url);
+  nb.setFilename (ini.Filename [content_type], ext || content_url);
 
-  urlinfo.url = content_url;
-  headers.Host = (new URL (content_url)).host;
-  headers.Referer = url;
-  headers ['Accept-Language'] = 'ja';
+  Dorothy.setUrl (content_url);
 }
 
 
