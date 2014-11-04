@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=firestorage_r
-//version=20140927.0
+//version=20141104.0
 //hint=
 //match=^https?://(secure\.)?firestorage\.(jp|com)/download/.
 //author=rentan
@@ -107,9 +107,15 @@ FireStorage.prototype._passPasswordForm = function (retryUrl) {
 
 // 内部で使用: ダウンロード URL を抽出する
 FireStorage.prototype._extractDownloadLink = function () {
+  var folder = item.folder;
+
   var self = this;
   function add (s, u, f) {
-    self._add ({ Url: u, Filename: (new Utf8 (f)).toSJIS () });
+    var itemData = { Url: u, Filename: (new Utf8 (f)).toSJIS () };
+    if (folder) {
+      itemData.Folder = folder;
+    }
+    self._add (itemData);
   }
 
   var re = /<a\s+href="(https?:\/\/[^"]+)"[^>]*id="downloadlink"[^>]*>([^<]+)/g;
