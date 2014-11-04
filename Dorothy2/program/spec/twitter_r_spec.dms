@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20140729.0
+//version=20141104.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -71,7 +71,7 @@ describe ('単一画像', function () {
     expect (twitter.urls).toEqual ([ { Url: imageUrl } ]);
   });
 
-  it ('.buildFilename() で .utls にファイル名が追加される', function () {
+  it ('.buildFilename() で .urls にファイル名が追加される', function () {
     twitter.buildFilename (fmt);
     expect (twitter.urls).toEqual ([ { Url: imageUrl, Filename: filename } ]);
   });
@@ -106,7 +106,7 @@ describe ('単一画像(ツイート本文に別のツイートの画像 URL あり)', function () {
     expect (twitter.urls).toEqual ([ { Url: imageUrl } ]);
   });
 
-  it ('.buildFilename() で .utls にファイル名が追加される', function () {
+  it ('.buildFilename() で .urls にファイル名が追加される', function () {
     twitter.buildFilename (fmt);
     expect (twitter.urls).toEqual ([ { Url: imageUrl, Filename: filename } ]);
   });
@@ -154,7 +154,7 @@ describe ('複数画像', function () {
     expect (twitter.urls).toEqual (urls);
   });
 
-  it ('.buildFilename() で .utls にファイル名が追加される', function () {
+  it ('.buildFilename() で .urls にファイル名が追加される', function () {
     var urls = [ 0, 1, 2, 3 ].map (function (v) {
       return { Url: imageUrls [v], Filename: filenames [v] };
     });
@@ -225,7 +225,7 @@ describe ('リプライツイートの画像', function () {
 
     [ 'https://twitter.com/_bigwood2310/status/486324348878618625',
       'https://pbs.twimg.com/media/Br_Fap6CMAETSCP.jpg:orig',
-      '二見 たいじゅ [_bigwood2310] - @Tetorapoto3 がんばれ？？がんばれ？？(伊東ライフ感' +
+      '2見 たいじゅ [_bigwood2310] - @Tetorapoto3 がんばれ？？がんばれ？？(伊東ライフ感' +
       ' pic.twitter.com／NmfvmjcRfV [486324348878618625].jpg' ]
   ])
   .it ('[ url, image, filename ]', function (url, image, filename) {

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20141001.0
+//version=20141104.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -206,16 +206,27 @@ Twitter.prototype._analyzeTweet = function (http) {
 Twitter.prototype.buildFilename = function (fmt) {
   var nb = this.nameBuilder;
 
+  var title = nb.title.toSJIS ();
+
   var urls = this.urls;
   var len = nb.pages = urls.length;
 
   for (var i = 0; i < len; ++i) {
     nb.p = i;
 
-    var url = urls [i].Url.replace (/:[a-z]*$/, '');
-    var itemData = nb.buildFilename (fmt, url);
-    itemData.Url = urls [i].Url;
+    var url = urls [i].Url;
+    var urlWithoutSize = url.replace (/:[a-z]*$/, '');
 
+    nb.title = title;
+    var itemData = nb.buildFilename (fmt, urlWithoutSize);
+
+    var compacted = this.compactTitle (itemData, title);
+    if (compacted) {
+      nb.title = compacted;
+      itemData = nb.buildFilename (fmt, urlWithoutSize);
+    }
+
+    itemData.Url = url;
     urls [i] = itemData;
   }
 };
@@ -374,6 +385,42 @@ Twitter.prototype.get = function (url) {
 };
 
 
+// ファイル名関係の定数
+Twitter.prototype._PATH_MAX = 260;
+Twitter.prototype._DOTS = '…';
+
+// タイトルを短くする
+Twitter.prototype.compactTitle = function (itemData, title) {
+  var folder = itemData.hasKey ('Folder') ? itemData.Folder : Dorothy.getSaveFolder ();
+  var filenameMax = this._PATH_MAX - folder.sizeOf ();
+
+  // 超過しているバイト数
+  var overBytes = itemData.Filename.sizeOf () - filenameMax;
+  if (overBytes <= 0) {
+    return null;
+  }
+  overBytes += this._DOTS.sizeOf ();
+
+  if (nameOf (title) === 'Utf8') {
+    title = title.toSJIS ();
+  }
+
+  // タイトルに許されるバイト数
+  var allowedBytes = title.sizeOf () - overBytes;
+
+  // 十分短くなるまで、後ろから1文字ずつ削ってバイト数を確かめる
+  for (var i = title.length; --i >= 0;) {
+    var s = title.slice (0, i);
+    if (s.sizeOf () <= allowedBytes) {
+      return s + this._DOTS;
+    }
+  }
+
+  // タイトルを0文字にしても長過ぎるので諦める
+  return this._DOTS;
+};
+
+
 //------------------------------- メイン処理 -------------------------------
 
 
@@ -395,22 +442,13 @@ Twitter.prototype.get = function (url) {
     return twitter.end (r);
   }
 
-  if (twitter.multiPhoto || twitter.media) {
-    if (twitter.multiPhoto) {
-      twitter.buildFilename (ini.Filename.Photo2);
-    }
-
-    (new AddItem (ini.AddItem)).send (twitter.urls) || exit ();
-    Util.remove_this ();
-    return;
+  if (!twitter.media) {
+    var fmt = twitter.multiPhoto ? ini.Filename.Photo2 : ini.Filename.Photo;
+    twitter.buildFilename (fmt);
   }
 
-  // 単独画像
-  var url = twitter.urls [0].Url;
-  nb.setFilename (ini.Filename.Photo, url.replace (/:[a-z]*$/, ''));
-  Dorothy.setUrl (url);
-
-  headers ['Accept-Language'] = 'ja';
+  var force = twitter.media;
+  (new AddItem (ini.AddItem)).reQueue (twitter.urls, force) || exit ();
 }
 
 
