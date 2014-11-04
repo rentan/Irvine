@@ -143,6 +143,10 @@ reQueue (list, force)
 変更履歴
 ========
 
+2014-11-04  version 20141104.0  rentan at rentan.org
+  reQueue() で実行中のアイテムを書き換える際、ダウンロードリストに
+  Folder があれば item.folder に反映させるようにした。
+
 2014-08-20  version 20140820.0  rentan at rentan.org
   AddItem#reQueue() を追加。
 

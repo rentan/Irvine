@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=AddItem
-//version=20140820.0
+//version=20141104.0
 //hint=new AddItem ()
 //match=
 //author=rentan
@@ -339,12 +339,17 @@ AddItem.prototype.reQueue = function (list, force) {
     return false;
   }
 
-  var item = list [0];
+  var itemData = list [0];
 
-  Dorothy.setUrl (item.Url);
-  if (item.hasKey ('Filename')) {
-    Dorothy.setFilename (item.Filename);
+  Dorothy.setUrl (itemData.Url);
+
+  if (itemData.hasKey ('Folder')) {
+    item.folder = itemData.Folder;
   }
+  if (itemData.hasKey ('Filename')) {
+    Dorothy.setFilename (itemData.Filename);
+  }
+
   return true;
 };
 
