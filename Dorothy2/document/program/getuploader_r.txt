@@ -66,6 +66,9 @@ http://u[^/.]+.getuploader.com/[^/]+/download/\d+
 変更履歴
 ========
 
+2014-11-04  version 20141104.0  rentan at rentan.org
+  Timestamp=Touch 時に保存フォルダが反映されない不具合を修正。
+
 2014-09-27  version 20140927.0  rentan at rentan.org
   パスワード入力キャンセル時は NG ではなく EXIT を返すようにした。
 

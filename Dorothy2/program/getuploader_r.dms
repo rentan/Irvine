@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=getuploader_r
-//version=20140927.0
+//version=20141104.0
 //hint=getuploader.com (uploader.jp)
 //match=^http://u[^/.]+\.getuploader\.com/[^/]+/download/\d+
 //author=rentan
@@ -517,7 +517,13 @@ function getTimestampMode (t) {
     var newUrl = getter.stripUrl (url);
     if (newUrl) {
       var additem = new AddItem (ini.AddItem);
-      additem.reQueue ({ Url: newUrl }, true) || exit ();
+
+      var itemData = { Url: newUrl };
+      if (item.folder) {
+        itemData.Folder = item.folder;
+      }
+
+      additem.reQueue (itemData, true) || exit ();
       return;
     }
   }
