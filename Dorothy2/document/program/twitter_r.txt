@@ -33,7 +33,12 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
-2014-11-04  version 20141105.0  rentan at rentan.org
+2014-11-11  version 20141111.0  rentan at rentan.org
+  %TITLE% 末尾の pic.twitter.com/*** 部分を削除。
+
+  ファイル名変数 %PIC_ID% を追加。上記の *** 部分に変換される。
+
+2014-11-04  version 20141104.0  rentan at rentan.org
   ファイル名が長すぎる時にタイトルを切り詰めるようにした。
 
 2014-10-01  version 20141001.0  rentan at rentan.org

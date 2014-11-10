@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20141104.0
+//version=20141111.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -195,6 +195,14 @@ Twitter.prototype._analyzeTweet = function (http) {
   else {
     return this._p ('ツイート本文が見つかりません。');
   }
+
+  // ツイート本文の末尾が pic.twitter.com/*** なら切り離す
+  var picRe = /^(.*?)\s*<a\s[^>]*class="[^"]*twitter-timeline-link[^"]*"[^>]*>pic\.twitter\.com\/([^<]+)<\/a>\s*$/;
+  if (picRe.test (t)) {
+    t = RegExp.$1;
+    nb.pic_id = RegExp.$2;
+  }
+
   nb.title = (new Utf8 (t)).removeTags ().decodeCharRef ();
 
   return this._analyzeTweetImage (http);
@@ -353,6 +361,7 @@ Twitter.prototype._setupNameBuilder = function () {
   nb.user_name = null;   // ユーザー名
   nb.id = null;          // ツイートのパーマリンクID
   nb.title = null;       // 本文
+  nb.pic_id = null;      // 本文末尾から分離した pic.twitter.com/*** の *** 部分
 
   nb.pages = 0;  // 全ページ数
   nb.p = 0;      // ページ番号
