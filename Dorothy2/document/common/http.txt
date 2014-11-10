@@ -390,6 +390,11 @@ inflate (s)
 変更履歴
 ========
 
+2014-11-11
+  .saveFile(): ファイル名として NameBuilder#buildFilename() の戻り値を指定
+  すると、フォルダとファイル名の間に \ が付かないことがある不具合を修正。
+    thanks to http://peace.2ch.net/test/read.cgi/win/1412399700/202
+
 2014-08-15  version 20140815.0  rentan at rentan.org
   HTTP ステータス 308 Permanent Redirect に対応。
   chunked デコーダを作りなおした。

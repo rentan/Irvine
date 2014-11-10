@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Http
-//version=20140815.0
+//version=20141111.0
 //hint=new Http ()
 //match=
 //author=rentan
@@ -897,7 +897,8 @@ Http.prototype.saveFile = function (args) {
   var path = args.filename;
   if (typeof path == 'object' && path.hasKey ('Filename')) {
     // NameBuilder#buildFilename() ‚Ì–ß‚è’l‚È‚ç•¶Žš—ñ‰»
-    path = (path.hasKey ('Folder') ? path.Folder : '') + path.Filename;
+    var dir = path.hasKey ('Folder') ? Directory.includePathDelimiter (path.Folder) : '';
+    path = dir + path.Filename;
   }
 
   try {
