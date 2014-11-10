@@ -34,6 +34,9 @@ https?://twitter.com/[^/]+/media
 ========
 
 2014-11-11  version 20141111.0  rentan at rentan.org
+  %TITLE% に半角から全角に変換される文字(/ など)が含まれる場合、切り詰め
+  が不十分になる不具合を修正。
+
   %TITLE% 末尾の pic.twitter.com/*** 部分を削除。
 
   ファイル名変数 %PIC_ID% を追加。上記の *** 部分に変換される。

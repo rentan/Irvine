@@ -418,9 +418,10 @@ Twitter.prototype.compactTitle = function (itemData, title) {
   var allowedBytes = title.sizeOf () - overBytes;
 
   // 十分短くなるまで、後ろから1文字ずつ削ってバイト数を確かめる
+  var nb = this.nameBuilder;
   for (var i = title.length; --i >= 0;) {
     var s = title.slice (0, i);
-    if (s.sizeOf () <= allowedBytes) {
+    if (nb.normalize (s).sizeOf () <= allowedBytes) {
       return s + this._DOTS;
     }
   }
