@@ -10,7 +10,7 @@ author=xor, rentan
 synchronize=0
 */
 
-// based on DOA.dms version 0.24 by xor
+// based on DOA.dms version 0.26 by xor
 
 /*
 Copyright (C) 2014 rentan at rentan.org
@@ -283,23 +283,11 @@ function OnListMenuClick (irvine, action) {
     a.doa_link   = '';
     a.doa_name   = '';
     DOA.urls.add (url);
+    DOA.itemsIndex.add (-1);
     a.SubItems.add ('');
     a.SubItems.add ('');
     a.SubItems.add ('');
     a.SubItems.add ('');
-  };
-
-  // Irvine にアイテム追加
-  DOA_irvine_item_add = function (i, url) {
-    var doaItem = frmDOA.ListView1.Items [i];
-
-    var item2 = new ActiveXObject ('Irvine.Item');
-    item2.url = (doaItem.doa_status == DOA_LK) ? doaItem.doa_link : doaItem.url;
-    if (frmDOA.CheckBox1.Checked && doaItem.doa_name != '') {
-      item2.Filename = doaItem.doa_name;
-    }
-
-    irvine.Current.AddItem (item2);
   };
 
 
@@ -782,45 +770,55 @@ function OnListMenuClick (irvine, action) {
     frmDOA.writeBtn.enabled = false;
 
     var count = 0;
+
     var listViewItems = frmDOA.ListView1.Items;
-    for (var i in listViewItems) {
+    var len = listViewItems.Count;
+    for (var i = 0; i < len; ++i) {
       var doaItem = listViewItems [i];
-      item.data = irvine.GetItemData(doaItem.irvItem);
+      var index = doaItem.irvItem;
 
-      var stat = doaItem.doa_status;
+      item.data = irvine.GetItemData (index);
+      setItemDataFromDoaResult (item, doaItem);
 
-      if (stat == DOA_IT) {
-        item.data = doaItem.itemData.data;
+      if (index == -1) {
+        // DOAスクリプトから追加されたアイテムなら、キューフォルダに新規登録
+        irvine.Current.AddItemData (item.data);
       }
       else {
-        item.url = (stat == DOA_LK) ? doaItem.doa_link : doaItem.url;
+        // キューフォルダ内のアイテム情報を上書き
+        irvine.SetItemData (index, item.data);
       }
-
-      if(stat == DOA_NG){
-        item.Error = true;
-      }
-      if(stat == DOA_LS){
-        item.success = true;
-      }
-
-      if (frmDOA.CheckBox1.Checked && doaItem.doa_name != '' && stat != DOA_IT) {
-        item.Filename = doaItem.doa_name;
-      }
-
-      if(doaItem.irvItem!=-1){
-        irvine.SetItemData(doaItem.irvItem, item.data);
-      }
-      else{
-        DOA_irvine_item_add(i,item);
-      }
-      count++;
     }
+
     irvine.Invalidate();
-    println(count + ' 件上書きしました');
+    println (len + ' 件上書きしました');
     frmDOA.writeBtn.enabled = true;
     irvine.Filtering = oldfilter;
   };
   frmDOA.comwrite.onClick=frmDOA.writeBtn.onClick;
+
+
+  // DOAの結果を Irivne.Item オブジェクトに上書きする
+  function setItemDataFromDoaResult (itemData, doaItem) {
+    var stat = doaItem.doa_status;
+    if (stat == DOA_IT) {
+      itemData.data = doaItem.itemData.data;
+    }
+    else {
+      itemData.url = (stat == DOA_LK) ? doaItem.doa_link : doaItem.url;
+    }
+
+    if (stat == DOA_NG){
+      itemData.Error = true;
+    }
+    if (stat == DOA_LS){
+      itemData.success = true;
+    }
+
+    if (frmDOA.CheckBox1.Checked && doaItem.doa_name != '' && stat != DOA_IT) {
+      itemData.Filename = doaItem.doa_name;
+    }
+  }
 
 
   //=============================================================================================================

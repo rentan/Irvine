@@ -131,6 +131,12 @@ Dorothy.loadDorothyIni ();
 変更履歴
 ========
 
+2014-11-24  version 20141124.1  rentan at rentan.org
+
+scripts\Dorothy2R_doa_list.dms
+  DOA.dms version 0.26 ベースに更新。
+
+
 2014-11-24  version 20141124.0  rentan at rentan.org
 
 scripts\Dorothy2R_doa_list.dms
