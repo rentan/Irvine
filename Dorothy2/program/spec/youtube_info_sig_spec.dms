@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTubeSig spec
-//version=20140729.0
+//version=20141124.0
 //hint=http://yasmine.dorothy.test/program/spec/youtube_info_sig_spec.dms
 //match=
 //author=rentan
@@ -33,20 +33,37 @@ eval (program_load ('youtube_info')) ('DEFINE_ONLY');
 
 
 describe ('YouTubeSig#calcDecipherPattern()', function () {
-  it ('JavaScriptコードから復号データを算出する', function () {
-    var js = "
+
+  // JavaScript をログに出力すると見づらくなるので、別に格納しておく
+  var jsTable = {
+    js0: "
 var $n=null,co=null,ho=null,Vn=null,eo={},go=[];
 var Fo={TR:function(a){a.reverse()},TU:function(a,b){var c=a[0];a[0]=a[b%a.length];a[b]=c},sH:function(a,b){a.splice(0,b)}};
 function Go(a){a=a.split(\"\");Fo.sH(a,2);Fo.TU(a,28);Fo.TU(a,44);Fo.TU(a,26);Fo.TU(a,40);Fo.TU(a,64);Fo.TR(a,26);Fo.sH(a,1);return a.join(\"\")};
 c&&(d.signature=Go(c));
-return Zo(a,d)
-";
+return Zo(a,d)",
 
+    js1: "
+f.Iz=function(){this.ya=0;this.g&&this.g.call(this.j)};var $q={KF:function(a,b){a.splice(0,b)},Xm:function(a){a.reverse()},
+BT:function(a,b){var c=a[0];a[0]=a[b%a.length];a[b]=c}};function ar(a){a=a.split(\"\");$q.BT(a,63);$q.KF(a,1);$q.Xm(a,43);
+$q.BT(a,46);$q.KF(a,2);$q.Xm(a,0);$q.KF(a,3);return a.join(\"\")};function br(){};
+c&&a.set(\"signature\",ar(c));return a}"
+
+  };
+
+  cases ([
+    // [ js, pattern ]
+    [ 'js0', 'c2s28s44s26s40s64rc1' ],
+    [ 'js1', 's63c1rs46c2rc3' ]
+  ])
+  .it ('JavaScriptコードから復号データを算出する [ js, pattern ]', function (jsKey, pattern) {
     var yts = new YouTubeSig ();
     var pat = null;
 
+    var js = jsTable [jsKey];
+
     expect (function () { pat = yts.calcDecipherPattern (js); }).not.toThrow ();
-    expect (pat).toBe ('c2s28s44s26s40s64rc1');
+    expect (pat).toBe (pattern);
   });
 });
 

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/動画情報
-//version=20141104.0
+//version=20141124.0
 //hint=
 //match=^https?://(www\.)?youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -70,9 +70,14 @@ YouTubeSig.prototype._throw = function (s) {
 
 // 内部で使用: 復号関数名を探す
 YouTubeSig.prototype._findDecryptFuncName = function (js) {
-  js = js.slice (js.indexOf ('.signature'));
+  var t = js.slice (js.indexOf ('"signature"'));
+  if (/"signature"\s*,\s*([A-Za-z_$][A-Za-z_$\d]*)\s*\(/.test (t)) {
+    return RegExp.$1;
+  }
 
-  if (!/\.signature\s*=\s*([[A-Za-z_$][A-Za-z_$\d]*)/.test (js)) {
+  t = js.slice (js.indexOf ('.signature'));
+
+  if (!/\.signature\s*=\s*([A-Za-z_$][A-Za-z_$\d]*)/.test (t)) {
     this._throw ('復号関数名が見つかりません。');
   }
   return RegExp.$1;
@@ -83,7 +88,7 @@ YouTubeSig.prototype._findDecryptFuncName = function (js) {
 YouTubeSig.prototype._findDecryptFuncBody = function (js) {
   var decryptFuncName = this._findDecryptFuncName (js);
 
-  var fn = decryptFuncName.replace (/\$/g, '\$');
+  var fn = decryptFuncName.replace (/\$/g, '\\$');
   var re = new RegExp ('function\s*' + fn + '\s*\([^)]+\)\s*\{([^}]*)\}');
 
   var n = js.indexOf ('function ' + decryptFuncName + '(');
@@ -105,8 +110,8 @@ YouTubeSig.prototype._findOperators = function (js, body) {
   }
   var objName = RegExp.$1;
 
-  var on = objName.replace (/\$/g, '\$');
-  var re = new RegExp ('var\s*' + on + '\s*=\s*\{\s*');
+  var on = objName.replace (/\$/g, '\\$');
+  var re = new RegExp ('var\s+' + on + '\s*=\s*\{\s*');
 
   var n = js.indexOf ('var ' + objName + '=');
   if (n > 0) {
@@ -328,7 +333,8 @@ YouTubeVideo.prototype._decodeVideoInfo = function (html) {
     'ypc_video_rental_bar_text',
     'length_seconds',
     'url',
-    'keywords'
+    'keywords',
+    'author'
   ];
 
   for (var i = 0; i < keys.length; ++i) {
@@ -368,10 +374,11 @@ YouTubeVideo.prototype._getDashmpdUrl = function () {
 
 // 内部で使用: ファイル名生成用の情報を抽出する
 YouTubeVideo.prototype._getVideoSpec = function (html) {
-  if (!/<a\s+href="\/(user|channel)\/[^"]+"\s+class="[^"]*yt-user-name[^"]*"[^>]*>([^<]+)/.test (html)) {
+  var author = this.getVideoInfo ('author');
+  if (!author) {
     return this._p ('投稿者名が見つかりません。');
   }
-  this.author = RegExp.$2;
+  this.author = author;
 
   if (!/<span\s+id="eow-title"[^>]*title="([^"]+)">/.test (html)) {
     return this._p ('タイトルが見つかりません。');
@@ -1071,7 +1078,7 @@ YouTubeVideo.prototype.getFileSize = function (fmt, sep) {
 // 既知の itag の一覧
 YouTubeVideo.prototype.knownItags = [
   303,302,
-  299,298,278,272,271,266,264,248,247,246,245,244,243,242,
+  299,298,278,272,271,266,264,251,250,249,248,247,246,245,244,243,242,
   172,171,160,141,140,139,138,137,136,135,134,133,102,101,100,
   85,84,83,82,78,59,46,45,44,43,38,37,36,35,34,22,18,17,5
 ];

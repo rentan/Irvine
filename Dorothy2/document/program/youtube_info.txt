@@ -28,6 +28,11 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
 変更履歴
 ========
 
+2014-11-24  version 20141124.0  rentan at rentan.org
+  サイト側の変更に対応(投稿者名が見つかりません)。
+  signature スクリプトの変更に対応。
+  knownItags に 251,250,249 を追加。
+
 2014-11-04  version 20141104.0  rentan at rentan.org
   knownItags に 303,302,299,298,266 を追加。
 
