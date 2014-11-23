@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={BC220934-7214-48CA-9A7A-736A95B25C0F}
 caption=Dorothy2R DOA
-version=20140913
+version=20141124
 hint=
 event=OnListMenuClick
 match=
@@ -10,7 +10,7 @@ author=xor, rentan
 synchronize=0
 */
 
-// based on DOA.dms version 0.23 by xor
+// based on DOA.dms version 0.24 by xor
 
 /*
 Copyright (C) 2014 rentan at rentan.org
@@ -99,14 +99,16 @@ function OnListMenuClick (irvine, action) {
     DOA_ER = 5;
     DOA_UM = 6;
     DOA_LS = 7;
+    DOA_IT = 8;
 
     DOA_BUSY   = DOA_BS;
     DOA_UNKOWN = DOA_UK;
     DOA_LINK   = DOA_LK;
     DOA_ERROR  = DOA_ER;
     DOA_LINKS  = DOA_LS;
+    DOA_ITEM   = DOA_IT;
 
-    DOA_MSG = ['OK', 'NG', 'BUSY', 'UNKNOWN', 'LINK', 'ERROR', '----', 'LINKS' ];
+    DOA_MSG = ['OK', 'NG', 'BUSY', 'UNKNOWN', 'LINK', 'ERROR', '----', 'LINKS', 'ITEM' ];
 
     DOA_COLOR_RED    = 0x5555ff;
     DOA_COLOR_YELLOW = 0x00ffff;
@@ -123,6 +125,7 @@ function OnListMenuClick (irvine, action) {
     status_str: '',
     name: '',
     urls: [],
+    itemsIndex: [],
     match_list: [],
     functions: { }
   };
@@ -225,7 +228,7 @@ function OnListMenuClick (irvine, action) {
     DOA.status = DOA_LS;
   }
 
-  function DOAtest (url) {
+  function DOAtest (url, itemIndex, itemData) {
     var flg = false;
     for (var i in DOA.match_list){
       var scriptInfo = DOA.match_list [i];
@@ -253,7 +256,7 @@ function OnListMenuClick (irvine, action) {
       DOA.link = '';
       DOA.comment = '';
 
-      DOA.functions [filename].main (url);
+      DOA.functions [filename].main (url, itemIndex, itemData);
       processDoaLinkArray ();
       return;
     }
@@ -591,6 +594,7 @@ function OnListMenuClick (irvine, action) {
     a.doa_link   = '';
     a.doa_name   = '';
     DOA.urls.add(item.url);
+    DOA.itemsIndex.add (i);
     a.SubItems.add('');
     a.SubItems.add('');
     a.SubItems.add('');
@@ -608,8 +612,8 @@ function OnListMenuClick (irvine, action) {
     var u32=new user32();
     u32.SetWindowPos(frmDOA.Handle,HWND_NOTOPMOST,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE|SWP_NOOWNERZORDER);
     frmDOA.runBtn.enabled = false;
-    DOA.status_count = [0,0,0,0,0,0,0,0];
-    DOA.functions = new Object;
+    DOA.status_count = [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+    DOA.functions = { };
 
     folderdata = {
       HttpVersion: irvine.FolderData['http' ,'httpversion'] == 1,
@@ -633,6 +637,12 @@ function OnListMenuClick (irvine, action) {
         return i - top -1;
       }
       return 0;
+    }
+
+    function createIrvineItem (item) {
+      var itemData = new IrvineItem ();
+      itemData.data = item.data;
+      return itemData;
     }
 
     for(var i in frmDOA.ListView1.Items){
@@ -659,9 +669,10 @@ function OnListMenuClick (irvine, action) {
         StatusMessage: ''
       };
 
-      item.data = irvine.GetItemData(doaItem.irvItem);
+      item.data = irvine.GetItemData (doaItem.irvItem);
 
-      DOAtest(url);
+      DOAtest (url, doaItem.irvItem, item);
+      doaItem.itemData = createIrvineItem (item);
       frmDOA.ListView1.update();
 
       ++DOA.status_count[DOA.status];
@@ -701,7 +712,7 @@ function OnListMenuClick (irvine, action) {
 
 
     function makeResultString () {
-      var stats = [ DOA_OK, DOA_NG, DOA_BS, DOA_UK, DOA_LK, DOA_LS, DOA_ER ];
+      var stats = [ DOA_OK, DOA_NG, DOA_BS, DOA_UK, DOA_LK, DOA_LS, DOA_IT, DOA_ER ];
       var r = [ ];
 
       for (var i = 0; i < stats.length; ++i) {
@@ -771,12 +782,19 @@ function OnListMenuClick (irvine, action) {
     frmDOA.writeBtn.enabled = false;
 
     var count = 0;
-    for(var i in frmDOA.ListView1.Items){
-      var doaItem = frmDOA.ListView1.Items[i];
+    var listViewItems = frmDOA.ListView1.Items;
+    for (var i in listViewItems) {
+      var doaItem = listViewItems [i];
       item.data = irvine.GetItemData(doaItem.irvItem);
 
       var stat = doaItem.doa_status;
-      item.url = (stat == DOA_LK) ? doaItem.doa_link : doaItem.url;
+
+      if (stat == DOA_IT) {
+        item.data = doaItem.itemData.data;
+      }
+      else {
+        item.url = (stat == DOA_LK) ? doaItem.doa_link : doaItem.url;
+      }
 
       if(stat == DOA_NG){
         item.Error = true;
@@ -785,7 +803,7 @@ function OnListMenuClick (irvine, action) {
         item.success = true;
       }
 
-      if(frmDOA.CheckBox1.Checked && doaItem.doa_name != ''){
+      if (frmDOA.CheckBox1.Checked && doaItem.doa_name != '' && stat != DOA_IT) {
         item.Filename = doaItem.doa_name;
       }
 
