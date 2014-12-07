@@ -1,0 +1,116 @@
+//Dorothy2
+//caption=validate_item_object
+//version=20141208.0
+//hint=http://doa.dorothy.test/validate_item_object/
+//match=^http://doa\.dorothy\.test/validate_item_object/$
+//author=rentan
+//path=DOA
+//priority=500
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function (scriptMode) {
+
+
+//----------------------------- ItemValidator ------------------------------
+
+
+common_load ('saveFolder');
+
+
+// コンストラクタ
+void function ItemValidator () {
+};
+
+
+// public: DOA検査を行う
+ItemValidator.prototype.inquiry = function (url) {
+  try {
+    var irvItem = item;
+  }
+  catch (e) {
+    this.comment = 'item が参照できない。';
+    return false;
+  }
+
+  var n = nameOf (item);
+  if (n != 'IrvineItem') {
+    this.comment = 'item が IrvineItem ではない: ' + n;
+    return false;
+  }
+
+  if (item.url != 'http://doa.dorothy.test/validate_item_object/') {
+    this.comment = 'item.url が違う: ' + item.url;
+    return false;
+  }
+
+  try {
+    var path = saveFolder ();
+  }
+  catch (e) {
+    this.comment = 'saveFolder() エラー: ' + e;
+    return false;
+  }
+
+  return true;
+};
+
+
+//---------------------------------- DOA -----------------------------------
+
+
+function doaConstructor () {
+  this.tester = new ItemValidator ();
+
+  this.main = function (url) {
+    if (this.tester.inquiry (url)) {
+      DOA.status = DOA_OK;
+      return;
+    }
+
+    DOA.status = DOA_NG;
+    DOA.comment = this.tester.comment;
+  };
+
+  this._ = function () {
+    this.tester = null;
+  };
+}
+
+
+//------------------------------- メイン処理 -------------------------------
+
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
+  }
+
+  var isDOA = Dorothy.hasKey ('isDOA') ? Dorothy.isDOA
+            : (typeof frmDOA == 'object' && nameOf (frmDOA) == 'VCLForm');
+
+  // DOA からの実行
+  if (isDOA) {
+    return doaConstructor ();
+  }
+
+  println ('DOA専用スクリプトです。');
+  exit ();
+}
+
+
+// EOF
