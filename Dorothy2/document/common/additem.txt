@@ -143,6 +143,10 @@ reQueue (list, force)
 変更履歴
 ========
 
+2014-12-08  version 20141208.0  rentan at rentan.org
+  reQueue(): 上書きモード時に Referer、Cookie を反映させるようにした。
+  item.filename が設定されている場合は Filename を反映させないようにした。
+
 2014-11-04  version 20141104.0  rentan at rentan.org
   reQueue() で実行中のアイテムを書き換える際、ダウンロードリストに
   Folder があれば item.folder に反映させるようにした。
