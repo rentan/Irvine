@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={BC220934-7214-48CA-9A7A-736A95B25C0F}
 caption=Dorothy2R DOA
-version=20141124
+version=20141208
 hint=
 event=OnListMenuClick
 match=
@@ -34,6 +34,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function OnListMenuClick (irvine, action) {
   // グローバル変数として参照できるようにする
   Irvine = irvine;
+
+  var item = null;  // IrvineItem
 
 
   // Dorothy2R_a.dms 実行
@@ -133,11 +135,7 @@ function OnListMenuClick (irvine, action) {
 
 
   println = function () {
-    var i, tmp = '';
-    for (i = 0; i < arguments.length; ++i) {
-      tmp += arguments [i];
-    }
-    frmDOA.StatusBar1.SimpleText = tmp;
+    frmDOA.StatusBar1.SimpleText = arguments.join ('');
   };
 
 
@@ -268,6 +266,27 @@ function OnListMenuClick (irvine, action) {
     DOA.name = '';
     DOA.link = '';
     DOA.comment = '';
+  }
+
+  // DOAtest を呼び出す(準備・片付け)
+  function execDOAtest (doaItem) {
+    urlinfo = {
+      url: doaItem.url,
+      ErrorCode: 0,
+      proxy: '',
+      Redirect: false,
+      RedirectUrl: '',
+      StatusCode: 0,
+      StatusMessage: ''
+    };
+
+    item = new IrvineItem ();
+    item.data = irvine.GetItemData (doaItem.irvItem);
+
+    DOAtest (doaItem.url, doaItem.irvItem, item);
+
+    doaItem.itemData = item;
+    item = null;
   }
 
 
@@ -561,33 +580,37 @@ function OnListMenuClick (irvine, action) {
   frmDOA.comexit.onClick=frmDOA.CancelBtn.onClick;
 
 
-  // 選択アイテム取込
-  var item = new IrvineItem ();
+  // キューフォルダで選択されているアイテムのURLを取り込む
+  function importItemsFromQueue () {
+    var item = new IrvineItem ();
 
-  for (var i = 0; i < irvine.ItemCount; i++){
-    if (!irvine.GetItemSelected (i)){
-      continue;
+    var len = irvine.ItemCount;
+    for (var i = 0; i < len; i++){
+      if (!irvine.GetItemSelected (i)){
+        continue;
+      }
+
+      item.data = irvine.GetItemData (i);
+
+      var url = item.url;
+      url = /^ttps?:\/\//i.test (url) ? 'h' + url : url;
+
+      var a = frmDOA.ListView1.Items.add ();
+      a.Caption = a.url = url;
+      a.irvItem = i;
+      a.doa_status = '';
+      a.doa_link   = '';
+      a.doa_name   = '';
+      DOA.urls.add (url);
+      DOA.itemsIndex.add (i);
+      a.SubItems.add ('');
+      a.SubItems.add ('');
+      a.SubItems.add ('');
+      a.SubItems.add ('');
     }
-
-    item.data = irvine.GetItemData(i);
-    if(item.url.indexOf('ttp://') == 0){
-      item.url = 'h' + item.url;
-    }
-
-    var a = frmDOA.ListView1.Items.add();
-    a.Caption = item.url;
-    a.url = item.url;
-    a.irvItem = i;
-    a.doa_status = '';
-    a.doa_link   = '';
-    a.doa_name   = '';
-    DOA.urls.add(item.url);
-    DOA.itemsIndex.add (i);
-    a.SubItems.add('');
-    a.SubItems.add('');
-    a.SubItems.add('');
-    a.SubItems.add('');
   }
+
+  importItemsFromQueue ();
   // frmDOA.show();
 
 
@@ -627,12 +650,6 @@ function OnListMenuClick (irvine, action) {
       return 0;
     }
 
-    function createIrvineItem (item) {
-      var itemData = new IrvineItem ();
-      itemData.data = item.data;
-      return itemData;
-    }
-
     for(var i in frmDOA.ListView1.Items){
       var doaItem = frmDOA.ListView1.Items[i];
 
@@ -645,22 +662,7 @@ function OnListMenuClick (irvine, action) {
         continue;
       }
 
-      var url = doaItem.url;
-
-      urlinfo = {
-        url: url,
-        ErrorCode: 0,
-        proxy: '',
-        Redirect: false,
-        RedirectUrl: '',
-        StatusCode: 0,
-        StatusMessage: ''
-      };
-
-      item.data = irvine.GetItemData (doaItem.irvItem);
-
-      DOAtest (url, doaItem.irvItem, item);
-      doaItem.itemData = createIrvineItem (item);
+      execDOAtest (doaItem);
       frmDOA.ListView1.update();
 
       ++DOA.status_count[DOA.status];
@@ -758,9 +760,10 @@ function OnListMenuClick (irvine, action) {
 
   //=============================================================================================================
   // 上書き
-  frmDOA.writeBtn.onClick = function(){
-    if(DOA.CurrentQueueFolder!=irvine.CurrentQueueFolder){
-      println('カレントキューフォルダが移動しています');
+  frmDOA.comwrite.onClick =
+  frmDOA.writeBtn.onClick = function () {
+    if (DOA.CurrentQueueFolder != irvine.CurrentQueueFolder) {
+      println ('カレントキューフォルダが移動しています');
       return;
     }
 
@@ -769,17 +772,22 @@ function OnListMenuClick (irvine, action) {
 
     frmDOA.writeBtn.enabled = false;
 
-    var count = 0;
-
     var listViewItems = frmDOA.ListView1.Items;
     var len = listViewItems.Count;
     for (var i = 0; i < len; ++i) {
       var doaItem = listViewItems [i];
+
+      var item = createIrvineItemFromDoaResult (doaItem, false);
+
+      var stat = doaItem.doa_status;
+      if (stat == DOA_NG){
+        item.error = true;
+      }
+      if (stat == DOA_LS){
+        item.success = true;
+      }
+
       var index = doaItem.irvItem;
-
-      item.data = irvine.GetItemData (index);
-      setItemDataFromDoaResult (item, doaItem);
-
       if (index == -1) {
         // DOAスクリプトから追加されたアイテムなら、キューフォルダに新規登録
         irvine.Current.AddItemData (item.data);
@@ -795,83 +803,73 @@ function OnListMenuClick (irvine, action) {
     frmDOA.writeBtn.enabled = true;
     irvine.Filtering = oldfilter;
   };
-  frmDOA.comwrite.onClick=frmDOA.writeBtn.onClick;
 
 
-  // DOAの結果を Irivne.Item オブジェクトに上書きする
-  function setItemDataFromDoaResult (itemData, doaItem) {
+  // DOAの結果から IrvineItem を作成する
+  //   可能なら元のアイテムを成功済みに変更する
+  function createIrvineItemFromDoaResult (doaItem, setSeccess) {
+    var item = new IrvineItem ();
+
+    if (DOA.CurrentQueueFolder == irvine.CurrentQueueFolder) {
+      var index = doaItem.irvItem;
+      if (index != -1) {
+        item.data = irvine.GetItemData (index);
+
+        if (setSeccess) {
+          // 元のアイテムは成功済みにする
+          var oldItem = new IrvineItem ();
+          oldItem.data = item.data;
+          oldItem.success = true;
+          irvine.SetItemData (index, oldItem.data);
+        }
+      }
+    }
+
     var stat = doaItem.doa_status;
     if (stat == DOA_IT) {
-      itemData.data = doaItem.itemData.data;
-    }
-    else {
-      itemData.url = (stat == DOA_LK) ? doaItem.doa_link : doaItem.url;
-    }
-
-    if (stat == DOA_NG){
-      itemData.Error = true;
-    }
-    if (stat == DOA_LS){
-      itemData.success = true;
+      // DOAスクリプト完了時の item の内容を返す
+      item.data = doaItem.itemData.data;
+      return item;
     }
 
-    if (frmDOA.CheckBox1.Checked && doaItem.doa_name != '' && stat != DOA_IT) {
-      itemData.Filename = doaItem.doa_name;
+    item.url = (stat == DOA_LK) ? doaItem.doa_link : doaItem.url;
+
+    if (doaItem.doa_name && frmDOA.CheckBox1.Checked) {
+      item.filename = doaItem.doa_name;
     }
+
+    return item;
   }
 
 
   //=============================================================================================================
   // 追加
-  frmDOA.addBtn.onClick = function(){
-    var count = 0;
+  frmDOA.comadd.onClick =
+  frmDOA.addBtn.onClick = function () {
     var oldfilter = irvine.Filtering;
     irvine.Filtering = frmDOA.CheckBox2.Checked;
 
     frmDOA.addBtn.enabled = false;
 
     var item2 = new ActiveXObject('Irvine.Item');
-    var item3 = new ActiveXObject('Irvine.Item');
 
-    for(var i in frmDOA.ListView1.Items){
-      var doaItem = frmDOA.ListView1.Items[i];
+    var listViewItems = frmDOA.ListView1.Items;
+    var len = listViewItems.Count;
+    for (var i = 0; i < len; ++i) {
+      var doaItem = listViewItems [i];
+      var index = doaItem.irvItem;
 
-      if(DOA.CurrentQueueFolder==irvine.CurrentQueueFolder){
-        if(doaItem.irvItem!=-1){
-          item.data = irvine.GetItemData(doaItem.irvItem);
-          item2.data = item.data;
-        }
-        else{
-          item2.data=item3.data;
-        }
-      }
-      else{
-        item2.data=item3.data;
-      }
+      var item = createIrvineItemFromDoaResult (doaItem, true);
 
-      item2.url = (doaItem.doa_status == DOA_LK) ? doaItem.doa_link : doaItem.url;
-
-      if(frmDOA.CheckBox1.Checked && doaItem.doa_name != ''){
-        item2.Filename = doaItem.doa_name;
-      }
-
-      if(DOA.CurrentQueueFolder==irvine.CurrentQueueFolder){
-        if(doaItem.irvItem!=-1){
-          item.Success = true;
-          irvine.SetItemData(doaItem.irvItem, item.data);
-        }
-      }
-      irvine.Current.AddItem(item2);
-      count++;
+      irvine.Current.AddItemData (item.data);
     }
 
-    irvine.Invalidate();
-    println(count + ' 件追加しました');
+    irvine.Invalidate ();
+    println (len + ' 件追加しました');
+
     // frmDOA.addBtn.enabled = true;
     irvine.Filtering = oldfilter;
   };
-
-  frmDOA.comadd.onClick=frmDOA.addBtn.onClick;
 
 
   //=============================================================================================================
