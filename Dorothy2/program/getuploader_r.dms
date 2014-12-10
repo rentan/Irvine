@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=getuploader_r
-//version=20141104.0
+//version=20141209.0
 //hint=getuploader.com (uploader.jp)
 //match=^http://u[^/.]+\.getuploader\.com/[^/]+/download/\d+
 //author=rentan
@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
+  Util.min_version (20141209.0);
 
   // 設定ファイルの読み込み
   var default_ini = {
@@ -38,20 +39,20 @@ function (scriptMode) {
       Touch: 'C:\gnupack\app\cygwin\cygwin\bin\touch.exe'
     }
   };
-  var ini = Util.ini_load (default_ini);
 
 
 //------------------------------ GetUploader -------------------------------
 
-common_load ('getterobject', 'http', 'htmlform', 'utf8');
+common_load ('getter', 'http', 'htmlform', 'utf8');
 
 
 // コンストラクタ
 void function GetUploader () {
-  this.urls = [ ];
+  this.timestampMode = this.TS_NOCHANGE;
+  this.touchCommand = null;
 };
 
-GetterObject.expand (GetUploader);
+Getter (GetUploader);
 
 
 // 予め指定されたパスワード
@@ -137,13 +138,13 @@ GetUploader.prototype._inputSecAuthForm = function (form) {
     var htaOpt = this._createJInputOpt (this.http.baseUrl);
     t = this._inputPassword (htaOpt, '閲覧パスワード');
     if (t === null) {
-      return this.EXIT;
+      return this._exit ();
     }
   }
   pw.value = t;
   println ('閲覧パスワード--->' + t);
 
-  return this.OK;
+  return this._ok ();
 };
 
 
@@ -172,7 +173,7 @@ GetUploader.prototype._findFilename = function () {
   }
   this._filename = (new Utf8 (RegExp.$1.trim ())).decodeCharRef ();
 
-  return this.OK;
+  return this._ok ();
 };
 
 
@@ -195,7 +196,7 @@ GetUploader.prototype._findTimestamp = function () {
     RegExp.$4, RegExp.$5, '.', RegExp.$6
   ].join ('');
 
-  return this.OK;
+  return this._ok ();
 };
 
 
@@ -209,9 +210,8 @@ GetUploader.prototype._inputDownloadPasswordForm = function (form) {
   var t = this._dlPassword;
   this._dlPassword = '';
 
-  var r = this._findFilename ();
-  if (r != this.OK) {
-    return r;
+  if (!this._findFilename ()) {
+    return false;
   }
 
   if (!t) {
@@ -220,13 +220,13 @@ GetUploader.prototype._inputDownloadPasswordForm = function (form) {
     var htaOpt = this._createJInputOpt (this.http.baseUrl, f);
     t = this._inputPassword (htaOpt, 'ダウンロードパスワード');
     if (t === null) {
-      return this.EXIT;
+      return this._exit ();
     }
   }
   pw.value = t;
   println ('DLパスワード--->' + t);
 
-  return this.OK;
+  return this._ok ();
 };
 
 
@@ -289,7 +289,7 @@ GetUploader.prototype._loadDownloadPage = function (url) {
       break;
     }
 
-    var r = this.OK;
+    var r = true;
     if (ft.type == 'age') {
       if (++ageCount > 1) {
         return this._ng ('年齢確認フォームが' + ageCount + '回繰り返されました。');
@@ -305,8 +305,8 @@ GetUploader.prototype._loadDownloadPage = function (url) {
       return this._unknown ('未対応のフォームです。');
     }
 
-    if (r != this.OK) {
-      return r;
+    if (!r) {
+      return false;
     }
 
     // 入力したフォームを送信
@@ -330,20 +330,19 @@ GetUploader.prototype._clickDownloadButton = function (form) {
     return this._unknown ('<input name="token"> が見つかりません。');
   }
 
-  var r = this._filename ? this.OK : this._findFilename ();
-  if (r == this.OK) {
-    r = this._findTimestamp ();
-  }
-  if (r != this.OK) {
-    return r;
-  }
 
+  if (!this._filename && !this._findFilename ()) {
+    return false;
+  }
+  if (!this._findTimestamp ()) {
+    return false;
+  }
 
   if (!this.http.exec (form.submit ())) {
     return this._httpError ();
   }
 
-  return this.OK;
+  return this._ok ();
 };
 
 
@@ -358,8 +357,10 @@ GetUploader.prototype._splitPassword = function (url) {
 };
 
 
-// ファイルのURLを取得する
+// public: ファイルのURLを取得する
 GetUploader.prototype.get = function (url) {
+  this.items = [ ];
+
   this._filename = null;
   this._jst = null;
   this._jstNumber = null;
@@ -373,9 +374,8 @@ GetUploader.prototype.get = function (url) {
   this._secAuthPassword = this._getSecAuthPassword (url);
   this._dlPassword = this._dlPassword || this._getDownloadPassword (url);
 
-  var r = this._loadDownloadPage (url);
-  if (r != this.OK) {
-    return r;
+  if (!this._loadDownloadPage (url)) {
+    return false;
   }
 
   if (!/<a\s+href="(http:\/\/[^"]+)"[^>]*>\s*Download\s*Now\s*<\/a>/i.test (http.data)) {
@@ -389,42 +389,52 @@ GetUploader.prototype.get = function (url) {
 };
 
 
-// NameBuilder を使ってファイル名を生成する
-GetUploader.prototype.buildFilename = function (nb) {
-  var item = this.urls [0];
-
-  nb.filename = this._filename;
-  item.Filename = nb.assemble ('%FILENAME%');
-};
+// public: タイムスタンプ変更モード
+GetUploader.prototype.TS_NOCHANGE = '';
+GetUploader.prototype.TS_THREADSTORAGE = 'threadstorage';
+GetUploader.prototype.TS_TOUCH = 'touch';
 
 
-// アイテムの再登録が必要場合に、そのURLを算出する
-GetUploader.prototype.stripUrl = function (url) {
-  if (/^(http:\/\/[^\/]+\/[^\/]+\/download\/\d+)\/[^?#]+(.*)$/.test (url)) {
-    return RegExp.$1 + RegExp.$2;
+// public: タイムスタンプ変更モードを設定する
+GetUploader.prototype.setTimestampMode = function (t) {
+  t = t.trim ();
+
+  if (/^threadstorage$/i.test (t)) {
+    if (!Dorothy.hasKey ('getThreadStorage')) {
+      return this._ng ('Timestamp=ThreadStorage の設定は使用できません。');
+    }
+    this.timestampMode = this.TS_THREADSTORAGE;
+    return this._ok ();
   }
 
-  return null;
+  if (/^(touch|true)$/i.test (t)) {
+    this.timestampMode = this.TS_TOUCH;
+    return this._ok ();
+  }
+
+  if (/^(false)?$/i.test (t)) {
+    this.timestampMode = this.TS_NOCHANGE;
+    return this._ok ();
+  }
+
+  return this._ng ('Timestamp の設定が正しくありません: ' + t);
 };
 
 
-// ダウンロード情報を Dorothy 側に設定する
-GetUploader.prototype.setUrlAndFilename = function () {
-  var item = this.urls [0];
-
-  Dorothy.setUrl (item.Url, item.Referer);
-  Dorothy.setFilename (item.Filename);
+// public: touch コマンドを設定する
+GetUploader.prototype.setTouchCommand = function (touch) {
+  this.touchCommand = touch;
 };
 
 
 // ファイルをダウンロードして保存してタイムスタンプを設定する
-GetUploader.prototype.saveAndTouch = function (touch) {
-  var f = new File (touch);
+GetUploader.prototype._saveAndTouch = function () {
+  var f = new File (this.touchCommand);
   if (!f.exists ()) {
     return this._ng ('touch コマンドが見つかりません: ' + f.path);
   }
 
-  var item = this.urls [0];
+  var item = this.items [0];
 
   var http = new Http ();
   http.setRequestHeader ('Referer', item.Referer);
@@ -433,7 +443,7 @@ GetUploader.prototype.saveAndTouch = function (touch) {
     return this._httpError ();
   }
 
-  var result = http.capture (item.Filename);
+  var result = http.capture (item);
   if (!result.success) {
     return this._ng (result.error);
   }
@@ -443,13 +453,13 @@ GetUploader.prototype.saveAndTouch = function (touch) {
   var opt = '-c -t ' + this._jstNumber;
 
   common_load ('exec');
-  result = Exec (touch, opt, q + f + q);
+  result = Exec (this.touchCommand, opt, q + f + q);
 
   if (result != 0) {
     return this._ng ('コマンド実行失敗。');
   }
 
-  return this.OK;
+  return this._ok ();
 };
 
 
@@ -458,7 +468,7 @@ GetUploader.prototype._months =
   [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
 
 // Last-Modified 形式のタイムスタンプ
-GetUploader.prototype.getLastModified = function () {
+GetUploader.prototype._getLastModified = function () {
   var d = new Date (this._jst);
 
   // new Date() で GMT としてパースされるので補正する
@@ -475,83 +485,81 @@ GetUploader.prototype.getLastModified = function () {
 };
 
 
-//--------------------------------- 下請け ---------------------------------
+// public: ダウンロード情報を登録する
+GetUploader.prototype.download = function (args) {
+  if (!this._downloadFiles (args)) {
+    return false;
+  }
 
-
-function getTimestampMode (t) {
-  var ts = { threadStorage: false, touch: false, error: null };
-
-  t = t.trim ();
-  if (/^threadstorage$/i.test (t)) {
-    ts.threadStorage = true;
-
-    if (!Dorothy.hasKey ('getThreadStorage')) {
-      ts.error = 'Timestamp=ThreadStorage の設定は使用できません。';
+  // タイムスタンプ変更のための処理
+  if (this.timestampMode == this.TS_THREADSTORAGE) {
+    var stor = Dorothy.getThreadStorage ();
+    stor.setItem ('headers.Last-Modified', this._getLastModified ());
+  }
+  else if (this.timestampMode == this.TS_TOUCH) {
+    if (!this._saveAndTouch ()) {
+      return false;
     }
-  }
-  else if (/^(touch|true)$/i.test (t)) {
-    ts.touch = true;
-  }
-  else if (!/^(false)?$/i.test (t)) {
-    ts.error = 'Timestamp の設定が正しくありません: ' + t;
+    item.filename = '';  // 保存したファイルに [0] が付かないように
+    Util.remove_this ();
   }
 
-  return ts;
-}
+  return this._ok ();
+};
+
+
+// public: 必要ならアイテムを再登録する
+//   OK: 再登録成功  NG: 失敗  MIS: 再登録は不要だった
+GetUploader.prototype.reQueue = function (args, url) {
+  if (this.timestampMode != this.TS_TOUCH) {
+    return this._mis (null);
+  }
+
+  if (!/^(http:\/\/[^\/]+\/[^\/]+\/download\/\d+)\/[^?#]+(.*)$/.test (url)) {
+    return this._mis (null);
+  }
+  var itemData = { Url: RegExp.$1 + RegExp.$2 };
+
+  if (item.folder) {
+    itemData.Folder = item.folder;
+  }
+
+  if (!args.AddItem.reQueue (itemData, true)) {
+    return this._ng ('AddItem.reQueue失敗。');
+  }
+  return this._ok ();
+};
 
 
 //------------------------------- メイン処理 -------------------------------
 
 
-  var url = urlinfo.url;
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
+  }
+
+  var ini = Util.ini_load (default_ini);
+
   var getter = new GetUploader ();
 
-  var ts = getTimestampMode (ini.General.Timestamp);
-  if (ts.error) {
-    println (ts.error);
-    exit ();
+  if (!getter.setTimestampMode (ini.General.Timestamp)) {
+    return getter.end ();
+  }
+  getter.setTouchCommand (ini.General.Touch);
+
+  getter.reQueue ({ AddItem: new AddItem (ini.AddItem) }, urlinfo.url);
+  if (getter.status != getter.MIS) {
+    return getter.end ();
   }
 
-  // ファイル名が指定されていたら取り除いてダウンロード登録し直す
-  if (ts.touch) {
-    var newUrl = getter.stripUrl (url);
-    if (newUrl) {
-      var additem = new AddItem (ini.AddItem);
-
-      var itemData = { Url: newUrl };
-      if (item.folder) {
-        itemData.Folder = item.folder;
-      }
-
-      additem.reQueue (itemData, true) || exit ();
-      return;
-    }
+  if (getter.get (urlinfo.url)) {
+    getter.download ({
+      NameBuilder: new NameBuilder ({ zen2han: ini.General.Zen2Han }),
+      Normalize: true
+    });
   }
 
-
-  var r = getter.get (urlinfo.url);
-  if (r != getter.OK) {
-    return getter.end (r);
-  }
-
-  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
-  getter.buildFilename (nb);
-
-
-  if (ts.touch) {
-    r = getter.saveAndTouch (ini.General.Touch);
-    if (r == getter.OK) {
-      Util.remove_this ();
-    }
-    return getter.end (r);
-  }
-
-  if (ts.threadStorage) {
-    var stor = Dorothy.getThreadStorage ();
-    stor.setItem ('headers.Last-Modified', getter.getLastModified ());
-  }
-
-  getter.setUrlAndFilename ();
+  getter.end ();
 }
 
 
