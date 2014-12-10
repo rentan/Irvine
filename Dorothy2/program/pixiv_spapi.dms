@@ -1,0 +1,525 @@
+//Dorothy2
+//caption=pixiv_spapi
+//version=20141209.0
+//hint=pixiv (spapi.pixiv.net)
+//match=^http://www\.pixiv\.net/member(_illust)?\.php
+//author=rentan
+//path=program
+//priority=510
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function (scriptMode) {
+
+  common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
+  Util.min_version (20141209.0);
+
+  var defaultIni = {
+    AddItem: AddItem.prototype.iniTemplate,
+    Cookie: BrowserCookie.prototype.iniTemplate,
+    General: {
+      Zen2Han: false,
+      PageOrigin: 0
+    },
+    Filename: {
+      Illust: 'pixiv_%ID%',
+      Ugoira: 'pixiv_%ID%',
+      Manga: 'pixiv_%ID%_p%P%'
+    }
+  };
+
+
+//-------------------------------- PixivApi --------------------------------
+
+
+common_load ('getter', 'http', 'utf8');
+
+
+// コンストラクタ
+void function PixivApi () {
+};
+
+Getter (PixivApi);
+
+
+// illust.php, manga.php で取得できるデータの構造
+PixivApi.prototype._columns = [
+  'illust_id',
+  'user_id',
+  'extension',
+  'title',
+  'server_no',
+  'user_name',
+  'thumbnail_128',
+  'c7',
+  'c8',
+  'thumbnail_480mw',
+  'c10',
+  'c11',
+  'date',
+  'tags',
+  'tools',
+  'rated_count',
+  'score_count',
+  'view_count',
+  'caption',
+  'pages',
+  'c20',
+  'c21',
+  'fav_count',
+  'comment_count',
+  'pixiv_id',
+  'c25',
+  'r18',
+  'novel_series',
+  'c28',
+  'user_icon'
+];
+
+
+// &PHPSESSID=xxxx
+PixivApi.prototype._phpsessid = '';
+
+
+// public: ブラウザからCookieを読み込む
+PixivApi.prototype.importCookie = function (cookie) {
+  var bcookie = new BrowserCookie (cookie);
+
+  var p = bcookie.import ({ host: '.pixiv.net', name: 'PHPSESSID' });
+  if (!p) {
+    throw 'PixivApi: Cookieが読み込めません。';
+  }
+
+  this._phpsessid = '&' + p;
+};
+
+
+// APIのURLを作成する
+PixivApi.prototype._buildUrl = function (s) {
+  return 'http://spapi.pixiv.net/iphone/' + s + this._phpsessid;
+};
+
+
+// データ数を得る
+PixivApi.prototype._loadCount = function (path) {
+  var http = this.http = new Http ();
+  if (!http.get (this._buildUrl (path + '&c_mode=count'))) {
+    return this._httpError ();
+  }
+
+  if (!/^\d+$/.test (http.data)) {
+    return this._ng ('データ数が得られませんでした。');
+  }
+
+  this.count = parseInt (http.data);
+  return this._ok ();
+};
+
+
+// テキストデータを , で分割する
+PixivApi.prototype._splitCsv = function (text) {
+  var data = [ ];
+
+  var s = text.replace (/"(""|[^"])*",|[^,]*,/g, function (s) {
+    data.push (s.replace (/^"|"?,$/g, '').replace (/""/g, '"'));
+    return '';
+  });
+
+  return (s == '') ? data : [ ];
+};
+
+
+// 画像の情報を読み込んで配列に追加する
+PixivApi.prototype._loadCsv = function (path) {
+  var http = this.http = new Http ();
+  if (!http.get (this._buildUrl (path))) {
+    return this._httpError ();
+  }
+
+  var keys = this._columns;
+  var len = keys.length;
+
+  var sl = new Strings (http.data);
+  if (sl.length === 0) {
+    return this._ng ('データが得られませんでした。');
+  }
+
+  for (var line = 0; line < sl.length; ++line) {
+    var data = this._splitCsv (sl [line]);
+
+    if (data.length != len) {
+      return this._unknown ('未対応のデータ構造です。');
+    }
+
+    var obj = { };
+    for (var keyIdx = 0; keyIdx < len; ++keyIdx) {
+      obj [keys [keyIdx]] = data [keyIdx];
+    }
+
+    this.illustData.push (obj);
+  }
+
+  return this._ok ();
+};
+
+// 画像の情報を読み込んで配列に格納(複数ページ対応)
+PixivApi.prototype._loadCsvAll = function (path, amount) {
+  this.illustData = [ ];
+
+  for (var p = 1; this.illustData.length < amount; ++p) {
+    if (!this._loadCsv (path + '&p=' + p)) {
+      return false;
+    }
+  }
+
+  if (amount < this.illustData.length) {
+    return this._ng ('指定より多いデータが返されました。');
+  }
+
+  return this._ok ();
+};
+
+// public: 単独画像の情報を得る
+//   API自体は複数IDの指定に対応しているがこのメソッドでは未対応
+PixivApi.prototype.illust = function (illust_id) {
+  return this._loadCsvAll ('illust.php?illust_id=' + illust_id, 1);
+};
+
+// public: 複数枚画像の情報を得る
+PixivApi.prototype.manga = function (illust_id, amount) {
+  return this._loadCsvAll ('manga.php?illust_id=' + illust_id, amount);
+};
+
+// public: 全作品数を得る
+PixivApi.prototype.count_member_illust = function (user_id) {
+  return this._loadCount ('member_illust.php?id=' + user_id);
+};
+
+// public: 作品一覧を得る
+PixivApi.prototype.member_illust = function (user_id, amount) {
+  return this._loadCsvAll ('member_illust.php?id=' + user_id, amount);
+};
+
+
+// _big 画像の有無を調べる
+PixivApi.prototype.getFullImageSize = function (illustData, referer) {
+  this.big = '';
+
+  var u = illustData.thumbnail_128;
+  var ext = '.' + illustData.extension;
+
+  if (/^(http:\/\/i\d*\.pixiv\.net\/img\d*\/img\/[^\/]*\/)mobile\/([^_]+)_\d+x\d+(_p\d+|)\.[^.]*$/.test (u)) {
+    var imageUrl = RegExp.$1 + RegExp.$2 + '_big' + RegExp.$3 + ext;
+
+    var http = this.http = new Http ();
+    http.setRequestHeader ('Referer', referer);
+
+    if (http.head (imageUrl)) {
+      this.big = '_big';
+    }
+    else if (http.code != 404) {
+      return this._httpError ();
+    }
+  }
+
+  return this._ok ();
+};
+
+
+//--------------------------------- Pixiv ----------------------------------
+
+
+// コンストラクタ
+void function Pixiv (opt) {
+  this._cookie = this._getArg (opt, 'Cookie', null);
+
+  this._api = new PixivApi ();
+  this._api.quiet = true;
+};
+
+Getter (Pixiv);
+
+
+// PixivApiにCookieを読み込む
+Pixiv.prototype._importCookie = function () {
+  try {
+    this._api.importCookie (this._cookie);
+  }
+  catch (e) {
+    return this._ng (e);
+  }
+
+  return this._ok ();
+};
+
+
+// mode=*** のURLを返す
+Pixiv.prototype._getModeUrl = function (mode, illust_id) {
+  return this._baseUrl + 'member_illust.php?mode=' + mode + '&illust_id=' + illust_id;
+};
+
+Pixiv.prototype._getMediumUrl = function (illust_id) {
+  return this._getModeUrl ('medium', illust_id);
+};
+
+Pixiv.prototype._getBigUrl = function (illust_id) {
+  return this._getModeUrl ('big', illust_id);
+};
+
+Pixiv.prototype._getMangaBigUrl = function (illust_id) {
+  return this._getModeUrl ('manga_big', illust_id);
+};
+
+
+// 原寸画像URLを求める
+//   事前に getFullImageSize() を呼び出しておくこと
+Pixiv.prototype._supposeImageUrl = function (illustData) {
+  var u = illustData.thumbnail_480mw;
+  var ext = '.' + illustData.extension;
+
+  if (/^(http:\/\/i\d*\.pixiv\.net\/)c\/[^\/]*\/img-master(\/.*)_480mw(_p\d+|)\.[^.]*$/.test (u)) {
+    return RegExp.$1 + 'img-original' + RegExp.$2 + (RegExp.$3 || '_p0') + ext;
+  }
+
+  if (/^(http:\/\/i\d*\.pixiv\.net\/img\d*\/img\/[^\/]*\/)mobile\/([^_]+)_480mw(_p\d+|)\.[^.]*$/.test (u)) {
+    return RegExp.$1 + RegExp.$2 + this._big + RegExp.$3 + ext;
+  }
+
+  return null;
+};
+
+
+// 一つの作品を取得する(1枚画像)
+Pixiv.prototype._getIllustSingle = function (illustData) {
+  var ref = this._getBigUrl (this.illust_id);
+
+  if (!this._api.getFullImageSize (illustData, ref)) {
+    return false;
+  }
+  this._big = this._api.big;
+
+  var imageUrl = this._supposeImageUrl (illustData);
+  if (!imageUrl) {
+    return this._unknown ('未対応の縮小画像URLです。');
+  }
+
+  this.type = 'Illust';
+  return this._add ({ Url: imageUrl, Referer: ref });
+};
+
+
+// 一つの作品を取得する(複数枚画像)
+Pixiv.prototype._getIllustMulti = function (illustData) {
+  var pages = parseInt (illustData.pages);
+
+  if (!this._api.manga (this.illust_id, pages)) {
+    return this._raise (this._api);
+  }
+
+  var ref = this._getMangaBigUrl (this.illust_id) + '&page=';
+
+  // 最初の画像で _big 付きかどうかを調べる
+  var mangaData = this._api.illustData;
+  if (!this._api.getFullImageSize (mangaData [0], ref + 0)) {
+    return false;
+  }
+  this._big = this._api.big;
+
+  // 各画像の原寸URLを求める
+  for (var i = 0; i < pages; ++i) {
+    var imageUrl = this._supposeImageUrl (mangaData [i]);
+    if (!imageUrl) {
+      return this._unknown ('未対応の縮小画像URLです。');
+    }
+
+    this._add ({ Url: imageUrl, Referer: ref + i });
+  }
+
+  this.type = 'Manga';
+  return this._ok ();
+};
+
+
+// 一つの作品を取得する(うごイラ)
+Pixiv.prototype._getUgoira = function (illustData) {
+  var ref = this._getMediumUrl (this.illust_id);
+
+  var u = illustData.thumbnail_128;
+
+  if (!/^(http:\/\/i\d*\.pixiv\.net\/)c\/[^\/]*\/img-master(\/.*)_square1200\.[^.]*$/.test (u)) {
+    return this._ng ('未対応のうごイラサムネイルURLです。');
+  }
+  var zipUrl = RegExp.$1 + 'img-zip-ugoira' + RegExp.$2 + '_ugoira1920x1080.zip';
+
+  this.type = 'Ugoira';
+  return this._add ({ Url: zipUrl, Referer: ref });
+};
+
+
+// ID等の情報を取り出す
+Pixiv.prototype._getIdFromIllustData = function (illustData) {
+  this.user_id = illustData.user_id;
+  this.pixiv_id = illustData.pixiv_id;
+  this.user_name = (new Utf8 (illustData.user_name)).decodeCharRef ();
+  this.title = (new Utf8 (illustData.title)).decodeCharRef ();
+};
+
+
+// 一つの作品を取得する
+Pixiv.prototype._getIllust = function () {
+  if (!this._importCookie ()) {
+    return false;
+  }
+  if (!this._api.illust (this.illust_id)) {
+    return this._raise (this._api);
+  }
+
+  var data = this._api.illustData;
+  if (data.length != 1) {
+    return this._unknown ('未対応のデータ構造です。');
+  }
+
+  var illustData = data [0];
+  this._getIdFromIllustData (illustData);
+
+  var pages = illustData.pages;
+  if (pages == '') {
+    if (/_square1200\.[^.]*$/.test (illustData.thumbnail_128)) {
+      return this._getUgoira (illustData);
+    }
+
+    return this._getIllustSingle (illustData);
+  }
+  if (/^\d+$/.test (pages)) {
+    return this._getIllustMulti (illustData);
+  }
+
+  return this._unknown ('未対応のページ数です。');
+};
+
+
+// 全ての作品を取得する
+Pixiv.prototype._getAllIllust = function () {
+  var user_id = this.user_id;
+
+  if (!this._importCookie ()) {
+    return false;
+  }
+
+  if (!this._api.count_member_illust (this.user_id)) {
+    return this._raise (this._api);
+  }
+  var count = this._api.count;
+  if (count == 0) {
+    return this._ng ('作品がありません。');
+  }
+
+  if (!this._api.member_illust (this.user_id, count)) {
+    return this._raise (this._api);
+  }
+
+  var illustData = this._api.illustData;
+  var base = this._getMediumUrl ('');
+
+  for (var i = 0; i < count; ++i) {
+    this._add ({ Url: base + illustData [i].illust_id });
+  }
+
+  this.type = null;
+  return this._ok ();
+};
+
+
+// public: ファイル URL を取得する
+Pixiv.prototype.get = function (url) {
+  this.items = [ ];
+  this.type = null;
+
+  this.pixiv_id = null;
+  this.user_name = null;
+  this.title = null;
+
+  var path = /^(http:\/\/www\.pixiv\.net\/)([^#]+)/.test (url) ? RegExp.$2 : '';
+  this._baseUrl = RegExp.$1;
+
+  this.user_id = /[?&]id=([^&]+)/.test (path) ? RegExp.$1 : null;
+  this.illust_id = /[?&]illust_id=([^&]+)/.test (path) ? RegExp.$1 : null;
+  var mode = /[?&]mode=([^&]+)/.test (path) ? RegExp.$1 : null;
+
+  if (/^member\.php\?/.test (path)) {
+    if (this.user_id) {
+      return this._getAllIllust ();
+    }
+  }
+  else if (/^member_illust\.php\?/.test (path)) {
+    if (this.user_id) {
+      return this._getAllIllust ();
+    }
+    else if (mode === 'medium' && this.illust_id) {
+      return this._getIllust ();
+    }
+  }
+
+  return this._mis ();
+};
+
+
+// public: ダウンロード情報を登録する
+Pixiv.prototype.download = function (args) {
+  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
+
+  if (nb) {
+    nb.user_id = this.user_id;
+    nb.pixiv_id = this.pixiv_id;
+    nb.nickname = this.user_name;
+    nb.id = this.illust_id;
+    nb.title = this.title;
+    nb.pages = this.items.length;
+  }
+
+  return this._downloadFiles (args);
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
+  }
+
+  var ini = Util.ini_load (defaultIni);
+
+  var getter = new Pixiv ({ Cookie: ini.Cookie });
+
+  if (getter.get (urlinfo.url)) {
+    var type = getter.type;
+
+    getter.download ({
+      AddItem: new AddItem (ini.AddItem),
+      NameBuilder: type && new NameBuilder ({ zen2han: ini.General.Zen2Han }),
+      Format: type && ini.Filename [type]
+    });
+  }
+
+  getter.end ();
+}
+
+
+// EOF
