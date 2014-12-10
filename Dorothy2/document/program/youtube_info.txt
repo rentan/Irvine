@@ -28,6 +28,10 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
 変更履歴
 ========
 
+2014-12-09  version 20141209.0  rentan at rentan.org
+  common\getter.dms を使うようにした。
+  YouTubeInfo オブジェクトを作成。
+
 2014-11-24  version 20141124.0  rentan at rentan.org
   サイト側の変更に対応(投稿者名が見つかりません)。
   signature スクリプトの変更に対応。
