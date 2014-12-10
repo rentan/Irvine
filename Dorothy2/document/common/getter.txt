@@ -1,0 +1,29 @@
+common\getter.dms
+
+
+オブジェクトに独自の共通処理を追加する関数です。
+getterobject.dms がイマイチ使いづらかったので作りなおしました。
+
+
+使用方法
+========
+
+  common_load ('getter');
+
+  // constructor
+  void function MyGetter () {
+  };
+
+  Getter (MyGetter);
+
+詳しくは getter.dms を使用しているスクリプトを参考にして下さい。
+
+
+変更履歴
+========
+
+2014-12-09  version 20141209.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]
