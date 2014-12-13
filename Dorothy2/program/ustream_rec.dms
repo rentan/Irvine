@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Ustream/recorded
-//version=20140917.0
+//version=20141214.0
 //hint=録画データのみ
 //match=^http://www\.ustream\.tv/recorded/\d+
 //author=rentan
@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'namebuilder');
+  Util.min_version (20141209.0);
 
   // 設定ファイルの読み込み
   var default_ini = {
@@ -38,29 +39,23 @@ function (scriptMode) {
       Recorded: '%TITLE% ust_%ID%'
     }
   };
-  var ini = Util.ini_load (default_ini);
 
 
 //---------------------------- UstreamRecorded -----------------------------
 
 
-common_load ('getterobject', 'http', 'utf8');
+common_load ('getter', 'http', 'utf8');
 
 
 // コンストラクタ
 void function UstreamRecorded () {
-  this.urls = [ ];
 };
 
 
-GetterObject.expand (UstreamRecorded);
+Getter (UstreamRecorded);
 
 
-UstreamRecorded.prototype.id = null;
-UstreamRecorded.prototype.title = null;
-
-
-// 内部で使用: 視聴ページを取得して解析する
+// 視聴ページを取得して解析する
 UstreamRecorded.prototype._scanWatchPage = function (url) {
   var http = this.http = new Http ();
 
@@ -73,14 +68,15 @@ UstreamRecorded.prototype._scanWatchPage = function (url) {
   }
   this.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
 
-  return this.OK;
+  return this._ok ();
 };
 
 
 
-// ファイル URL を取得する
+// public: ファイル URL を取得する
 UstreamRecorded.prototype.get = function (url) {
-  this.urls = [ ];
+  this.items = [ ];
+
   this.id = '';
   this.title = '';
 
@@ -89,13 +85,14 @@ UstreamRecorded.prototype.get = function (url) {
   }
   this.id = RegExp.$1;
 
-  var r = this._scanWatchPage (url);
-  if (r != this.OK) {
-    return r;
+  if (!this._scanWatchPage (url)) {
+    return false;
   }
 
   var http = this.http = new Http ();
 
+  // 2014年11月?のサイト仕様変更でエラーになるため動作しない
+  //   HTTP/1.1 401 Unauthorized
   var u = 'http://tcdn.ustream.tv/video/' + this.id;
   var loc = http.getLocation (u);
   if (!loc) {
@@ -106,29 +103,38 @@ UstreamRecorded.prototype.get = function (url) {
 };
 
 
-// ダウンロード情報を Dorothy 側に設定する
-UstreamRecorded.prototype.setUrlAndFilename = function (nb, fmt) {
-  var item = this.urls [0];
-  Dorothy.setUrl (item.Url);
+// public: ダウンロード情報を登録する
+UstreamRecorded.prototype.download = function (args) {
+  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
 
-  nb.id = this.id;
-  nb.title = this.title;
-  nb.setFilename (fmt, item.Url);
+  if (nb) {
+    nb.id = this.id;
+    nb.title = this.title;
+  }
+
+  return this._downloadFiles (args);
 };
 
 
 //------------------------------- メイン処理 -------------------------------
 
 
-  var getter = new UstreamRecorded ();
-
-  var r = getter.get (urlinfo.url);
-  if (r != getter.OK) {
-    return getter.end (r);
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
   }
 
-  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
-  getter.setUrlAndFilename (nb, ini.Filename.Recorded);
+  var ini = Util.ini_load (default_ini);
+
+  var getter = new UstreamRecorded ();
+
+  if (getter.get (urlinfo.url)) {
+    getter.download ({
+      NameBuilder: new NameBuilder ({ zen2han: ini.General.Zen2Han }),
+      Format: ini.Filename.Recorded
+    });
+  }
+
+  getter.end ();
 }
 
 

@@ -27,6 +27,10 @@ http://www.ustream.tv/recorded/\d+
 変更履歴
 ========
 
+2014-12-14  version 20141214.0  rentan at rentan.org
+  common\getter.dms を使うようにした。
+  ※サイト側の仕様変更で現在動作しません。
+
 2014-09-17  version 20140917.0  rentan at rentan.org
   作り直し。
   ファイル名変数は %ID% %TITLE% のみ対応。
