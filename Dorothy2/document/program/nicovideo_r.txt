@@ -36,6 +36,9 @@ http://www.nicovideo.jp/watch/([a-z]{2})?\d+
 変更履歴
 ========
 
+2014-12-09  version 20141209.0  rentan at rentan.org
+  common\getter.dms を使うようにした。
+
 2014-08-16  version 20140816.0  rentan at rentan.org
   domparser\xml の代わりに domparser\pseudo_xml を使うようにした。
   getterobject を使うようにした。

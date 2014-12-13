@@ -1,0 +1,274 @@
+//Dorothy2
+//caption=Getter()
+//version=20141209.0
+//hint=
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2014 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+common_load ('rutil');
+
+
+// オブジェクトに getter に必要な機能を追加する
+void function Getter (obj) {
+  var from = Getter.prototype;
+  var to = obj.prototype;
+
+  for (var key in from) {
+    to [key] = from [key];
+  }
+};
+
+
+Getter.prototype.comment = '';
+Getter.prototype.http = null;
+
+// public: ステータスコード
+Getter.prototype.status = null;
+
+Getter.prototype.OK = 0;
+Getter.prototype.NG = 1;
+Getter.prototype.RETRY = 2;
+Getter.prototype.UNKNOWN = 3;
+Getter.prototype.MIS = 4;
+Getter.prototype.EXIT = 5;
+
+
+// メッセージ表示の抑制
+Getter.prototype.quiet = false;
+
+// メッセージ表示&commentに保存
+Getter.prototype._p = function (s) {
+  var t = this.comment = nameOf (this) + ': ' + s;
+
+  if (!this.quiet) {
+    println (t);
+  }
+  return false;
+};
+
+
+// コンストラクタの引数解釈
+Getter.prototype._getArg = function (opt, key, defaultValue, f) {
+  var v = (opt && opt.hasKey (key)) ? opt [key] : defaultValue;
+
+  return f ? f (v) : v;
+};
+
+
+// 終了処理
+Getter.prototype._ok = function (msg) {
+  if (msg) {
+    this._p (msg);
+  }
+
+  this.status = this.OK;
+  return true;
+};
+
+Getter.prototype._error = function (msg, stat) {
+  if (msg) {
+    this._p (msg);
+  }
+
+  this.status = stat;
+  return false;
+};
+
+Getter.prototype._raise = function (obj) {
+  return this._error (obj.comment, obj.status);
+};
+
+Getter.prototype._ng = function (msg) {
+  return this._error (msg, this.NG);
+};
+
+Getter.prototype._retry = function (msg) {
+  return this._error (msg, this.RETRY);
+};
+
+Getter.prototype._unknown = function (msg) {
+  return this._error (msg, this.UNKNOWN);
+};
+
+Getter.prototype._mis = function (msg) {
+  if (arguments.length === 0) {
+    msg = '未対応の URL です。';
+  }
+  return this._error (msg, this.MIS);
+};
+
+Getter.prototype._exit = function (msg) {
+  this.status = this.EXIT;
+  return false;
+};
+
+// HTTPエラー
+Getter.prototype._httpError = function () {
+  var http = this.http;
+
+  var c = http && http.code;
+  if (c) {
+    this.comment = http.statusLine;
+  }
+
+  return (c == 0 || c == 503) ? this._retry () : this._ng ();
+};
+
+
+// URL を追加して正常終了
+Getter.prototype._add = function (item) {
+  this.items.push (item);
+  return this._ok ();
+};
+
+
+// public: ステータスコードに応じて終了処理
+Getter.prototype.end = function () {
+  var stat = this.status;
+
+  if (stat == this.OK || stat == this.MIS) {
+    return;
+  }
+  if (stat == this.RETRY) {
+    return retry ();
+  }
+
+  // NG, UNKNOWN, EXIT
+  exit ();
+};
+
+
+// 単一アイテムをダウンロード登録
+//   単一ファイル専用のスクリプトで AddItem を不要にするため
+//   AddItem#reQueue() の単一アイテムの処理と同じものを実装。
+Getter.prototype._downloadSingleFile = function (itemData) {
+  var ref = itemData.hasKey ('Referer') ? itemData.Referer : '';
+  Dorothy.setUrl (itemData.Url, ref);
+
+  headers.Cookie = itemData.hasKey ('Cookie') ? itemData.Cookie : '';
+
+  if (itemData.hasKey ('Folder')) {
+    item.folder = itemData.Folder;
+  }
+
+  if (itemData.hasKey ('Filename') && !item.filename) {
+    Dorothy.setFilename (itemData.Filename);
+  }
+
+  return this._ok ();
+};
+
+
+// NameBuilderでファイル名を生成
+Getter.prototype._buildFilename = function (args) {
+  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
+  if (!nb) {
+    return;
+  }
+
+  var items = this.items;
+  var len = items.length;
+
+  var fmt = args.hasKey ('Format') && args.Format;
+  if (fmt) {
+    for (var i = 0; i < len; ++i) {
+      nb.p = i;
+      var itemData = items [i];
+
+      var ext = itemData.hasKey ('ext') ? itemData.ext : itemData.Url;
+      var parsedData = nb.buildFilename (fmt, ext);
+
+      for (var key in parsedData) {
+        itemData [key] = parsedData [key];
+      }
+    }
+    return;
+  }
+
+  // 正規化のみ
+  if (args.hasKey ('normalizeFilename') && args.normalizeFilename) {
+    for (var i = 0; i < len; ++i) {
+      items [i].Filename = nb.normalize (items [i].Filename);
+    }
+  }
+};
+
+
+// 取得したURLをダウンロード登録
+//
+// args および各プロパティは省略可。
+//   AddItem: AddItemインスタンス
+//   ReQueue: bool 単一アイテムでもAddItemで追加する(AddItemが必要)
+//
+//   NameBuilder: NameBuilderインスタンス
+//   Format: string ファイル名フォーマット(NameBuilderが必要)
+//   Normalize: bool ファイル名を正規化するか(NameBuilderが必要)
+//              (Format 無指定時のみ有効)
+//
+Getter.prototype._downloadFiles = function (args) {
+  args = args || { };
+
+  this._buildFilename (args);
+
+  // 単一アイテム
+  var items = this.items;
+  if (items.length === 1) {
+    var requeue = args.hasKey ('ReQueue') && args.ReQueue;
+    if (!requeue) {
+      // 強制ReQueueでなければ現在のアイテムを上書き
+      return this._downloadSingleFile (items [0]);
+    }
+  }
+
+  // 複数アイテム、または単一アイテムの強制ReQueueモード
+  var additem = args.hasKey ('AddItem') && args.AddItem;
+  if (!additem) {
+    return this._ng ('内部エラー: AddItem オブジェクトが指定されていません。');
+  }
+
+  if (!additem.reQueue (items, true)) {
+    return this._ng ('アイテムの追加に失敗しました。');
+  }
+  return this._ok ();
+};
+
+
+// public: 取得したURLを表示(デバッグ用)
+Getter.prototype.showUrls = function () {
+  var s = [ ];
+
+  var items = this.items;
+  var len = items.length;
+  for (var i = 0; i < len; ++i) {
+    s.push (items [i].Url);
+  }
+
+  alert (s.join ("\n"));
+};
+
+
+}) ()
+
+
+// EOF

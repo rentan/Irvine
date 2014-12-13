@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ニコニコ動画_r
-//version=20140816.0
+//version=20141209.0
 //hint=
 //match=^http://www\.nicovideo\.jp/watch\/([a-z]{2})?\d+
 //author=rentan
@@ -25,9 +25,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-function () {
+function (scriptMode) {
 
-  common_load ('rutil', 'browsercookie', 'namebuilder', 'utf8');
+  common_load ('rutil', 'browsercookie', 'namebuilder');
+  Util.min_version (20141209.0);
 
   // 設定ファイルの読み込み
   var default_ini = {
@@ -39,56 +40,35 @@ function () {
       Video: '%TITLE% %ID%'
     }
   };
-  var ini = Util.ini_load (default_ini);
 
 
 //------------------------------- NicoVideo --------------------------------
 
 
-common_load ('browsercookie', 'domparser\pseudo_xml', 'getterobject', 'http');
+common_load ('browsercookie', 'domparser\pseudo_xml', 'getter', 'http', 'utf8');
 
 
 // コンストラクタ
 void function NicoVideo (opt) {
-  opt = opt || { };
-  this._bcookie = new BrowserCookie (opt.hasKey ('cookie') ? opt.cookie : { });
+  this._bcookie = this._getArg (opt, 'Cookie', { }, function (v) {
+    return new BrowserCookie (v);
+  });
 };
 
-GetterObject.expand (NicoVideo);
+Getter (NicoVideo);
 
 
-// プロパティ初期値
-NicoVideo.prototype.pageUrl = null;
-NicoVideo.prototype.videoUrl = null;
-NicoVideo.prototype.id = null;  // 動画ID (チャンネル動画は \d+)
-NicoVideo.prototype.eco = false;
-
-NicoVideo.prototype.video_id = null;  // 動画ID (チャンネル動画は so\d+)
-NicoVideo.prototype.movie_type = null;
-NicoVideo.prototype.title = null;
-NicoVideo.prototype.length = null;  // 再生時間
-NicoVideo.prototype.user_id = null;
-NicoVideo.prototype.nickname = null;
-NicoVideo.prototype.channel_no = null;  // チャンネル番号 \d+
-
-
-// 内部で使用
-NicoVideo.prototype._topUrl = 'http://www.nicovideo.jp/';
-
-
-// 内部で使用: ブラウザから Cookie を読み込む
+// ブラウザから Cookie を読み込む
 NicoVideo.prototype._importCookie = function (url) {
-  var bcookie = this._bcookie;
-
   var o = {
     host: (new URL (url)).host.replace (/^.*(\.nicovideo\.jp)$/, '$1'),
     name: 'user_session'
   };
-  this.cookie = bcookie.import (o) || '';
+  this.cookie = this._bcookie.import (o) || '';
 };
 
 
-// 内部で使用: thumbinfo のエラー情報を文字列化
+// thumbinfo のエラー情報を文字列化
 NicoVideo.prototype._getFailCodeMessage = function (status, code) {
   var s = {
     DELETED: '動画が削除されています。',
@@ -103,12 +83,12 @@ NicoVideo.prototype._getFailCodeMessage = function (status, code) {
 };
 
 
-// 内部で使用: thumbinfo を解析する
+// thumbinfo を解析する
 NicoVideo.prototype._analyzeThumbinfo = function () {
   var ctype = this.http.getResponseHeader ('content-type') || '';
   ctype = ctype.replace (/;.*$/, '');
   if (ctype != 'application/xml') {
-    return this._p ('未対応の Content-Type です。');
+    return this._unknown ('未対応の Content-Type です。');
   }
 
   function getElement (node, tagName) {
@@ -199,7 +179,7 @@ NicoVideo.prototype._analyzeThumbinfo = function () {
     this.nickname = name;
   }
   catch (e) {
-    return this._p (e);
+    return this._unknown (e);
   }
   finally {
     if (document) {
@@ -208,11 +188,11 @@ NicoVideo.prototype._analyzeThumbinfo = function () {
     }
   }
 
-  return true;
+  return this._ok ();
 };
 
 
-// 内部で使用: thumbinfo を取得する
+// thumbinfo を取得する
 NicoVideo.prototype._loadThumbinfo = function () {
   var url = 'http://ext.nicovideo.jp/api/getthumbinfo/' + this.id;
 
@@ -221,37 +201,25 @@ NicoVideo.prototype._loadThumbinfo = function () {
     return this._httpError ();
   }
 
-  return this.OK;
+  return this._ok ();
 };
 
 
-// 内部で使用: thumbinfo を取得して解析する
+// thumbinfo を取得して解析する
 NicoVideo.prototype._scanThumbinfo = function () {
-  var r = this._loadThumbinfo ();
-  if (r != this.OK) {
-    return r;
-  }
-
-  if (!this._analyzeThumbinfo ()) {
-    return this.UNKNOWN;
-  }
-
-  return this.OK;
+  return this._loadThumbinfo () && this._analyzeThumbinfo ();
 };
 
 
-// 内部で使用: 視聴ページを取得する
+// 視聴ページを取得する
 NicoVideo.prototype._loadWatchPage = function (url) {
   var http = this.http = new Http ();
 
   this._importCookie (url);
   http.setRequestHeader ('Cookie', this.cookie);
 
-  // 原宿モード
-  // http.setRequestHeader ('User-Agent', 'Mozilla/4.0 (compatible; MSIE 7.0b; Windows XP)');
-
   if (http.get (url)) {
-    return true;
+    return this._ok ();
   }
 
   // チャンネル動画は so\d+ は \d+(別の数字) に転送される
@@ -260,18 +228,18 @@ NicoVideo.prototype._loadWatchPage = function (url) {
     this.id = RegExp.$1;
 
     if (http.get (loc)) {
-      return true;
+      return this._ok ();
     }
   }
 
-  return false;
+  return this._httpError ();
 };
 
 
-// 内部で使用: 視聴ページを取得して解析する
-NicoVideo.prototype._scanWatchPage = function () {
-  if (!this._loadWatchPage (this.pageUrl)) {
-    return this._httpError ();
+// 視聴ページを取得して解析する
+NicoVideo.prototype._scanWatchPage = function (url) {
+  if (!this._loadWatchPage (url)) {
+    return false;
   }
   this.cookie = this.http.getRequestHeader ('Cookie');
 
@@ -279,7 +247,7 @@ NicoVideo.prototype._scanWatchPage = function () {
   // ただし視聴ページにアクセスしてからでないと getflv が失敗するので
   // ページの読み込みは省略不可
 
-  return this.OK;
+  return this._ok ();
 };
 
 
@@ -295,8 +263,7 @@ NicoVideo.prototype._getFlv = function () {
   }
 
   if (/^(.*&)?closed=1(&|$)/.test (http.data)) {
-    this._p ('closed=1: ログインしていません。');
-    return this.NG;
+    return this._ng ('closed=1: ログインしていません。');
   }
 
   if (!/^(.*&)url=([^&]*)/.test (http.data)) {
@@ -310,84 +277,81 @@ NicoVideo.prototype._getFlv = function () {
 
   // エコノミーモード
   this.eco = /low$/.test (u);
+  if (this.eco) {
+    return this._ng ('エコノミーモードです。');
+  }
 
   if (this.movie_type == 'swf') {
     u += 'as3';
   }
-  this.videoUrl = u;
 
-  return this.OK;
+  return this._add ({ Url: u, Cookie: this.cookie, ext: '.' + this.movie_type });
 };
 
 
-// URL から動画IDを抽出する
-NicoVideo.prototype.getId = function (url) {
-  if (/^http:\/\/www\.nicovideo\.jp\/watch\/(([a-z]{2})?\d+)([?#].*)?$/.test (url)) {
-    return RegExp.$1;
-  }
-
-  return null;
-};
-
-
-// 動画の各種情報を取得する
+// public: ファイルURLを取得する
 NicoVideo.prototype.get = function (url) {
-  this.id = this.getId (url);
-  if (!this.id) {
+  this.items = [ ];
+
+  this.cookie = '';
+  this.video_id = null;  // 動画ID (チャンネル動画は so\d+)
+  this.movie_type = null;
+  this.eco = null;
+  this.title = null;
+  this.length = null;  // 再生時間
+  this.user_id = null;
+  this.nickname = null;
+  this.channel_no = null;  // チャンネル番号 \d+
+
+  // 動画ID (チャンネル動画は後で \d+ に書き換わる)
+  if (!/^(http:\/\/www\.nicovideo\.jp\/watch\/(([a-z]{2})?\d+))([?#].*)?$/.test (url)) {
     return this._mis ();
   }
-  this.pageUrl = this._topUrl + 'watch/' + this.id;
+  this.id = RegExp.$2;
+  url = RegExp.$1;
 
-  var r = this._scanThumbinfo ();
-  if (r == this.OK) {
-    r = this._scanWatchPage ();
-  }
-  if (r != this.OK) {
-    return r;
-  }
-
-  return this._getFlv ();
+  return this._scanThumbinfo ()
+      && this._scanWatchPage (url)
+      && this._getFlv ();
 };
 
 
-//--------------------------------- 下請け ---------------------------------
+// public: ダウンロード情報を登録する
+NicoVideo.prototype.download = function (args) {
+  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
 
-
-// 動画視聴ページから動画をダウンロード
-function downloadVideo (video, url, zen2han) {
-  var r = video.get (url);
-  if (r != video.OK) {
-    return video.end (r);
+  if (nb) {
+    nb.id = this.id;
+    nb.video_id = this.video_id;
+    nb.title = new Utf8 (this.title);
+    nb.time = this.length;
+    nb.user_id = this.user_id || 'ch' + this.channel_no;
+    nb.nickname = new Utf8 (this.nickname);
   }
 
-  if (video.eco) {
-    println ('エコノミーモードです。');
-    exit ();
-  }
-
-  var nb = new NameBuilder ({ zen2han: zen2han });
-  nb.id = video.id;
-  nb.video_id = video.video_id;
-  nb.title = new Utf8 (video.title);
-  nb.time = video.length;
-  nb.user_id = video.user_id || 'ch' + video.channel_no;
-  nb.nickname = new Utf8 (video.nickname);
-
-  var ext = '.' + video.movie_type;
-  nb.setFilename (ini.Filename.Video, ext);
-
-  Dorothy.setUrl (video.videoUrl);
-
-  headers.Cookie = video.cookie;
-  headers ['Accept-Language'] = 'ja';
-}
+  return this._downloadFiles (args);
+};
 
 
 //------------------------------- メイン処理 -------------------------------
 
 
-  var video = new NicoVideo ({ cookie: ini.Cookie });
-  downloadVideo (video, urlinfo.url, ini.General.Zen2Han);
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
+  }
+
+  var ini = Util.ini_load (default_ini);
+
+  var getter = new NicoVideo ({ Cookie: ini.Cookie });
+
+  if (getter.get (urlinfo.url)) {
+    getter.download ({
+      NameBuilder: new NameBuilder ({ zen2han: ini.General.Zen2Han }),
+      Format: ini.Filename.Video
+    });
+  }
+
+  getter.end ();
 }
 
 

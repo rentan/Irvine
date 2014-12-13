@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=firestorage_r
-//version=20141104.0
+//version=20141209.0
 //hint=
 //match=^https?://(secure\.)?firestorage\.(jp|com)/download/.
 //author=rentan
@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem');
+  Util.min_version (20141209.0);
 
   // 設定ファイルの読み込み
   var defaultIni = {
@@ -38,20 +39,17 @@ function (scriptMode) {
 
 //------------------------------ FireStorage -------------------------------
 
-common_load ('getterobject', 'htmlform', 'http', 'utf8');
+common_load ('getter', 'htmlform', 'http', 'utf8');
 
 
 // コンストラクタ
 void function FireStorage () {
 };
 
-GetterObject.expand (FireStorage);
+Getter (FireStorage);
 
 
-FireStorage.prototype.url = '';
-
-
-// 内部で使用: パスワードを入力する
+// パスワードを入力する
 FireStorage.prototype._inputPassword = function () {
   common_load ('jinput');
 
@@ -67,7 +65,7 @@ FireStorage.prototype._inputPassword = function () {
 };
 
 
-// 内部で使用: パスワード入力画面を処理する
+// パスワード入力画面を処理する
 FireStorage.prototype._passPasswordForm = function (retryUrl) {
   var http = this.http;
 
@@ -78,8 +76,8 @@ FireStorage.prototype._passPasswordForm = function (retryUrl) {
     }
 
     var p = this._inputPassword ();
-    if (p == null) {
-      return this.EXIT;
+    if (!p) {
+      return this._exit ();
     }
 
     if (!form.change ('pass', p)) {
@@ -101,39 +99,44 @@ FireStorage.prototype._passPasswordForm = function (retryUrl) {
 
   }
 
-  return this.OK;
+  return this._ok ();
 };
 
 
-// 内部で使用: ダウンロード URL を抽出する
+// ダウンロード URL を抽出する
 FireStorage.prototype._extractDownloadLink = function () {
-  var folder = item.folder;
+  var founds = [ ];
 
-  var self = this;
   function add (s, u, f) {
-    var itemData = { Url: u, Filename: (new Utf8 (f)).toSJIS () };
-    if (folder) {
-      itemData.Folder = folder;
-    }
-    self._add (itemData);
+    founds.push ({ Url: u, Filename: (new Utf8 (f)).toSJIS () });
   }
 
   var re = /<a\s+href="(https?:\/\/[^"]+)"[^>]*id="downloadlink"[^>]*>([^<]+)/g;
   http.data.replace (re, add);
 
-  if (!this.urls.length) {
+  if (!founds.length) {
     http.capture ();
     return this._unknown ('ダウンロードリンクが見つかりません。');
   }
 
-  return this.OK;
+  var folder = item.folder;
+  for (var i = 0; i < founds.length; ++i) {
+    var item = founds [i];
+
+    if (folder) {
+      item.Folder = folder;
+    }
+
+    this._add (item);
+  }
+
+  return this._ok ();
 };
 
 
-// ファイル URL を取得する
+// public: ファイル URL を取得する
 FireStorage.prototype.get = function (url) {
-  this.url = url;
-  this.urls = [ ];
+  this.items = [ ];
 
   var http = this.http = new Http ();
 
@@ -151,12 +154,13 @@ FireStorage.prototype.get = function (url) {
     }
   }
 
-  var r = this._passPasswordForm (url);
-  if (r != this.OK) {
-    return r;
-  }
+  return this._passPasswordForm (url) && this._extractDownloadLink ();
+};
 
-  return this._extractDownloadLink ();
+
+// public: ダウンロード情報を登録する
+FireStorage.prototype.download = function (args) {
+  return this._downloadFiles (args);
 };
 
 
@@ -167,16 +171,15 @@ FireStorage.prototype.get = function (url) {
     return;
   }
 
+  var getter = new FireStorage ();
 
-  var storage = new FireStorage ();
-  var r = storage.get (urlinfo.url);
-  if (r != storage.OK) {
-    return storage.end (r);
+  if (getter.get (urlinfo.url)) {
+    getter.download ({
+      AddItem: new AddItem (ini.AddItem)
+    });
   }
 
-  var additem = new AddItem (ini.AddItem);
-  additem.reQueue (storage.urls) || exit ();
-
+  getter.end ();
 }
 
 
