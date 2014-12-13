@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_spapi
-//version=20141209.0
+//version=20141214.0
 //hint=pixiv (spapi.pixiv.net)
 //match=^http://www\.pixiv\.net/member(_illust)?\.php
 //author=rentan
@@ -511,9 +511,14 @@ Pixiv.prototype.download = function (args) {
   if (getter.get (urlinfo.url)) {
     var type = getter.type;
 
+    var nb = type && new NameBuilder ({ zen2han: ini.General.Zen2Han });
+    if (nb) {
+      nb.definePPZ (ini.General.PageOrigin);
+    }
+
     getter.download ({
       AddItem: new AddItem (ini.AddItem),
-      NameBuilder: type && new NameBuilder ({ zen2han: ini.General.Zen2Han }),
+      NameBuilder: nb,
       Format: type && ini.Filename [type]
     });
   }
