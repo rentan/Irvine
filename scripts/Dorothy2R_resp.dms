@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={F984DA71-6062-4DA1-9A75-C326B24B1647}
 caption=Dorothy2R OnHttpResponse
-version=20140913.0
+version=20141214.0
 hint=Dorothy2R OnHttpResponse
 event=OnHttpResponse
 match=
@@ -28,36 +28,120 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
+//--------------------------- ThreadStorageResp ----------------------------
 // スレッドストレージ関係の処理
-function processThreadStorage (headers) {
-  var replaced = false;
 
-  var st = Dorothy.getThreadStorage ();
-
-  // header.HHH=VVV データがあればヘッダに設定する
-  function setHeader (name) {
-    var key = 'headers.' + name;
-
-    var value = st.getItem (key);
-    if (isNull (value)) {
-      return;
-    }
-
-    st.removeItem (key);
-
-    println ('headers>' + name + ': ' + value);
-    headers [name] = value;
-    replaced = true;
-  }
-
-  setHeader ('Last-Modified');
-
-  return replaced;
+// コンストラクタ
+function ThreadStorageResp (headers) {
+  this._headers = headers;
+  this._storage = Dorothy.getThreadStorage ();
 }
 
 
+// メッセージ表示
+ThreadStorageResp.prototype._p = function (s) {
+  println (s);
+};
+
+
+// スレッドストレージからデータを読み込む
+ThreadStorageResp.prototype.getItem = function (key) {
+  return this._storage.getItem (key);
+};
+
+
+// スレッドストレージからデータを読み込んで削除する
+ThreadStorageResp.prototype.getAndRemoveItem = function (key) {
+  var v = this._storage.getItem (key);
+  if (v != null) {
+    this._storage.removeItem (key);
+  }
+  return v;
+};
+
+
+// レスポンスヘッダの値を取得する
+ThreadStorageResp.prototype.getHeader = function (name) {
+  return this._headers.hasKey (name) ? this._headers [name] : null;
+};
+
+
+// レスポンスヘッダを設定する
+ThreadStorageResp.prototype.setHeader = function (name, value) {
+  this._p ('headers>' + name + ': ' + value);
+  this._headers [name] = value;
+
+  return true;
+};
+
+
+// header.HHH=VVV データがあればヘッダに設定する
+ThreadStorageResp.prototype._writeHeader = function (name) {
+  var key = 'headers.' + name;
+
+  var value = this.getAndRemoveItem (key);
+  if (value == null) {
+    return false;
+  }
+
+  return this.setHeader (name, value);
+};
+
+
+// Content-Disposition のファイル名を Shift_JIS に変換する
+ThreadStorageResp.prototype._filenameToSJIS = function () {
+  var v = this.getAndRemoveItem ('tosjis.Content-Disposition');
+  if (!/^true(;|$)/.test (v)) {
+    return false;
+  }
+
+  var name = 'content-disposition';
+  var cd = this.getHeader (name);
+  if (!cd) {
+    return false;
+  }
+
+  var nbArgs = {
+    zen2han: /^(.*;)?Zen2Han=true(;|$)/.test (v)
+  };
+
+  var sj = cd.replace (/(filename=")([^"]+)(")/, function (s, p1, p2, p3) {
+    common_load ('namebuilder', 'utf8');
+
+    var f = (new Utf8 (p2)).toSJIS ();
+    f = (new NameBuilder (nbArgs)).normalize (f);
+
+    return p1 + f + p3;
+  });
+
+  if (sj == cd) {
+    return false;
+  }
+
+  return this.setHeader (name, sj);
+};
+
+
+// メイン処理
+ThreadStorageResp.prototype.process = function () {
+  var r = false;
+
+  r = this._writeHeader ('Last-Modified') || r;
+  r = this._filenameToSJIS () || r;
+
+  return r;
+};
+
+
+//----------------------------- OnHttpResponse -----------------------------
 // HTTP(S)レスポンスイベント
+
 function OnHttpResponse (urlinfo, headers, item, folderdata, optiondata) {
+  // ステータスが 200 OK 以外なら実行しない
+  if (urlinfo.StatusCode != 200) {
+    return false;
+  }
+
   // Dorothy2R_a.dms 実行
   (function () {
     var f = new File (WScript.Path + 'scripts\Dorothy2R_a.dms');
@@ -83,7 +167,8 @@ function OnHttpResponse (urlinfo, headers, item, folderdata, optiondata) {
   // メイン処理
   println ('Dorothy2R version ' + Dorothy.rVersion + ' OnHttpResponse');
 
-  return processThreadStorage (headers);
+  var tsr = new ThreadStorageResp (headers);
+  return tsr.process ();
 }
 
 
