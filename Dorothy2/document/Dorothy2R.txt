@@ -134,6 +134,7 @@ Dorothy.loadDorothyIni ();
 2014-12-14  version 20141214.0  rentan at rentan.org
 
 scripts\Dorothy2R_resp.dms
+  ステータス 200 以外の時は何も行わないようにした。
   tosjis.Content-Disposition=true でファイル名を UTF-8 から
   Shift_JIS に変換する。
 
