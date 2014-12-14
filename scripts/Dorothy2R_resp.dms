@@ -102,7 +102,7 @@ ThreadStorageResp.prototype._filenameToSJIS = function () {
   }
 
   var nbArgs = {
-    zen2han: /^(.*;)?Zen2Han=true(;|$)/.test (v)
+    zen2han: /;Zen2Han=true(;|$)/.test (v)
   };
 
   var sj = cd.replace (/(filename=")([^"]+)(")/, function (s, p1, p2, p3) {
