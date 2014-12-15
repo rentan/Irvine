@@ -34,17 +34,24 @@ NameBuilder オブジェクトのメソッド
 
 コンストラクタ
 new NameBuilder (opt)
-  opt ... object: プロパティ指定値(省略可)
+  opt ... object: オプション(省略可)
   戻り値 ... NameBuilder インスタンス
 
   NameBuilder インスタンスを作成して返す。
 
+  opt オブジェクトで動作を指定することが出来る。
+    han2zen ... boolean
+      true なら全角文字を半角に変換する。
+
+    ymdhms ... boolean
+      true ならプロパティ yyyy mm dd hh mi ss が設定される(値は全て null)。
+      また、メソッド YY が設定される(yyyy から下2桁を取り出す)。
+
+    definePPZ ... number
+      値を引数にして definePPZ() を呼び出す。
+
   例:
   var nb = new NameBuilder ({ zen2han: true });
-
-  オプションに ymdhms: true を指定すると、プロパティ yyyy mm dd
-  hh mi ss が設定される(値は全て null)。また、メソッド YY が設定
-  される(yyyy から下2桁を取り出す)。
 
 normalize (s)
   s ... string: ファイル名(Shift_JIS)
@@ -141,6 +148,9 @@ contentToExt (data)
 
 変更履歴
 ========
+
+2014-12-15  version 20141215.0  rentan at rentan.org
+  コンストラクタの引数に definePPZ: number を追加。
 
 2014-07-18  version 20140718.0  rentan at rentan.org
   setFilename(): Dorothy.setFilename() を使うようにした。

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=NameBuilder
-//version=20140718.0
+//version=20141215.0
 //hint=new NameBuilder ()
 //match=
 //author=rentan
@@ -34,7 +34,7 @@ common_load ('rutil');
 
 
 // コンストラクタ
-void function NameBuilder (opt_flags) {
+void function NameBuilder (opt) {
   if (nameOf (this) != 'NameBuilder') {
     alert ('new なしで NameBuilder() が呼ばれました。');
     exit ();
@@ -50,18 +50,23 @@ void function NameBuilder (opt_flags) {
     this._prototypeKeys [key.toUpperCase ()] = true;
   }
 
-  // フラグ設定
-  function gf (k) {
-    return (opt_flags && opt_flags.hasKey (k)) ? opt_flags [k] : null;
+  this._applyInitFlags (opt || { });
+};
+
+
+// 初期化フラグを処理
+NameBuilder.prototype._applyInitFlags = function (args) {
+  function getArg (key) {
+    return args.hasKey (key) ? args [key] : null;
   }
 
-  if (gf ('zen2han')) {
+  if (getArg ('zen2han')) {
     this._zen2hanMode = true;
   }
 
   // 日時系変数を初期化
   //   定型パターンを簡単に初期化するためのもの
-  if (gf ('ymdhms')) {
+  if (getArg ('ymdhms')) {
     this.yyyy = null;
     this.mm = null;
     this.dd = null;
@@ -74,6 +79,10 @@ void function NameBuilder (opt_flags) {
     };
   }
 
+  var po = getArg ('definePPZ');
+  if (po != null) {
+    this.definePPZ (po);
+  }
 };
 
 
