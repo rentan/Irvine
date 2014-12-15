@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Getter()
-//version=20141209.0
+//version=20141215.0
 //hint=
 //match=
 //author=rentan
@@ -40,8 +40,11 @@ void function Getter (obj) {
 };
 
 
-Getter.prototype.comment = '';
-Getter.prototype.http = null;
+// public: デバッグモード
+Getter.prototype.debug = false;
+
+// public: メッセージ表示の抑制
+Getter.prototype.quiet = false;
 
 // public: ステータスコード
 Getter.prototype.status = null;
@@ -53,9 +56,12 @@ Getter.prototype.UNKNOWN = 3;
 Getter.prototype.MIS = 4;
 Getter.prototype.EXIT = 5;
 
+// public: ステータス文字列
+Getter.prototype.comment = '';
 
-// メッセージ表示の抑制
-Getter.prototype.quiet = false;
+// public: Http オブジェクト
+Getter.prototype.http = null;
+
 
 // メッセージ表示&commentに保存
 Getter.prototype._p = function (s) {
@@ -181,16 +187,16 @@ Getter.prototype._downloadSingleFile = function (itemData) {
 
 
 // NameBuilderでファイル名を生成
-Getter.prototype._buildFilename = function (args) {
-  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
+Getter.prototype._buildFilenames = function (args) {
+  var nb = args.get ('NameBuilder');
   if (!nb) {
     return;
   }
 
   var items = this.items;
-  var len = items.length;
+  var len = nb.pages = items.length;
 
-  var fmt = args.hasKey ('Format') && args.Format;
+  var fmt = args.get ('Format');
   if (fmt) {
     for (var i = 0; i < len; ++i) {
       nb.p = i;
@@ -207,7 +213,7 @@ Getter.prototype._buildFilename = function (args) {
   }
 
   // 正規化のみ
-  if (args.hasKey ('normalizeFilename') && args.normalizeFilename) {
+  if (args.get ('normalizeFilename')) {
     for (var i = 0; i < len; ++i) {
       items [i].Filename = nb.normalize (items [i].Filename);
     }
@@ -215,34 +221,62 @@ Getter.prototype._buildFilename = function (args) {
 };
 
 
+// _downloadFiles() の引数取得用オブジェクト
+Getter.prototype._createArgsObject = function (argsArray) {
+  var argsObj = [ ];
+
+  // 有効なオブジェクトのみ保持する
+  for (var i = 0; i < argsArray.length; ++i) {
+    if (argsArray [i]) {
+      argsObj.push (argsArray [i]);
+    }
+  }
+
+  // 引数群からプロパティを探して値を返す
+  argsObj.get = function (key, defaultValue) {
+    for (var i = 0; i < this.length; ++i) {
+      if (this [i].hasKey (key)) {
+        return this [i] [key];
+      }
+    }
+
+    return (1 < arguments.length) ? defaultValue : null;
+  };
+
+  return argsObj;
+};
+
+
 // 取得したURLをダウンロード登録
 //
-// args および各プロパティは省略可。
+// 引数 args オブジェクトで動作モードを指定できる。省略可。
+// 複数指定時は先に指定したオブジェクトが優先される。
+//
+// 各プロパティは省略可。
 //   AddItem: AddItemインスタンス
-//   ReQueue: bool 単一アイテムでもAddItemで追加する(AddItemが必要)
+//   ReQueue: bool ... 単一アイテムでもAddItemで追加する(AddItemが必要)
 //
 //   NameBuilder: NameBuilderインスタンス
-//   Format: string ファイル名フォーマット(NameBuilderが必要)
-//   Normalize: bool ファイル名を正規化するか(NameBuilderが必要)
+//   Format: string ... ファイル名フォーマット(NameBuilderが必要)
+//   Normalize: bool ... ファイル名を正規化するか(NameBuilderが必要)
 //              (Format 無指定時のみ有効)
 //
-Getter.prototype._downloadFiles = function (args) {
-  args = args || { };
+Getter.prototype._downloadFiles = function (/* args, ... */) {
+  var args = this._createArgsObject (arguments);
 
-  this._buildFilename (args);
+  this._buildFilenames (args);
 
   // 単一アイテム
   var items = this.items;
   if (items.length === 1) {
-    var requeue = args.hasKey ('ReQueue') && args.ReQueue;
-    if (!requeue) {
+    if (!args.get ('ReQueue')) {
       // 強制ReQueueでなければ現在のアイテムを上書き
       return this._downloadSingleFile (items [0]);
     }
   }
 
   // 複数アイテム、または単一アイテムの強制ReQueueモード
-  var additem = args.hasKey ('AddItem') && args.AddItem;
+  var additem = args.get ('AddItem');
   if (!additem) {
     return this._ng ('内部エラー: AddItem オブジェクトが指定されていません。');
   }
