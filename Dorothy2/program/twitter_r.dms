@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20141111.0
+//version=20141215.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -28,9 +28,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
+  Util.min_version (20141215.0);
 
-  // 設定ファイルの読み込み
-  var default_ini = {
+  var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
     General: {
       Zen2Han: false,
@@ -38,154 +38,99 @@ function (scriptMode) {
     },
     Filename: {
       Photo: 'twitter_%ID%',
-      Photo2: 'twitter_%ID%_%P%'
+      Photo2: 'twitter_%ID%_%P%',
+      Video: 'twitter_%ID%'
     }
   };
-  var ini = Util.ini_load (default_ini);
 
 
 //-------------------------------- Twitter ---------------------------------
 
 
-common_load ('http', 'utf8');
+common_load ('getter', 'http', 'utf8');
 
 
 // コンストラクタ
-void function Twitter () {
-  this.urls = [ ];
-};
+Getter (function Twitter () {
+});
 
 
-Twitter.prototype.comment = '';
-Twitter.prototype.http = null;
-
-Twitter.prototype.debug = false;
-
-
-// media かどうか
-Twitter.prototype.media = false;
-
-// 複数画像ツイートかどうか
-Twitter.prototype.multiPhoto = false;
-
-// NameBuilder パラメータ
-Twitter.prototype.pageOrigin = 0;
-
-
-// .get() の戻り値
-Twitter.prototype.OK = 0;
-Twitter.prototype.NG = 1;
-Twitter.prototype.RETRY = 2;
-Twitter.prototype.UNKNOWN = 3;
-Twitter.prototype.MIS = 4;
-Twitter.prototype.EXIT = 5;
-
-
-// .get() の戻り値に応じて終了処理
-Twitter.prototype.end = function (r) {
-  if (r == this.RETRY) {
-    return retry ();
-  }
-  if (r != this.OK && r != this.MIS) {
-    exit ();
-  }
-};
-
-
-// 内部で使用: HTTP アクセスでエラーした場合の戻り値の選択
-Twitter.prototype._httpError = function () {
+// ツイート内の画像URLを抽出する
+Twitter.prototype._analyzeTweetImage = function () {
   var http = this.http;
 
-  var c = http && http.code;
-  if (c) {
-    this.comment = http.statusLine;
-  }
-
-  return (c == 0 || c == 503) ? this.RETRY : this.NG;
-};
-
-
-// 内部で使用: メッセージ表示&commentに保存
-Twitter.prototype._p = function (s) {
-  println (this.comment = nameOf (this) + ': ' + s);
-  return false;
-};
-
-
-Twitter.prototype._unknown = function (s) {
-  this._p (s);
-  return this.UNKNOWN;
-};
-
-
-// 内部で使用: ツイート内の画像URLを抽出する
-Twitter.prototype._analyzeTweetImage = function (http) {
-  var urls = this.urls;
-
-  function pushOrig (url) {
-    urls.push ({ Url: url.replace (/(:[a-z]*)?$/, ':orig') });
+  function addImage (url) {
+    this._add ({ Url: url.replace (/(:[a-z]*)?$/, ':orig') });
   }
 
   // 画像表示ページ
   if (/<img\s+class="large\s+media-slideshow-image"\s[^>]*src="([^"]+)"/.test (http.data)) {
-    pushOrig (RegExp.$1);
+    addImage (RegExp.$1);
+    this.type = 'Photo';
   }
 
   // 単一画像
   else if (/<a\s+class="media[^"]*"[^>]*\sdata-resolved-url-large="([^"]+)"/.test (http.data)) {
-    pushOrig (RegExp.$1);
+    addImage (RegExp.$1);
+    this.type = 'Photo';
   }
 
   // 複数画像
   else if (/<div\s+class="multi-photos[^>]*>(.*?)(<\/div>\s*){3}/.test (http.data)) {
     var html = RegExp.$1;
 
+    var urls = [ ];
     var re = /<div\s+class="multi-photo[^>]*data-resolved-url-large="([^"]+)"/g;
     function add (s, p1) {
-      pushOrig (p1);
+      urls.push (p1);
       return '';
     }
-
     html.replace (re, add);
-    this.multiPhoto = true;
+
+    for (var i = 0; i < urls.length; ++i) {
+      addImage (urls [i]);
+    }
+    this.type = 'Photo2';
   }
 
   // 動画
   else if (/<source\s+video-src="(https:\/\/pbs\.twimg\.com\/tweet_video\/[^"]+)"/.test (http.data)) {
-    urls.push ({ Url: RegExp.$1 });
+    this._add ({ Url: RegExp.$1 });
+    this.type = 'Video';
   }
 
-  if (!urls.length) {
+  if (this.items.length == 0) {
     http.capture ();
-    return this._p ('画像 URL が見つかりません。');
+    return this._ng ('画像URLが見つかりません。');
   }
 
-  return true;
+  return this._ok ();
 };
 
 
-// 内部で使用: ツイートの情報を取得する
-Twitter.prototype._analyzeTweet = function (http) {
-  var nb = this.nameBuilder;
+// ツイートの情報を取得する
+Twitter.prototype._analyzeTweet = function () {
+  var http = this.http;
 
   var path = (new URL (http.baseUrl)).path.slice (1);
   if (!/^([^\/]+)\/status(es)?\/(\d+)/.test (path)) {
-    return this._p ('未対応の URL です。');
+    // エラー終了させるため mis ではなく unknown
+    return this._unknown ('未対応のURLです。');
   }
-  nb.twitter_id = RegExp.$1;
-  nb.id = RegExp.$3;
+  this.twitter_id = RegExp.$1;  // ユーザー名
+  this.id = RegExp.$3;  // ツイートのパーマリンクID
 
   if (!/<div\s+[^>]*class="permalink-inner\s+permalink-tweet-container[^>]*>(.*?)<div\s+[^>]*class="permalink-footer/.test (http.data)) {
-    return this._p ('<div class="permalink-inner permalink-tweet-container"> が見つかりません。');
+    return this._unknown ('<div class="permalink-inner permalink-tweet-container"> が見つかりません。');
   }
   var html = RegExp.$1;
 
   if (!/<strong\s+class="fullname[^>]*>\s*([^<]+)\s*</.test (html)) {
-    return this._p ('<strong class="fullname ..."> が見つかりません。');
+    return this._unknown ('<strong class="fullname ..."> が見つかりません。');
   }
-  nb.user_name = (new Utf8 (RegExp.$1)).decodeCharRef ();
+  this.user_name = (new Utf8 (RegExp.$1)).decodeCharRef ();
 
-  var t;
+  var t = null;
   if (/<p\s+class="js-tweet-text\s+tweet-text[^>]*>(.*?)<\/p>/.test (html)) {
     t = RegExp.$1;
   }
@@ -193,57 +138,29 @@ Twitter.prototype._analyzeTweet = function (http) {
     t = RegExp.$1;
   }
   else {
-    return this._p ('ツイート本文が見つかりません。');
+    return this._unknown ('ツイート本文が見つかりません。');
   }
 
   // ツイート本文の末尾が pic.twitter.com/*** なら切り離す
+  this.pic_id = '';  // *** 部分のみ
   var picRe = /^(.*?)\s*<a\s[^>]*class="[^"]*twitter-timeline-link[^"]*"[^>]*>pic\.twitter\.com\/([^<]+)<\/a>\s*$/;
   if (picRe.test (t)) {
     t = RegExp.$1;
-    nb.pic_id = RegExp.$2;
+    this.pic_id = RegExp.$2;
   }
 
-  nb.title = (new Utf8 (t)).removeTags ().decodeCharRef ();
+  this.title = (new Utf8 (t)).removeTags ().decodeCharRef ();
 
-  return this._analyzeTweetImage (http);
-};
-
-
-// ファイル名を作成する
-// NameBuilder が必要
-Twitter.prototype.buildFilename = function (fmt) {
-  var nb = this.nameBuilder;
-
-  var title = nb.title.toSJIS ();
-
-  var urls = this.urls;
-  var len = nb.pages = urls.length;
-
-  for (var i = 0; i < len; ++i) {
-    nb.p = i;
-
-    var url = urls [i].Url;
-    var urlWithoutSize = url.replace (/:[a-z]*$/, '');
-
-    nb.title = title;
-    var itemData = nb.buildFilename (fmt, urlWithoutSize);
-
-    var compacted = this.compactTitle (itemData, title);
-    if (compacted) {
-      nb.title = compacted;
-      itemData = nb.buildFilename (fmt, urlWithoutSize);
-    }
-
-    itemData.Url = url;
-    urls [i] = itemData;
-  }
+  // 画像(または動画)のURLを抽出する
+  return this._analyzeTweetImage ();
 };
 
 
 // 単一のツイートに含まれる画像を抽出する
-Twitter.prototype.getTweetImage = function (url) {
+Twitter.prototype._getTweetImage = function (url) {
+  var http = this.http = new Http ();
 
-  function getRetweetOriginalUrl (http) {
+  function getRetweetOriginalUrl () {
     var tweetUrl = /^https:\/\/twitter\.com\/[^\/]+\/status\/\d+$/;
 
     if (http.code == 302 && tweetUrl.test (http.location)) {
@@ -252,14 +169,13 @@ Twitter.prototype.getTweetImage = function (url) {
     return null;
   }
 
-  var http = this.http;
   for (;;) {
     if (http.get (url)) {
-      // 成功
+      // ツイートのHTMLが取得できた成功
       break;
     }
 
-    var retweet = getRetweetOriginalUrl (http);
+    var retweet = getRetweetOriginalUrl ();
     if (retweet) {
       // 自分がリツイートした他人の画像ツイート
       url = retweet;
@@ -270,43 +186,42 @@ Twitter.prototype.getTweetImage = function (url) {
     return this._httpError ();
   }
 
-  if (!this._analyzeTweet (http)) {
-    return this.UNKNOWN;
-  }
-
-  return this.OK;
+  // 取得したHTMLを解析する
+  return this._analyzeTweet ();
 };
 
 
 // media/grid の JSON を解析してリストに追加
 //  最後の data-item-id を返す
 Twitter.prototype._analyzeMediaGridJson = function (http, base) {
-  var urls = this.urls;
+  var urls = [ ];
   var lastId = null;
 
   function add (s, p1) {
     lastId = p1;
-
-    urls.push ({ Url: base + p1 });
+    urls.push (p1);
     return '';
   }
   http.data.replace (/\sdata-item-id=\\"(\d+)\\"/g, add);
+
+  var len = urls.length;
+  for (var i = 0; i < len; ++i) {
+    this._add ({ Url: base + urls [i] });
+  }
 
   return lastId;
 };
 
 
 // 画像一覧に含まれる画像を抽出する
-Twitter.prototype.getMediaImage = function (url) {
+Twitter.prototype._getMediaImage = function (url) {
   if (!/^(https?:\/\/[^\/]*\/)([^\/]+)\//.test (url)) {
-    return this.NG;
+    return this._ng ('内部エラー');
   }
   var head = RegExp.$1;
   var twitterId = RegExp.$2;
 
-  this.media = true;
-
-  var http = this.http;
+  var http = this.http = new Http ();
   http.setRequestHeader ('Referer', head + twitterId + '/media');
 
   var base = head + twitterId + '/status/';
@@ -344,53 +259,35 @@ Twitter.prototype.getMediaImage = function (url) {
     }
   }
 
-  if (!this.urls.length) {
+  if (this.items.length == 0) {
     return this._unknown ('ダウンロード対象が見つかりませんでした。');
   }
 
-  return this.OK;
+  this.type = null;
+  return this._ok ();
 };
 
 
-// 内部で使用: NameBuilder オブジェクトの設定
-Twitter.prototype._setupNameBuilder = function () {
-  var nb = this.nameBuilder;
-
-  // ファイル名の生成に使える情報
-  nb.twitter_id = null;  // Twitter ID
-  nb.user_name = null;   // ユーザー名
-  nb.id = null;          // ツイートのパーマリンクID
-  nb.title = null;       // 本文
-  nb.pic_id = null;      // 本文末尾から分離した pic.twitter.com/*** の *** 部分
-
-  nb.pages = 0;  // 全ページ数
-  nb.p = 0;      // ページ番号
-
-  if (typeof nb.definePPZ == 'function') {
-    nb.definePPZ (this.pageOrigin);
-  }
-};
-
-
-// 画像またはメディアのURLを取得する
+// public: ファイル URL を取得する
 Twitter.prototype.get = function (url) {
-  this._setupNameBuilder ();
+  this.items = [ ];
+  this.type = null;
 
-  this.urls = [ ];
-  this.http = new Http ();
-  this.media = this.multiPhoto = false;
+  this.twitter_id = null;
+  this.user_name = null;
+  this.id = null;
+  this.pic_id = null;
 
   var path = (new URL (url)).path.slice (1);
 
   if (/^[^\/]+\/status(es)?\/\d+(\/photo\/\d+(\/large)?)?(#.*)?$/.test (path)) {
-    return this.getTweetImage (url);
+    return this._getTweetImage (url);
   }
   if (/^([^\/]+)\/media$/.test (path)) {
-    return this.getMediaImage (url);
+    return this._getMediaImage (url);
   }
 
-  this._p ('未対応の URL です。');
-  return this.MIS;
+  return this._mis ();
 };
 
 
@@ -399,7 +296,7 @@ Twitter.prototype._PATH_MAX = 260;
 Twitter.prototype._DOTS = '…';
 
 // タイトルを短くする
-Twitter.prototype.compactTitle = function (itemData, title) {
+Twitter.prototype._compactTitle = function (nb, itemData, title) {
   var folder = itemData.hasKey ('Folder') ? itemData.Folder : Dorothy.getSaveFolder ();
   var filenameMax = this._PATH_MAX - folder.sizeOf ();
 
@@ -418,7 +315,6 @@ Twitter.prototype.compactTitle = function (itemData, title) {
   var allowedBytes = title.sizeOf () - overBytes;
 
   // 十分短くなるまで、後ろから1文字ずつ削ってバイト数を確かめる
-  var nb = this.nameBuilder;
   for (var i = title.length; --i >= 0;) {
     var s = title.slice (0, i);
     if (nb.normalize (s).sizeOf () <= allowedBytes) {
@@ -431,34 +327,88 @@ Twitter.prototype.compactTitle = function (itemData, title) {
 };
 
 
+// public: ファイル名を生成する
+//   NameBuilder 指定時は必ず Format も指定すること。
+Twitter.prototype.buildFilename = function (args) {
+  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
+  if (!nb) {
+    return this._ok ();
+  }
+  var fmt = args.Format;
+
+  nb.twitter_id = this.twitter_id;
+  nb.user_name = this.user_name;
+  nb.id = this.id;
+  nb.pic_id = this.pic_id;
+
+  var title = this.title.toSJIS ();
+
+  var items = this.items;
+  var len = nb.pages = items.length;
+
+  for (var i = 0; i < len; ++i) {
+    nb.p = i;
+    var itemData = items [i];
+    var urlWithoutSize = itemData.Url.replace (/:[a-z]*$/, '');
+
+    nb.f = urlWithoutSize.replace (/^.*\/|\.[^.\/]*$/g, '');
+    nb.title = title;
+
+    var fnData = nb.buildFilename (fmt, urlWithoutSize);
+
+    var compacted = this._compactTitle (nb, fnData, title);
+    if (compacted) {
+      nb.title = compacted;
+      fnData = nb.buildFilename (fmt, urlWithoutSize);
+    }
+
+    for (var key in fnData) {
+      itemData [key] = fnData [key];
+    }
+  }
+
+  return this._ok ();
+};
+
+
+// public: ダウンロード情報を登録する
+Twitter.prototype.download = function (args) {
+  return this._downloadFiles (args);
+};
+
+
 //------------------------------- メイン処理 -------------------------------
 
 
-  // program\spec\twitter_r_spec.dms から読み込まれて呼び出された場合
   if (scriptMode === 'DEFINE_ONLY') {
-    // Twitter オブジェクトの定義だけを行う
     return;
   }
 
+  var ini = Util.ini_load (defaultIni);
 
-  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+  var getter = new Twitter ();
 
-  var twitter = new Twitter ();
-  twitter.nameBuilder = nb;
-  twitter.pageOrigin = ini.General.PageOrigin;
+  if (getter.get (urlinfo.url)) {
+    var type = getter.type;
 
-  var r = twitter.get (urlinfo.url);
-  if (r != twitter.OK) {
-    return twitter.end (r);
+    if (type) {
+      var nb = new NameBuilder ({
+        zen2han: ini.General.Zen2Han,
+        definePPZ: ini.General.PageOrigin
+      });
+
+      getter.buildFilename ({
+        NameBuilder: nb,
+        Format: ini.Filename [type]
+      });
+    }
+
+    getter.download ({
+      AddItem: new AddItem (ini.AddItem)
+    });
   }
 
-  if (!twitter.media) {
-    var fmt = twitter.multiPhoto ? ini.Filename.Photo2 : ini.Filename.Photo;
-    twitter.buildFilename (fmt);
-  }
-
-  var force = twitter.media;
-  (new AddItem (ini.AddItem)).reQueue (twitter.urls, force) || exit ();
+  getter.end ();
 }
 
 

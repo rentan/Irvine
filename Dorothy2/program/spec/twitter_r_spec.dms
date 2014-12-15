@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20141104.0
+//version=20141215.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -34,89 +34,64 @@ common_load ('esx\array');
 eval (program_load ('twitter_r')) ('DEFINE_ONLY');
 
 
-describe ('Twitter', function () {
-  var twitter = new Twitter ();
-
-  it ('urls の初期値は空配列', function () {
-    expect (twitter.urls).toEqual ([ ]);
-  });
-});
-
-
 describe ('単一画像', function () {
-  var twitter = new Twitter ();
-  twitter.nameBuilder = new NameBuilder ({ zen2han: false });
-
   var url = 'https://twitter.com/rentan_org/status/314692285487001600';
   var imageUrl = 'https://pbs.twimg.com/media/BF4C92JCMAEHMR9.png:orig';
 
-  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%]';
+  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%] [%PIC_ID%] [%F%]';
   var filename = '練炭 [rentan_org] - ちょっとテスト。GlyphWiki より。 ' +
-                 'pic.twitter.com／7kRfsb8rZn [314692285487001600].png';
+                 '[314692285487001600] [7kRfsb8rZn] [BF4C92JCMAEHMR9].png';
 
+  var getter = new Twitter ();
+  var nb = new NameBuilder ();
 
-  it ('.get() 成功時に .OK を返す', function () {
-    expect (twitter.get (url)).toBe (twitter.OK);
+  it ('.get() 成功時に true / .OK を返す', function () {
+    expect (getter.get (url)).toBe (true);
+    expect (getter.status).toBe (getter.OK);
+    expect (getter.type).toBe ('Photo');
   });
 
-  it ('.media が false', function () {
-    expect (twitter.media).toBe (false);
+  it ('.items が [ { Url: ... } ] 形式', function () {
+    expect (getter.items).toEqual ([ { Url: imageUrl } ]);
   });
 
-  it ('.multiPhoto が false', function () {
-    expect (twitter.multiPhoto).toBe (false);
-  });
-
-  it ('.urls が [ { Url: ... } ] 形式', function () {
-    expect (twitter.urls).toEqual ([ { Url: imageUrl } ]);
-  });
-
-  it ('.buildFilename() で .urls にファイル名が追加される', function () {
-    twitter.buildFilename (fmt);
-    expect (twitter.urls).toEqual ([ { Url: imageUrl, Filename: filename } ]);
+  it ('.buildFilename() で .items にファイル名が追加される', function () {
+    getter.buildFilename ({ NameBuilder: nb, Format: fmt });
+    expect (getter.items).toEqual ([ { Url: imageUrl, Filename: filename } ]);
   });
 });
 
 
 describe ('単一画像(ツイート本文に別のツイートの画像 URL あり)', function () {
-  var twitter = new Twitter ();
-  twitter.nameBuilder = new NameBuilder ({ zen2han: false });
-
   var url = 'https://twitter.com/rentan_org/status/314692615671017472';
   var imageUrl = 'https://pbs.twimg.com/media/BF4DRELCcAAp1sI.png:orig';
 
-  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%]';
+  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%] [%PIC_ID%]';
   var filename = '練炭 [rentan_org] - ちょっとテスト その2。 pic.twitter.com／2g0roAlhG3 ' +
-                 'pic.twitter.com／uGtcUO2tzT [314692615671017472].png';
+                 '[314692615671017472] [uGtcUO2tzT].png';
 
+  var getter = new Twitter ();
+  var nb = new NameBuilder ();
 
-  it ('.get() 成功時に .OK を返す', function () {
-    expect (twitter.get (url)).toBe (twitter.OK);
+  it ('.get() 成功時に true / .OK を返す', function () {
+    expect (getter.get (url)).toBe (true);
+    expect (getter.status).toBe (getter.OK);
+    expect (getter.type).toBe ('Photo');
   });
 
-  it ('.media が false', function () {
-    expect (twitter.media).toBe (false);
+  it ('.items が [ { Url: ... } ] 形式', function () {
+    expect (getter.items).toEqual ([ { Url: imageUrl } ]);
   });
 
-  it ('.multiPhoto が false', function () {
-    expect (twitter.multiPhoto).toBe (false);
-  });
-
-  it ('.urls が [ { Url: ... } ] 形式', function () {
-    expect (twitter.urls).toEqual ([ { Url: imageUrl } ]);
-  });
-
-  it ('.buildFilename() で .urls にファイル名が追加される', function () {
-    twitter.buildFilename (fmt);
-    expect (twitter.urls).toEqual ([ { Url: imageUrl, Filename: filename } ]);
+  it ('.buildFilename() で .items にファイル名が追加される', function () {
+    getter.buildFilename ({ NameBuilder: nb, Format: fmt });
+    expect (getter.items).toEqual ([ { Url: imageUrl, Filename: filename } ]);
   });
 });
 
 
 describe ('複数画像', function () {
-  var twitter = new Twitter ();
-  twitter.nameBuilder = new NameBuilder ({ zen2han: false });
-  twitter.pageOrigin = 1;
+  var pageOrigin = 1;
 
   var url = 'https://twitter.com/rentan_org/status/468794536253083648';
   var imageUrls = [
@@ -126,66 +101,54 @@ describe ('複数画像', function () {
     'https://pbs.twimg.com/media/BoF-JUmIUAA9Yqe.png:orig'
   ];
 
-  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%] %P%of%PAGES%';
+  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%] [%PIC_ID%] %P%of%PAGES%';
   var filenames = [ 0, 1, 2, 3 ].map (function (v) {
     return '練炭 [rentan_org] - 複数画像ツイートのテスト。 ' +
-           'pic.twitter.com／L7uxMhCUMb [468794536253083648] ' +
-           (v + twitter.pageOrigin) + 'of4.png';
+           '[468794536253083648] [L7uxMhCUMb] ' +
+           (v + pageOrigin) + 'of4.png';
   });
 
+  var getter = new Twitter ();
+  var nb = new NameBuilder ({ definePPZ: pageOrigin });
 
-  it ('.get() 成功時に .OK を返す', function () {
-    expect (twitter.get (url)).toBe (twitter.OK);
+  it ('.get() 成功時に true / .OK を返す', function () {
+    expect (getter.get (url)).toBe (true);
+    expect (getter.status).toBe (getter.OK);
+    expect (getter.type).toBe ('Photo2');
   });
 
-  it ('.media が false', function () {
-    expect (twitter.media).toBe (false);
-  });
-
-  it ('.multiPhoto が true', function () {
-    expect (twitter.multiPhoto).toBe (true);
-  });
-
-  it ('.urls が [ { Url: ... }, ... ] 形式', function () {
+  it ('.items が [ { Url: ... }, ... ] 形式', function () {
     var urls = imageUrls.map (function (v) {
       return { Url: v };
     });
 
-    expect (twitter.urls).toEqual (urls);
+    expect (getter.items).toEqual (urls);
   });
 
-  it ('.buildFilename() で .urls にファイル名が追加される', function () {
+  it ('.buildFilename() で .items にファイル名が追加される', function () {
     var urls = [ 0, 1, 2, 3 ].map (function (v) {
       return { Url: imageUrls [v], Filename: filenames [v] };
     });
 
-    twitter.buildFilename (fmt);
-    expect (twitter.urls).toEqual (urls);
+    getter.buildFilename ({ NameBuilder: nb, Format: fmt });
+    expect (getter.items).toEqual (urls);
   });
 });
 
 
 describe ('メディア', function () {
-  var twitter = new Twitter ();
-  twitter.nameBuilder = new NameBuilder ({ zen2han: false });
-
   var url = 'https://twitter.com/rentan_org/media';
 
+  var getter = new Twitter ();
 
-  it ('.get() 成功時に .OK を返す', function () {
-    expect (twitter.get (url)).toBe (twitter.OK);
+  it ('.get() 成功時に true / .OK を返す', function () {
+    expect (getter.get (url)).toBe (true);
+    expect (getter.status).toBe (getter.OK);
+    expect (getter.type).toBeNull ();
   });
 
-  it ('.media が true', function () {
-    expect (twitter.media).toBe (true);
-  });
-
-  it ('.multiPhoto が false', function () {
-    expect (twitter.multiPhoto).toBe (false);
-  });
-
-  it ('.urls.length >= 30', function () {
-    expect (twitter.urls.length).toBeGreaterThan (29);
+  it ('.items.length >= 30', function () {
+    expect (getter.items.length).toBeGreaterThan (29);
   });
 
   cases ([
@@ -195,20 +158,21 @@ describe ('メディア', function () {
     [ 30, 'https://twitter.com/rentan_org/status/470484218963701760' ],
     [ 31, 'https://twitter.com/rentan_org/status/473809360666103808' ]
   ])
-  .it ('.urls が [ { Url: ... }, ... ] 形式 [ no, url ]', function (no, url) {
-    var idx = twitter.urls.length - no;
-    expect (twitter.urls [idx]).toEqual ({ Url: url });
+  .it ('.items が [ { Url: ... }, ... ] 形式 [ no, url ]', function (no, url) {
+    var idx = getter.items.length - no;
+    expect (getter.items [idx]).toEqual ({ Url: url });
   });
 });
 
 
 describe ('リプライツイートの画像', function () {
-  var twitter;
-  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%]';
+  var fmt = '%USER_NAME% [%TWITTER_ID%] - %TITLE% [%ID%] [%PIC_ID%]';
+
+  var getter = null;
+  var nb = new NameBuilder ();
 
   beforeEach (function () {
-    twitter = new Twitter ();
-    twitter.nameBuilder = new NameBuilder ({ zen2han: false });
+    getter = new Twitter ();
   });
 
   cases ([
@@ -216,26 +180,22 @@ describe ('リプライツイートの画像', function () {
     [ 'https://twitter.com/fumi104/status/486724140196311040',
       'https://pbs.twimg.com/media/BsExBcSCMAAPDY8.jpg:orig',
       'fumi [fumi104] - @Melpomeneco ステラちゃんに伊東ライフされたい人生だった' +
-      ' pic.twitter.com／FsJ7PoDYWX [486724140196311040].jpg' ],
+      ' [486724140196311040] [FsJ7PoDYWX].jpg' ],
 
     [ 'https://twitter.com/YJ893/status/486493831047548929',
       'https://pbs.twimg.com/media/BsBfjyzCcAA8-dJ.jpg:orig',
       '銀 [YJ893] - @Hafune 伊東ライフ先生のだからね　仕方ないね　じゃけん代わり' +
-      'のモノはってとますね pic.twitter.com／7vsazqz8fy [486493831047548929].jpg' ],
-
-    [ 'https://twitter.com/_bigwood2310/status/486324348878618625',
-      'https://pbs.twimg.com/media/Br_Fap6CMAETSCP.jpg:orig',
-      '2見 たいじゅ [_bigwood2310] - @Tetorapoto3 がんばれ？？がんばれ？？(伊東ライフ感' +
-      ' pic.twitter.com／NmfvmjcRfV [486324348878618625].jpg' ]
+      'のモノはってとますね [486493831047548929] [7vsazqz8fy].jpg' ]
   ])
   .it ('[ url, image, filename ]', function (url, image, filename) {
-    expect (twitter.get (url)).toBe (twitter.OK);
-    expect (twitter.media).toBe (false);
-    expect (twitter.multiPhoto).toBe (false);
-    expect (twitter.urls).toEqual ([ { Url: image } ]);
+    expect (getter.get (url)).toBe (true);
+    expect (getter.status).toBe (getter.OK);
+    expect (getter.type).toBe ('Photo');
 
-    twitter.buildFilename (fmt);
-    expect (twitter.urls).toEqual ([ { Url: image, Filename: filename } ]);
+    expect (getter.items).toEqual ([ { Url: image } ]);
+
+    getter.buildFilename ({ NameBuilder: nb, Format: fmt });
+    expect (getter.items).toEqual ([ { Url: image, Filename: filename } ]);
   });
 });
 
