@@ -89,6 +89,13 @@ error
 変更履歴
 ========
 
+2014-12-18  version 20141218.0  rentan at rentan.org
+  UTF-8 のファイルを Shift_JIS に変換した時に末尾にゴミが付く不具合
+  を修正。
+  thanks to http://peace.2ch.net/test/read.cgi/win/1412399700/366
+
+  ダウンロードボタンをクリックした際にフォームを再描画するようにした。
+
 2014-10-06  version 20141006.0  rentan at rentan.org
   新規作成。
 

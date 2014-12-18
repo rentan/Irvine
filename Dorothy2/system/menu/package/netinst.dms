@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ネットインストール
-//version=20141006.0
+//version=20141218.0
 //hint=
 //match=
 //author=rentan
@@ -33,7 +33,7 @@ function () {
 
 // コンストラクタ
 function NetInstall () {
-  this.initForm ('version 20141006.0');
+  this.initForm ('version 20141218.0');
 };
 
 
@@ -531,6 +531,7 @@ NetInstall.prototype.download = function (url) {
   var form = this.form;
   form.UrlComboBox.Enabled = false;
   form.ExecButton.Enabled = false;
+  form.update ();
 
   if (!this.createTempDir ()) {
     return false;
@@ -1250,6 +1251,7 @@ DorothyFileList.prototype.convertEncoding = function (file) {
 
   try {
     file.open ('w');
+    file.length = 0;
     file.write (text);
   }
   finally {
