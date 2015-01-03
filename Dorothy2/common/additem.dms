@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=AddItem
-//version=20141208.0
+//version=20150103.0
 //hint=new AddItem ()
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ void function AddItem (opt_cfg) {
   // 動作モード初期化
   var cfg = opt_cfg || { };
 
-  var keys = [ 'Mode', 'Queue', 'Listname' ];
+  var keys = [ 'Mode', 'Queue', 'Listname', 'Workaround' ];
   for (var i = 0; i < keys.length; ++i) {
     var key = keys [i];
 
@@ -66,7 +66,8 @@ AddItem.prototype.savedListPath = null;
 AddItem.prototype.iniTemplate = {
   Mode: '',
   Queue: '',
-  Listname: ''
+  Listname: '',
+  Workaround: false
 };
 
 
@@ -132,15 +133,8 @@ AddItem.prototype._makeList = function (list, strip_tab) {
 };
 
 
-// 内部で使用: AddQueueItem を呼び出すスクリプトファイルを生成して実行する
-AddItem.prototype._callAddQueueItem = function (list, queue) {
-  common_load ('exec');
-
-  var tmpdir = new Directory (Dorothy.temp);
-  tmpdir.exists () || tmpdir.make ();
-  var jsfile = tmpdir.path + Dorothy.matchFile + '.tmp';
-
-
+// 内部で使用: AddQueueItem を呼び出すスクリプトを生成する
+AddItem.prototype._createAddQueueItemScript = function (list, queue) {
   var sl = new Strings ();
   sl.add ('// †自動生成されたファイルです。');
 
@@ -158,16 +152,38 @@ AddItem.prototype._callAddQueueItem = function (list, queue) {
   // キューフォルダ名
   sl.add ('var queue = "' + queue.replace (/"/g, '_') + '";');
 
-  // 処理コード
   sl.add ("var api = new ActiveXObject ('Irvine.Api');");
+
+  // 重複確認バグ対策
+  if (this.workaround) {
+    sl.add ('var currentQueue = api.CurrentQueueFolder;');
+    sl.add ('if (currentQueue != queue) {');
+    sl.add ('  api.CurrentQueueFolder = queue;');
+    sl.add ('  api.CurrentQueueFolder = currentQueue;');
+    sl.add ('}');
+  }
+
+  // アイテム追加
   sl.add ('for (var i = 0; i < list.length; ++i) {');
   sl.add ('  api.AddQueueItem (queue, list [i]);');
   sl.add ('}');
 
-  // ファイルに保存
   sl.add ('// EOF');
-  sl.saveToFile (jsfile);
+  return sl;
+};
 
+
+// 内部で使用: AddQueueItem を呼び出すスクリプトファイルを実行する
+AddItem.prototype._callAddQueueItem = function (list, queue) {
+  common_load ('exec');
+
+  var tmpdir = new Directory (Dorothy.temp);
+  tmpdir.exists () || tmpdir.make ();
+  var jsfile = tmpdir.path + Dorothy.matchFile + '.tmp';
+
+  // スクリプトファイルを作成
+  var sl = this._createAddQueueItemScript (list, queue);
+  sl.saveToFile (jsfile);
 
   // wscript.exe を実行
   var r = Exec ('wscript', '//E:JScript', '"' + jsfile + '"');

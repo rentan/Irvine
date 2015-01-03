@@ -15,6 +15,7 @@ Irvine にキューアイテムを追加するオブジェクトです。
 Mode=
 Queue=
 Listname=
+Workaround=
 
 
 Mode では動作モードを指定します。Auto AddQueueItem Import OptionQueue
@@ -66,12 +67,26 @@ Mode では動作モードを指定します。Auto AddQueueItem Import OptionQueue
 ※好みにより Irvine のフィルタリング設定での振り分けを活用して下さい。
 
 
+Workaround に true を指定すると、Irvine の不具合を回避する処理が行われ
+ます。現在は以下の処理が組み込まれていますが、回避方法は将来変更される
+可能性があります。
+
+・Mode=AddQueueItem または OptionQueue の場合
+  URL の重複確認が行われない不具合対策として、カレントキューフォルダを
+  一瞬だけ変更します。
+
+
 使用方法(スクリプト作成者向け)
 ==============================
 
   common_load ('additem');
 
-  var ini = { Mode: 'Auto', Queue: '/Default', Listname: '' };
+  var ini = {
+    Mode: 'Auto',
+    Queue: '/Default',
+    Listname: '',
+    Workaround: false
+  };
   var additem = new AddItem (ini);
 
   var list = [
@@ -93,6 +108,9 @@ queue ... string
 
 listname ... string
   Import モード時、キューリストのファイル名(省略時はプログラム名)。
+
+workaround ... boolean
+  Workaround の値。true で不具合回避を行う。
 
 iniTemplate ... object
   new AddItem() に渡す引数の構造を表す雛形オブジェクト。
@@ -142,6 +160,11 @@ reQueue (list, force)
 
 変更履歴
 ========
+
+2015-01-03  version 20150103.0  rentan at rentan.org
+  Workaround=true 指定時、AddQueueItem モードでアイテム追加前に
+  カレントキューフォルダを変更するようにした。
+    thanks to http://toro.2ch.net/test/read.cgi/win/1348568425/893
 
 2014-12-08  version 20141208.0  rentan at rentan.org
   reQueue(): 上書きモード時に Referer、Cookie を反映させるようにした。
