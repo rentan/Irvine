@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=HtmlForm spec
-//version=20140605.0
+//version=20150119.0
 //hint=http://yasmine.dorothy.test/common/spec/htmlform_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -426,6 +426,10 @@ describe ('HtmlForms', function () {
     forms = new HtmlForms (http);
 
     // src3 はコメントアウトされているので、src2 と src4 で2個になる
+    expect (forms.length).toBe (2);
+
+    http.data = html.src2 + '<!--' + html.src3 + '--!>' + html.src4 + '<!-- -->';
+    forms = new HtmlForms (http);
     expect (forms.length).toBe (2);
   });
 

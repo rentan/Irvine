@@ -337,6 +337,9 @@ select (option, b)
 変更履歴
 ========
 
+2015-01-19  version 20150119.0  rentan at rentan.org
+  --!> をコメント末尾として扱うようにした。
+
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
   このファイルを UTF-8 に変更。
