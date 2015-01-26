@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R spec
-//version=20140908.0
+//version=20150127.0
 //hint=http://yasmine.dorothy.test/common/spec/dorothy2r_spec.dms
 //match=
 //author=rentan
@@ -193,6 +193,24 @@ describe ('matcher.rewind', function () {
     m.rewind ();
     found = m.find ('http://example.com/foo');
     expect (found).toBe (matchList1 [0]);
+  });
+});
+
+
+describe ('Dorothy.init', function () {
+  it ('does not pollute Global object by Dorothy._d', function () {
+    expect (Global.hasKey ('getSaveFolder')).toBe (false);
+  });
+
+  var p = function () { }.prototype;
+
+  it ('does not pollute function prototype by Dorothy._d', function () {
+    expect (function () { return p.getSaveFolder; }).toThrow ('ENameError');
+  });
+
+  it ('does not pollute function prototype by Dorothy._g', function () {
+    expect (function () { return p.file_load; }).toThrow ('ENameError');
+    expect (function () { return p.program_load; }).toThrow ('ENameError');
   });
 });
 

@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20141005
+version=20150127
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -192,11 +192,11 @@ Dorothy.getThreadStorage = function () {
 
 // Dorothy.init で Dorothy オブジェクトに定義する関数群
 //   クロージャが必要なら string で定義する(\ のエスケープに注意)。
-Dorothy._d = function () { }.prototype;
+Dorothy._d = [ ];
 
 
 // (Dorothy2R 拡張) ファイルをテキストエディタで開く
-Dorothy._d.edit = "function (file) {
+Dorothy._d.push ({ n: 'edit', f: "function (file) {
   var god = typeof Irvine == 'object';
 
   var ed = god ? Irvine.GetOptionData ('general', 'editor') : optiondata.Editor;
@@ -208,11 +208,11 @@ Dorothy._d.edit = "function (file) {
   }
 
   return Win32.shellExecute ('open', '\"' + ed + '\"', opt + '\"' + file + '\"');
-}";
+}" });
 
 
 // (Dorothy2R 拡張) 保存フォルダ名を取得する
-Dorothy._d.getSaveFolder = "function () {
+Dorothy._d.push ({ n: 'getSaveFolder', f: "function () {
   var ip = item.folder;
   if (/^[a-z]:/i.test (ip)) {
     // アイテム設定が絶対パス
@@ -228,11 +228,11 @@ Dorothy._d.getSaveFolder = "function () {
   var ini = new Ini ((new irvinePath ()).queue + 'queue.ini');
   var qp = ini.read ('queue', 'folder', '');
   return (new Directory (new Directory (qp + fp)).path + ip).path;
-}";
+}" });
 
 
 // (Dorothy2R 拡張) 保存フォルダ内にフォルダを作成する
-Dorothy._d.createSaveFolder = "function (path) {
+Dorothy._d.push ({ n: 'createSaveFolder', f: "function (path) {
   if (!/^[a-z]:/i.test (path)) {
     // 相対パス
     path = Dorothy.getSaveFolder () + path;
@@ -245,43 +245,43 @@ Dorothy._d.createSaveFolder = "function (path) {
   }
 
   return d.path;
-}";
+}" });
 
 
 // (Dorothy2R 拡張) item.filename を返す
-Dorothy._d.getItemFilename = "function () {
+Dorothy._d.push ({ n: 'getItemFilename', f: "function () {
   // '[[rename]]' が含まれている場合は指定されていないものと見なす
   // if (item.filename.indexOf ('[[rename]]') >= 0) {
   //   reutrn '';
   // }
 
   return item.filename;
-}";
+}" });
 
 
 // (Dorothy2R 拡張) URL を設定する
-Dorothy._d.setUrl = "function (url, referer) {
+Dorothy._d.push ({ n: 'setUrl', f: "function (url, referer) {
   urlinfo.url = url;
   headers.Host = (new URL (url)).host;
   headers.Cookie = '';
 
   headers.Referer = referer || '';
-}";
+}" });
 
 
 // (Dorothy2R 拡張) ファイル名を設定する
-Dorothy._d.setFilename = "function (filename) {
+Dorothy._d.push ({ n: 'setFilename', f: "function (filename) {
   println ('new filename>' + filename);
   item.filename = filename;
-}";
+}" });
 
 
 // Dorothy.init で Global オブジェクトに定義する関数群
-Dorothy._g = function () { }.prototype;
+Dorothy._g = [ ];
 
 
 // ファイルを読み込んで返す
-Dorothy._g.file_load = "function (path) {
+Dorothy._g.push ({ n: 'file_load', f: "function (path) {
   var fullpath = /^[a-z]:/i.test (path) ? path : Dorothy.path + path;
   var file = new File (fullpath);
 
@@ -300,11 +300,11 @@ Dorothy._g.file_load = "function (path) {
   }
 
   exit ();
-}";
+}" });
 
 
 // Dorothy2\common\*.dms を読み込んで実行する
-Dorothy._g.common_xload = "function (name) {
+Dorothy._g.push ({ n: 'common_xload', f: "function (name) {
   // println (name + ' {');
   // var tc = Win32.getTickCount ();
 
@@ -349,11 +349,11 @@ Dorothy._g.common_xload = "function (name) {
   }
 
   // println ('} ' + name + ' ' + (Win32.getTickCount () - tc) + 'ms');
-}";
+}" });
 
 
 // Dorothy2\common\<引数>.dms を読み込んで実行する
-Dorothy._g.common_load = "function () {
+Dorothy._g.push ({ n: 'common_load', f: "function () {
   for (var i = 0; i < arguments.length; i++) {
     if (Dorothy.common.hasKey (arguments [i])) {
       // 既にロード済みのファイルは無視
@@ -362,23 +362,23 @@ Dorothy._g.common_load = "function () {
 
     common_xload (arguments [i]);
   }
-}";
+}" });
 
 
 // Dorothy2\program\<name>.dms を読み込んで返す
-Dorothy._g.program_load = function (name) {
+Dorothy._g.push ({ n: 'program_load', f: function (name) {
   return file_load (Dorothy.programDir + name + '.dms');
-};
+} });
 
 
 // Dorothy2\user\<プログラム名>\<name> を読み込んで返す
-Dorothy._g.user_load = function (name) {
+Dorothy._g.push ({ n: 'user_load', f: function (name) {
   return file_load ('user\' + Dorothy.matchFile + '\' + name);
-};
+} });
 
 
 // Dorothy2\user\<プログラム名>\<引数>.dms を読み込んで実行する
-Dorothy._g.user_program_load = function () {
+Dorothy._g.push ({ n: 'user_program_load', f: function () {
   for (var i = 0; i < arguments.length; i++) {
     try {
       eval (file_load ('user\' + Dorothy.matchFile + '\' + arguments [i] + '.dms'));
@@ -388,25 +388,25 @@ Dorothy._g.user_program_load = function () {
       exit ();
     }
   }
-};
+} });
 
 
 // debug 時のみログ表示
-Dorothy._g.print_debug = function (s) {
+Dorothy._g.push ({ n: 'print_debug', f: function (s) {
   if (debug) {
     println (s);
   }
-};
+} });
 
 
 // (非推奨) ファイル名に使用できない記号や実体参照を変換する
-Dorothy._g.changeFileName = function (filename) {
+Dorothy._g.push ({ n: 'changeFileName', f: function (filename) {
   return filename;
-};
+} });
 
 
 // xor.dms joint()
-Dorothy._g.joint = function (separator) {
+Dorothy._g.push ({ n: 'joint', f: function (separator) {
   var jointed = '';
 
   var len = arguments.length;
@@ -416,7 +416,7 @@ Dorothy._g.joint = function (separator) {
   }
 
   return jointed;
-};
+} });
 
 
 // Dorothy 初期化
@@ -437,8 +437,12 @@ Dorothy.init = function (o) {
 
     var ev = o.eval;
 
-    for (var name in funcs) {
-      var f = funcs [name];
+    for (var i = 0; i < funcs.length; ++i) {
+      var nf = funcs [i];
+      funcs [i] = null;
+
+      var name = nf.n;
+      var f = nf.f;
 
       if (typeof f === 'string') {
         ev (targetDot + name + '=' + f);
