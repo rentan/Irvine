@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20141215.0
+//version=20150130.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -196,6 +196,31 @@ describe ('リプライツイートの画像', function () {
 
     getter.buildFilename ({ NameBuilder: nb, Format: fmt });
     expect (getter.items).toEqual ([ { Url: image, Filename: filename } ]);
+  });
+});
+
+
+describe ('Twitterアプリから投稿された動画', function () {
+  var getter = null;
+
+  beforeEach (function () {
+    getter = new Twitter ();
+  });
+
+  cases ([
+    // [ url, video ]
+    [ 'https://twitter.com/twitter/status/560070183650213889',
+      'https://video.twimg.com/ext_tw_video/560070131976392705/pu/vid/1280x720/c4E56sl91ZB7cpYi.mp4' ],
+
+    [ 'https://twitter.com/ActuallyNPH/status/560049149836808192',
+      'https://video.twimg.com/ext_tw_video/560049056895209473/pu/vid/720x720/S7F4BF2wKR2txCpA.mp4' ]
+  ])
+  .it ('[ url, video ]', function (url, video) {
+    expect (getter.get (url)).toBe (true);
+    expect (getter.status).toBe (getter.OK);
+    expect (getter.type).toBe ('Video');
+
+    expect (getter.items).toEqual ([ { Url: video } ]);
   });
 });
 

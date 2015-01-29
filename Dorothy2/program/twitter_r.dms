@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20141215.0
+//version=20150130.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -39,7 +39,8 @@ function (scriptMode) {
     Filename: {
       Photo: 'twitter_%ID%',
       Photo2: 'twitter_%ID%_%P%',
-      Video: 'twitter_%ID%'
+      Video: 'twitter_%ID%',
+      Video2: 'twitter_%ID%_%P%'
     }
   };
 
@@ -55,28 +56,78 @@ Getter (function Twitter () {
 });
 
 
+// /i/cards/tfw/v1/\d+?native=true&cardname=__entity_video 内の動画を抽出する
+Twitter.prototype._analyzeVideoCards = function (cardsUrl) {
+  if (!http.get (cardsUrl)) {
+    return this._httpError ();
+  }
+
+  if (!/<div\s+id="ExternalIframeContainer"([^>]*)>/.test (http.data)) {
+    return this._unknown ('<div id="ExternalIframeContainer"> が見つかりません。');
+  }
+  var eic = RegExp.$1;
+
+  if (!/&quot;playlist&quot;:\[([^\]]+)\]/.test (eic)) {
+    return this._unknown ('playlist が見つかりません。');
+  }
+  var pl = RegExp.$1;
+
+  var sources = [ ];
+  pl.replace (/&quot;source&quot;:&quot;(.*?)&quot;/g, function (s, p1) {
+    sources.push (p1);
+  });
+
+  if (sources.length === 0) {
+    return this._unknown ('動画URLが見つかりません。');
+  }
+
+  for (var i = 0; i < sources.length; ++i) {
+    this._add ({ Url: sources [i].replace (/\\/g, '') });
+  }
+
+  this.type = (this.items.length > 1) ? 'Video2' : 'Video';
+
+  return this._ok ();
+};
+
+
 // ツイート内の画像URLを抽出する
 Twitter.prototype._analyzeTweetImage = function () {
   var http = this.http;
+
+  // RegExp.test 高速化
+  function testRegExp (re, text) {
+    var head = re.toString ().replace (/^\/([^.?*\\[(^$]+).*$/, '$1');
+
+    if (head) {
+      var pos = text.indexOf (head);
+      if (pos === -1) {
+        return false;
+      }
+      text = text.slice (pos);
+    }
+
+    return re.test (text);
+  }
 
   function addImage (url) {
     this._add ({ Url: url.replace (/(:[a-z]*)?$/, ':orig') });
   }
 
   // 画像表示ページ
-  if (/<img\s+class="large\s+media-slideshow-image"\s[^>]*src="([^"]+)"/.test (http.data)) {
+  if (testRegExp (/<img class="large\s+media-slideshow-image"\s[^>]*src="([^"]+)"/, http.data)) {
     addImage (RegExp.$1);
     this.type = 'Photo';
   }
 
   // 単一画像
-  else if (/<a\s+class="media[^"]*"[^>]*\sdata-resolved-url-large="([^"]+)"/.test (http.data)) {
+  else if (testRegExp (/<a class="media[^"]*"[^>]*\sdata-resolved-url-large="([^"]+)"/, http.data)) {
     addImage (RegExp.$1);
     this.type = 'Photo';
   }
 
   // 複数画像
-  else if (/<div\s+class="multi-photos[^>]*>(.*?)(<\/div>\s*){3}/.test (http.data)) {
+  else if (testRegExp (/<div class="multi-photos[^>]*>(.*?)(<\/div>\s*){3}/, http.data)) {
     var html = RegExp.$1;
 
     var urls = [ ];
@@ -94,9 +145,17 @@ Twitter.prototype._analyzeTweetImage = function () {
   }
 
   // 動画
-  else if (/<source\s+video-src="(https:\/\/pbs\.twimg\.com\/tweet_video\/[^"]+)"/.test (http.data)) {
+  else if (testRegExp (/<source video-src="(https:\/\/pbs\.twimg\.com\/tweet_video\/[^"]+)"/, http.data)) {
     this._add ({ Url: RegExp.$1 });
     this.type = 'Video';
+  }
+
+  // アプリで撮影した動画
+  else if (testRegExp (/<div class="js-macaw-cards-iframe-container"[^>]*data-src="(\/i\/cards\/tfw\/v1\/[^"]*cardname=__entity_video)"/, http.data)) {
+    var cardsUrl = RegExp.$1.replace (/&amp;/g, '&');
+    if (!this._analyzeVideoCards (cardsUrl)) {
+      return false;
+    }
   }
 
   if (this.items.length == 0) {
