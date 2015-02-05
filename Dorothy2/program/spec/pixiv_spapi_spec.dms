@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_spapi spec
-//version=20141209.0
+//version=20150206.0
 //hint=http://yasmine.dorothy.test/program/spec/pixiv_spapi_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -137,6 +137,24 @@ describe ('pixiv', function () {
 
     expect (items [0]).toEqual (jasmine.objectContaining ({ Url: zip0, Referer: ref0 }));
   });
+
+  it ('pixiv_48532102', function () {
+    var url = 'http://www.pixiv.net/member_illust.php?mode=manga&illust_id=48532102';
+    var img0 = 'http://i3.pixiv.net/img-original/img/2015/02/03/13/54/58/48532102_p0.jpg';
+    var img1 = 'http://i3.pixiv.net/img-original/img/2015/02/03/13/54/58/48532102_p1.jpg';
+    var ref0 = 'http://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=48532102&page=0';
+    var ref1 = 'http://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=48532102&page=1';
+
+    expect (getter.get (url)).toBe (true);
+    expect (getter.type).toBe ('Manga');
+
+    var items = getter.items;
+    expect (items.length).toBe (2);
+
+    expect (items [0]).toEqual (jasmine.objectContaining ({ Url: img0, Referer: ref0 }));
+    expect (items [1]).toEqual (jasmine.objectContaining ({ Url: img1, Referer: ref1 }));
+  });
+
 });
 
 

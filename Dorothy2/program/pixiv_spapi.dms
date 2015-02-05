@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_spapi
-//version=20141214.0
+//version=20150206.0
 //hint=pixiv (spapi.pixiv.net)
 //match=^http://www\.pixiv\.net/member(_illust)?\.php
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
-  Util.min_version (20141209.0);
+  Util.min_version (20141215.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -471,7 +471,7 @@ Pixiv.prototype.get = function (url) {
     if (this.user_id) {
       return this._getAllIllust ();
     }
-    else if (mode === 'medium' && this.illust_id) {
+    else if (/^(medium|manga)$/.test (mode) && this.illust_id) {
       return this._getIllust ();
     }
   }
