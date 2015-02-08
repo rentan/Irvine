@@ -2,14 +2,14 @@
 caption=Irvineでダウンロード(&Z)
 hint=Irvineでリンクや画像をダウンロード
 contexts=55
-version=20141028
+version=20150208
 author=rentan
 -->
 
 <meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
 
 <!--
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -101,8 +101,10 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+var punycode = null;
+/* jshint ignore:start */
 /*! http://mths.be/punycode v1.2.3 by @mathias */
-var punycode = (function(){
+punycode = (function(){
 function e(o){throw RangeError(L[o])}
 function n(o,e){for(var n=o.length;n--;)o[n]=e(o[n]);return o}
 function t(o,e){return n(o.split(S),e).join(".")}
@@ -114,6 +116,7 @@ function a(o){return t(o,function(o){return O.test(o)?"xn--"+d(o):o})}
 var g,w,b=2147483647,x=36,C=1,y=26,j=38,m=700,A=72,I=128,F="-",E=/^xn--/,O=/[^ -~]/,S=/\x2E|\u3002|\uFF0E|\uFF61/g,L={overflow:"Overflow: input needs wider integers to process","not-basic":"Illegal input >= 0x80 (not a basic code point)","invalid-input":"Invalid input"},M=x-C,P=Math.floor,R=String.fromCharCode;
 return a; // toASCII()
 })();
+/* jshint ignore:end */
 
 
 // Selection -----------------------------------------------------------------
@@ -128,14 +131,38 @@ function Selection (doc) {
   // this._hasGetSelection = false;
 
   if (this._hasGetSelection) {
-    this._sel = win.getSelection ();
-    this.isSelected = !this._sel.isCollapsed;
+    var sel = this._sel = win.getSelection ();
+    this.isSelected = !sel.isCollapsed;
+
+    // 選択範囲が非表示になっていれば、非選択状態として扱う
+    if (this.isSelected) {
+      if (this._isHidden (sel.anchorNode)) {
+        this.isSelected = false;
+      }
+    }
   }
   else {
     this._range = doc.selection.createRange ();
     this.isSelected = (doc.selection.type === 'Text');
   }
 }
+
+Selection.prototype._isHidden = function (e) {
+  if (e.nodeName === '#text') {
+    e = e.parentNode;
+  }
+
+  try {
+    for (;; e = e.parentNode) {
+      if (window.getComputedNode (e).display === 'none') {
+        return true;
+      }
+    }
+  }
+  catch (ex) { }
+
+  return false;
+};
 
 Selection.prototype.getNodes = function () {
   var div = this._doc.createElement ('div');
@@ -205,7 +232,7 @@ IrvineItemList.prototype.decodePath = function (path) {
     return path.replace (/%([0-9a-f]{2})/ig, function (s, hex) {
       var c = parseInt ('0x' + hex);
       if (c < 0x20 || 0x7e < c) { //>
-        throw 'not ascii character';
+        throw 'not ascii character: ' + s;
       }
       return String.fromCharCode (c);
     });
@@ -361,7 +388,7 @@ function get_abs_href (doc, e, atr) {
   try {
     href = e [atr];
   }
-  catch (e) {
+  catch (ex) {
     return '';
   }
 

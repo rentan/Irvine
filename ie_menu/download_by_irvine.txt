@@ -142,6 +142,9 @@ http://scripting.cocolog-nifty.com/blog/2007/11/post_4bb2.html
 変更履歴
 ========
 
+2015-02-08  version 20150208
+  選択範囲が display: none; の場合は無視するようにした。
+
 2014-10-28  version 20141028
   ftp:// の URL エンコードを復号するようにした。
   ただし %20～%7e 以外の文字が含まれる場合は復号しない。
