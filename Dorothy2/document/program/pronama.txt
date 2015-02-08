@@ -16,8 +16,8 @@ pronama.dms
 対応 URL
 ========
 
-http://pronama.jp/wallpaper/calendar_2014/
-  実行した年-月と Content-Type からファイル名を生成。
+http://pronama.jp/wallpaper/calendar_20\d\d/
+  実行した月と Content-Type からファイル名を生成。
 
 i\d+.wp.com/pronama.azurewebsites.net/
   CDN ではなく元の URL からダウンロード。
@@ -29,6 +29,9 @@ i\d+.wp.com/pronama.azurewebsites.net/
 
 変更履歴
 ========
+
+2015-02-09  version 20150209.0  rentan at rentan.org
+  calendar_2015 に対応。
 
 2014-05-08  version 20140508.0  rentan at rentan.org
   新規作成。

@@ -1,15 +1,15 @@
 //Dorothy2
 //caption=pronama
-//version=20140509.0
+//version=20150209.0
 //hint=プログラミング生放送
-//match=^http://(pronama\.jp/wallpaper/calendar_2014/$|i\d+\.wp\.com/pronama\.azurewebsites\.net/)
+//match=^http://(pronama\.jp/wallpaper/calendar_20\d\d/$|i\d+\.wp\.com/pronama\.azurewebsites\.net/)
 //author=rentan
 //path=program
 //priority=500
 //end
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -51,6 +51,8 @@ function calendar (url) {
   var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han, ymdhms: true });
   nb.setYmdhms (Date.toString ());
 
+  nb.yyyy = /(20\d\d)/.test (url) ? RegExp.$1 : 'XXXX';
+
   var http = new Http ();
   if (!http.head (url)) {
     return http.retry_or_die ();
@@ -79,7 +81,7 @@ function calendar (url) {
     return;
   }
 
-  if (url == 'http://pronama.jp/wallpaper/calendar_2014/') {
+  if (/^http:\/\/pronama\.jp\/wallpaper\/calendar_20\d\d\/$/.test (url)) {
     return calendar (url);
   }
 
