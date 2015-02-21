@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20141018.0
+//version=20150221.0
 //hint=pixiv 別バージョン
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?)
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2010,2011,2012,2013,2014 rentan at rentan.org
+Copyright (C) 2010,2011,2012,2013,2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function () {
 
   common_load ('rutil', 'additem', 'browsercookie', 'http', 'namebuilder', 'utf8');
-  Util.min_version (20141018.0);
+  Util.min_version (20141215.0);
 
   // 設定ファイルの読み込み
   var default_ini = {
@@ -37,6 +37,7 @@ function () {
     General: {
       Zen2Han: false,
       PageOrigin: 0,
+      NoTitle: 'no-title',
       NovelExt: '.html'
     },
     Ugoira: {
@@ -246,10 +247,11 @@ function get_spec_from_html (http) {
   if (!/<section\s+class="work-info[^>]*>(.*?)<div\s+id="tag-editor">/.test (http.data)) {
     http.die ('<section class="work-info"> が見つかりません。');
   }
-  if (!/<h1\s+class="title">([^<]+)<\/h1>/.test (RegExp.$1)) {
+  if (!/<h1\s+class="title">([^<]*)<\/h1>/.test (RegExp.$1)) {
     http.die ('タイトルが見つかりません。');
   }
-  nb.title = (new Utf8 (RegExp.$1)).decodeCharRef ();
+  var title = RegExp.$1;
+  nb.title = title ? (new Utf8 (title)).decodeCharRef () : ini.General.NoTitle;
 
   if (/<h1\s+class="user">/.test (http.data)) {
     // 他人のページなのでこのページ内にプロフィールがある
