@@ -59,6 +59,10 @@ http://www.pixiv.net/member_illust.php?mode=manga&illust_id=\d+
 変更履歴
 ========
 
+2015-02-21  version 20150221.0  rentan at rentan.org
+  タイトルが空文字列のイラストに対応。
+    thanks to http://peace.2ch.net/test/read.cgi/win/1412399700/635-636
+
 2015-02-06  version 20150206.0  rentan at rentan.org
   mode=manga の URL に対応。
 

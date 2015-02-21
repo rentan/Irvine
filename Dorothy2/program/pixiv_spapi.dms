@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_spapi
-//version=20150206.0
+//version=20150221.0
 //hint=pixiv (spapi.pixiv.net)
 //match=^http://www\.pixiv\.net/member(_illust)?\.php
 //author=rentan
@@ -35,7 +35,8 @@ function (scriptMode) {
     Cookie: BrowserCookie.prototype.iniTemplate,
     General: {
       Zen2Han: false,
-      PageOrigin: 0
+      PageOrigin: 0,
+      NoTitle: 'no-title'
     },
     Filename: {
       Illust: 'pixiv_%ID%',
@@ -480,6 +481,18 @@ Pixiv.prototype.get = function (url) {
 };
 
 
+// タイトルを返す(空文字列の場合は noTitle の値)
+Pixiv.prototype._getTitle = function (args) {
+  var t = this.title;
+
+  if (t && !t.toUTF8 ().length && args.hasKey ('NoTitle')) {
+    return args.NoTitle;
+  }
+
+  return t;
+};
+
+
 // public: ダウンロード情報を登録する
 Pixiv.prototype.download = function (args) {
   var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
@@ -489,7 +502,7 @@ Pixiv.prototype.download = function (args) {
     nb.pixiv_id = this.pixiv_id;
     nb.nickname = this.user_name;
     nb.id = this.illust_id;
-    nb.title = this.title;
+    nb.title = this._getTitle (args);
     nb.pages = this.items.length;
   }
 
@@ -519,6 +532,7 @@ Pixiv.prototype.download = function (args) {
     getter.download ({
       AddItem: new AddItem (ini.AddItem),
       NameBuilder: nb,
+      NoTitle: ini.General.NoTitle,
       Format: type && ini.Filename [type]
     });
   }
