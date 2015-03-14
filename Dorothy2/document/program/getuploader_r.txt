@@ -66,6 +66,9 @@ http://u[^/.]+.getuploader.com/[^/]+/download/\d+
 変更履歴
 ========
 
+2015-03-14  version 20150314.0  rentan at rentan.org
+  サイト側仕様変更に対応。
+
 2014-12-09  version 20141209.0  rentan at rentan.org
   common\getter.dms を使うようにした。
 

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=getuploader_r
-//version=20141209.0
+//version=20150314.0
 //hint=getuploader.com (uploader.jp)
 //match=^http://u[^/.]+\.getuploader\.com/[^/]+/download/\d+
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2013,2014 rentan at rentan.org
+Copyright (C) 2013,2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20141209.0);
+  Util.min_version (20141215.0);
 
   // 設定ファイルの読み込み
   var default_ini = {
@@ -166,9 +166,9 @@ GetUploader.prototype._getRightContext = function (searchWord) {
 
 // ファイル名を抽出する
 GetUploader.prototype._findFilename = function () {
-  var s = this._getRightContext ('>オリジナル</span>');
+  var s = this._getRightContext ('>オリジナル</th>');
 
-  if (!/^\s*<span\s+class="right">([^<]+)</.test (s)) {
+  if (!/^\s*<td>([^<]+)</.test (s)) {
     return this._unknown ('ファイル名が見つかりません。');
   }
   this._filename = (new Utf8 (RegExp.$1.trim ())).decodeCharRef ();
@@ -179,9 +179,9 @@ GetUploader.prototype._findFilename = function () {
 
 // 投稿日時を抽出する
 GetUploader.prototype._findTimestamp = function () {
-  var s = this._getRightContext ('>日時</span>');
+  var s = this._getRightContext ('>日時</th>');
 
-  if (!/^\s*<span\s+class="right">([^<]+)</.test (s)) {
+  if (!/^\s*<td>([^<]+)</.test (s)) {
     return this._unknown ('アップロード日時が見つかりません。');
   }
 
@@ -381,7 +381,7 @@ GetUploader.prototype.get = function (url) {
   if (!/<a\s+href="(http:\/\/[^"]+)"[^>]*>\s*Download\s*Now\s*<\/a>/i.test (http.data)) {
     this._ng ('ダウンロードリンクが見つかりません。');
   }
-  var fileUrl = RegExp.$1;
+  var fileUrl = (new Utf8 (RegExp.$1)).decodeCharRef ().toUTF8 ();
 
   var f = this._filename.toSJIS ();
 
