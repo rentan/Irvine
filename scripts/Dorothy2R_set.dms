@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={0D313B7E-9959-4F23-9AEC-64276F111EDB}
 caption=Dorothy2R 設定
-version=20141005
+version=20150316
 hint=Dorothy2R 設定
 event=OnMainMenuClick
 match=
@@ -11,7 +11,7 @@ synchronize=0
 */
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

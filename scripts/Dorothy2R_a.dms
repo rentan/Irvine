@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20150127
+version=201500316
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -13,7 +13,7 @@ synchronize=0
 // based on Dorothy2A.dms version 0.31 by xor
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -59,32 +59,44 @@ Dorothy = { version: 'uninitialized' };
 
 // ProgramMatcher を作成して返す
 Dorothy.createProgramMatcher = function (ignoreDot) {
-  function find (url) {
+  function find (url, item) {
+
+    function match (m, type) {
+      Dorothy.matchFile = m.f;
+      Dorothy.matchType = type;
+
+      Dorothy.userPath = Dorothy.path + 'user\' + m.f + '\';
+      Dorothy.userIniPath = Dorothy.userPath + m.f + '.ini';
+
+      return m;
+    }
+
     var ignore = this._ignore;
+    var comment = (item && item.comment) ? 'comment:' + item.comment : null;
 
     var matchList = Dorothy.matchList;
     var len = matchList.length;
 
     while (this._index < len) {
       var m = matchList [this._index++];
+      var re = m.re;
 
-      if (ignore && m.re.toString () == ignore) {
-        // //match=. のファイルは無視する
+      if (ignore && ignore.test (re.source)) {
+        // //match=. や //match=comment: のファイルは無視する
         continue;
       }
 
-      if (!m.re.test (url)) {
-        continue;
+      // //match=comment:～
+      if (/^comment:/.test (re.source)) {
+        if (comment && re.test (comment)) {
+          return match (m, 'comment');
+        }
       }
 
-      // //match= が一致した
-      Dorothy.matchFile = m.f;
-      Dorothy.matchType = 'url';
-
-      Dorothy.userPath = Dorothy.path + 'user\' + m.f + '\';
-      Dorothy.userIniPath = Dorothy.userPath + m.f + '.ini';
-
-      return m;
+      // //match=～
+      else if (re.test (url)) {
+        return match (m, 'url');
+      }
     }
 
     // 一致するファイルがなかった
@@ -104,7 +116,7 @@ Dorothy.createProgramMatcher = function (ignoreDot) {
   // ProgramMatcher オブジェクトを作成して返す
   return {
     _index: 0,
-    _ignore: ignoreDot ? '/./' : null,
+    _ignore: ignoreDot ? /^(\.$|comment:)/ : null,
     find: find,
     rewind: rewind
   };
@@ -629,7 +641,7 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
     Dorothy.continue = false;
     Dorothy.cancel = true;
 
-    if (!_.matcher.find (urlinfo.url)) {
+    if (!_.matcher.find (urlinfo.url, item)) {
       // 対応するプログラムが見つからない
       break;
     }

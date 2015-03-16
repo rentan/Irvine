@@ -131,6 +131,14 @@ Dorothy.loadDorothyIni ();
 変更履歴
 ========
 
+2015-03-16  version 20150316.0  rentan at rentan.org
+
+scripts\Dorothy2R_a.dms
+  //match=comment:～ 形式のスクリプトに対応。
+
+Dorothy2R\system\settingform.dms
+  rVersion を 20150316 に更新。「Dorothy2R 設定」で上書き保存して下さい。
+
 2015-01-27  version 20150127.0  rentan at rentan.org
 
 scripts\Dorothy2R_a.dms
