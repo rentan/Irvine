@@ -22,6 +22,15 @@ getterobject.dms がイマイチ使いづらかったので作りなおしまし
 変更履歴
 ========
 
+2015-03-16  version 20150316.0  rentan at rentan.org
+  _downloadFiles() でファイル名生成と Irvine へのアイテム登録を同時に
+  行っていましたが、扱いにくい(動作テストもしにくい)ので分離しました。
+
+  ファイル名生成は新規メソッド _buildFilename() を、ファイル名正規化は
+  _normalizeFilename() を使用して下さい。
+
+  _downloadFiles() のファイル名生成機能は残してありますが非推奨です。
+
 2014-12-15  version 20141215.0  rentan at rentan.org
   debug プロパティを追加(現在は Getter 側では未使用)。
   ._downloadFiles(): 引数に複数のオブジェクトを渡せるようにした。

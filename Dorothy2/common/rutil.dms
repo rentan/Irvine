@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20141215.0
+//version=20150316.0
 //hint=utility
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -221,11 +221,11 @@ common_xload = (function (common_xload) {
     'esx\json': 20141018.0,
 
     actibook: 20140331.0,
-    additem: 20141104.0,
+    additem: 20150103.0,
     browsercookie: 20140403.0,
     exec: 20140331.0,
-    getter: 20141215.0,
-    htmlform: 20140331.0,
+    getter: 20150316.0,
+    htmlform: 20150119.0,
     http: 20141111.0,
     jinput: 20140908.0,
     namebuilder: 20141215.0,
@@ -254,7 +254,7 @@ common_xload = (function (common_xload) {
 
 
 if (Dorothy.hasKey ('rVersion')) {
-  if (Dorothy.rVersion < 20141005) {
+  if (Dorothy.rVersion < 20150316) {
     Util.fatal ("Dorothy2R のバージョンが古すぎます。\n最新版を使用して下さい。");
   }
 }

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Getter()
-//version=20141215.0
+//version=20150316.0
 //hint=
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -189,33 +189,24 @@ Getter.prototype._downloadSingleFile = function (itemData) {
 // NameBuilderでファイル名を生成
 Getter.prototype._buildFilenames = function (args) {
   var nb = args.get ('NameBuilder');
-  if (!nb) {
+  var fmt = args.get ('Format');
+
+  if (!nb || !fmt) {
     return;
   }
 
   var items = this.items;
   var len = nb.pages = items.length;
 
-  var fmt = args.get ('Format');
-  if (fmt) {
-    for (var i = 0; i < len; ++i) {
-      nb.p = i;
-      var itemData = items [i];
+  for (var i = 0; i < len; ++i) {
+    nb.p = i;
+    var itemData = items [i];
 
-      var ext = itemData.hasKey ('ext') ? itemData.ext : itemData.Url;
-      var parsedData = nb.buildFilename (fmt, ext);
+    var ext = itemData.hasKey ('ext') ? itemData.ext : itemData.Url;
+    var parsedData = nb.buildFilename (fmt, ext);
 
-      for (var key in parsedData) {
-        itemData [key] = parsedData [key];
-      }
-    }
-    return;
-  }
-
-  // 正規化のみ
-  if (args.get ('normalizeFilename')) {
-    for (var i = 0; i < len; ++i) {
-      items [i].Filename = nb.normalize (items [i].Filename);
+    for (var key in parsedData) {
+      itemData [key] = parsedData [key];
     }
   }
 };
@@ -247,6 +238,36 @@ Getter.prototype._createArgsObject = function (argsArray) {
 };
 
 
+// NameBuilderで保存ファイル名を設定
+//   NameBuilder: NameBuilderインスタンス
+//   Format: string ... ファイル名フォーマット
+Getter.prototype._buildFilename = function (/* args, ... */) {
+  var args = this._createArgsObject (arguments);
+
+  this._buildFilenames (args);
+
+  return this._ok ();
+};
+
+
+// NameBuilderで保存ファイル名を正規化
+Getter.prototype._normalizeFilename = function (/* args, ... */) {
+  var args = this._createArgsObject (arguments);
+
+  var nb = args.get ('NameBuilder');
+  if (nb) {
+    var items = this.items;
+    var len = nb.pages = items.length;
+
+    for (var i = 0; i < len; ++i) {
+      items [i].Filename = nb.normalize (items [i].Filename);
+    }
+  }
+
+  return this._ok ();
+};
+
+
 // 取得したURLをダウンロード登録
 //
 // 引数 args オブジェクトで動作モードを指定できる。省略可。
@@ -255,11 +276,6 @@ Getter.prototype._createArgsObject = function (argsArray) {
 // 各プロパティは省略可。
 //   AddItem: AddItemインスタンス
 //   ReQueue: bool ... 単一アイテムでもAddItemで追加する(AddItemが必要)
-//
-//   NameBuilder: NameBuilderインスタンス
-//   Format: string ... ファイル名フォーマット(NameBuilderが必要)
-//   Normalize: bool ... ファイル名を正規化するか(NameBuilderが必要)
-//              (Format 無指定時のみ有効)
 //
 Getter.prototype._downloadFiles = function (/* args, ... */) {
   var args = this._createArgsObject (arguments);
