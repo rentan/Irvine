@@ -12,7 +12,7 @@ uploader.jp (*.getuploader.com) 用のスクリプトです。
   プログラムを右クリック → 設定
 
 Irvine にアイテムを追加する際、URL の末尾に ?password=PASSWORD
-のようにパスワードを設定できます。
+のようにダウンロードパスワードを設定できます。
 
 
 タイムスタンプ設定
@@ -53,6 +53,33 @@ Irvine にアイテムを追加する際、URL の末尾に ?password=PASSWORD
   Dorothy2R 拡張機能の ThreadStorage を使用します。
 
 
+パスワードファイル
+==================
+
+閲覧・ダウンロードパスワードをファイルで指定できます。
+
+・ファイル名
+  Dorothy2\user\getuploader_r\password_%ID%.ini
+  (%ID% は getuploader.com/ の直後の部分)
+
+  存在しない場合は password_%ID%.default.ini を参照します。
+
+・ファイル形式
+  Ini ファイル。文字コードは UTF-8。
+
+・[General] セクションは全体の共通指定、[DownloadPassword] セクション
+  はファイルごとの個別指定です。個別の方が優先されます。
+
+---- 記入例
+[General]
+ViewPassword=foo
+DownloadPassword=bar
+
+[DownloadPassword]
+123=hoehoe
+----
+
+
 対応 URL
 ========
 
@@ -65,6 +92,10 @@ http://u[^/.]+.getuploader.com/[^/]+/download/\d+
 
 変更履歴
 ========
+
+2015-03-16  version 20150316.0  rentan at rentan.org
+  年齢確認、閲覧パスワードに対応。
+  パスワードファイルに対応。
 
 2015-03-14  version 20150314.0  rentan at rentan.org
   サイト側仕様変更に対応。
