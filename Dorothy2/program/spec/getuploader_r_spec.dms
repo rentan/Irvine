@@ -1,0 +1,132 @@
+//Dorothy2
+//caption=getuploader_r spec
+//version=20150316.0
+//hint=http://yasmine.dorothy.test/program/spec/getuploader_r_spec.dms
+//match=
+//author=rentan
+//path=program\spec
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2014,2015 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+eval (program_load ('getuploader_r')) ('DEFINE_ONLY');
+
+
+describe ('download test', function () {
+  var getIniBackup;
+
+  beforeEach (function () {
+    getIniBackup = GetUpPassword.prototype._getIni;
+  });
+
+  afterEach (function () {
+    GetUpPassword.prototype._getIni = getIniBackup;
+  });
+
+
+  // 仮想 Ini ファイルを作成する
+  var tmpdir = new Directory (Dorothy.temp);
+  tmpdir.exists () || tmpdir.make ();
+
+  function createVirtualIni (iniData) {
+    var ini = new Ini (Dorothy.temp + 'getuploader_r_spec.ini');
+
+    for (var i = 0; i < iniData.length; ++i) {
+      var o = iniData [i];
+      ini.write (o.s, o.k, o.v);
+    }
+
+    return ini;
+  }
+
+
+  // [ type, id, url, fileUrl, fileName, iniData ]
+  cases ([
+
+    [ 'normal',
+      'irvn',
+      'http://u1.getuploader.com/$$$/download/6/Dorothy2A.rar',
+      'http://download2.getuploader.com/g/###/1%7C$$$/6/Dorothy2A.rar',
+      'Dorothy2A.rar',
+      null
+    ],
+
+    [ 'ViewPassword',
+      Base64.decode ('dG9kYWlfMTFfc2hpa2VucHJpbnQ='),
+      'http://ux.getuploader.com/$$$/download/170/09%E5%B9%B4%E5%BA%A6%E7%89%88+%E6%83%85%E5%A0%B1%E3%82%B7%E3%82%B1%E3%83%97%E3%83%AA%EF%BC%88%E4%B8%AD%E6%9D%91%E6%94%BF%E9%9A%86%E6%95%99%E5%AE%98%EF%BC%89.doc',
+      'http://dl6.getuploader.com/g/###/$$$/170/09%E5%B9%B4%E5%BA%A6%E7%89%88+%E6%83%85%E5%A0%B1%E3%82%B7%E3%82%B1%E3%83%97%E3%83%AA%EF%BC%88%E4%B8%AD%E6%9D%91%E6%94%BF%E9%9A%86%E6%95%99%E5%AE%98%EF%BC%89.doc',
+      Base64.decode ('MDmUTpN4lMUgj+6V8YNWg1CDdoOKgWmShpG6kK2Xsouziq+Bai5kb2M='),
+      [ { s: 'General', k: 'ViewPassword', v: Base64.decode ('bWFydW1hcnU=') } ]
+    ],
+
+    [ 'age_confirmation + DownloadPassword',
+      Base64.decode ('YXZpdmk='),
+      'http://ux.getuploader.com/$$$/download/5/',
+      'http://download2.getuploader.com/g/###/$$$/5/download',
+      Base64.decode ('QVZJjq6PiYm5g36DTi5aSVA='),
+      [ { s: 'General', k: 'DownloadPassword', v: Base64.decode ('YXZpdmk=') } ]
+    ],
+
+    [ 'ViewPassword + DownloadPassword',
+      Base64.decode ('a29ob3JpeWFtYQ=='),
+      'http://ux.getuploader.com/$$$/download/40',
+      'http://download5.getuploader.com/g/###/$$$/40/download',
+      Base64.decode ('go2CjYKEj9KKlyiKyIjVlMUpgsaDZYNOg1iDYIODLnppcA=='),
+      [
+        { s: 'General', k: 'ViewPassword', v: Base64.decode ('k7mWvo6bjfeW3Q==').toUTF8 () },
+        { s: 'DownloadPassword', k: '40', v: Base64.decode ('k22O4Q==').toUTF8 () }
+      ]
+    ]
+
+  ])
+  .it ('[ type, id, url, fileUrl, fileName, iniData ]', function (type, id, url, fileUrl, fileName, iniData) {
+    var u = url.replace (/\$\$\$/g, id);
+    var f = fileUrl.replace (/\$\$\$/g, id);
+
+    if (iniData) {
+      var ini = createVirtualIni (iniData);
+
+      GetUpPassword.prototype._getIni = function () {
+        return ini;
+      };
+    }
+
+    var getter = new GetUploader ();
+
+    expect (getter.get (u)).toBe (true);
+    expect (getter.status).toBe (getter.OK);
+    if (getter.status != getter.OK) {
+      return;
+    }
+
+    var item = getter.items [0];
+
+    // fileUrl の /g/ の直後は試行ごとに変化するので ### に置換して比較する
+    var resultUrl = item.Url.replace (/\/g\/[^\/]+\//, '/g/###/');
+
+    expect (resultUrl).toBe (f);
+    expect (item.Filename).toBe (fileName);
+  });
+});
+
+
+// EOF
