@@ -1,0 +1,168 @@
+//Dorothy2
+//caption=ChkListBox()
+//version=20150319.0
+//hint=
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2015 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+(function () {
+
+common_load ('getter');
+
+
+// コンストラクタ
+Getter (function ChkListBox (opt) {
+  this._autoSubmit = this._getArg (opt, 'AutoSubmit', false);
+
+  this._caption = this._getArg (opt, 'Caption', Dorothy.matchFile);
+  this._label1 = this._getArg (opt, 'Label1', '');
+  this._label2 = this._getArg (opt, 'Label2', '');
+});
+
+
+ChkListBox.prototype._formDfm = "
+object Form1: TForm1
+  Left = 300
+  Top = 200
+  Width = 600
+  Height = 240
+  Position = poScreenCenter
+  object Label1: TLabel
+    Top = 4
+    Left = 4
+    Width = 584
+    AutoSize = false
+  end
+  object Label2: TLabel
+    Top = 20
+    Left = 4
+    Width = 584
+    AutoSize = false
+  end
+  object CheckListBox: TCheckListBox
+    Top = 40
+    Left = 4
+    Width = 592
+    Height = 160
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    Font.Height = 16
+  end
+  object OKButton: TButton
+    Top = 208
+    Left = 400
+    Anchors = [akRight, akBottom]
+    Caption = 'OK'
+    ModalResult = 1
+    Default = True
+  end
+  object CancelButton: TButton
+    Top = 208
+    Left = 490
+    Anchors = [akRight, akBottom]
+    Caption = 'キャンセル'
+    ModalResult = 2
+    Cancel = True
+  end
+end
+";
+
+
+// VCLフォームを作成する
+ChkListBox.prototype._createForm = function () {
+  var form = new VCLForm ();
+  form.loadFromText (this._formDfm);
+
+  form.Caption = this._caption;
+  form.Label1.Caption = this._label1;
+  form.Label2.Caption = this._label2;
+
+  form.isOK = function () {
+    return this.showModal () == this.OKButton.ModalResult;
+  };
+
+  return form;
+};
+
+
+// VCLCheckListBoxに項目を追加する
+ChkListBox.prototype._addItems = function (form, items, checkedArray) {
+  var checklistbox = form.CheckListBox;
+
+  var checkedCount = 0;
+
+  for (var i = 0; i < items.length; ++i) {
+    checklistbox.Items.add (items [i].Url);
+
+    if (checkedArray [i]) {
+      checklistbox.checked (i, true);
+      ++checkedCount;
+    }
+  }
+
+  return checkedCount;
+};
+
+
+// チェックの入っているアイテムを実行結果として格納する
+ChkListBox.prototype._addSelectedItems = function (form, items) {
+  var checklistbox = form.CheckListBox;
+
+  for (i = 0; i < items.length; ++i) {
+    if (checklistbox.checked (i)) {
+      this._add (items [i]);
+    }
+  }
+};
+
+
+// public: チェックリストボックスを表示して選択アイテムを返す
+ChkListBox.prototype.execute = function (items, checkedArray) {
+  this.items = [ ];
+
+  var form = this._createForm ();
+
+  var checkedCount = this._addItems (form, items, checkedArray || [ ]);
+  var needDialog = !this._autoSubmit || checkedCount != 1;
+
+  if (needDialog) {
+    if (!form.isOK ()) {
+      return this._exit ();
+    }
+  }
+
+  this._addSelectedItems (form, items);
+
+  return this.items.length ? this._ok () : this._exit ();
+};
+
+
+// public: ダウンロード情報を登録する
+ChkListBox.prototype.download = function (args) {
+  return this._downloadFiles (args);
+};
+
+
+}) ()
+
+
+// EOF

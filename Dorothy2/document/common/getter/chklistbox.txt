@@ -1,0 +1,54 @@
+common\getter\chklistbox.dms
+
+
+チェックリストボックスを表示します。
+
+
+サンプル
+========
+
+function () {
+  common_load ('getter\chklistbox');
+
+  // 各引数は省略可
+  var getter = new ChkListBox ({
+    AutoSubmit: false,
+    // true にすると初期チェックアイテムが一つだけの時に
+    // ダイアログを表示せずに自動で決定する
+
+    Caption: 'ChkListBox サンプル',  // 省略時はスクリプト名
+
+    Label1: '説明文 その1',
+    Label2: '説明文 その2'
+  });
+
+  // 選択肢
+  // ダイアログにはUrlのみ表示されるが、Filenameなども格納できる
+  var items = [
+    { Url: 'http://www.google.com/favicon.ico' },
+    { Url: 'http://www.microsoft.com/favicon.ico' },
+    { Url: 'http://www.yahoo.co.jp/favicon.ico' }
+  ];
+
+  // 初期状態でチェックを入れるアイテムを true にする(省略可)
+  var checked = [ false, true, false ];
+
+  if (getter.execute (items, checked)) {
+    // 決定時の処理(各自で好きなように処理して構わない)
+    // getter.items[] にチェックを入れた選択肢がコピーされる
+    common_load ('additem');
+    getter.download ({ AddItem: new AddItem (), ReQueue: true });
+  }
+
+  getter.end ();
+}
+
+
+変更履歴
+========
+
+2015-03-19  version 20150319.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]
