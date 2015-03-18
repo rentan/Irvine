@@ -142,6 +142,9 @@ http://scripting.cocolog-nifty.com/blog/2007/11/post_4bb2.html
 変更履歴
 ========
 
+2015-03-18  version 20150318
+  前回の変更が動作していなかった不具合を修正。
+
 2015-02-08  version 20150208
   選択範囲が display: none; の場合は無視するようにした。
 

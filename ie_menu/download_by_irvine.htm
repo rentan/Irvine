@@ -2,7 +2,7 @@
 caption=Irvineでダウンロード(&Z)
 hint=Irvineでリンクや画像をダウンロード
 contexts=55
-version=20150208
+version=20150318
 author=rentan
 -->
 
@@ -148,13 +148,15 @@ function Selection (doc) {
 }
 
 Selection.prototype._isHidden = function (e) {
+  var win = this._doc.parentWindow;
+
   if (e.nodeName === '#text') {
     e = e.parentNode;
   }
 
   try {
     for (;; e = e.parentNode) {
-      if (window.getComputedNode (e).display === 'none') {
+      if (win.getComputedStyle (e).display === 'none') {
         return true;
       }
     }
