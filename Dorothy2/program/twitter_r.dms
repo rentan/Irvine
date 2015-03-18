@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20150130.0
+//version=20150318.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20141215.0);
+  Util.min_version (20150316.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -151,7 +151,7 @@ Twitter.prototype._analyzeTweetImage = function () {
   }
 
   // ƒAƒvƒŠ‚ÅŽB‰e‚µ‚½“®‰æ
-  else if (testRegExp (/<div class="js-macaw-cards-iframe-container"[^>]*data-src="(\/i\/cards\/tfw\/v1\/[^"]*cardname=__entity_video)"/, http.data)) {
+  else if (testRegExp (/<div class="js-macaw-cards-iframe-container"[^>]*data-src="(\/i\/cards\/tfw\/v1\/[^"]*cardname=__entity_video[^"]*)"/, http.data)) {
     var cardsUrl = RegExp.$1.replace (/&amp;/g, '&');
     if (!this._analyzeVideoCards (cardsUrl)) {
       return false;
