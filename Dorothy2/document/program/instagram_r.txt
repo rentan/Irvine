@@ -26,6 +26,9 @@ http://instagr(.am|am.com)/p/[^/]+
 変更履歴
 ========
 
+2015-03-24  version 20150324.0  rentan at rentan.org
+  HTTPS に対応、HTML の変更に対応。
+
 2014-05-21  version 20140521.0  rentan at rentan.org
   HTML の変更に対応。
 
