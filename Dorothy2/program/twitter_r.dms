@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20150318.0
+//version=20150401.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -261,7 +261,7 @@ Twitter.prototype._analyzeMediaGridJson = function (http, base) {
     urls.push (p1);
     return '';
   }
-  http.data.replace (/\sdata-item-id=\\"(\d+)\\"/g, add);
+  http.data.replace (/role=\\"listitem\\"\s+data-item-id=\\"(\d+)\\"/g, add);
 
   var len = urls.length;
   for (var i = 0; i < len; ++i) {
@@ -337,10 +337,11 @@ Twitter.prototype.get = function (url) {
   this.id = null;
   this.pic_id = null;
 
-  var path = (new URL (url)).path.slice (1);
+  var u = new URL (url);
+  var path = u.path.slice (1);
 
-  if (/^[^\/]+\/status(es)?\/\d+(\/photo\/\d+(\/large)?)?(#.*)?$/.test (path)) {
-    return this._getTweetImage (url);
+  if (/^([^\/]+\/status(es)?\/\d+)([\/?#]|$)/.test (path)) {
+    return this._getTweetImage (u.expand ('/' + RegExp.$1));
   }
   if (/^([^\/]+)\/media$/.test (path)) {
     return this._getMediaImage (url);

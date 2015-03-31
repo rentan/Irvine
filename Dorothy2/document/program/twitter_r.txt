@@ -33,6 +33,10 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2015-04-01  version 20150401.0  rentan at rentan.org
+  ～/video/1 などの URL に対応。
+  /media でツイートに含まれるツイートをダウンロードしないようにした。
+
 2015-03-18  version 20150318.0  rentan at rentan.org
   アプリから投稿された動画の HTML の仕様変更に対応。
 
