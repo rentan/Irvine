@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20150401.0
+//version=20150422.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -95,6 +95,10 @@ Twitter.prototype._analyzeVideoCards = function (cardsUrl) {
 Twitter.prototype._analyzeTweetImage = function () {
   var http = this.http;
 
+  var html = http.data;
+  var n = html.indexOf ('<div class="js-machine-translated-tweet-container">');
+  html = (n < 0) ? html : html.slice (0, n);
+
   // RegExp.test 高速化
   function testRegExp (re, text) {
     var head = re.toString ().replace (/^\/([^.?*\\[(^$]+).*$/, '$1');
@@ -115,19 +119,19 @@ Twitter.prototype._analyzeTweetImage = function () {
   }
 
   // 画像表示ページ
-  if (testRegExp (/<img class="large\s+media-slideshow-image"\s[^>]*src="([^"]+)"/, http.data)) {
+  if (testRegExp (/<img class="large\s+media-slideshow-image"\s[^>]*src="([^"]+)"/, html)) {
     addImage (RegExp.$1);
     this.type = 'Photo';
   }
 
   // 単一画像
-  else if (testRegExp (/<a class="media[^"]*"[^>]*\sdata-resolved-url-large="([^"]+)"/, http.data)) {
+  else if (testRegExp (/<a class="media[^"]*"[^>]*\sdata-resolved-url-large="([^"]+)"/, html)) {
     addImage (RegExp.$1);
     this.type = 'Photo';
   }
 
   // 複数画像
-  else if (testRegExp (/<div class="multi-photos[^>]*>(.*?)(<\/div>\s*){3}/, http.data)) {
+  else if (testRegExp (/<div class="multi-photos[^>]*>(.*?)(<\/div>\s*){3}/, html)) {
     var html = RegExp.$1;
 
     var urls = [ ];
@@ -145,13 +149,13 @@ Twitter.prototype._analyzeTweetImage = function () {
   }
 
   // 動画
-  else if (testRegExp (/<source video-src="(https:\/\/pbs\.twimg\.com\/tweet_video\/[^"]+)"/, http.data)) {
+  else if (testRegExp (/<source video-src="(https:\/\/pbs\.twimg\.com\/tweet_video\/[^"]+)"/, html)) {
     this._add ({ Url: RegExp.$1 });
     this.type = 'Video';
   }
 
   // アプリで撮影した動画
-  else if (testRegExp (/<div class="js-macaw-cards-iframe-container"[^>]*data-src="(\/i\/cards\/tfw\/v1\/[^"]*cardname=__entity_video[^"]*)"/, http.data)) {
+  else if (testRegExp (/<div class="js-macaw-cards-iframe-container"[^>]*data-src="(\/i\/cards\/tfw\/v1\/[^"]*cardname=__entity_video[^"]*)"/, html)) {
     var cardsUrl = RegExp.$1.replace (/&amp;/g, '&');
     if (!this._analyzeVideoCards (cardsUrl)) {
       return false;
