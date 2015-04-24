@@ -390,7 +390,10 @@ inflate (s)
 変更履歴
 ========
 
-2014-11-11
+2015-04-25  version 20150425.0  rentan at rentan.org
+  Http._doRequest(): リダイレクト時に Location の # 以降を削除するようにした。
+
+2014-11-11  version 20141111.0  rentan at rentan.org
   .saveFile(): ファイル名として NameBuilder#buildFilename() の戻り値を指定
   すると、フォルダとファイル名の間に \ が付かないことがある不具合を修正。
     thanks to http://peace.2ch.net/test/read.cgi/win/1412399700/202

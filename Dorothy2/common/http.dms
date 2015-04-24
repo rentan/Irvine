@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Http
-//version=20141111.0
+//version=20150425.0
 //hint=new Http ()
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -686,7 +686,7 @@ Http.prototype._doRequest = function (method, url, opt) {
       break;
     }
 
-    url = nextUrl;
+    url = nextUrl.replace (/#.*$/, '');
 
     // POST からのリダイレクト後は GET にする
     if (this.responseHeader.code != 308 && method == 'POST') {
