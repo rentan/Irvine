@@ -32,6 +32,11 @@ http://www.dmm.co.jp/(dc|digital/nijigen)/mlmg_present/\d{6}/page_[^\/]+[._]html
 変更履歴
 ========
 
+2015-04-25  version 20150425.0  rentan at rentan.org
+  common\getter.dms を使うようにして作りなおした。
+  メールマガジンのリンクからダウンロード出来るようにした。
+  期限切れかつページとファイルの日付が違うケースに対応。
+
 2014-05-21  version 20140521.0  rentan at rentan.org
   ファイル名変数 %YYMMDD% を廃止、%YYYY% を追加。
   %NAME% が正しくない不具合を修正。
