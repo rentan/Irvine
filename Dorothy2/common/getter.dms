@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Getter()
-//version=20150316.0
+//version=20150425.0
 //hint=
 //match=
 //author=rentan
@@ -195,6 +195,8 @@ Getter.prototype._buildFilenames = function (args) {
     return;
   }
 
+  var fmtIsArray = nameOf (fmt) == 'Array';
+
   var items = this.items;
   var len = nb.pages = items.length;
 
@@ -202,8 +204,9 @@ Getter.prototype._buildFilenames = function (args) {
     nb.p = i;
     var itemData = items [i];
 
+    var f = fmtIsArray ? fmt [i] : fmt;
     var ext = itemData.hasKey ('ext') ? itemData.ext : itemData.Url;
-    var parsedData = nb.buildFilename (fmt, ext);
+    var parsedData = nb.buildFilename (f, ext);
 
     for (var key in parsedData) {
       itemData [key] = parsedData [key];
