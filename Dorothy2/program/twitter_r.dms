@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20150422.0
+//version=20150503.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -194,10 +194,10 @@ Twitter.prototype._analyzeTweet = function () {
   this.user_name = (new Utf8 (RegExp.$1)).decodeCharRef ();
 
   var t = null;
-  if (/<p\s+class="js-tweet-text\s+tweet-text[^>]*>(.*?)<\/p>/.test (html)) {
+  if (/<p\s+class="[^"]*js-tweet-text\s+tweet-text[^>]*>(.*?)<\/p>/.test (html)) {
     t = RegExp.$1;
   }
-  else if (/<div\s+class="tweet-text\s+js-tweet-text[^>]*>(.*?)<\/div>/.test (html)) {
+  else if (/<div\s+class="[^"]*tweet-text\s+js-tweet-text[^>]*>(.*?)<\/div>/.test (html)) {
     t = RegExp.$1;
   }
   else {
