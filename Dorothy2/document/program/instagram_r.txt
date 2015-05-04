@@ -1,22 +1,27 @@
 instagram_r.dms
 
 
-Instagram 用のスクリプトです（27.140 氏の instagram.27.140.dms とは別物）。
+Instagram 用のスクリプトです。
 
 
 使用方法
 ========
 
-以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+以下の手順で設定ファイル(.ini)が開くので、好みで書き換えて下さい。
   ツール → メインメニュー → 動画ダウンロード設定２
   プログラムを右クリック → 設定
+
+以下のドキュメントも参照して下さい。
+
+・アイテム追加
+  Dorothy2\document\common\additem.txt
 
 
 対応 URL
 ========
 
 http://instagr(.am|am.com)/p/[^/]+
-  画像のページ
+  画像/動画のページ
 
 
 仕様・制限事項
@@ -26,20 +31,9 @@ http://instagr(.am|am.com)/p/[^/]+
 変更履歴
 ========
 
-2015-03-24  version 20150324.0  rentan at rentan.org
-  HTTPS に対応、HTML の変更に対応。
-
-2014-05-21  version 20140521.0  rentan at rentan.org
-  HTML の変更に対応。
-
-2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later を適用。
-  このファイルを UTF-8 に変更。
-
-  HTML の変更に対応。
-
-2012-10-22
-  初期バージョン。
+2015-05-05  version 20150505.0  rentan at rentan.org
+  common\getter.dms を使うようにして作りなおした。
+  動画に対応(画像ファイルもダウンロードします)。
 
 
 [EOF]

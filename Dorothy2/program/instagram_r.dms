@@ -1,15 +1,15 @@
 //Dorothy2
 //caption=instagram_r
-//version=20150324.0
+//version=20150505.0
 //hint=Instagram 別バージョン
-//match=^https?://instagr(\.am|am\.com)/p/.
+//match=^https://instagram\.com/p/.
 //author=rentan
 //path=program
 //priority=500
 //end
 
 /*
-Copyright (C) 2012,2014,2015 rentan at rentan.org
+Copyright (C) 2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,83 +25,135 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-function () {
+function (scriptMode) {
 
-  common_load ('rutil', 'http', 'namebuilder', 'utf8');
+  common_load ('rutil', 'additem', 'namebuilder');
   Util.min_version (20150316.0);
 
-  // 設定ファイルの読み込み
-  var default_ini = {
+  var defaultIni = {
+    AddItem: AddItem.prototype.iniTemplate,
     General: {
       Zen2Han: false
     },
     Filename: {
-      Photo: 'instagram_%ID%'
+      Photo: 'instagram_%ID%',
+      Video: 'instagram_%ID%'
     }
   };
-  var ini = Util.ini_load (default_ini);
 
 
-//---------------------- 下請け ----------------------//
+//------------------------------- Instagram --------------------------------
 
 
-// 画像をダウンロード
-function dl_cid (cid) {
-  nb.id = cid;
+common_load ('getter', 'http', 'utf8');
 
-  var url = 'https://instagram.com/p/' + cid + '/';
-  var http = new Http ();
+
+// コンストラクタ
+Getter (function Instagram () {
+});
+
+
+// public: ファイル URL を取得する
+Instagram.prototype.get = function (url) {
+  this.items = [ ];
+  this.type = null;
+
+  this.twitter_id = null;
+  this.id = null;
+  this.title = null;
+
+  var u = url.replace (/^http:/, 'https:')
+             .replace (/^https:\/\/instagr\.am\//, 'https://instagram.com/')
+             .replace (/[?#].*$/, '');
+
+  var path = (new URL (u)).path.slice (1);
+  if (!/^p\/([^\/]+)/.test (path)) {
+    return this._mis ();
+  }
+  this.id = RegExp.$1;
+
+  var http = this.http = new Http ();
   if (!http.get (url)) {
-    return http.retry_or_die ();
+    return this._httpError ();
   }
 
-
-  // Twitter ID を探す
-  if (/"username":"([^"]+)"/.test (http.data)) {
-    nb.twitter_id = RegExp.$1;
+  // Twitter ID
+  if (!/"owner":\{([^}]*,)?"username":"([^"]+)"/.test (http.data)) {
+    return this._unknown ('username が見つかりません。');
   }
+  this.twitter_id = RegExp.$2;
 
-  // 題名を探す
+  // 題名
+  var title = 'no-title';
   if (/"caption":"([^"]+)"/.test (http.data)) {
-    nb.title = (new Utf8 (RegExp.$1)).unescape ();
+    title = (new Utf8 (RegExp.$1)).unescape ().toUTF8 ();
   }
+  this.title = title;
 
-  // 画像 URL を探す
+  // 画像URL
   if (!/<meta\s+property="og:image"\s+content="([^"]+)"/.test (http.data)) {
-    http.die ('画像の URL が見つかりません。');
+    return this._unknown ('画像URLが見つかりません。');
   }
-  var content_url = RegExp.$1;
-  var content_type = 'Photo';
+  this._add ({ Url: RegExp.$1 });
+  this.type = 'Photo';
+
+  // 動画URL (画像ファイルもダウンロードする)
+  if (/<meta\s+property="og:video"\s+content="([^"]+)"/.test (http.data)) {
+    this._add ({ Url: RegExp.$1 });
+    this.type = 'Video';
+  }
+
+  return this._ok ();
+};
 
 
-  // ダウンロード情報を設定
-  nb.setFilename (ini.Filename [content_type], content_url);
+// public: ファイル名を生成する
+//   NameBuilder 指定時は必ず Format も指定すること。
+Instagram.prototype.buildFilename = function (args) {
+  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
+  if (!nb) {
+    return this._ok ();
+  }
 
-  Dorothy.setUrl (content_url, url);
-}
+  nb.twitter_id = this.twitter_id;
+  nb.id = this.id;
+  nb.title = new Utf8 (this.title);
 
-
-//-------------------- メイン処理 --------------------//
-
-
-  var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
-
-  // ファイル名の生成に使える情報
-  nb.twitter_id = null;  // Twitter ID
-  nb.id = null;          // コンテンツID
-  nb.title = null;       // 題名
+  return this._buildFilename (args);
+};
 
 
-  var path = (new URL (urlinfo.url)).path.slice (1);
+// public: ダウンロード情報を登録する
+Instagram.prototype.download = function (args) {
+  return this._downloadFiles (args);
+};
 
-  if (/^p\/([^\/#?]+)/.test (path)) {
-    // 画像の HTML ページ
-    dl_cid (RegExp.$1);
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  if (scriptMode === 'DEFINE_ONLY') {
     return;
   }
 
-  println ('未対応の URL です。');
-  return;
+  var ini = Util.ini_load (defaultIni);
+
+  var getter = new Instagram ();
+
+  if (getter.get (urlinfo.url)) {
+    var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
+    getter.buildFilename ({
+      NameBuilder: nb,
+      Format: [ ini.Filename.Photo, ini.Filename.Video ]
+    });
+
+    getter.download ({
+      AddItem: new AddItem (ini.AddItem)
+    });
+  }
+
+  getter.end ();
 }
 
 
