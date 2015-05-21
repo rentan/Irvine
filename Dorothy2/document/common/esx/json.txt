@@ -1,10 +1,10 @@
 common\esx\json.dms
 
 
-JSON ƒIƒuƒWƒFƒNƒg‚Å‚·B
+JSON ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§ã™ã€‚
 
 
-g—p•û–@
+ä½¿ç”¨æ–¹æ³•
 ========
 
   common_load ('esx\json');
@@ -16,31 +16,31 @@ JSON ƒIƒuƒWƒFƒNƒg‚Å‚·B
   var json2 = JSON.stringify (obj2);
 
 
-JSON ƒIƒuƒWƒFƒNƒg‚Ìƒƒ\ƒbƒh
+JSON ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ãƒ¡ã‚½ãƒƒãƒ‰
 ===========================
 
 parse (text, reviver)
 stringify (value, replacer, space)
 
 
-d—lE§ŒÀ–€
+ä»•æ§˜ãƒ»åˆ¶é™äº‹é …
 ==============
 
-E—á‚¦‚Î JSON.parse('{"hasKey":null}') ‚ğÀs‚·‚é‚ÆA“¾‚ç‚ê‚½
-  ƒIƒuƒWƒFƒNƒg‚Ì .hasKey() ƒƒ\ƒbƒh‚Íg‚¦‚Ü‚¹‚ñB
+ãƒ»ä¾‹ãˆã° JSON.parse('{"hasKey":null}') ã‚’å®Ÿè¡Œã™ã‚‹ã¨ã€å¾—ã‚‰ã‚ŒãŸ
+  ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã® .hasKey() ãƒ¡ã‚½ãƒƒãƒ‰ã¯ä½¿ãˆã¾ã›ã‚“ã€‚
 
 
-•ÏX—š—ğ
+å¤‰æ›´å±¥æ­´
 ========
 
 2014-10-18  version 20141018.0  rentan at rentan.org
 JSON.stringify():
-  prototype ƒIƒuƒWƒFƒNƒg‚Å ENameError ‚ª”­¶‚·‚é•s‹ï‡‚ğC³B
-  toJSON() ‚Ìˆµ‚¢‚ªŠÔˆá‚Á‚Ä‚¢‚½•s‹ï‡‚ğC³B
-  StringBufferAStrings ‚É‘Î‰B
+  prototype ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§ ENameError ãŒç™ºç”Ÿã™ã‚‹ä¸å…·åˆã‚’ä¿®æ­£ã€‚
+  toJSON() ã®æ‰±ã„ãŒé–“é•ã£ã¦ã„ãŸä¸å…·åˆã‚’ä¿®æ­£ã€‚
+  StringBufferã€Strings ã«å¯¾å¿œã€‚
 
 2014-10-05  version 20141005.0  rentan at rentan.org
-  V‹Kì¬B
+  æ–°è¦ä½œæˆã€‚
 
 
 [EOF]

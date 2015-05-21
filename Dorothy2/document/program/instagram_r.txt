@@ -1,39 +1,39 @@
 instagram_r.dms
 
 
-Instagram —p‚ÌƒXƒNƒŠƒvƒg‚Å‚·B
+Instagram ç”¨ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆã§ã™ã€‚
 
 
-Žg—p•û–@
+ä½¿ç”¨æ–¹æ³•
 ========
 
-ˆÈ‰º‚ÌŽè‡‚ÅÝ’èƒtƒ@ƒCƒ‹(.ini)‚ªŠJ‚­‚Ì‚ÅAD‚Ý‚Å‘‚«Š·‚¦‚Ä‰º‚³‚¢B
-  ƒc[ƒ‹ ¨ ƒƒCƒ“ƒƒjƒ…[ ¨ “®‰æƒ_ƒEƒ“ƒ[ƒhÝ’è‚Q
-  ƒvƒƒOƒ‰ƒ€‚ð‰EƒNƒŠƒbƒN ¨ Ý’è
+ä»¥ä¸‹ã®æ‰‹é †ã§è¨­å®šãƒ•ã‚¡ã‚¤ãƒ«(.ini)ãŒé–‹ãã®ã§ã€å¥½ã¿ã§æ›¸ãæ›ãˆã¦ä¸‹ã•ã„ã€‚
+  ãƒ„ãƒ¼ãƒ« â†’ ãƒ¡ã‚¤ãƒ³ãƒ¡ãƒ‹ãƒ¥ãƒ¼ â†’ å‹•ç”»ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰è¨­å®šï¼’
+  ãƒ—ãƒ­ã‚°ãƒ©ãƒ ã‚’å³ã‚¯ãƒªãƒƒã‚¯ â†’ è¨­å®š
 
-ˆÈ‰º‚ÌƒhƒLƒ…ƒƒ“ƒg‚àŽQÆ‚µ‚Ä‰º‚³‚¢B
+ä»¥ä¸‹ã®ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚‚å‚ç…§ã—ã¦ä¸‹ã•ã„ã€‚
 
-EƒAƒCƒeƒ€’Ç‰Á
+ãƒ»ã‚¢ã‚¤ãƒ†ãƒ è¿½åŠ 
   Dorothy2\document\common\additem.txt
 
 
-‘Î‰ž URL
+å¯¾å¿œ URL
 ========
 
 http://instagr(.am|am.com)/p/[^/]+
-  ‰æ‘œ/“®‰æ‚Ìƒy[ƒW
+  ç”»åƒ/å‹•ç”»ã®ãƒšãƒ¼ã‚¸
 
 
-Žd—lE§ŒÀŽ–€
+ä»•æ§˜ãƒ»åˆ¶é™äº‹é …
 ==============
 
 
-•ÏX—š—ð
+å¤‰æ›´å±¥æ­´
 ========
 
 2015-05-05  version 20150505.0  rentan at rentan.org
-  common\getter.dms ‚ðŽg‚¤‚æ‚¤‚É‚µ‚Äì‚è‚È‚¨‚µ‚½B
-  “®‰æ‚É‘Î‰ž(‰æ‘œƒtƒ@ƒCƒ‹‚àƒ_ƒEƒ“ƒ[ƒh‚µ‚Ü‚·)B
+  common\getter.dms ã‚’ä½¿ã†ã‚ˆã†ã«ã—ã¦ä½œã‚ŠãªãŠã—ãŸã€‚
+  å‹•ç”»ã«å¯¾å¿œ(ç”»åƒãƒ•ã‚¡ã‚¤ãƒ«ã‚‚ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰ã—ã¾ã™)ã€‚
 
 
 [EOF]

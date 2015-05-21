@@ -1,123 +1,123 @@
 Dorothy2R by rentan
 
 
-xor ����� Dorothy2 ���A����ɉ��ς������̂ł��B
-��ʃ��[�U�����ł͂���܂���B
+xor さんの Dorothy2 を、勝手に改変したものです。
+一般ユーザ向けではありません。
 
-Dorothy2 �Ƃ����f���炵���\�t�g�E�F�A�����J���Ă��������� xor �����
-���ӂ������܂��B
+Dorothy2 という素晴らしいソフトウェアを公開してくださった xor さんに
+感謝いたします。
 
-���삪��݊��Ȃ̂Œ��ӂ��ĉ������B
-�e�T�C�g�p�̃X�N���v�g�͂����������삵�܂��B
+動作が非互換なので注意して下さい。
+各サイト用のスクリプトはだいたい動作します。
 
-Dorothy2R �Ɋւ���₢���킹���ADorothy2 �̍�҂ł��� xor ����ɂ��Ȃ����ƁB
+Dorothy2R に関する問い合わせを、Dorothy2 の作者である xor さんにしないこと。
 
 
-�����
+動作環境
 ========
 
 Windows Vista/7/8/8.1
 Irvine 1.3.1
-Dorothy2 �ŐV��
+Dorothy2 最新版
 
 
-�g�p���@
+使用方法
 ========
 
-1. Dorothy2 �̍ŐV�ł����S�ɓ��삷������\�z����B
+1. Dorothy2 の最新版が完全に動作する環境を構築する。
 
-2. �e�t�@�C����Ή��t�H���_�ɃR�s�[�B
+2. 各ファイルを対応フォルダにコピー。
 
-3. Irvine �{�̂̃I�v�V�����ݒ�Ŋe�X�N���v�g�Ƀ`�F�b�N������B
+3. Irvine 本体のオプション設定で各スクリプトにチェックを入れる。
 
-4. �t�H���_�ݒ�� Dorothy2A.dms�ADorothy2B.dms �̃`�F�b�N���O���B
+4. フォルダ設定で Dorothy2A.dms、Dorothy2B.dms のチェックを外す。
 
-5. �t�H���_�ݒ�Ŋe�X�N���v�g�Ƀ`�F�b�N������B
+5. フォルダ設定で各スクリプトにチェックを入れる。
 
-6. �uDorothy2R �ݒ�v�ŏ㏑���ۑ��B
-   (����ɂ�� scripts\Dorothy2R_ini.dms ����������܂�)
+6. 「Dorothy2R 設定」で上書き保存。
+   (これにより scripts\Dorothy2R_ini.dms が生成されます)
 
 
-Dorothy2 ���p���̒���
+Dorothy2 併用時の注意
 =====================
 
-�E��̃L���[�t�H���_�� Dorothy2 �� Dorothy2R �𗼕��g�p���邱��
-  �͂ł��܂���BDorothy2 �p�̃L���[�t�H���_�� Dorothy2R �p�̃L���[
-  �t�H���_��ʁX�ɐݒ肵�ĉ������B
+・一つのキューフォルダで Dorothy2 と Dorothy2R を両方使用すること
+  はできません。Dorothy2 用のキューフォルダと Dorothy2R 用のキュー
+  フォルダを別々に設定して下さい。
 
-�E�uDorothy2R �ݒ�v�ł� Dorothy2A.dms �͍X�V����Ȃ��̂�
-  �u����_�E�����[�h�Q�ݒ�v�̕��ł��㏑���ۑ����ĉ������B
+・「Dorothy2R 設定」では Dorothy2A.dms は更新されないので
+  「動画ダウンロード２設定」の方でも上書き保存して下さい。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�Exor.dms ��ǂݍ��܂Ȃ��悤�ɂ��Ă���̂ŁA����Ɉˑ�����X�N���v�g��
-  ���삵�܂���(�c���ł��Ă��܂���)�B
+・xor.dms を読み込まないようにしているので、それに依存するスクリプトは
+  動作しません(把握できていません)。
 
-�EchangeFileName() �����������̂܂ܕԂ��_�~�[�֐��ɂȂ��Ă��܂��B
-  ����ɉ��L�֐��Ȃǂ��g���ĉ������B
-    NameBuilder#normalize() ... �t�@�C�����Ɏg�p�ł��Ȃ������̒u��
-    Utf8#decodeCharRef() ...... �����Q�Ƃ̕ϊ�
+・changeFileName() が引数をそのまま返すダミー関数になっています。
+  代わりに下記関数などを使って下さい。
+    NameBuilder#normalize() ... ファイル名に使用できない文字の置換
+    Utf8#decodeCharRef() ...... 文字参照の変換
 
 
-Dorothy �I�u�W�F�N�g�g��
+Dorothy オブジェクト拡張
 ========================
 
 Dorothy.isDOA ... boolean
-  DOA ����̎��s���� true �ɂȂ�B
+  DOA からの実行時に true になる。
 
 Dorothy.doaVersion ... number
-  DOA �̃o�[�W�����BDorothy.isDOA == true �̏ꍇ�̂ݒ�`�����B
+  DOA のバージョン。Dorothy.isDOA == true の場合のみ定義される。
 
 Dorothy.edit (file)
-  file ... string: �t�@�C���̃t���p�X��
-  �߂�l ... �Ȃ�
+  file ... string: ファイルのフルパス名
+  戻り値 ... なし
 
-  file �Ŏw�肵���t�@�C�����e�L�X�g�G�f�B�^�ŊJ��(Irvine �̃I�u�V�����ݒ�
-  �Ŏw�肳��Ă��Ȃ��ꍇ�� notepad.exe)�B
+  file で指定したファイルをテキストエディタで開く(Irvine のオブション設定
+  で指定されていない場合は notepad.exe)。
 
 Dorothy.getSaveFolder ()
-  �߂�l ... string: �t���p�X��
+  戻り値 ... string: フルパス名
 
-  �_�E�����[�h�����t�@�C�����ۑ������p�X����Ԃ��B
+  ダウンロードしたファイルが保存されるパス名を返す。
 
 Dorothy.createSaveFolder (path)
-  path ... string: �t�H���_���B
-  �߂�l ... string: �쐬�����t�H���_��(�t���p�X)�B
+  path ... string: フォルダ名。
+  戻り値 ... string: 作成したフォルダ名(フルパス)。
 
-  �ۑ��t�H���_���Ƀt�H���_���쐬����B
+  保存フォルダ内にフォルダを作成する。
 
 Dorothy.getItemFilename ()
-  �߂�l ... string: item.filename �̒l
+  戻り値 ... string: item.filename の値
 
-  item.filename �ɐݒ肳��Ă���ۑ��t�@�C������Ԃ��B
+  item.filename に設定されている保存ファイル名を返す。
 
-  �l���w�肳��Ă���ꍇ�ł��A��������ݒ�l�̏ꍇ�͋󕶎����Ԃ��B
-  �Y��������̂Ƃ��Ă� [[rename]] �����邪�A���݂͖���������Ă���
-  �P�� item.filename �����̂܂ܕԂ������̊֐��ƂȂ��Ă���B
+  値が指定されている場合でも、無視する設定値の場合は空文字列を返す。
+  該当するものとしては [[rename]] があるが、現在は無効化されており
+  単に item.filename をそのまま返すだけの関数となっている。
 
 Dorothy.setUrl (url, referer)
   url ... string: URL
-  referer ... string: ���t�@��(�ȗ���)
+  referer ... string: リファラ(省略可)
 
-  urlinfo.url �� URL ���Aheaders.Host �Ƀz�X�g����ݒ肵�Aheaders.Cookie
-  ����ɂ���B�܂��Areferer �w�莞�� headers.Referer �ɐݒ肷��B
+  urlinfo.url に URL を、headers.Host にホスト名を設定し、headers.Cookie
+  を空にする。また、referer 指定時は headers.Referer に設定する。
 
 Dorothy.setFilename (filename)
-  filename ... string: �t�@�C����
+  filename ... string: ファイル名
 
-  item.filename �Ƀt�@�C������ݒ肷��B
+  item.filename にファイル名を設定する。
 
-  �t�@�C�����Ƀ��[�U�[���w�肵���t�@�C�����R�}���h���܂܂�Ȃ��ꍇ�ɁA
-  Dorothy.fileName �ւ̏������݂̑���ɌĂяo���B
+  ファイル名にユーザーが指定したファイル名コマンドが含まれない場合に、
+  Dorothy.fileName への書き込みの代わりに呼び出す。
 
 Dorothy.getThreadStorage ()
-  �߂�l ... object: ThreadStorage
+  戻り値 ... object: ThreadStorage
 
-  ThreadStorage �C���X�^���X��Ԃ��B
+  ThreadStorage インスタンスを返す。
 
-  Ini �t�@�C���� %Dorothy.temp%\thread_storage.ini ���g�p����B
+  Ini ファイルは %Dorothy.temp%\thread_storage.ini を使用する。
 
 Dorothy.createProgramMatcher ()
 Dorothy.validateProgram ()
@@ -125,302 +125,302 @@ Dorothy.loadProgram ()
 Dorothy.validateCommon ()
 Dorothy.init ()
 Dorothy.loadDorothyIni ();
-  �V�X�e�����J���Ҍ����̂��ߏȗ��B
+  システム側開発者向けのため省略。
 
 
-�ύX����
+変更履歴
 ========
 
 2015-03-16  version 20150316.0  rentan at rentan.org
 
 scripts\Dorothy2R_a.dms
-  //match=comment:�` �`���̃X�N���v�g�ɑΉ��B
+  //match=comment:～ 形式のスクリプトに対応。
 
 Dorothy2R\system\settingform.dms
-  rVersion �� 20150316 �ɍX�V�B�uDorothy2R �ݒ�v�ŏ㏑���ۑ����ĉ������B
+  rVersion を 20150316 に更新。「Dorothy2R 設定」で上書き保存して下さい。
 
 2015-01-27  version 20150127.0  rentan at rentan.org
 
 scripts\Dorothy2R_a.dms
-  Drothy �I�u�W�F�N�g�� Global �I�u�W�F�N�g�Ƀ��\�b�h��ǉ����邽�߂�
-  �f�[�^�� Global �I�u�W�F�N�g�� function prototype �ɏ������܂�Ă��܂�
-  �s����C���B
+  Drothy オブジェクトや Global オブジェクトにメソッドを追加するための
+  データが Global オブジェクトや function prototype に書き込まれてしまう
+  不具合を修正。
     thanks to http://peace.2ch.net/test/read.cgi/win/1412399700/477
 
 2014-12-14  version 20141214.0  rentan at rentan.org
 
 scripts\Dorothy2R_resp.dms
-  �X�e�[�^�X 200 �ȊO�̎��͉����s��Ȃ��悤�ɂ����B
-  tosjis.Content-Disposition=true �Ńt�@�C������ UTF-8 ����
-  Shift_JIS �ɕϊ�����B
+  ステータス 200 以外の時は何も行わないようにした。
+  tosjis.Content-Disposition=true でファイル名を UTF-8 から
+  Shift_JIS に変換する。
 
 2014-12-08  version 20141208.0  rentan at rentan.org
 
 scripts\Dorothy2R_doa_list.dms
-  �\�[�X�R�[�h�����B
+  ソースコード整理。
 
 
 2014-11-24  version 20141124.1  rentan at rentan.org
 
 scripts\Dorothy2R_doa_list.dms
-  DOA.dms version 0.26 �x�[�X�ɍX�V�B
+  DOA.dms version 0.26 ベースに更新。
 
 
 2014-11-24  version 20141124.0  rentan at rentan.org
 
 scripts\Dorothy2R_doa_list.dms
-  DOA.dms version 0.24 �x�[�X�ɍX�V�B
+  DOA.dms version 0.24 ベースに更新。
 
 
 2014-10-28  version 20141028.0  rentan at rentan.org
 
 Dorothy2R\system\settingform.dms
-  Dorothy.temp �� �`.tmep �ɂȂ��Ă����̂��C���B
+  Dorothy.temp が ～.tmep になっていたのを修正。
     thanks to http://peace.2ch.net/test/read.cgi/win/1412399700/130
 
 
 2014-10-05  version 20141005.0  rentan at rentan.org
 
 Dorothy2R\
-  �t�H���_�V�K�쐬�B
+  フォルダ新規作成。
 
-  Dorothy2R ��p�̃X�N���v�g�� Dorothy2\�` �t�H���_�ɓ�����
-  Dorothy2 �Ń��j���[�ɕ\������Ă��܂��Ȃǂ̖�肪����������
-  �ʂ̃t�H���_�ɒu���悤�ɂ����B
+  Dorothy2R 専用のスクリプトを Dorothy2\～ フォルダに入れると
+  Dorothy2 でメニューに表示されてしまうなどの問題があったため
+  別のフォルダに置くようにした。
 
 Dorothy2R\system\menu\set\usersetting.dms
 Dorothy2R\system\menu\help\document.dms
-  Dorothy2\�` �t�H���_����ړ��B
+  Dorothy2\～ フォルダから移動。
 
-  ���܂� Dorothy2\�` ���ɓ���Ă��������t�@�C���͍폜���ĉ������B
+  今まで Dorothy2\～ 側に入れていた同名ファイルは削除して下さい。
 
 Dorothy2R\system\menu\help\document.dms
-  �����\���t�@�C�����w��ł���悤�ɂ����B�R���e�L�X�g���j���[��
-  �h�L�������g�\���@�\�����̃X�N���v�g���g���悤�ɂ����B
+  初期表示ファイルを指定できるようにした。コンテキストメニューの
+  ドキュメント表示機能もこのスクリプトを使うようにした。
 
 scripts\Dorothy2R_a.dms
-  Dorothy.search.* ���폜�B
+  Dorothy.search.* を削除。
 
-  Dorothy.temp �f�B���N�g���̍쐬����߂�(Dorothy2 �ł͍��Ȃ�
-  �̂ŌX�̃X�N���v�g���ō��K�v������A���� Dorothy2R_a.dms
-  �ō��Ӗ�����������)�B
+  Dorothy.temp ディレクトリの作成をやめた(Dorothy2 では作らない
+  ので個々のスクリプト側で作る必要があり、結局 Dorothy2R_a.dms
+  で作る意味が無かった)。
 
-  Dorothy.getThreadStorage() �� Dorohty.temp �Ƀt�@�C����ۑ�
-  ����̂ŁA�Ăяo���ꂽ���Ƀf�B���N�g�����쐬����B
+  Dorothy.getThreadStorage() は Dorohty.temp にファイルを保存
+  するので、呼び出された時にディレクトリを作成する。
 
 scripts\Dorothy2R_set.dms
-  ��v������ settingform.dms �ɕ����B
+  主要部分を settingform.dms に分離。
 
 Dorothy2R\system\settingform.dms
-  �V�K�쐬�BSettingForm �� Dorothy2R_set.dms ���番�����Đ����B
-  rVersion �� 20141005 �ɍX�V�B
+  新規作成。SettingForm を Dorothy2R_set.dms から分離して整理。
+  rVersion を 20141005 に更新。
 
-  �I���W�i���� VCLForm ���p�������N���X�����A���I�ɓǂݍ����
-  eval() ����X�N���v�g�ł̓N���X��`���o���Ȃ��̂ŁAVCLForm
-  �C���X�^���X�Ƀ��\�b�h�𒼐ڒǉ�������@�ɕύX�B
+  オリジナルは VCLForm を継承したクラスだが、動的に読み込んで
+  eval() するスクリプトではクラス定義が出来ないので、VCLForm
+  インスタンスにメソッドを直接追加する方法に変更。
 
-  �I�����ɃE�B���h�E�̈ʒu�E�T�C�Y�A�J�����̕��������I�ɕۑ�����B
-  Shift �L�[��������Ă����ꍇ�͕ۑ����Ȃ��B
+  終了時にウィンドウの位置・サイズ、カラムの幅を自動的に保存する。
+  Shift キーが押されていた場合は保存しない。
 
-  �ݒ胁�j���[�֘A:
+  設定メニュー関連:
 
-  �EDorothy2R\system\menu\set\ �ɂ���X�N���v�g���\������B
+  ・Dorothy2R\system\menu\set\ にあるスクリプトも表示する。
 
-  �EDorothy2\system\menu\set\ �ɂ���ȉ��̃X�N���v�g�͕\�����Ȃ��B
-    common.dms       # Dorothy2R\�`\usersetting.dms �ɓ���
-    user_name.dms    # �V
-    usersetting.dms  # Dorothy2R\�` �Ɉړ�
-    window.dms       # �����ۑ�
+  ・Dorothy2\system\menu\set\ にある以下のスクリプトは表示しない。
+    common.dms       # Dorothy2R\～\usersetting.dms に統合
+    user_name.dms    # 〃
+    usersetting.dms  # Dorothy2R\～ に移動
+    window.dms       # 自動保存
 
-  ���̑��ׂ������������낢��ύX�B
+  その他細かい部分をいろいろ変更。
 
 
 2014-09-13  version 20140913.0  rentan at rentan.org
-  �����I�ɃX���b�h�X�g���[�W�@�\�������B
+  実験的にスレッドストレージ機能を実装。
 
 scripts\Dorothy2R_a.dms
-  Dorothy.init() �� Dorothy.temp �f�B���N�g�����쐬����悤�ɂ����B
-  ���̂��߁ADorothy.init() ����� Dorothy.loadDorothyIni() ��
-  �Ăяo���d�l�ɕύX�����B
+  Dorothy.init() で Dorothy.temp ディレクトリを作成するようにした。
+  そのため、Dorothy.init() より先に Dorothy.loadDorothyIni() を
+  呼び出す仕様に変更した。
 
-  Dorothy.createProgramMatcher() ��ǉ��B
-  ��肪�Ȃ���� Dorothy.search.* �͌�قǍ폜����\��B
+  Dorothy.createProgramMatcher() を追加。
+  問題がなければ Dorothy.search.* は後ほど削除する予定。
 
-  Dorothy.getThreadStorage() ��ǉ��B
-  Dorothy.fileName == 'remove' �̎��A�폜�w���� xor.ini �ł͂Ȃ�
-  �X���b�h�X�g���[�W�ɏ������ނ悤�ɂ����B
+  Dorothy.getThreadStorage() を追加。
+  Dorothy.fileName == 'remove' の時、削除指示を xor.ini ではなく
+  スレッドストレージに書き込むようにした。
 
-  Dorothy.* ���\�b�h�̒�`���[�`���𐮗��B
+  Dorothy.* メソッドの定義ルーチンを整理。
 
 scripts\Dorothy2R_listmenu.dms
-  Dorothy.createProgramMatcher() ���g���悤�ɂ����B
+  Dorothy.createProgramMatcher() を使うようにした。
 
 scripts\Dorothy2R_set.dms
-  rVersion �� 20140913 �ɍX�V�B
+  rVersion を 20140913 に更新。
 
 scripts\Dorothy2R_done.dms
-  �V�K�쐬�B�X���b�h�X�g���[�W�� Remove=true ������΃_�E�����[�h
-  �����t�@�C�����폜����B
+  新規作成。スレッドストレージに Remove=true があればダウンロード
+  したファイルを削除する。
 
-  Dorothy2 �ɂ����� Dorothy2B.dms �ɑ����B
+  Dorothy2 における Dorothy2B.dms に相当。
 
 scripts\Dorothy2R_resp.dms
-  �V�K�쐬�B�X���b�h�X�g���[�W�� headers.Last-Modified �̒l��
-  ����΃w�b�_�ɏ������ށB
+  新規作成。スレッドストレージに headers.Last-Modified の値が
+  あればヘッダに書き込む。
 
 
 2014-08-22  version 20140822.0  rentan at rentan.org
 scripts\Dorothy2R_set.dms
-  DorothySetting._isUtf8() �𐳋K�\���ɂ�锻��ɕύX�B
-  �Q�l: http://peace.2ch.net/test/read.cgi/win/1394240473/745
+  DorothySetting._isUtf8() を正規表現による判定に変更。
+  参考: http://peace.2ch.net/test/read.cgi/win/1394240473/745
 
 2014-08-15  version 20140815.0  rentan at rentan.org
 Dorothy2\system\menu\help\document.dms
-  doc.dfm �̃X�v���b�^�ƃ��W�I�{�^�����폜����悤�ɂ����B
+  doc.dfm のスプリッタとラジオボタンを削除するようにした。
 
 2014-07-29  version 20140729.0  rentan at rentan.org
 scripts\Dorothy2R_set.dms
-  Dorothy.rVersion ���X�V�B
+  Dorothy.rVersion を更新。
 
 scripts\Dorothy2R_a.dms
-  xor.dms joint() �̌݊��֐��������B
+  xor.dms joint() の互換関数を実装。
 
 Dorothy2/common/spec/dorothy2r_spec.dms
-  �V�K�쐬�B
+  新規作成。
 
 scripts\Dorothy2R_doa_list.dms
-  �����ǂ݂₷���B
+  少し読みやすく。
 
 2014-07-19  version 20140719.0  rentan at rentan.org
 scripts\Dorothy2R_set.dms
-  editor() �����j���[������s����R�}���h���Ŏg�p����Ă����̂ŁA
-  �Ƃ肠�����̑Ώ��Ƃ��čĎ����B
+  editor() がメニューから実行するコマンド内で使用されていたので、
+  とりあえずの対処として再実装。
 
 2014-07-18  version 20140718.0  rentan at rentan.org
 scripts\Dorothy2R_a.dms
-  program_load() ���Ď����B
-  Dorothy.setUrl(), .setFilename() ��ǉ��B
+  program_load() を再実装。
+  Dorothy.setUrl(), .setFilename() を追加。
 
 scripts\Dorothy2R_set.dms
-  Dorothy.rVersion �� 20140718 �ɕύX�B
+  Dorothy.rVersion を 20140718 に変更。
 
 2014-07-02  version 20140702.0  rentan at rentan.org
 scripts\Dorothy2R_set.dms
-  UTF-8 �ŋL�q���ꂽ�h�L�������g��\������ۂɉ����Ȃ��悤�ɂ����B
-  DorothySetting �I�u�W�F�N�g��ǉ��B
+  UTF-8 で記述されたドキュメントを表示する際に化けないようにした。
+  DorothySetting オブジェクトを追加。
 
 Dorothy2\system\menu\help\document.dms
-  �V�K�쐬�BDorothy2 �� doc.dms version 1.0 �ɑ����B
+  新規作成。Dorothy2 の doc.dms version 1.0 に相当。
 
 2014-06-26  version 20140626  rentan at rentan.org
 scripts\Dorothy2R_doa_list.dms
-  folderdata.HttpMethod �̋U����ǉ��B
+  folderdata.HttpMethod の偽装を追加。
 
 2014-06-11  rentan at rentan.org
 scripts\Dorothy2R_a.dms  version 20140611
-  nulUrl ���g�p���������폜���� headers.Host �����������Ă��Ȃ������s�
-  ���C���B
+  nulUrl を使用した自動削除時に headers.Host を書き換えていなかった不具合
+  を修正。
 
 2014-06-08  rentan at rentan.org
 scripts\Dorothy2R_a.dms  version 20140608
-  Dorothy.getItemFilename(): �V�K���\�b�h�B
+  Dorothy.getItemFilename(): 新規メソッド。
 
-  Dorothy.fileName �̐ݒ�܂��𐮗��B
+  Dorothy.fileName の設定まわりを整理。
 
 2014-05-21  rentan at rentan.org
 
 scripts\Dorothy2R_a.dms  version 20140521
-  Dorothy.getSaveFolder(), .createSaveFolder(): ���\�b�h�ǉ��B
-  Dorothy.isDOA: �V�K�v���p�e�B�B
+  Dorothy.getSaveFolder(), .createSaveFolder(): メソッド追加。
+  Dorothy.isDOA: 新規プロパティ。
 
-  Dorothy.fileName �̏�������蒼���B
-  [[cd=...]] �� [[md=...]] �Ɠ�������ɕύX�B
-  remove ���� nulUrl/nulProxy �� Dorothy2R �{�̂Őݒ肷��悤�ɂ����B
+  Dorothy.fileName の処理を作り直し。
+  [[cd=...]] を [[md=...]] と同じ動作に変更。
+  remove 時に nulUrl/nulProxy を Dorothy2R 本体で設定するようにした。
 
 scripts\Dorothy2R_set.dms  version 20140521
-  Dorothy.rVersion ���X�V�B
+  Dorothy.rVersion を更新。
 
 scripts\Dorothy2R_listmenu.dms  version 20140521
-  �e�L�X�g�G�f�B�^�Ăяo���� editFiles() �ɓ���B
+  テキストエディタ呼び出しを editFiles() に統一。
 
 scripts\Dorothy2R_doa_list.dms  version 20140521
-  Dorothy.isDOA �� true �ɂ���B
-  Dorothy.doaVersion �� 0.23 �ɕύX�B
+  Dorothy.isDOA を true にする。
+  Dorothy.doaVersion を 0.23 に変更。
 
-  DOA.status == DOA_LK �̎��� DOA.link �ɔz���n����悤�ɂ����B
-  ������ URL ���i�[����Ă���� DOA_LS �Ƃ��Ĉ����B
+  DOA.status == DOA_LK の時に DOA.link に配列を渡せるようにした。
+  複数の URL が格納されていれば DOA_LS として扱う。
 
 2014-05-12  rentan at rentan.org
 
 scripts\Dorothy2R_doa_list.dms  version 20140512
-  �X�e�[�^�X�s�̌��ʕ\�����������Ȃ��s����C���B
+  ステータス行の結果表示が正しくない不具合を修正。
 
 2014-05-07  rentan at rentan.org
 
 scripts\Dorothy2R_ini.dms
-  ���[�U�ݒ�̓Ɨ��X�N���v�g�BDorothy2R_set.dms �ɂ�萶�������B
+  ユーザ設定の独立スクリプト。Dorothy2R_set.dms により生成される。
 
-  Dorothy.matchList: �I�u�W�F�N�g�\����ύX�B
+  Dorothy.matchList: オブジェクト構造を変更。
 
-  Dorothy.temp: Dorothy.path ����Z�o����B���[�U�[��`���͕�����B
+  Dorothy.temp: Dorothy.path から算出する。ユーザー定義時は文字列。
 
-  Dorothy.rVersion: Dorothy2R �̃o�[�W�����ԍ�(����)��ǉ��B
-  �X�N���v�g�Ԃ̃o�[�W�����m�F�ɂ��Ă͎d�l���m��ɂ��������B
+  Dorothy.rVersion: Dorothy2R のバージョン番号(整数)を追加。
+  スクリプト間のバージョン確認については仕様未確定につき未実装。
 
-  Dorothy.nulUrl, Dorothy.nulProxy: �ǉ��B�d�l���m��B
+  Dorothy.nulUrl, Dorothy.nulProxy: 追加。仕様未確定。
 
 scripts\Dorothy2R_a.dms  version 20140507
-  Dorothy2 �� Dorothy2A.dms version 0.31 �����ɍ쐬�B
-  xor ����̋L�q�����ɂ��Ă͎��̒��쌠�ł��B
+  Dorothy2 の Dorothy2A.dms version 0.31 を元に作成。
+  xor さんの記述部分については氏の著作権です。
 
-  �X�N���v�g�\����啝�ɕύX�B
-  ���[�U�ݒ�� Dorothy2R_ini.dms �ɕ����B
-  xor.dms ��ǂݍ��܂Ȃ��悤�ɂ����B
+  スクリプト構造を大幅に変更。
+  ユーザ設定を Dorothy2R_ini.dms に分離。
+  xor.dms を読み込まないようにした。
 
-  common_reload(), program_load(), reset(): �폜�B
+  common_reload(), program_load(), reset(): 削除。
 
-  irvinePath: �I�u�W�F�N�g�Ƃ��Ď����B
-  changeFileName(): ������ϊ��������̂܂ܕԂ��_�~�[�֐��Ƃ��Ēǉ��B
+  irvinePath: オブジェクトとして実装。
+  changeFileName(): 引数を変換せずそのまま返すダミー関数として追加。
 
   Dorothy.init(), Dorothy.loadDorothyIni(), Dorothy.search.init(),
-  Dorothy.search.next(): �V�K���\�b�h�BDorothy2R_listmenu.dms �̂悤��
-  Dorothy2R �̎��ӃX�N���v�g�p�B
+  Dorothy.search.next(): 新規メソッド。Dorothy2R_listmenu.dms のような
+  Dorothy2R の周辺スクリプト用。
 
-  Dorothy.edit(): �V�K���\�b�h�B
+  Dorothy.edit(): 新規メソッド。
 
 scripts\Dorothy2R_set.dms  version 20140507
-  Dorothy2 �� Dorothy2set.dms version 0.19 �����ɍ쐬�B
-  xor ����̋L�q�����ɂ��Ă͎��̒��쌠�ł��B
+  Dorothy2 の Dorothy2set.dms version 0.19 を元に作成。
+  xor さんの記述部分については氏の著作権です。
 
-  Dorothy2 ��{�@�\�����O�Œ�`�����ADorothy2R_a.dms ��ǂݍ��ށB
-  ���[�U�ݒ�� Dorothy2R_ini.dms �ɕۑ�����悤�ɂ����B
-  ���̊֌W�ŃN���[���@�\���폜�B
-  header.ini ��ۑ����Ȃ��悤�ɂ����B
+  Dorothy2 基本機能を自前で定義せず、Dorothy2R_a.dms を読み込む。
+  ユーザ設定を Dorothy2R_ini.dms に保存するようにした。
+  その関係でクローン機能を削除。
+  header.ini を保存しないようにした。
 
 scripts\Dorothy2R_listmenu.dms  version 20140507
-  �V�K�쐬�BDorothy2 �� Dorothy2ListMenu.dms version 0.42 �ɑ����B
+  新規作成。Dorothy2 の Dorothy2ListMenu.dms version 0.42 に相当。
 
-  Dorothy2 ��{�@�\�����O�Œ�`�����ADorothy2R_a.dms ��ǂݍ��ށB
-  ���[�U�ݒ�� Dorothy2R_ini.dms ����ǂݍ��ށB
+  Dorothy2 基本機能を自前で定義せず、Dorothy2R_a.dms を読み込む。
+  ユーザ設定を Dorothy2R_ini.dms から読み込む。
 
 scripts\Dorothy2R_doa_list.dms  version 20140507
-  Dorothy2 �� DOA.dms version 0.23 �����ɍ쐬�B
-  xor ����̋L�q�����ɂ��Ă͎��̒��쌠�ł��B
+  Dorothy2 の DOA.dms version 0.23 を元に作成。
+  xor さんの記述部分については氏の著作権です。
 
-  �֐��� OnListMenuClick() ���Ɉړ��B
-  xor.dms ��ǂݍ��܂Ȃ��悤�ɂ����B
+  関数を OnListMenuClick() 内に移動。
+  xor.dms を読み込まないようにした。
 
-  Dorothy.doaVersion: DOA �{�̂̃o�[�W�����ԍ���ǉ��B
-  folderdata.Folder: �_�~�[����ǉ��B
+  Dorothy.doaVersion: DOA 本体のバージョン番号を追加。
+  folderdata.Folder: ダミー情報を追加。
 
 scripts\Dorothy2R_doa_tree.dms  version 20140507
-  �V�K�쐬�BDorothy2 �� xor100813_2.dms version 0 �ɑ����B
+  新規作成。Dorothy2 の xor100813_2.dms version 0 に相当。
 
 Dorothy2\system\menu\set\usersetting.dms  version 20140507.0
-  �V�K�쐬�B
+  新規作成。
 
-  Dorothy2 �� user_name.dms version 1.0 �� common.dms version 1.0
-  �ɑ�������@�\�����������B
+  Dorothy2 の user_name.dms version 1.0 と common.dms version 1.0
+  に相当する機能も統合した。
 
 
 [EOF]

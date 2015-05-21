@@ -1,105 +1,105 @@
 drawr.dms
 
 
-drawr �p�̃X�N���v�g�ł��B
+drawr 用のスクリプトです。
 
-�g�����ɂ���Ă͐ڑ���T�[�o�ɍ������ׂ��|���Ă��܂����Ƃ�����̂ŁA�\��
-�����Ӊ������B
+使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分
+ご注意下さい。
 
-�ꊇ�_�E�����[�h���� HTML ��͂Ɏ��s����悤�Ȃ��Ƃ����邩���m��Ȃ��̂ŁA
-�t�@�C������肱�ڂ��Ă��Ȃ����K���m�F���ĉ������B
+一括ダウンロード時に HTML 解析に失敗するようなことがあるかも知れないので、
+ファイルを取りこぼしていないか必ず確認して下さい。
 
 
-�g�p���@
+使用方法
 ========
 
-�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
-  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
-  �v���O�������E�N���b�N �� �ݒ�
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
 
 
-�Ή� URL
+対応 URL
 ========
 
 http://drawr.net/[a-z0-9][-_a-z0-9]+[a-z0-9]
-  �v���t�B�[���̃y�[�W
-  ���̍�҂̑S��i���_�E�����[�h�B
+  プロフィールのページ
+  その作者の全作品をダウンロード。
 
 http://drawr.net/user.php?id=\d+
-  ��i�ꗗ�̃y�[�W
-  �y�[�W�ԍ����w�肳��Ă���΂��̃y�[�W�A�����łȂ���ΑS�y�[�W��
-  ��i���_�E�����[�h�B
+  作品一覧のページ
+  ページ番号が指定されていればそのページ、そうでなければ全ページの
+  作品をダウンロード。
 
-  1�y�[�W�ڂ����_�E�����[�h�������ꍇ�� ?page=1 ��t����B
+  1ページ目だけダウンロードしたい場合は ?page=1 を付ける。
 
 http://drawr.net/show.php?id=\d+
-  �C���X�g�܂��̓X���b�h�̃y�[�W
-  ���̃y�[�W�̑S�ẴC���X�g���_�E�����[�h�B
+  イラストまたはスレッドのページ
+  そのページの全てのイラストをダウンロード。
 
 http://drawr.net/show.php?id=\d+#rid\d+
-  �C���X�g�܂��̓X���b�h�̃y�[�W�̓���C���X�g
-  �t���O�����g���ʎq�Ŏw�肳�ꂽ�摜�����_�E�����[�h�B
+  イラストまたはスレッドのページの特定イラスト
+  フラグメント識別子で指定された画像だけダウンロード。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
 
-�ύX����
+変更履歴
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
-  �Â��`���̃t�@�C�����ϐ� %ILLUST_ID% ���폜�B
+  古い形式のファイル名変数 %ILLUST_ID% を削除。
 
 2012-11-19
-  �������B
+  微調整。
 
 2012-07-11
-  �啝�ɕύX�B
+  大幅に変更。
 
-  http://drawr.net/user.php?id=\d+ �Ńy�[�W�ԍ����w�肳��Ă���ꍇ��
-  ���̃y�[�W�����_�E�����[�h����悤�ɂ����B
+  http://drawr.net/user.php?id=\d+ でページ番号が指定されている場合は
+  そのページだけダウンロードするようにした。
 
-  �t�@�C�����ϐ�
-    %ID%  %ILLUST_ID% ����ύX
-    %YYYY%  �V�K�A����4��
-    %YY%  ����̉�2���ɕύX
-    %HH%  %hh% ����ύX
-    %MI%  %mm% ����ύX
-    %SS%  %ss% ����ύX
+  ファイル名変数
+    %ID%  %ILLUST_ID% から変更
+    %YYYY%  新規、西暦4桁
+    %YY%  西暦の下2桁に変更
+    %HH%  %hh% から変更
+    %MI%  %mm% から変更
+    %SS%  %ss% から変更
 
 2012-03-29
-  common\{http,utf8}.dms ���g���悤�ɂ����B
+  common\{http,utf8}.dms を使うようにした。
 
 2011-12-18
-  Dorothy.userPath�ADorothy.userIniPath ���g���悤�ɂ����B
-  .ini �t�@�C���̓ǂݍ��݂� common\fnutil.dms �Ɏ����B
+  Dorothy.userPath、Dorothy.userIniPath を使うようにした。
+  .ini ファイルの読み込みを common\fnutil.dms に実装。
 
 2011-12-05
-  �w�b�_�� match= ���C���B�R�����g�i�t�B���^�����O�ݒ�j���C���B
+  ヘッダの match= を修正。コメント（フィルタリング設定）を修正。
 
-  remove_this() �� common/fnutil.dms �Ɉړ��B
-  �\�[�X�̊ȑf���̂��߁Acommon_load() ��`���ňꊇ���čs���悤�ɂ����B
+  remove_this() を common/fnutil.dms に移動。
+  ソースの簡素化のため、common_load() を冒頭で一括して行うようにした。
 
 2011-10-17
-  �X���b�h�̃R�����g�摜���_�E�����[�h���Ȃ����Ƃ�����s����C���B
+  スレッドのコメント画像をダウンロードしないことがある不具合を修正。
 
-  �ꊇ�_�E�����[�h���� Dorothy.fileName �����������Ȃ��悤�ɂ����B
-  �t�@�C����1�����_�E�����[�h���鎞�� item.filename �ł͂Ȃ�
-  Dorothy.fileName ������������悤�ɂ����B
+  一括ダウンロード時に Dorothy.fileName を書き換えないようにした。
+  ファイルを1個だけダウンロードする時に item.filename ではなく
+  Dorothy.fileName を書き換えるようにした。
 
 2011-09-06
-  �ȈՐݒ�@�\��ǉ��i.ini �t�@�C�����J���j�B
+  簡易設定機能を追加（.ini ファイルを開く）。
 
-  ����ɂ͊֌W�Ȃ��\�[�X�R�[�h�̕ύX:
-    { saveas: �` } �� { Filename: �` } �ɕύX�B
-    spec.day �� spec.date �ɏC���B
+  動作には関係ないソースコードの変更:
+    { saveas: ～ } を { Filename: ～ } に変更。
+    spec.day を spec.date に修正。
 
 2011-08-31
-  �����o�[�W�����B
+  初期バージョン。
 
 
 [EOF]

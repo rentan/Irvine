@@ -1,10 +1,10 @@
 common\exec.dms
 
 
-�q�v���Z�X�����s����I�u�W�F�N�g�ł��B
+子プロセスを実行するオブジェクトです。
 
 
-�g�p���@
+使用方法
 ========
 
   common_load ('exec');
@@ -19,64 +19,64 @@ common\exec.dms
     stat = -1;
   }
 
-�܂��͊ȈՌ`����
+または簡易形式で
 
   commono_load ('exec');
   var stat = Exec ('explorer.exe');
 
 
-Exec �I�u�W�F�N�g�̃v���p�e�B
+Exec オブジェクトのプロパティ
 =============================
 
-�d�l���ł܂��Ă��Ȃ����ߏȗ��B
+仕様が固まっていないため省略。
 
 
-Exec �I�u�W�F�N�g�̃��\�b�h
+Exec オブジェクトのメソッド
 ===========================
 
-�R���X�g���N�^
+コンストラクタ
 new Exec ()
-  �߂�l ... Exec �C���X�^���X
+  戻り値 ... Exec インスタンス
 
-  Exec �C���X�^���X���쐬���ĕԂ��B
+  Exec インスタンスを作成して返す。
 
 exec (app, cmd, dir)
-  app ... string: �v���O�����̃p�X
-  cmd ... string: �R�}���h���C������
-  dir ... string: ���s���̃J�����g�t�H���_
-  �߂�l ... number: �v���O�����̏I���R�[�h
+  app ... string: プログラムのパス
+  cmd ... string: コマンドライン引数
+  dir ... string: 実行時のカレントフォルダ
+  戻り値 ... number: プログラムの終了コード
 
-  �v���O���������s���ďI���R�[�h��Ԃ��܂��B���s�Ɏ��s�����ꍇ��
-  ��O���������܂��B
+  プログラムを実行して終了コードを返します。実行に失敗した場合は
+  例外が発生します。
 
-�ȈՎ��s���[�h
+簡易実行モード
 Exec (app, cmd, ...)
-  app ... string: �v���O�����̃p�X
-  cmd ... string: �R�}���h���C������(�ȗ��A�����w���)
-  �߂�l ... number: �v���O�����̏I���R�[�h
+  app ... string: プログラムのパス
+  cmd ... string: コマンドライン引数(省略可、複数指定可)
+  戻り値 ... number: プログラムの終了コード
 
-  Exec() �� new ���Z�q�Ȃ��ŌĂяo���ƁA�v���O�����𒼐ڎ��s����
-  �I���R�[�h��Ԃ��܂��B���s�Ɏ��s�����ꍇ�� -1 ���Ԃ�܂��B
+  Exec() を new 演算子なしで呼び出すと、プログラムを直接実行して
+  終了コードを返します。実行に失敗した場合は -1 が返ります。
 
-  cmd �̌�Ɉ������w�肷��� cmd �ɃX�y�[�X�ŘA������ăv���O����
-  �ɓn����܂��B
+  cmd の後に引数を指定すると cmd にスペースで連結されてプログラム
+  に渡されます。
 
-  �J�����g�t�H���_�� Dorothy.temp �ɂȂ�܂��B
+  カレントフォルダは Dorothy.temp になります。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
 
-�ύX����
+変更履歴
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
 2014-01-10  version 1.0
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

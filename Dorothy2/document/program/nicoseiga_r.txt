@@ -1,204 +1,204 @@
 nicoseiga_r.dms
 
 
-�j�R�j�R�É�p�̃X�N���v�g�ł��idamepo ���� nicovideo_Seiga.dms �Ƃ͕ʕ��j�B
+ニコニコ静画用のスクリプトです（damepo 氏の nicovideo_Seiga.dms とは別物）。
 
-�g�����ɂ���Ă͐ڑ���T�[�o�ɍ������ׂ��|���Ă��܂����Ƃ�����̂ŁA�\����
-���Ӊ������B
+使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分ご
+注意下さい。
 
-�ꊇ�_�E�����[�h���� HTML ��͂Ɏ��s����悤�Ȃ��Ƃ����邩���m��Ȃ��̂ŁA
-�t�@�C������肱�ڂ��Ă��Ȃ����K���m�F���ĉ������B
+一括ダウンロード時に HTML 解析に失敗するようなことがあるかも知れないので、
+ファイルを取りこぼしていないか必ず確認して下さい。
 
 
-�g�p���@
+使用方法
 ========
 
-�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
-  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
-  �v���O�������E�N���b�N �� �ݒ�
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
 
-�ȉ��̃h�L�������g���Q�Ƃ��ĉ������B
+以下のドキュメントも参照して下さい。
 
-�E�A�C�e���ǉ�
+・アイテム追加
   Dorothy2\document\common\additem.txt
 
-�E�u���E�U Cookie
+・ブラウザ Cookie
   Dorothy2\document\common\browsercookie.txt
 
 
-�Ή� URL
+対応 URL
 ========
 
 http://seiga.nicovideo.jp/user/watch/\d+
-  ���[�U�[�X���C�h�V���[
-  ���̍�҂̑S��i���_�E�����[�h�B
+  ユーザースライドショー
+  その作者の全作品をダウンロード。
 
 http://seiga.nicovideo.jp/user/illust/\d+
-  �C���X�g�ꗗ
-  ���̍�҂̑S��i���_�E�����[�h�B
+  イラスト一覧
+  その作者の全作品をダウンロード。
 
-  1�y�[�W�ڂ����_�E�����[�h�������ꍇ�� ?page=1 ��t����B
-  ��ʃC���X�g�����_�E�����[�h�������ꍇ�� ?target=seiga ��t����B
+  1ページ目だけダウンロードしたい場合は ?page=1 を付ける。
+  一般イラストだけダウンロードしたい場合は ?target=seiga を付ける。
 
 http://seiga.nicovideo.jp/user/illust/\d+?page=\d+
-  �C���X�g�ꗗ
-  ���̃y�[�W�ɕ\������Ă���S��i���_�E�����[�h�B
+  イラスト一覧
+  そのページに表示されている全作品をダウンロード。
 
 http://seiga.nicovideo.jp/seiga/im\d+
-  �C���X�g�̃y�[�W
+  イラストのページ
 
 http://seiga.nicovideo.jp/image/source(/|\?id=)\d+
-  �摜�t�@�C���܂��̓N�b�V�����y�[�W�ւ̃��_�C���N�g
+  画像ファイルまたはクッションページへのリダイレクト
 
 http://lohas.nicoseiga.jp/thumb/+\d+
-  �T���l�C���摜
-  ���̉摜���_�E�����[�h�B
+  サムネイル画像
+  元の画像をダウンロード。
 
 http://seiga.nicovideo.jp/manga/list?user_id=\d+
-  �}���K ��҃y�[�W
-  ���̍�҂̑S��i���_�E�����[�h�B
+  マンガ 作者ページ
+  その作者の全作品をダウンロード。
 
 http://seiga.nicovideo.jp/comic/\d+
-  �}���K ��i�y�[�W
-  ���̍�i�̑S�G�s�\�[�h���_�E�����[�h�B
+  マンガ 作品ページ
+  その作品の全エピソードをダウンロード。
 
 http://seiga.nicovideo.jp/watch/mg\d+
-  �}���K�̃y�[�W�B
-  �S�y�[�W���_�E�����[�h�B
+  マンガのページ。
+  全ページをダウンロード。
 
 http://seiga.nicovideo.jp/watch/sg\d+
-  ����̃X���C�h�V���[
-  �S�摜���_�E�����[�h�B
+  お題のスライドショー
+  全画像をダウンロード。
 
 http://seiga.nicovideo.jp/bbs/sg\d+
-  ����
-  ��{�I�ɂ̓u���E�U�ŕ\���������Ɋ܂܂��摜���_�E�����[�h���邪�A
-  �ȉ��̏ꍇ�̂ݓ��ʈ�������B
+  お題
+  基本的にはブラウザで表示した時に含まれる画像をダウンロードするが、
+  以下の場合のみ特別扱いする。
 
-  �`/sg\d+         �S�摜���_�E�����[�h
-  �`/sg\d+/        �V
-  �`/sg\d+/.*#\d+  �t���O�����g���ʎq�Ŏw�肳�ꂽ�摜�����_�E�����[�h
+  ～/sg\d+         全画像をダウンロード
+  ～/sg\d+/        〃
+  ～/sg\d+/.*#\d+  フラグメント識別子で指定された画像だけダウンロード
 
-  1-20 �̉摜�����_�E�����[�h�������ꍇ�� /1- ��t����B
+  1-20 の画像だけダウンロードしたい場合は /1- を付ける。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�E�t�H���_�ݒ� �� HTTP(1) �� HTTP ���\�b�h�� GET �ɐݒ肷��K�v������܂��B
+・フォルダ設定 → HTTP(1) → HTTP メソッドを GET に設定する必要があります。
 
-�E�ݒ�Ŏw�肵���u���E�U�Ń��O�C�����Ă����K�v������܂��B
+・設定で指定したブラウザでログインしておく必要があります。
 
-�E����ň��p���ꂽ�摜�̃����N�悪�摜�t�@�C���łȂ����̂ɂ͑Ή����Ă��܂���B
-  �i�j�R�j�R��S�Ȃ̂��G�J�L�R���Y�����܂����A���ɂ����邩������܂���j
+・お題で引用された画像のリンク先が画像ファイルでないものには対応していません。
+  （ニコニコ大百科のお絵カキコが該当しますが、他にもあるかもしれません）
 
-�EDRM �ŕی삳��Ă���}���K�ɂ͑Ή����Ă��܂���B
+・DRM で保護されているマンガには対応していません。
 
-�E�}���K�̍�҃y�[�W�͍�i���������ƕ����y�[�W�ɂȂ�Ǝv���܂����A���ۂɂ���
-  �Ȃ��Ă���y�[�W����������Ȃ����ߖ��Ή��ł��B
+・マンガの作者ページは作品数が多いと複数ページになると思われますが、実際にそう
+  なっているページが見当たらないため未対応です。
 
 
-�ύX����
+変更履歴
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
-  �Â��`���̃t�@�C�����ϐ����폜�B
+  古い形式のファイル名変数を削除。
     %ILLUST_ID% %MANGA_PAGES% %MANGA_P% %MANGA_PZ%
 
 2014-01-02
-  �ꕔ�̃C���X�g�ō�Җ����擾�ł��Ȃ��s����C���B
+  一部のイラストで作者名が取得できない不具合を修正。
     thanks to http://toro.2ch.net/test/read.cgi/win/1371715233/713
 
 2013-11-29
-  �T�C�g���̕ύX�ɑΉ��B
+  サイト側の変更に対応。
 
 2013-09-28
-  �T�C�g���̕ύX�ɂ�萶�����ȉ��̕s����C���B
-    %TITLE% �Ɂu �^ (��Җ�) ����̃C���X�g�v�����B
-    �t��� %USER_ID%�A%NICKNAME% ���擾�ł��Ȃ��B
+  サイト側の変更により生じた以下の不具合を修正。
+    %TITLE% に「 ／ (作者名) さんのイラスト」がつく。
+    春画の %USER_ID%、%NICKNAME% が取得できない。
 
-  �t�@�C�����ϐ���ύX�B�ߋ��̂��̂��c���Ă���܂��B
-    %MANGA_P%  ��  %P%
-    %MANGA_PZ%  ��  %PZ%
-    %MANGA_PAGES%  ��  %PAGES%
+  ファイル名変数を変更。過去のものも残してあります。
+    %MANGA_P%  →  %P%
+    %MANGA_PZ%  →  %PZ%
+    %MANGA_PAGES%  →  %PAGES%
 
-  �}���K�̍�҂���������ꍇ�̓X�y�[�X�Ōq����悤�ɂ����B
+  マンガの作者が複数いる場合はスペースで繋げるようにした。
 
 2013-04-28
-  nico.ms �ւ̑Ή����폜�B
+  nico.ms への対応を削除。
 
-  �w�b�_�� //match= �̋L�q��P���ɂ���(�Ή����Ă��Ȃ� URL �ɂ��}�b�`
-  ���܂����u���Ή��� URL �ł��B�v�ƕ\������邾���ŉe���͂Ȃ��͂��ł�)�B
+  ヘッダの //match= の記述を単純にした(対応していない URL にもマッチ
+  しますが「未対応の URL です。」と表示されるだけで影響はないはずです)。
 
-  �}���K�ɑΉ��B
+  マンガに対応。
 
 2012-12-27
-  http://seiga.nicovideo.jp//seiga/im�` �̂悤�ȃ��[�g�̃X���b�V����
-  2���� URL �ɑΉ��B�w�b�_�������������̂ŁA����_�E�����[�h�Q�ݒ��
-  �u�f�[�^���ēǍ��݁v���ĉ������B
+  http://seiga.nicovideo.jp//seiga/im～ のようなルートのスラッシュが
+  2つある URL に対応。ヘッダを書き換えたので、動画ダウンロード２設定で
+  「データを再読込み」して下さい。
 
 2012-11-19
-  Cookie �擾���C�u������ common\browsercookie.dms �ɕύX���A
-  IE(�ی샂�[�h)�AFirefox�AChrome�ACEF �ɑΉ��B
+  Cookie 取得ライブラリを common\browsercookie.dms に変更し、
+  IE(保護モード)、Firefox、Chrome、CEF に対応。
 
-  �����O�C����Ԃ� HTML �̕ύX�ɑΉ��B
+  未ログイン状態の HTML の変更に対応。
 
 2012-07-29
-  �C���X�g�Łu���������́A�A�_���g�v�f���܂ރR���e���c������܂��v��
-  ���b�Z�[�W���\�����ꂽ�ꍇ�ɁA�t�@�C�����ϐ� %USER_ID% %NICKNAME% ��
-  Unknown �ɂȂ�s����C���B
+  イラストで「ここから先は、アダルト要素を含むコンテンツがあります」の
+  メッセージが表示された場合に、ファイル名変数 %USER_ID% %NICKNAME% が
+  Unknown になる不具合を修正。
 
-  ?target=shunga �t���̃C���X�g�ꗗ�ŏ�L�̃��b�Z�[�W���\�����ꂽ�ꍇ��
-  �_�E�����[�h�Ώۂ�������Ȃ��s����C���B
+  ?target=shunga 付きのイラスト一覧で上記のメッセージが表示された場合に
+  ダウンロード対象が見つからない不具合を修正。
 
-  �C���X�g�ꗗ�� ?target= ���Ȃ��ꍇ�� ?target=illust_all ��t��������
-  �悤�ɂ����B
+  イラスト一覧で ?target= がない場合は ?target=illust_all を付け加える
+  ようにした。
 
 2012-07-11
-  �啝�ɕύX�B
+  大幅に変更。
 
-  �t�@�C�����ϐ� %ID% %ILLUST_ID% ����ύX
+  ファイル名変数 %ID% %ILLUST_ID% から変更
 
-  <del>���v���Ȃ���Ύ��񂩂炨��ւ̑Ή����폜����\��ł��B</del>
-  <ins>���v������悤�Ȃ̂ō폜���܂���B</ins>
+  <del>需要がなければ次回からお題への対応を削除する予定です。</del>
+  <ins>需要があるようなので削除しません。</ins>
 
 2012-04-15
-  common\http.dms �̎d�l�ύX�ɑΉ��B
+  common\http.dms の仕様変更に対応。
 
 2012-03-29
-  common\{http,utf8}.dms ���g���悤�ɂ����B
-  ctype2ext.dms ���g��Ȃ��悤�ɂ����B
+  common\{http,utf8}.dms を使うようにした。
+  ctype2ext.dms を使わないようにした。
 
-  ���[�U�[ ID�A�j�b�N�l�[�����擾�ł��Ȃ��Ȃ��Ă����̂��C���B
-  �C���X�g�ꗗ��2�y�[�W�ڈȍ~���擾�ł��Ȃ��Ȃ��Ă����̂��C���B
+  ユーザー ID、ニックネームを取得できなくなっていたのを修正。
+  イラスト一覧の2ページ目以降を取得できなくなっていたのを修正。
 
-  �]���̏�����ύX�B
+  転送の処理を変更。
 
 2011-12-24
-  ���O�C�����Ă��邩�m�F����悤�ɂ����B
-  http://nico.ms/ �̒Z�k URL ��W�J����悤�ɂ����B
+  ログインしているか確認するようにした。
+  http://nico.ms/ の短縮 URL を展開するようにした。
 
 2011-12-18
-  Dorothy.userPath�ADorothy.userIniPath ���g���悤�ɂ����B
-  .ini �t�@�C���̓ǂݍ��݂� common\fnutil.dms �Ɏ����B
+  Dorothy.userPath、Dorothy.userIniPath を使うようにした。
+  .ini ファイルの読み込みを common\fnutil.dms に実装。
 
 2011-12-05
-  �w�b�_�� match= ���C���B�R�����g�i�t�B���^�����O�ݒ�j���C���B
+  ヘッダの match= を修正。コメント（フィルタリング設定）を修正。
 
-  remove_this() �� common/fnutil.dms �Ɉړ��B
-  �\�[�X�̊ȑf���̂��߁Acommon_load() ��`���ňꊇ���čs���悤�ɂ����B
+  remove_this() を common/fnutil.dms に移動。
+  ソースの簡素化のため、common_load() を冒頭で一括して行うようにした。
 
 2011-09-06
-  �ȈՐݒ�@�\��ǉ��i.ini �t�@�C�����J���j�B
+  簡易設定機能を追加（.ini ファイルを開く）。
 
-  ����ɂ͊֌W�Ȃ��\�[�X�R�[�h�̕ύX:
-    { saveas: �` } �� { Filename: �` } �ɕύX�B
+  動作には関係ないソースコードの変更:
+    { saveas: ～ } を { Filename: ～ } に変更。
 
 2011-08-31
-  �����o�[�W�����B
+  初期バージョン。
 
 
 [EOF]

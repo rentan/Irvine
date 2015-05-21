@@ -1,48 +1,48 @@
 actibook.dms
 
 
-ActiBook �p�̃X�N���v�g�ł��B
+ActiBook 用のスクリプトです。
 
-�g�����ɂ���Ă͐ڑ���T�[�o�ɍ������ׂ��|���Ă��܂����Ƃ�����̂ŁA�\��
-�����Ӊ������B
+使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分
+ご注意下さい。
 
-�ꊇ�_�E�����[�h���� XML ��͂Ɏ��s����悤�Ȃ��Ƃ����邩���m��Ȃ��̂ŁA
-�t�@�C������肱�ڂ��Ă��Ȃ����K���m�F���ĉ������B
+一括ダウンロード時に XML 解析に失敗するようなことがあるかも知れないので、
+ファイルを取りこぼしていないか必ず確認して下さい。
 
-���̃X�N���v�g�͊e�T�C�g�̗��p�K��ŋ�������Ă���͈͂ł̂ݎg�p�ł��܂��B
+このスクリプトは各サイトの利用規約で許諾されている範囲でのみ使用できます。
 
 
-�g�p���@
+使用方法
 ========
 
-�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
-  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
-  �v���O�������E�N���b�N �� �ݒ�
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
 
 
-�Ή� URL
+対応 URL
 ========
 
 https?://[^/]+/[^?#]+/_SWF_Window.html
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
 
-�ύX����
+変更履歴
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
 2013-10-14
-  ActiBook �I�u�W�F�N�g�� common\actibook.dms �ɓƗ����č�蒼���B
+  ActiBook オブジェクトを common\actibook.dms に独立して作り直し。
 
 2012-12-17
-  �����o�[�W�����B
-  comicmeteor.dms �̌�p�Ƃ��Ĕėp���B
+  初期バージョン。
+  comicmeteor.dms の後継として汎用化。
 
 
 [EOF]

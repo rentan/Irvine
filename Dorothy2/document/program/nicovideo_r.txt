@@ -1,60 +1,60 @@
 nicovideo_r.dms
 
 
-ƒjƒRƒjƒR“®‰æ—p‚ÌƒXƒNƒŠƒvƒg‚Å‚·B
+ãƒ‹ã‚³ãƒ‹ã‚³å‹•ç”»ç”¨ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆã§ã™ã€‚
 
 
-Žg—p•û–@
+ä½¿ç”¨æ–¹æ³•
 ========
 
-ˆÈ‰º‚ÌŽè‡‚ÅÝ’èƒtƒ@ƒCƒ‹i.inij‚ªŠJ‚­‚Ì‚ÅAD‚Ý‚Å‘‚«Š·‚¦‚Ä‰º‚³‚¢B
-  ƒc[ƒ‹ ¨ ƒƒCƒ“ƒƒjƒ…[ ¨ “®‰æƒ_ƒEƒ“ƒ[ƒhÝ’è‚Q
-  ƒvƒƒOƒ‰ƒ€‚ð‰EƒNƒŠƒbƒN ¨ Ý’è
+ä»¥ä¸‹ã®æ‰‹é †ã§è¨­å®šãƒ•ã‚¡ã‚¤ãƒ«ï¼ˆ.iniï¼‰ãŒé–‹ãã®ã§ã€å¥½ã¿ã§æ›¸ãæ›ãˆã¦ä¸‹ã•ã„ã€‚
+  ãƒ„ãƒ¼ãƒ« â†’ ãƒ¡ã‚¤ãƒ³ãƒ¡ãƒ‹ãƒ¥ãƒ¼ â†’ å‹•ç”»ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰è¨­å®šï¼’
+  ãƒ—ãƒ­ã‚°ãƒ©ãƒ ã‚’å³ã‚¯ãƒªãƒƒã‚¯ â†’ è¨­å®š
 
-ˆÈ‰º‚ÌƒhƒLƒ…ƒƒ“ƒg‚àŽQÆ‚µ‚Ä‰º‚³‚¢B
+ä»¥ä¸‹ã®ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚‚å‚ç…§ã—ã¦ä¸‹ã•ã„ã€‚
 
-Eƒuƒ‰ƒEƒU Cookie
+ãƒ»ãƒ–ãƒ©ã‚¦ã‚¶ Cookie
   Dorothy2\document\common\browsercookie.txt
 
 
-‘Î‰ž URL
+å¯¾å¿œ URL
 ========
 
 http://www.nicovideo.jp/watch/([a-z]{2})?\d+
 
 
-Žd—lE§ŒÀŽ–€
+ä»•æ§˜ãƒ»åˆ¶é™äº‹é …
 ==============
 
-EƒtƒHƒ‹ƒ_Ý’è ¨ HTTP(1) ¨ HTTP ƒƒ\ƒbƒh‚ð GET ‚ÉÝ’è‚·‚é•K—v‚ª‚ ‚è‚Ü‚·B
+ãƒ»ãƒ•ã‚©ãƒ«ãƒ€è¨­å®š â†’ HTTP(1) â†’ HTTP ãƒ¡ã‚½ãƒƒãƒ‰ã‚’ GET ã«è¨­å®šã™ã‚‹å¿…è¦ãŒã‚ã‚Šã¾ã™ã€‚
 
-EÝ’è‚ÅŽw’è‚µ‚½ƒuƒ‰ƒEƒU‚ÅƒƒOƒCƒ“‚µ‚Ä‚¨‚­•K—v‚ª‚ ‚è‚Ü‚·B
+ãƒ»è¨­å®šã§æŒ‡å®šã—ãŸãƒ–ãƒ©ã‚¦ã‚¶ã§ãƒ­ã‚°ã‚¤ãƒ³ã—ã¦ãŠãå¿…è¦ãŒã‚ã‚Šã¾ã™ã€‚
 
-E‰{——§ŒÀ‚Ì‚©‚©‚Á‚Ä‚¢‚é“®‰æ‚É‚Í‘Î‰ž‚µ‚Ä‚¢‚Ü‚¹‚ñB
+ãƒ»é–²è¦§åˆ¶é™ã®ã‹ã‹ã£ã¦ã„ã‚‹å‹•ç”»ã«ã¯å¯¾å¿œã—ã¦ã„ã¾ã›ã‚“ã€‚
 
 
-•ÏX—š—ð
+å¤‰æ›´å±¥æ­´
 ========
 
 2014-12-09  version 20141209.0  rentan at rentan.org
-  common\getter.dms ‚ðŽg‚¤‚æ‚¤‚É‚µ‚½B
+  common\getter.dms ã‚’ä½¿ã†ã‚ˆã†ã«ã—ãŸã€‚
 
 2014-08-16  version 20140816.0  rentan at rentan.org
-  domparser\xml ‚Ì‘ã‚í‚è‚É domparser\pseudo_xml ‚ðŽg‚¤‚æ‚¤‚É‚µ‚½B
-  getterobject ‚ðŽg‚¤‚æ‚¤‚É‚µ‚½B
+  domparser\xml ã®ä»£ã‚ã‚Šã« domparser\pseudo_xml ã‚’ä½¿ã†ã‚ˆã†ã«ã—ãŸã€‚
+  getterobject ã‚’ä½¿ã†ã‚ˆã†ã«ã—ãŸã€‚
 
 2014-08-06  version 20140806.0  rentan at rentan.org
-  ch_id ‚ðŽæ“¾‚Å‚«‚È‚¢•s‹ï‡‚ðC³B
+  ch_id ã‚’å–å¾—ã§ããªã„ä¸å…·åˆã‚’ä¿®æ­£ã€‚
 
 2014-05-23  version 20140523.0  rentan at rentan.org
-  NameBuilder#setFilename() ‚ðŽg‚¤‚æ‚¤‚É‚µ‚½B
+  NameBuilder#setFilename() ã‚’ä½¿ã†ã‚ˆã†ã«ã—ãŸã€‚
 
 2014-04-03  version 20140403.0  rentan at rentan.org
-  EInvalidPointer ‚ªo‚É‚­‚¢‚æ‚¤‚É document ‚É null ‚ð‘ã“üB
-  Cookie ‚Ì’l‚ð•\Ž¦‚µ‚È‚¢(browsercookie ‘¤‚Å•\Ž¦‚·‚é‚æ‚¤‚É‚µ‚½‚Ì‚Å)B
+  EInvalidPointer ãŒå‡ºã«ãã„ã‚ˆã†ã« document ã« null ã‚’ä»£å…¥ã€‚
+  Cookie ã®å€¤ã‚’è¡¨ç¤ºã—ãªã„(browsercookie å´ã§è¡¨ç¤ºã™ã‚‹ã‚ˆã†ã«ã—ãŸã®ã§)ã€‚
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  ‰Šúƒo[ƒWƒ‡ƒ“B
+  åˆæœŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã€‚
 
 
 [EOF]

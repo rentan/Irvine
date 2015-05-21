@@ -2,157 +2,157 @@ common\utf8.dms
 common\utf8_charref.dms
 
 
-HTML �̎��̎Q�Ƃ��܂� UTF-8 ������� Shift_JIS �֕ϊ�����I�u�W�F�N�g�ł��B
+HTML の実体参照を含む UTF-8 文字列を Shift_JIS へ変換するオブジェクトです。
 
 
-�g�p���@
+使用方法
 ========
 
-  common_load ('utf8');  // 'utf8' �͑S�ď�����
+  common_load ('utf8');  // 'utf8' は全て小文字
   var utf8 = new Utf8 ('string');
 
 
-Utf8 �I�u�W�F�N�g�̃v���p�e�B
+Utf8 オブジェクトのプロパティ
 =============================
 
-�Ȃ��B
+なし。
 
 
-Utf8 �I�u�W�F�N�g�̃��\�b�h
+Utf8 オブジェクトのメソッド
 ===========================
 
-�R���X�g���N�^
+コンストラクタ
 new Utf8 (s)
-  s ... string: UTF-8 �`���̕�����
-  �߂�l ... Utf8 �C���X�^���X
+  s ... string: UTF-8 形式の文字列
+  戻り値 ... Utf8 インスタンス
 
-  Utf8 �C���X�^���X���쐬���As �ŏ��������ĕԂ��B
+  Utf8 インスタンスを作成し、s で初期化して返す。
 
-  ��: var utf8 = new Utf8 ('string');
+  例: var utf8 = new Utf8 ('string');
 
 
 clone ()
-  �߂�l  ... Utf8 �C���X�^���X
+  戻り値  ... Utf8 インスタンス
 
-  Utf8 �C���X�^���X�𕡐����ĕԂ��B
+  Utf8 インスタンスを複製して返す。
 
 
 toUTF8 ()
-  �߂�l ... sring
+  戻り値 ... sring
 
-  UTF-8 �`���̕������Ԃ��B
+  UTF-8 形式の文字列を返す。
 
-  String �I�u�W�F�N�g�ɂ��� match() �� trim() �Ƃ��������\�b�h�ɑ�������
-  ���̂́AUtf8 �ɂ͂Ȃ��̂� .toUTF8() �ŕ�����^�ɕϊ����Ă���g���B
+  String オブジェクトにある match() や trim() といったメソッドに相当する
+  ものは、Utf8 にはないので .toUTF8() で文字列型に変換してから使う。
 
-  .toString() �ł� '[Object Utf8]' ���Ԃ��Ă��܂��̂Œ��ӁB
+  .toString() では '[Object Utf8]' が返ってしまうので注意。
 
 
 fromUnicode (u)
-  u ... number: Unicode �R�[�h�|�C���g
-  �߂�l ... string
+  u ... number: Unicode コードポイント
+  戻り値 ... string
 
-  u �Ŏw�肵�� Unicode �R�[�h�|�C���g�� UTF-8 �`���̕�����ɕϊ����ĕԂ��B
-  ��Utf8 �I�u�W�F�N�g�ł͂Ȃ� string �I�u�W�F�N�g�B
+  u で指定した Unicode コードポイントを UTF-8 形式の文字列に変換して返す。
+  ※Utf8 オブジェクトではなく string オブジェクト。
 
-  Utf8 �C���X�^���X���m�ۂ��Ă��Ȃ��ꍇ�ADMonkey �ł� Utf8.fromUnicode (�`)
-  �Ƃ����Ăяo�������o���Ȃ��̂ŁA����Ɉȉ��̕��@��p����B
-    Utf8.prototype.fromUnicode (�`)
-    (new Utf8 ()).fromUnicode (�`)
+  Utf8 インスタンスを確保していない場合、DMonkey では Utf8.fromUnicode (～)
+  という呼び出し方が出来ないので、代わりに以下の方法を用いる。
+    Utf8.prototype.fromUnicode (～)
+    (new Utf8 ()).fromUnicode (～)
 
 
 removeTags ()
-  �߂�l ... Utf8 �C���X�^���X
+  戻り値 ... Utf8 インスタンス
 
-  HTML �̃^�O�i< ���� > �܂ł͈̔́j��S�č폜���A�V���� Utf8 �C���X�^���X
-  �Ƃ��ĕԂ��B
+  HTML のタグ（< から > までの範囲）を全て削除し、新しい Utf8 インスタンス
+  として返す。
 
 
 decodeCharRef ()
-  �߂�l ... Utf8 �C���X�^���X
+  戻り値 ... Utf8 インスタンス
 
-  �����Q�Ƃ��f�R�[�h���A�V���� Utf8 �C���X�^���X�Ƃ��ĕԂ��B
+  文字参照をデコードし、新しい Utf8 インスタンスとして返す。
 
 
 unescape ()
-  �߂�l ... Utf8 �C���X�^���X
+  戻り値 ... Utf8 インスタンス
 
-  JavaScirpt �`���� \ �G�X�P�[�v���f�R�[�h���A�V���� Utf8 �C���X�^���X
-  �Ƃ��ĕԂ��B
+  JavaScirpt 形式の \ エスケープをデコードし、新しい Utf8 インスタンス
+  として返す。
 
 
 toSJIS ()
-  �߂�l ... string
+  戻り値 ... string
 
-  UTF-8 ���� Shift_JIS �ɕϊ����A������Ƃ��ĕԂ��B
+  UTF-8 から Shift_JIS に変換し、文字列として返す。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�Eutf8_charref.dms �̃f�[�^�͈ȉ��̃t�@�C�����琶�����Ă��܂��B
+・utf8_charref.dms のデータは以下のファイルから生成しています。
   http://www.w3.org/TR/html5/entities.json
-  http://www.w3.org/TR/html5/named-character-references.html (�����N��)
+  http://www.w3.org/TR/html5/named-character-references.html (リンク元)
 
 
-�ύX����
+変更履歴
 ========
 
 2014-08-11  version 20140811.0  rentan at rentan.org
-  .unescape(): �O���[�o���ϐ� i ���㏑�����Ă��܂��s����C���B
+  .unescape(): グローバル変数 i を上書きしてしまう不具合を修正。
     thanks to http://peace.2ch.net/test/read.cgi/win/1394240473/715-719
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
-  Windows XP �΍���폜�B
+  Windows XP 対策を削除。
 
 2014-02-27  version 8.1
-  ._toSJIS(): Windows XP �� API �̕s��΍�Ƃ��āAWideCharToMultiByte()
-  �̃o�b�t�@�𑽂߂Ɋm�ۂ���悤�ɂ����B
+  ._toSJIS(): Windows XP の API の不具合対策として、WideCharToMultiByte()
+  のバッファを多めに確保するようにした。
     thanks to http://toro.2ch.net/test/read.cgi/win/1371715233/918
 
 2014-01-02  version 8.0
-  .decodeCharRef(): &nbsp; �� U+0020 �ł͂Ȃ� U+00A0 �ɕϊ�����悤�ɂ����B
+  .decodeCharRef(): &nbsp; を U+0020 ではなく U+00A0 に変換するようにした。
 
-  .unescape(): �V�K���\�b�h�B
+  .unescape(): 新規メソッド。
 
-  �C���f���g��2�X�y�[�X�ɕύX�B
+  インデントを2スペースに変更。
 
 2013-08-22  version 7.0
-  _u2sTable: �ϊ��e�[�u���� ASCII/Unicode �`������ Shift_JIS �`���ɕύX�B
-  �ȑ̎��A�ɑ̎��̕ϊ��f�[�^��ǉ��B
+  _u2sTable: 変換テーブルを ASCII/Unicode 形式から Shift_JIS 形式に変更。
+  簡体字、繁体字の変換データを追加。
 
-  toSJIS(): Win32 API �ɂ��ϊ����ꊇ�ł͂Ȃ������s���悤�ɂ����B
-  �����ł��Ȃ����_�A�����_�̌��������������Ȃ��悤�ɂ����B
+  toSJIS(): Win32 API による変換を一括ではなく随時行うようにした。
+  結合できない濁点、半濁点の結合文字が化けないようにした。
 
-  utf8_charref.dms: �t�@�C���T�C�Y�팸�B
+  utf8_charref.dms: ファイルサイズ削減。
 
 2013-03-07  version 6.0
-  toSJIS(): U+10000 �ȏ�̕���(UTF-8 �� 0xF0 �ȏォ��n�܂�4�o�C�g����)
-  �Ŗ������[�v�ŏ������I���Ȃ��Ȃ�s����C���B
+  toSJIS(): U+10000 以上の文字(UTF-8 で 0xF0 以上から始まる4バイト文字)
+  で無限ループで処理が終わらなくなる不具合を修正。
     thanks to http://toro.2ch.net/test/read.cgi/win/1348568425/551-552
 
 2012-12-05  version 5.0
-  toSJIS(): 1�o�C�g�����𑽃o�C�g�����ɕϊ�����ƕ����񖖔����ϊ�����
-  �Ȃ����Ƃ�����s����C��('\\' �� '�_\' �ɂȂ��Ă���)�B
+  toSJIS(): 1バイト文字を多バイト文字に変換すると文字列末尾が変換され
+  ないことがある不具合を修正('\\' が '＼\' になっていた)。
 
 2012-12-04  version 4.0
-  utf8.dms: common_load ('utf8') �ȊO�̕��@�œǂݍ��܂ꂽ�ꍇ�͌x����
-  �\������悤�ɂ����B
+  utf8.dms: common_load ('utf8') 以外の方法で読み込まれた場合は警告を
+  表示するようにした。
 
 2012-11-25  version 3.0
-  utf8_charref.dms: ���f�[�^�� JSON �f�[�^�ɕύX���č�蒼���B
-  _normTable, _charRefTable: �f�[�^�\����ύX�B
+  utf8_charref.dms: 元データを JSON データに変更して作り直し。
+  _normTable, _charRefTable: データ構造を変更。
 
 2012-07-11  version 2.0
-  fromUnicode(): �h�L�������g�� prototype ���g�����Ăяo���������M�B
-  decodeCharRef(): �������܂ޕ������̎Q�Ƃ��f�R�[�h�o���Ȃ������s����C���B
-  _normTable: �ϊ��f�[�^��ǉ��B
+  fromUnicode(): ドキュメントに prototype を使った呼び出し方を加筆。
+  decodeCharRef(): 数字を含む文字実体参照をデコード出来なかった不具合を修正。
+  _normTable: 変換データを追加。
 
 2012-03-29  version 1.0
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

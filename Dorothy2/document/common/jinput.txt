@@ -2,12 +2,12 @@ common\jinput.dms
 common\jinput.hta
 
 
-�_�C�A���O��\�����ĕ��������͂���I�u�W�F�N�g�ł��B
+ダイアログを表示して文字列を入力するオブジェクトです。
 
-�w�肵���������摜���_�C�A���O���ɕ\�����邱�Ƃ��ł��܂��B
+指定した文字列や画像をダイアログ内に表示することができます。
 
 
-�g�p���@
+使用方法
 ========
 
   common_load ('jinput');
@@ -15,124 +15,124 @@ common\jinput.hta
   var text = jinput.inputText ();
 
 
-Jinput �I�u�W�F�N�g�̃v���p�e�B
+Jinput オブジェクトのプロパティ
 ===============================
 
 text ... string
-  �Ō�ɓ��͂��ꂽ������B�����l�� null�B
+  最後に入力された文字列。初期値は null。
 
 
-JInput �I�u�W�F�N�g�̃��\�b�h
+JInput オブジェクトのメソッド
 =============================
 
-�R���X�g���N�^
+コンストラクタ
 new JInput ()
-  �߂�l ... JInput �C���X�^���X
+  戻り値 ... JInput インスタンス
 
-  JInput �C���X�^���X���쐬���A���������ĕԂ��B
+  JInput インスタンスを作成し、初期化して返す。
 
-  ��: var jinput = new JInput ();
+  例: var jinput = new JInput ();
 
 inputText (hta_opt)
-  hta_opt ... array �܂��� object: �_�C�A���O�̎w��
-  �߂�l ... string �܂��� null�B
+  hta_opt ... array または object: ダイアログの指定
+  戻り値 ... string または null。
 
-  �_�C�A���O��\�������[�U�̓��͂�҂B���͂��ꂽ������� UTF-8 �`���ŕԂ��B
-  �L�����Z���y�уG���[���� null ��Ԃ��B
+  ダイアログを表示しユーザの入力を待つ。入力された文字列を UTF-8 形式で返す。
+  キャンセル及びエラー時は null を返す。
 
-  hta_opt �͈ȉ��̌`���̃I�u�W�F�N�g�A�܂��̓I�u�W�F�N�g�̔z��Ƃ��Ďw��
-  ����B�s�v�ȍ��ڂ͏ȗ��ł���B
+  hta_opt は以下の形式のオブジェクト、またはオブジェクトの配列として指定
+  する。不要な項目は省略できる。
 
   hta_opt = {
-    title: '�_�C�A���O�̃^�C�g��',
-    width: �_�C�A���O�̕�,
-    height: �_�C�A���O�̍���,
+    title: 'ダイアログのタイトル',
+    width: ダイアログの幅,
+    height: ダイアログの高さ,
 
-    limit: �����I������܂ł̕b��,
-    extend: �L�[���͌�Ɏ����I������܂ł̕b��,
+    limit: 自動終了するまでの秒数,
+    extend: キー入力後に自動終了するまでの秒数,
 
-    min: �ŏ�������(�K��l 1),
-    max: �ő啶����(�K��l 255),
+    min: 最小文字数(規定値 1),
+    max: 最大文字数(規定値 255),
 
-    img: '�摜URL',
-    image: '�摜�f�[�^',  // �o�C�i���f�[�^�� string �^�Ŏw��
+    img: '画像URL',
+    image: '画像データ',  // バイナリデータを string 型で指定
 
-    p: '�\�����镶����'
+    p: '表示する文字列'
   };
 
-  img�Aimage�Ap �Ȃǂ𕡐��w�肷��ꍇ��
+  img、image、p などを複数指定する場合は
     hta_opt = [ { image: '...' }, { p: 'abc' } ];
-  �̂悤�ɔz����g���ʁX�̃I�u�W�F�N�g�ɕ����邱�ƁB
+  のように配列を使い別々のオブジェクトに分けること。
 
-  �\�����镶�����
+  表示する文字列は
     hta_opt = { p: [ 'abc', 'xyz' ] };
-  �̂悤�� p �̒l��z��ɂ��邱�Ƃŕ����w��ł���B
+  のように p の値を配列にすることで複数指定できる。
 
 synchronize (func)
-  func ... function: �R�[���o�b�N�֐�(�����A�߂�l�Ȃ�)
-  �߂�l ... �Ȃ�
+  func ... function: コールバック関数(引数、戻り値なし)
+  戻り値 ... なし
 
-  Mutex (����=inputCaptcha) ��p���Ĕr���I�ɁAfunc �Ŏw�肵���R�[��
-  �o�b�N�֐����Ăяo���B���̃_�E�����[�h�X���b�h�Ő�Ɏ��s����Ă���
-  �ꍇ�́A�I������܂őҋ@����B
+  Mutex (名称=inputCaptcha) を用いて排他的に、func で指定したコール
+  バック関数を呼び出す。他のダウンロードスレッドで先に実行されていた
+  場合は、終了するまで待機する。
 
-  �ȉ��̊֐��Ƃ��r�����䂪�K�p�����B
+  以下の関数とも排他制御が適用される。
     common\Input\inputCaptcha.dms .... inputCaptcha()
     common\Input\inputCaptcha2.dms ... inputCaptcha2()
     common\Input\inputText.dms ....... inputText()
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�EExcel ���C���X�g�[������Ă���ƁA�_�C�A���O���őO�ʌŒ�\�����܂��B
+・Excel がインストールされていると、ダイアログを最前面固定表示します。
 
-�E�둀��h�~�ׁ̈A�e�L�X�g�{�b�N�X�ɓ��͂���Ă��镶�����ŏ����������
-  ���Ȃ��ꍇ�� OK �{�^���ŏI�����܂���B
-  ����{�^���ł̏I���͂ł��܂��B
+・誤操作防止の為、テキストボックスに入力されている文字が最小文字数より
+  少ない場合は OK ボタンで終了しません。
+  閉じるボタンでの終了はできます。
 
-�Emin: 0 ���w�肷��΃e�L�X�g�{�b�N�X����ł� OK �{�^���ŏI�����܂��B
+・min: 0 を指定すればテキストボックスが空でも OK ボタンで終了します。
 
-�E����ł͉摜�f�[�^�̎w���1�t�@�C���݂̂ł��B
+・現状では画像データの指定は1ファイルのみです。
 
-�EinputText() ���s���ɁADorothy.temp �Ŏ������t�H���_�Ɉȉ��̈ꎞ�t�@�C��
-  ���쐬���A�I�����ɍ폜���܂��B
-  jinput.txt ... ���ʂ��i�[�����e�L�X�g�t�@�C��
-  jinput ... �摜�t�@�C��
+・inputText() 実行時に、Dorothy.temp で示されるフォルダに以下の一時ファイル
+  を作成し、終了時に削除します。
+  jinput.txt ... 結果が格納されるテキストファイル
+  jinput ... 画像ファイル
 
 
-�ύX����
+変更履歴
 ========
 
 2014-09-08  version 20140908.0  rentan at rentan.org
-  .inputText() �� img: '�摜URL' �I�v�V������ǉ��B
+  .inputText() に img: '画像URL' オプションを追加。
 
 2014-08-20  version 20140820.0  rentan at rentan.org
-  �L�����Z���{�^���ŏI������� EIndexError �ɂȂ�s����C���B
+  キャンセルボタンで終了すると EIndexError になる不具合を修正。
 
 2014-08-08  version 20140808.0  rentan at rentan.org
-  .synchronize(): ���\�b�h�ǉ��B
+  .synchronize(): メソッド追加。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
 2014-01-07  version 3.0
-  common\call.dms �̑���� common\exec.dms ���g���悤�ɂ����B
-  �C���f���g��2�X�y�[�X�ɕύX�B
+  common\call.dms の代わりに common\exec.dms を使うようにした。
+  インデントを2スペースに変更。
 
 2013-11-23  version 2.1
-  Excel ���C���X�g�[������Ă��Ȃ����ŃG���[����������s����C���B
+  Excel がインストールされていない環境でエラーが発生する不具合を修正。
     thanks to http://toro.2ch.net/test/read.cgi/win/1371715233/554
 
 2013-07-13  version 2.0
-  �ŏ��������A�ő啶�������w��\�ɂ����B
+  最小文字数、最大文字数を指定可能にした。
 
-  �L�����Z���A�G���[���̖߂�l�� null �ɕύX�B�ŏ������� 0 �̎���
-  �󕶎���� OK �{�^�����N���b�N�����ꍇ�͋󕶎��񂪕Ԃ����B
+  キャンセル、エラー時の戻り値を null に変更。最小文字数 0 の時に
+  空文字列で OK ボタンをクリックした場合は空文字列が返される。
 
 2013-03-02  version 1.0
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

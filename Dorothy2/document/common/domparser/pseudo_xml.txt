@@ -1,17 +1,17 @@
 common\domparser\pseudo_xml.dms
 
 
-DOMParser/XML �̋[���I�A�ȈՓI�Ȏ����ł��B
-���S�Ȏ����ł͂���܂���B
+DOMParser/XML の擬似的、簡易的な実装です。
+完全な実装ではありません。
 
-����e�X�g���s�\���ł��B
+動作テストが不十分です。
 
 
-�ύX����
+変更履歴
 ========
 
 2014-08-16  version 20140816.0  rentan at rentan.org
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

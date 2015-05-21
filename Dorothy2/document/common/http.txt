@@ -1,10 +1,10 @@
 common\http.dms
 
 
-HTTP/HTTPS �̃��b�p�[�I�u�W�F�N�g�ł��B
+HTTP/HTTPS のラッパーオブジェクトです。
 
 
-�g�p���@
+使用方法
 ========
 
   var url = 'http://example.com/';
@@ -17,487 +17,487 @@ HTTP/HTTPS �̃��b�p�[�I�u�W�F�N�g�ł��B
   var html = http.data;
 
 
-Http �I�u�W�F�N�g�̃v���p�e�B
+Http オブジェクトのプロパティ
 =============================
 
-http ... object �܂��� null
-  �A�N�Z�X���Ɏg�p���� HTTP �܂��� HTTPS �I�u�W�F�N�g�ւ̎Q�Ƃ��i�[
-  �����B�A�N�Z�X�O�� null�B
+http ... object または null
+  アクセス時に使用した HTTP または HTTPS オブジェクトへの参照が格納
+  される。アクセス前は null。
 
 proxy ... string
-  �g�p����v���L�V�Bnew Http () ���� urlinfo.proxy �ŏ����������B
-  ���������\�B
+  使用するプロキシ。new Http () 時に urlinfo.proxy で初期化される。
+  書き換え可能。
 
-autoRedirect ... boolean �܂��� string
-  �����]�����邩�ǂ����B����l�� false�B���������\�B
+autoRedirect ... boolean または string
+  自動転送するかどうか。既定値は false。書き換え可能。
 
-  ������ 'once' ��ݒ肵���ꍇ�́A���ɌĂяo�������\�b�h�ł��������]����
-  �s���B�Ăяo����� false ���ݒ肳���B
+  文字列 'once' を設定した場合は、次に呼び出したメソッドでだけ自動転送を
+  行う。呼び出し後は false が設定される。
 
-  �X�e�[�^�X�R�[�h 301�A302�A303�A307�A308 ��]���X�e�[�^�X�ƌ��Ȃ��B
+  ステータスコード 301、302、303、307、308 を転送ステータスと見なす。
 
 verbose ... number
-  ���N�G�X�g�ƃX�e�[�^�X�̕\�����x���B����l�� 1�B���������\�B
-    0: �\���Ȃ��B
-    1: ���N�G�X�g��\�����A�X�e�[�^�X�̓G���[���̂ݕ\������B
-    2: �S�ĕ\������B
+  リクエストとステータスの表示レベル。既定値は 1。書き換え可能。
+    0: 表示なし。
+    1: リクエストを表示し、ステータスはエラー時のみ表示する。
+    2: 全て表示する。
 
 gunzip ... boolean
-  Content-Encoding: gzip ��W�J���邩�ǂ����B����l�� false�B���������\�B
+  Content-Encoding: gzip を展開するかどうか。既定値は false。書き換え可能。
 
-  ���N�G�X�g�w�b�_�� Accept-Encoding: gzip �͎������M���Ȃ��̂ŁA�K�v�Ȃ�
-  �Ăяo�����Őݒ肵�Ă����K�v������B
+  リクエストヘッダの Accept-Encoding: gzip は自動送信しないので、必要なら
+  呼び出し側で設定しておく必要がある。
 
-  �W�J�����ꍇ�� ���X�|���X�w�b�_ Content-Encoding: �͍폜�����B
+  展開した場合は レスポンスヘッダ Content-Encoding: は削除される。
 
 captureFilename ... string
-  �t�@�C�������ȗ����� capture() �����s�����ۂɕۑ�����t�@�C�����B��������
-  �\�B����l�͈ȉ��̒ʂ�B
+  ファイル名を省略して capture() を実行した際に保存するファイル名。書き換え
+  可能。既定値は以下の通り。
     Dorothy.matchFile + '_html.txt'
 
-baseUrl ... string �܂��� null
-  �O��A�N�Z�X���� URL�B�A�N�Z�X�O�� null�BgetXhr()/postXhr() ���\�b�h��
-  ���s�����ۂ͍X�V����Ȃ��B
+baseUrl ... string または null
+  前回アクセスした URL。アクセス前は null。getXhr()/postXhr() メソッドを
+  実行した際は更新されない。
 
-  autoRedirect == true �Ŏ����]�����ꂽ�ꍇ�A�]����̍ŏI�I�ɃA�N�Z�X����
-  URL �ɂȂ�B
+  autoRedirect == true で自動転送された場合、転送後の最終的にアクセスした
+  URL になる。
 
-previousUrl ... string �܂��� null
-  �O��A�N�Z�X���� URL�B�A�N�Z�X�O�� null�B
+previousUrl ... string または null
+  前回アクセスした URL。アクセス前は null。
 
-  autoRedirect == true �Ŏ����]�����ꂽ�ꍇ�A�]����̍ŏI�I�ɃA�N�Z�X����
-  URL �ɂȂ�B
+  autoRedirect == true で自動転送された場合、転送後の最終的にアクセスした
+  URL になる。
 
 requestHeader ... object
-  ���N�G�X�g�w�b�_��ݒ肷��B����l�͈ȉ��̂Ƃ���
+  リクエストヘッダを設定する。既定値は以下のとおり
     requestHeader = {
       'Accept-Language': 'ja',
       'User-Agent': headers ['User-Agent']
     };
 
-  �⏕�p�̃��\�b�h�Ƃ��� removeRequestHeader()�AsetRequestHeader()�A
-  getRequestHeader() �����邪�A���ړǂݏ������Ă��悢�B
+  補助用のメソッドとして removeRequestHeader()、setRequestHeader()、
+  getRequestHeader() があるが、直接読み書きしてもよい。
 
 responseHeader ... object
-  �A�N�Z�X���ɓ���ꂽ���X�|���X�w�b�_�ւ̎Q�ƁiResponse �I�u�W�F�N�g�j�B
-  �A�N�Z�X�O�͋�I�u�W�F�N�g�icode �� cookie �v���p�e�B���܂܂�Ȃ��j�B
+  アクセス時に得られたレスポンスヘッダへの参照（Response オブジェクト）。
+  アクセス前は空オブジェクト（code や cookie プロパティも含まれない）。
 
-  requestHeader.Cookie �͕�����^�ŏ������ނ��AresponseHeader.cookie
-  �� Cookie �I�u�W�F�N�g�^�Ȃ̂Œ��ӁB
+  requestHeader.Cookie は文字列型で書き込むが、responseHeader.cookie
+  は Cookie オブジェクト型なので注意。
 
-  �⏕�p�̃��\�b�h�Ƃ��� removeResponseHeader()�AsetResponseHeader()
-  �����邪�A���ړǂݏ������Ă��悢�B
+  補助用のメソッドとして removeResponseHeader()、setResponseHeader()
+  があるが、直接読み書きしてもよい。
 
 statusLine ... string
-  �A�N�Z�X���ɓ���ꂽ�X�e�[�^�X�s�B�A�N�Z�X�O�͋󕶎���B
-  ���ۂɎ�M�����f�[�^�ł͂Ȃ��AresponseHeader ����č\�z�������́B
+  アクセス時に得られたステータス行。アクセス前は空文字列。
+  実際に受信したデータではなく、responseHeader から再構築したもの。
 
 code ... number
-  �A�N�Z�X���ɓ���ꂽ�X�e�[�^�X�R�[�h�B�A�N�Z�X�O�� 0�B
+  アクセス時に得られたステータスコード。アクセス前は 0。
 
-  responseHeader.code �Ɠ����B
+  responseHeader.code と同じ。
 
 data ... string
-  �A�N�Z�X���ɓǂݍ��񂾃��X�|���X�{�f�B�B�A�N�Z�X�O�͋󕶎���B
+  アクセス時に読み込んだレスポンスボディ。アクセス前は空文字列。
 
-  Transfer-Encoding: chunked �̏ꍇ�� chunk �f�[�^���f�R�[�h�����B
-  ������ responseHeader ['transfer-encoding'] �͍폜����Ȃ��B
+  Transfer-Encoding: chunked の場合は chunk データがデコードされる。
+  ただし responseHeader ['transfer-encoding'] は削除されない。
 
-location ... string �܂��� null
-  ���X�|���X�w�b�_�� Location: ������΂��̒l�B����ȊO�̏ꍇ�� null�B
+location ... string または null
+  レスポンスヘッダに Location: があればその値。それ以外の場合は null。
 
 
-Http �I�u�W�F�N�g�̃��\�b�h
+Http オブジェクトのメソッド
 ===========================
 
-�R���X�g���N�^
+コンストラクタ
 new Http (opt)
-  opt ... object: �v���p�e�B�w��l(�ȗ���)
-  �߂�l ... Http �C���X�^���X
+  opt ... object: プロパティ指定値(省略可)
+  戻り値 ... Http インスタンス
 
-  Http �C���X�^���X���쐬���ĕԂ��Bopt �ŃI�u�W�F�N�g���w�肳�ꂽ�ꍇ��
-  ���̒��g���v���p�e�B�ɐݒ肷��B�Ή����Ă���v���p�e�B�͈ȉ��̒ʂ�B
+  Http インスタンスを作成して返す。opt でオブジェクトが指定された場合は
+  その中身をプロパティに設定する。対応しているプロパティは以下の通り。
     proxy autoRedirect verbose gunzip captureFilename
 
-  ��: var http = new Http ({ autoRedirect: true, verbose: 0 });
+  例: var http = new Http ({ autoRedirect: true, verbose: 0 });
 
 clone ()
-  �߂�l ... Http �C���X�^���X
+  戻り値 ... Http インスタンス
 
-  Http �C���X�^���X�𕡐����ĕԂ��B�������A�����ϐ������S�ɍČ��ł���
-  ��ł͂Ȃ��i�ꕔ�̃I�u�W�F�N�g�����ʂł͂Ȃ��Q�ƂɂȂ��Ă��܂��Ȃǁj�B
+  Http インスタンスを複製して返す。ただし、内部変数を完全に再現できる
+  訳ではない（一部のオブジェクトが複写ではなく参照になってしまうなど）。
 
 removeRequestHeader (name)
-  name ... string: �w�b�_��
-  �߂�l ... �Ȃ�
+  name ... string: ヘッダ名
+  戻り値 ... なし
 
-  ���N�G�X�g�w�b�_���� name �Ŏw�肵���w�b�_���폜����B
+  リクエストヘッダから name で指定したヘッダを削除する。
 
 setRequestHeader (name, value)
-  name ... string: �w�b�_��
-  value ... string: �l(�ȗ���)
-  �߂�l ... �Ȃ�
+  name ... string: ヘッダ名
+  value ... string: 値(省略可)
+  戻り値 ... なし
 
-  ���N�G�X�g�w�b�_�� name �Ŏw�肵���w�b�_�� value �Ŏw�肵���l�Œǉ�
-  �܂��͏㏑������Bvalue ���ȗ��������Aundefined �� null �̏ꍇ��
-  �w�b�_���폜����B
+  リクエストヘッダに name で指定したヘッダを value で指定した値で追加
+  または上書きする。value を省略したか、undefined か null の場合は
+  ヘッダを削除する。
 
 getRequestHeader (name)
-  name ... string: �w�b�_��
-  �߂�l ... string �܂��� null
+  name ... string: ヘッダ名
+  戻り値 ... string または null
 
-  ���N�G�X�g�w�b�_���� name �Ŏw�肵���w�b�_��T���A���̒l��Ԃ��B
-  �w�b�_���Ȃ��ꍇ�� null ��Ԃ��B
+  リクエストヘッダから name で指定したヘッダを探し、その値を返す。
+  ヘッダがない場合は null を返す。
 
 removeFlashHeader ()
-  �߂�l ... �Ȃ�
+  戻り値 ... なし
 
-  removeRequestHeader ('x-flash-version') �Ɠ����B
+  removeRequestHeader ('x-flash-version') と同じ。
 
 setFlashHeader (ver)
-  ver ... string: �o�[�W�����ԍ�(�ȗ���)
-  �߂�l ... �Ȃ�
+  ver ... string: バージョン番号(省略可)
+  戻り値 ... なし
 
-  setRequestHeader ('x-flash-version', ver) �Ɠ����Bver ���ȗ�����ƁA
-  User-Agent �� 'Trident/' ���܂܂��ꍇ�̂݋K��̒l
-  (��: '14,0,0,125')���ݒ肳���B
+  setRequestHeader ('x-flash-version', ver) と同じ。ver を省略すると、
+  User-Agent に 'Trident/' が含まれる場合のみ規定の値
+  (例: '14,0,0,125')が設定される。
 
 removeResponseHeader (name)
-  name ... string: �w�b�_��
-  �߂�l ... �Ȃ�
+  name ... string: ヘッダ名
+  戻り値 ... なし
 
-  ���X�|���X�w�b�_���� name �Ŏw�肵���w�b�_���폜����Bname �͏�������
-  �ϊ�����Ďg�p�����B
+  レスポンスヘッダから name で指定したヘッダを削除する。name は小文字に
+  変換されて使用される。
 
 getResponseHeader (name)
-  name ... string: �w�b�_��
-  �߂�l ... string �܂��� null
+  name ... string: ヘッダ名
+  戻り値 ... string または null
 
-  ���X�|���X�w�b�_���� name �Ŏw�肵���w�b�_��T���A���̒l��Ԃ��Bname
-  �͏������ɕϊ�����Ďg�p�����B�w�b�_���Ȃ��ꍇ�� null ��Ԃ��B
+  レスポンスヘッダから name で指定したヘッダを探し、その値を返す。name
+  は小文字に変換されて使用される。ヘッダがない場合は null を返す。
 
 expandUrl (base, url)
-  base ... string: � URL
-  url ... ���� URL(��� URL �ł���)
-  �߂�l ... string �܂��� null
+  base ... string: 基準 URL
+  url ... 相対 URL(絶対 URL でも可)
+  戻り値 ... string または null
 
-  ���� URL ���� URL �ɕϊ����ĕԂ��B�������������Ȃ���� null ��Ԃ��B
+  相対 URL を絶対 URL に変換して返す。引数が正しくなければ null を返す。
 
 get (url)
   url ... string: URL
-  �߂�l ... boolean
+  戻り値 ... boolean
 
-  url �Ŏw�肵�� URL �� GET ����B���� URL ���w�肵���ꍇ�́AbaseUrl
-  ����Ƃ������ URL �ɐ��K�������B
+  url で指定した URL を GET する。相対 URL を指定した場合は、baseUrl
+  を基準とした絶対 URL に正規化される。
 
-  ����(�X�e�[�^�X�R�[�h�� 200 OK)�Ȃ� true�A���s(����ȊO)�Ȃ� false
-  ��Ԃ��B
+  成功(ステータスコードが 200 OK)なら true、失敗(それ以外)なら false
+  を返す。
 
-  �O��A�N�Z�X���� https://�` �ō��� http://�` �̏ꍇ�́ArequestHeader
-  ['Referer'] ���폜���Ă���A�N�Z�X����B
+  前回アクセス時が https://～ で今回が http://～ の場合は、requestHeader
+  ['Referer'] を削除してからアクセスする。
 
-  �O��A�N�Z�X���ƃz�X�g�����Ⴄ�ꍇ�́ArequestHeader ['Cookie'] ���폜
-  ���Ă���A�N�Z�X����B
+  前回アクセス時とホスト名が違う場合は、requestHeader ['Cookie'] を削除
+  してからアクセスする。
 
-  �ǂݍ��񂾃��X�|���X�{�f�B�� data �v���p�e�B�ɏ������܂��B
+  読み込んだレスポンスボディは data プロパティに書き込まれる。
 
-  �A�N�Z�X��� requestHeader ['Referer'] �� url ���ǉ������B�܂��A
-  requestHeader ['Cookie'] �ɑ��M���� Cookie �Ǝ�M���� Cookie �𓝍�����
-  �����񂪒ǉ������B����A�N�Z�X�ł����̃w�b�_�𑗐M�������Ȃ��ꍇ�́A
-  removeRequestHeader() �ō폜���邩�Anew Http() �ŐV�����C���X�^���X��
-  ����Ďg�p����B
+  アクセス後に requestHeader ['Referer'] に url が追加される。また、
+  requestHeader ['Cookie'] に送信した Cookie と受信した Cookie を統合した
+  文字列が追加される。次回アクセスでそれらのヘッダを送信したくない場合は、
+  removeRequestHeader() で削除するか、new Http() で新しいインスタンスを
+  作って使用する。
 
-  �����̋����͈ȉ��� post()�AgetXhr() �Ȃǂł������B
+  これらの挙動は以下の post()、getXhr() などでも同じ。
 
 post (url, postdata)
   url ... string: URL
-  postdata ... string: ���M����p�����[�^
-  �߂�l ... boolean
+  postdata ... string: 送信するパラメータ
+  戻り値 ... boolean
 
-  url �Ŏw�肵�� URL �� postdata �Ŏw�肵���p�����[�^�� POST ���āA
-  �����Ȃ� true�A���s�Ȃ� false ��Ԃ��B
+  url で指定した URL に postdata で指定したパラメータを POST して、
+  成功なら true、失敗なら false を返す。
 
 head (url)
   url ... string: URL
-  �߂�l ... boolean
+  戻り値 ... boolean
 
-  url �Ŏw�肵�� URL �� HEAD ���āA�����Ȃ� true�A���s�Ȃ� false ��Ԃ��B
+  url で指定した URL を HEAD して、成功なら true、失敗なら false を返す。
 
 getXhr (url)
   url ... string: URL
-  �߂�l ... boolean
+  戻り値 ... boolean
 
-  url �Ŏw�肵�� URL �� GET ���āA�����Ȃ� true�A���s�Ȃ� false ��Ԃ��B
+  url で指定した URL を GET して、成功なら true、失敗なら false を返す。
 
-  �A�N�Z�X���̃��N�G�X�g�w�b�_�� x-requested-with: XMLHttpRequest ���ǉ�
-  �����(getRequestHeader() ����͌����Ȃ�)�B�܂��A�N�Z�X���
-  requestHeader ['Referer'] �����������Ȃ��B
+  アクセス時のリクエストヘッダに x-requested-with: XMLHttpRequest が追加
+  される(getRequestHeader() からは見えない)。またアクセス後に
+  requestHeader ['Referer'] を書き換えない。
 
-  ���̋����� postXhr() �ł������B
+  この挙動は postXhr() でも同じ。
 
 postXhr (url, postdata)
   url ... string: URL
-  postdata ... string: ���M����p�����[�^
-  �߂�l ... boolean
+  postdata ... string: 送信するパラメータ
+  戻り値 ... boolean
 
-  url �Ŏw�肵�� URL �� postdata �Ŏw�肵���p�����[�^�� POST ���āA
-  �����Ȃ� true�A���s�Ȃ� false ��Ԃ��B
+  url で指定した URL に postdata で指定したパラメータを POST して、
+  成功なら true、失敗なら false を返す。
 
 getLocation (url)
   url ... string: URL
-  �߂�l ... string �܂��� null
+  戻り値 ... string または null
 
-  url �Ŏw�肵�� URL �� GET ���āA���X�|���X�w�b�_�� location �̒l��Ԃ��B
-  ���s�����ꍇ�� null ��Ԃ��B
+  url で指定した URL を GET して、レスポンスヘッダの location の値を返す。
+  失敗した場合は null を返す。
 
 postLocation (url, postdata)
   url ... string: URL
-  postdata ... string: ���M����p�����[�^
-  �߂�l ... string �܂��� null
+  postdata ... string: 送信するパラメータ
+  戻り値 ... string または null
 
-  url �Ŏw�肵�� URL �� postdata �Ŏw�肵���p�����[�^�� POST ���āA
-  ���X�|���X�w�b�_�� location �̒l��Ԃ��B���s�����ꍇ�� null ��Ԃ��B
+  url で指定した URL に postdata で指定したパラメータを POST して、
+  レスポンスヘッダの location の値を返す。失敗した場合は null を返す。
 
 headLocation (url)
   url ... string: URL
-  �߂�l ... string �܂��� null
+  戻り値 ... string または null
 
-  url �Ŏw�肵�� URL �� HEAD ���āA���X�|���X�w�b�_�� location �̒l��Ԃ��B
-  ���s�����ꍇ�� null ��Ԃ��B
+  url で指定した URL を HEAD して、レスポンスヘッダの location の値を返す。
+  失敗した場合は null を返す。
 
 getContentType (url)
   url ... string: URL
-  �߂�l ... string �܂��� null
+  戻り値 ... string または null
 
-  url �Ŏw�肵�� URL �� GET ���āA���X�|���X�w�b�_�� content-type �̒l��Ԃ��B
-  ���s�����ꍇ�� null ��Ԃ��B
+  url で指定した URL を GET して、レスポンスヘッダの content-type の値を返す。
+  失敗した場合は null を返す。
 
 postContentType (url, postdata)
   url ... string: URL
-  postdata ... string: ���M����p�����[�^
-  �߂�l ... string �܂��� null
+  postdata ... string: 送信するパラメータ
+  戻り値 ... string または null
 
-  url �Ŏw�肵�� URL �� postdata �Ŏw�肵���p�����[�^�� POST ���āA
-  ���X�|���X�w�b�_�� content-type �̒l��Ԃ��B���s�����ꍇ�� null ��Ԃ��B
+  url で指定した URL に postdata で指定したパラメータを POST して、
+  レスポンスヘッダの content-type の値を返す。失敗した場合は null を返す。
 
 headContentType (url)
   url ... string: URL
-  �߂�l ... string �܂��� null
+  戻り値 ... string または null
 
-  url �Ŏw�肵�� URL �� HEAD ���āA���X�|���X�w�b�_�� content-type �̒l��
-  �Ԃ��B���s�����ꍇ�� null ��Ԃ��B
+  url で指定した URL を HEAD して、レスポンスヘッダの content-type の値を
+  返す。失敗した場合は null を返す。
 
 exec (obj)
-  obj ... object: ���\�b�h�AURL�A���M�f�[�^
-  �߂�l ... boolean
+  obj ... object: メソッド、URL、送信データ
+  戻り値 ... boolean
 
-  obj �Ŏw�肵�������ɏ]���� get() �܂��� post() �����s����B
+  obj で指定した引数に従って get() または post() を実行する。
 
-  obj �I�u�W�F�N�g�͈ȉ��̌`���Ŏw�肷��BHtmlForm.submit() �̖߂�l��
-  ���̂܂ܓn�����Ƃ��o����B
+  obj オブジェクトは以下の形式で指定する。HtmlForm.submit() の戻り値を
+  そのまま渡すことが出来る。
     obj = {
-      method: ���\�b�h,  // 'get' �܂��� 'post'
+      method: メソッド,  // 'get' または 'post'
       url: URL,
-      postdata: ���M�f�[�^  // 'post' �̏ꍇ�̂ݕK�v
+      postdata: 送信データ  // 'post' の場合のみ必要
     };
 
-  ��:
+  例:
     var http = new Http ();
-    http.get (�`);
-    var form = (new HtmlForms (http)).getFormByName (�`);
+    http.get (～);
+    var form = (new HtmlForms (http)).getFormByName (～);
     http.exec (form.submit ());
 
 retry_or_die (message, ...)
-  message ... string: �\�����镶����(�ȗ��A�ϒ�����)
-  �߂�l ... boolean
+  message ... string: 表示する文字列(省略可、可変長引数)
+  戻り値 ... boolean
 
-  �ϒ������œn���ꂽ�������1�s���S�ĕ\������B
+  可変長引数で渡された文字列を1行ずつ全て表示する。
 
-  ���O�̃A�N�Z�X���A�Ď��s���Đ�������\���̂��錴���Ŏ��s���Ă����
-  retry() ���Ăяo���A���̖߂�l�i��� false�j�����̂܂ܕԂ��B�����łȂ�
-  ��� exit() ���Ăяo���B���̏ꍇ�̓X�N���v�g���I�����邽�ߌĂяo�����ɂ�
-  �߂�Ȃ��B
+  直前のアクセスが、再試行して成功する可能性のある原因で失敗していれば
+  retry() を呼び出し、その戻り値（常に false）をそのまま返す。そうでなけ
+  れば exit() を呼び出す。この場合はスクリプトが終了するため呼び出し元には
+  戻らない。
 
-  retry() ����̂̓X�e�[�^�X�R�[�h���ȉ��̏ꍇ
-    0 (�z�X�g�ւ̐ڑ��Ɏ��s����)
+  retry() するのはステータスコードが以下の場合
+    0 (ホストへの接続に失敗した)
     503 Service Unavailable 
 
 die (message, ...)
-  message ... string: �\�����镶����(�ȗ��A�ϒ�����)
-  �߂�l ... �Ȃ�
+  message ... string: 表示する文字列(省略可、可変長引数)
+  戻り値 ... なし
 
-  �ϒ������œn���ꂽ�������1�s���S�ĕ\������B
+  可変長引数で渡された文字列を1行ずつ全て表示する。
 
-  exit() ���Ăяo���B�X�N���v�g���I�����邽�ߌĂяo�����ɂ͖߂�Ȃ��B
+  exit() を呼び出す。スクリプトが終了するため呼び出し元には戻らない。
 
 removeUtf8Bom ()
-  �߂�l ... boolean
+  戻り値 ... boolean
 
-  data �̐擪�� UTF-8 �� BOM ������΍폜���Atrue ��Ԃ��B�����łȂ����
-  false ��Ԃ��B
+  data の先頭に UTF-8 の BOM があれば削除し、true を返す。そうでなければ
+  false を返す。
 
 saveFile (args)
-  args ... object: �����I�u�W�F�N�g { filename: '�`', data: '�`', ... }
-    filename ... string: �ۑ��t�@�C����
-    data ... string: �ۑ��f�[�^
-    rename ... string: �t�@�C�����d�����̕t���ԍ�(�ȗ���)
-  �߂�l ... object { success: �`, filename: �`, error: �` }
-    success ... boolean: ������ true�A���s�� false
-    filename ... string: �ۑ������t�@�C����(�t���p�X)
-    error ... string: ���s���̃G���[������
+  args ... object: 引数オブジェクト { filename: '～', data: '～', ... }
+    filename ... string: 保存ファイル名
+    data ... string: 保存データ
+    rename ... string: ファイル名重複時の付加番号(省略可)
+  戻り値 ... object { success: ～, filename: ～, error: ～ }
+    success ... boolean: 成功時 true、失敗時 false
+    filename ... string: 保存したファイル名(フルパス)
+    error ... string: 失敗時のエラー文字列
 
-  filename �Ŏw�肵���t�@�C���� data �Ŏw�肵��������f�[�^��ۑ����A
-  ���s���ʂ������I�u�W�F�N�g��Ԃ��B
+  filename で指定したファイルに data で指定した文字列データを保存し、
+  実行結果を示すオブジェクトを返す。
 
-  �����̃t�@�C�������ɑ��݂���ꍇ�� rename �Ŏw�肵���p�^�[�����t�������
-  (�ȗ����� (1) �ƂȂ�)�B
+  同名のファイルが既に存在する場合は rename で指定したパターンが付加される
+  (省略時は (1) となる)。
 
 capture (filename)
-  filename ... string: �ۑ��t�@�C����(�ȗ���)
-  �߂�l ... object { success: �`, filename: �`, error: �` }
+  filename ... string: 保存ファイル名(省略可)
+  戻り値 ... object { success: ～, filename: ～, error: ～ }
 
-  filename �Ŏw�肵���t�@�C���� data ��ۑ����A���s���ʂ������I�u�W�F�N�g
-  ��Ԃ�(�߂�l�̏ڍׂ� saveFile() ���Q�Ƃ̂���)�B
+  filename で指定したファイルに data を保存し、実行結果を示すオブジェクト
+  を返す(戻り値の詳細は saveFile() を参照のこと)。
 
-  filename ���ȗ������ꍇ�� captureFilename �̒l���t�@�C�����Ƃ��Ďg�p�����B
+  filename を省略した場合は captureFilename の値がファイル名として使用される。
 
 dumpResponse (n)
-  n ... number: �o�C�g��(�ȗ���)
-  �߂�l ... string
+  n ... number: バイト数(省略可)
+  戻り値 ... string
 
-  ���X�|���X�w�b�_�𕶎���ɂ��ĕԂ��Bn �� 1 �ȏ�̐��i�ő� 256�j���w�肳�ꂽ
-  �ꍇ�̓��X�|���X�{�f�B��16�i�_���v���ǉ������B
+  レスポンスヘッダを文字列にして返す。n に 1 以上の数（最大 256）が指定された
+  場合はレスポンスボディの16進ダンプも追加される。
 
-  �X�N���v�g�̊J���x���p�B
+  スクリプトの開発支援用。
 
 inflate (s)
-  s ... string: ���k�f�[�^������
-  �߂�l ... string
+  s ... string: 圧縮データ文字列
+  戻り値 ... string
 
-  deflate ���k���ꂽ�f�[�^��W�J���ĕԂ��B�G���[���͗�O����������B
+  deflate 圧縮されたデータを展開して返す。エラー時は例外が発生する。
 
-  �ȉ��̃t�@�C�����K�v�B
-    Dorothy2\bin\zlib1.dll (version 1.2.8 �ȏ�)
+  以下のファイルが必要。
+    Dorothy2\bin\zlib1.dll (version 1.2.8 以上)
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�EIrvine ���O�ɏo�͂������b�Z�[�W���\������Ȃ����Ƃ�����܂��i�����s���j�B
-  �����]�����s�����ۂȂǁA�A�����ă��O�o�͂��s���鎞�ɋN���₷���悤�ł��B
+・Irvine ログに出力したメッセージが表示されないことがあります（原因不明）。
+  自動転送を行った際など、連続してログ出力が行われる時に起きやすいようです。
 
 
-�ύX����
+変更履歴
 ========
 
 2015-04-25  version 20150425.0  rentan at rentan.org
-  Http._doRequest(): ���_�C���N�g���� Location �� # �ȍ~���폜����悤�ɂ����B
+  Http._doRequest(): リダイレクト時に Location の # 以降を削除するようにした。
 
 2014-11-11  version 20141111.0  rentan at rentan.org
-  .saveFile(): �t�@�C�����Ƃ��� NameBuilder#buildFilename() �̖߂�l���w��
-  ����ƁA�t�H���_�ƃt�@�C�����̊Ԃ� \ ���t���Ȃ����Ƃ�����s����C���B
+  .saveFile(): ファイル名として NameBuilder#buildFilename() の戻り値を指定
+  すると、フォルダとファイル名の間に \ が付かないことがある不具合を修正。
     thanks to http://peace.2ch.net/test/read.cgi/win/1412399700/202
 
 2014-08-15  version 20140815.0  rentan at rentan.org
-  HTTP �X�e�[�^�X 308 Permanent Redirect �ɑΉ��B
-  chunked �f�R�[�_�����Ȃ������B
+  HTTP ステータス 308 Permanent Redirect に対応。
+  chunked デコーダを作りなおした。
 
 2014-07-16  version 20140716.0  rentan at rentan.org
-  .setFlashHeader(): x-flash-version: 14,0,0,145 �ɍX�V�B
+  .setFlashHeader(): x-flash-version: 14,0,0,145 に更新。
 
 2014-07-07  version 20140707.0  rentan at rentan.org
-  .setFlashHeader(): x-flash-version: 14,0,0,125 �ɍX�V�B
+  .setFlashHeader(): x-flash-version: 14,0,0,125 に更新。
 
 2014-05-22  version 20140522.0  rentan at rentan.org
-  .getSaveFolder(): �폜�B
-  .saveFile(): filename �� NameBuilder#buildFilename() �̖߂�l��n��������
-  Folder �� Filename ����t�@�C�������쐬����悤�ɂ����B
+  .getSaveFolder(): 削除。
+  .saveFile(): filename に NameBuilder#buildFilename() の戻り値を渡した時は
+  Folder と Filename からファイル名を作成するようにした。
 
-  ._readResponseBody(): (�f�o�b�O�p�b��) �s���ȃ`�����N�T�C�Y�̎��Ɏ�M�f�[�^
-  ���t�@�C���ɕۑ�����悤�ɂ����B
+  ._readResponseBody(): (デバッグ用暫定) 不正なチャンクサイズの時に受信データ
+  をファイルに保存するようにした。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
 2014-02-27  version 15.0
-  common\zlib.dms �̑���Ɏ��O�Œ�`���� Zlib �I�u�W�F�N�g���g��
-  �悤�ɂ����B
+  common\zlib.dms の代わりに自前で定義した Zlib オブジェクトを使う
+  ようにした。
 
 2014-01-23  version 14.0
-  .setFlashHeader(): x-flash-version: 12,0,0,38 �ɍX�V�B
-  User-Agent �� Trident �̎��A�܂��̓o�[�W�����ԍ��w�莞�̂݃w�b�_��
-  �ݒ肷��悤�ɂ����B
+  .setFlashHeader(): x-flash-version: 12,0,0,38 に更新。
+  User-Agent が Trident の時、またはバージョン番号指定時のみヘッダを
+  設定するようにした。
 
-  ESocketError ���� .responseHeader ��ݒ肷��悤�ɂ���(�]����
-  ���������̃_�~�[�p��I�u�W�F�N�g�̂܂܂��������߁A.code �����Q��
-  �ł��Ȃ�����)�B
+  ESocketError 時に .responseHeader を設定するようにした(従来は
+  初期化時のダミー用空オブジェクトのままだったため、.code 等が参照
+  できなかった)。
     thanks to http://toro.2ch.net/test/read.cgi/win/1371715233/773
 
-  �R�[�h�����B
-  ._p(), ._getResponseHeader(): �V�K���\�b�h�B
+  コード整理。
+  ._p(), ._getResponseHeader(): 新規メソッド。
 
 2014-01-12  version 13.0
-  HEAD ���Ƀ��X�|���X�{�f�B��ǂݍ��܂Ȃ��悤�ɂ����B
+  HEAD 時にレスポンスボディを読み込まないようにした。
 
 2014-01-09  version 12.1
-  autoRedirect ���� Location: �w�b�_�̏����ŁAabs_path �ȊO�̑���
-  URL �ɂ��Ή��B
+  autoRedirect 時の Location: ヘッダの処理で、abs_path 以外の相対
+  URL にも対応。
     thanks to http://toro.2ch.net/test/read.cgi/win/1371715233/728
 
 2013-11-02  version 12.0
-  statusLine: �V�K�B���X�|���X�w�b�_�̃X�e�[�^�X�s��Ԃ��B
-  inflate(): �V�K�Bdeflate ���k���ꂽ�f�[�^��L������B
-  saveFile(): �V�K�B��������t�@�C���ɕۑ�����B
-  getSaveFolder(): �V�K�BsaveFile() �ŕۑ�����p�X��Ԃ��B
+  statusLine: 新規。レスポンスヘッダのステータス行を返す。
+  inflate(): 新規。deflate 圧縮されたデータを伸張する。
+  saveFile(): 新規。文字列をファイルに保存する。
+  getSaveFolder(): 新規。saveFile() で保存するパスを返す。
 
-  gunzip = true ���w�肵�� gzip ��W�J�������ɁA�f�[�^���j�����邱�Ƃ�
-  ����s����C���B
+  gunzip = true を指定して gzip を展開した時に、データが破損することが
+  ある不具合を修正。
 
-  �C���f���g��2�X�y�[�X�ɕύX�B
+  インデントを2スペースに変更。
 
 2013-07-13  version 11.0
-  expandUrl(), _doRequest(): url �����𕶎��񉻂���悤�ɂ����B
+  expandUrl(), _doRequest(): url 引数を文字列化するようにした。
 
 2013-06-18  version 10.0
-  HTTPS �� Transfer-Encoding: chunked �̃f�[�^���G���[�ɂȂ�s����C��
-  (WinInet ���Ńf�R�[�h����Ă���)�B
-  responseHeader ['transfer-encoding'] ���폜���Ȃ��悤�ɂ����B
+  HTTPS で Transfer-Encoding: chunked のデータがエラーになる不具合を修正
+  (WinInet 側でデコードされていた)。
+  responseHeader ['transfer-encoding'] を削除しないようにした。
 
 2013-04-28  version 9.0
-  removeFlashHeader(), setFlashHeader(): �V�K�B
+  removeFlashHeader(), setFlashHeader(): 新規。
 
 2012-12-27  version 8.0
-  expandUrl(): � URL ���� #�` ���폜����悤�ɂ����B
-  �\�[�X�R�[�h�����B
+  expandUrl(): 基準 URL 内の #～ を削除するようにした。
+  ソースコード整理。
 
 2012-11-25  version 7.0
-  location: �V�K�BLocation: �w�b�_�̒l��Ԃ��B
-  �\�[�X�R�[�h�����B
+  location: 新規。Location: ヘッダの値を返す。
+  ソースコード整理。
 
 2012-11-19  version 6.0
-  autRedirect: 'once' ��ǉ��B
-  expandUrl(): ./ ../ ����������Ȃ��s����C���B�����𑊑� URL�A� URL
-  �̏��ɕύX�B��ȗ����� .baseUrl ���g�p����B
+  autRedirect: 'once' を追加。
+  expandUrl(): ./ ../ が解決されない不具合を修正。引数を相対 URL、基準 URL
+  の順に変更。基準省略時は .baseUrl を使用する。
 
 2012-10-22  version 5.0
-  postLocation(), postContentType(): �V�K�B
-  �]���n�X�e�[�^�X�̎��Ƀ��X�|���X�w�b�_ location �̒l��\������悤�ɂ����B
+  postLocation(), postContentType(): 新規。
+  転送系ステータスの時にレスポンスヘッダ location の値を表示するようにした。
 
 2012-07-11  version 4.0
   captureFilename, baseUrl, expandUrl(), exec(), retry_or_die(), die():
-  �V�K�B�e�A�N�Z�X�@�\�ŁA���� URL ���� URL �ɐ��K������悤�ɂ����B
+  新規。各アクセス機能で、相対 URL を絶対 URL に正規化するようにした。
 
 2012-04-09  version 3.0
-  postXhr(), headLocation(), headContentType(): �V�K�B
-  getContentType(): ���\�b�h�� HEAD ���� GET �ɕύX�B
+  postXhr(), headLocation(), headContentType(): 新規。
+  getContentType(): メソッドを HEAD から GET に変更。
 
 2012-04-04  version 2.0
-  Http(): �v���p�e�B�̈ꕔ�� prototype �ɒǂ��o�����B
-  dumpResponse(): Cookie ���o�͂���Ȃ��s����C���B
+  Http(): プロパティの一部を prototype に追い出した。
+  dumpResponse(): Cookie が出力されない不具合を修正。
 
 2012-03-29  version 1.0
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

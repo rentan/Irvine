@@ -1,99 +1,99 @@
 dchara.dms
 
 
-D�L�����߁`��B�w�ǎҌ���ǎ��̃y�[�W���� .zip �t�@�C�����_�E�����[�h����
-�X�N���v�g�ł��B
+Dキャラめ～る。購読者限定壁紙のページから .zip ファイルをダウンロードする
+スクリプトです。
 
 
-�g�p���@
+使用方法
 ========
 
-�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
-  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
-  �v���O�������E�N���b�N �� �ݒ�
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
 
-D�L�����߁`��B����J�����ǎ��v���[���g�y�[�W�� URL ���_�E�����[�h���ĉ������B
-�i�u�_�E�����[�h�v�{�^���̃����N�ł͂Ȃ��A���Ƃ� HTML �y�[�W�� URL �ł��j
+Dキャラめ～る。から開いた壁紙プレゼントページの URL をダウンロードして下さい。
+（「ダウンロード」ボタンのリンクではなく、もとの HTML ページの URL です）
 
 
-�Ή� URL
+対応 URL
 ========
 
 http://www.dmm.co.jp/(dc|digital/nijigen)/mlmg_present/\d{6}/page_[^\/]+[._]html/
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�E�������̃t�@�C���iwallpaper_mem.zip�j�����݂��Ȃ���ł��l�������_�E�����[�h
-  �o�^���s���܂��iNOW PRINTING �ƕ`���ꂽ�摜���_�E�����[�h����܂��j�B
+・会員限定のファイル（wallpaper_mem.zip）が存在しない回でも考慮せずダウンロード
+  登録を行います（NOW PRINTING と描かれた画像がダウンロードされます）。
 
 
-�ύX����
+変更履歴
 ========
 
 2015-04-25  version 20150425.0  rentan at rentan.org
-  common\getter.dms ���g���悤�ɂ��č��Ȃ������B
-  ���[���}�K�W���̃����N����_�E�����[�h�o����悤�ɂ����B
-  �����؂ꂩ�y�[�W�ƃt�@�C���̓��t���Ⴄ�P�[�X�ɑΉ��B
+  common\getter.dms を使うようにして作りなおした。
+  メールマガジンのリンクからダウンロード出来るようにした。
+  期限切れかつページとファイルの日付が違うケースに対応。
 
 2014-05-21  version 20140521.0  rentan at rentan.org
-  �t�@�C�����ϐ� %YYMMDD% ��p�~�A%YYYY% ��ǉ��B
-  %NAME% ���������Ȃ��s����C���B
+  ファイル名変数 %YYMMDD% を廃止、%YYYY% を追加。
+  %NAME% が正しくない不具合を修正。
 
-  NameBuilder#buildFilename()�AsetFilename() ���g���悤�ɂ����B
+  NameBuilder#buildFilename()、setFilename() を使うようにした。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
 2013-04-28
-  URL �̕ύX�ɑΉ��B
+  URL の変更に対応。
 
 2012-11-19
-  �������B
+  微調整。
 
 2012-07-11
-  �啝�ɕύX�B
+  大幅に変更。
 
-  �y�[�W���̍�Җ�����^�łȂ��Ȃ蒊�o�ł��Ȃ��Ȃ����̂ŁA�t�@�C�����ϐ�
-  %NAME2% ���폜�B
+  ページ中の作者名が定型でなくなり抽出できなくなったので、ファイル名変数
+  %NAME2% を削除。
 
 2012-03-29
-  common\http.dms ���g���悤�ɂ����B
+  common\http.dms を使うようにした。
 
-  .zip �t�@�C���̃_�E�����[�h���� Referer: �𑗂�Ȃ��悤�ɂ����B
+  .zip ファイルのダウンロード時に Referer: を送らないようにした。
 
 2011-12-18
-  Dorothy.userPath�ADorothy.userIniPath ���g���悤�ɂ����B
-  .ini �t�@�C���̓ǂݍ��݂� common\fnutil.dms �Ɏ����B
+  Dorothy.userPath、Dorothy.userIniPath を使うようにした。
+  .ini ファイルの読み込みを common\fnutil.dms に実装。
 
 2011-12-05
-  �w�b�_�� match= ���C���B�R�����g�i�t�B���^�����O�ݒ�j���C���B
+  ヘッダの match= を修正。コメント（フィルタリング設定）を修正。
 
 2011-10-07
-  �����}�K�̃����N�iURL �� /_jloff=1/ ���t���Ă���j���璼�ڃ_�E�����[�h
-  �o����悤�ɂ����B
+  メルマガのリンク（URL に /_jloff=1/ が付いている）から直接ダウンロード
+  出来るようにした。
 
-  �����؂�̃y�[�W�ł��_�E�����[�h�������悤�ɂ����Bzip �t�@�C�����c����
-  ����΃_�E�����[�h�o���邪�A�y�[�W�ƃt�@�C���œ��t���قȂ�ꍇ�͎��s����B
+  期限切れのページでもダウンロードを試すようにした。zip ファイルが残って
+  いればダウンロード出来るが、ページとファイルで日付が異なる場合は失敗する。
 
 2011-09-24
-  �y�[�W�ƃt�@�C���� URL �Ɋ܂܂����t���قȂ�ꍇ�Ƀ_�E�����[�h�o���Ȃ�
-  �����s����C���B
+  ページとファイルで URL に含まれる日付が異なる場合にダウンロード出来なか
+  った不具合を修正。
 
-  �t�@�C�����ϐ� %NAME2% ��ǉ��B
+  ファイル名変数 %NAME2% を追加。
 
-  ����ɂ͊֌W�Ȃ��\�[�X�R�[�h�̕ύX: spec.day �� spec.date �ɕύX�B
+  動作には関係ないソースコードの変更: spec.day を spec.date に変更。
 
 2011-09-06
-  �ȈՐݒ�@�\��ǉ��i.ini �t�@�C�����J���j�B
+  簡易設定機能を追加（.ini ファイルを開く）。
 
-  ����ɂ͊֌W�Ȃ��\�[�X�R�[�h�̕ύX:
-    { saveas: �` } �� { Filename: �` } �ɕύX�B
+  動作には関係ないソースコードの変更:
+    { saveas: ～ } を { Filename: ～ } に変更。
 
 2011-08-31
-  �����o�[�W�����B
+  初期バージョン。
 
 
 [EOF]

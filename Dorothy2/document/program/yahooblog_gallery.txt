@@ -1,33 +1,33 @@
 yahooblog_gallery.dms
 
 
-Yahoo!�u���O�̉摜�p�̃X�N���v�g�ł��B
+Yahoo!ブログの画像用のスクリプトです。
 
-�g�����ɂ���Ă͐ڑ���T�[�o�ɍ������ׂ��|���Ă��܂����Ƃ�����̂ŁA�\��
-�����Ӊ������B
+使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分
+ご注意下さい。
 
 
-�g�p���@
+使用方法
 ========
 
-�ݒ�@�\�͂Ȃ��̂ŁA�J�X�^�}�C�Y�������ꍇ�̓X�N���v�g�����������ĉ������B
+設定機能はないので、カスタマイズしたい場合はスクリプトを書き換えて下さい。
 
 
-�Ή� URL
+対応 URL
 ========
 
 http://blogs.yahoo.co.jp/[^/?#]+/GALLERY/show_image.html
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
 
-�ύX����
+変更履歴
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  �����o�[�W�����B
+  初期バージョン。
 
 
 [EOF]

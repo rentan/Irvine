@@ -1,22 +1,22 @@
 common\threadstorage.dms
 
 
-�_�E�����[�h�X���b�h���ƂɃf�[�^��ۑ�����I�u�W�F�N�g�ł��B
+ダウンロードスレッドごとにデータを保存するオブジェクトです。
 
-���L�֐����Q�l�ɂ����Ă��������Ă��܂��B
+下記関数を参考にさせていただいています。
   http://peace.2ch.net/test/read.cgi/win/1394240473/791
 
 
-�g�p���@
+使用方法
 ========
 
-// �f�[�^��ۑ�����X�N���v�g
+// データを保存するスクリプト
   common_load ('threadstorage');
   var s = new ThreadStorage (Dorothy.temp + 'storage.ini');
 
   s.setItem ('foo', '123');
 
-// �f�[�^��ǂݍ��ރX�N���v�g
+// データを読み込むスクリプト
   common_load ('threadstorage');
   var s = new ThreadStorage (Dorothy.temp + 'storage.ini');
 
@@ -24,60 +24,60 @@ common\threadstorage.dms
   s.removeItem ('foo');
 
 
-ThreadStorage �I�u�W�F�N�g�̃v���p�e�B
+ThreadStorage オブジェクトのプロパティ
 ======================================
 
 iniPath ... string
-  Ini �t�@�C���̃t���p�X���B�R���X�g���N�^�ɓn���������Ɠ����B
+  Ini ファイルのフルパス名。コンストラクタに渡した引数と同じ。
 
 
-ThreadStorage �I�u�W�F�N�g�̃��\�b�h
+ThreadStorage オブジェクトのメソッド
 ====================================
 
-�R���X�g���N�^
+コンストラクタ
 new ThreadStorage (ini)
-  ini ... Ini �t�@�C���̃t���p�X��
-  �߂�l ... ThreadStorage �C���X�^���X
+  ini ... Ini ファイルのフルパス名
+  戻り値 ... ThreadStorage インスタンス
 
-  ThreadStorage �C���X�^���X���쐬���ĕԂ��B
+  ThreadStorage インスタンスを作成して返す。
 
 .getItem (key)
-  key ... string: �L�[��
-  �߂�l ... string or null
+  key ... string: キー名
+  戻り値 ... string or null
 
-  �f�[�^��ǂݍ���ŕԂ��B�L�[���Ȃ��ꍇ�� null ��Ԃ��B
+  データを読み込んで返す。キーがない場合は null を返す。
 
 .setItem (key, value)
-  key ... string: �L�[��
-  value ... string: �l
-  �߂�l ... �Ȃ�
+  key ... string: キー名
+  value ... string: 値
+  戻り値 ... なし
 
-  �f�[�^��ۑ�����B
+  データを保存する。
 
 .removeItem (key)
-  key ... string: �L�[��
-  �߂�l ... �Ȃ�
+  key ... string: キー名
+  戻り値 ... なし
 
-  �f�[�^���폜����B
+  データを削除する。
 
 .clear ()
-  �߂�l ... �Ȃ�
+  戻り値 ... なし
 
-  ���ׂẴf�[�^���폜����B
+  すべてのデータを削除する。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�EIni �t�@�C���͍폜����܂���BIrvine �̏I�����ɍ폜����Ȃǂ���
-  �Â��f�[�^���c��Ȃ��悤�ɂ��ĉ������B
+・Ini ファイルは削除されません。Irvine の終了時に削除するなどして
+  古いデータが残らないようにして下さい。
 
 
-�ύX����
+変更履歴
 ========
 
 2014-09-13  version 20140913.0  rentan at rentan.org
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

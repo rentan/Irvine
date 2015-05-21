@@ -1,60 +1,60 @@
 common\actibook.dms
 
 
-ActiBook �p�̃I�u�W�F�N�g�ł��B
+ActiBook 用のオブジェクトです。
 
-�܂��d�l���m�肵�Ă��܂���B
-�o�[�W�����A�b�v�ɔ����d�l���ύX�����\��������܂��B
+まだ仕様が確定していません。
+バージョンアップに伴い仕様が変更される可能性があります。
 
-����e�X�g���s�\���ł��B
+動作テストが不十分です。
 
 
-�g�p���@
+使用方法
 ========
 
-program\actibook.dms ���Q�Ƃ��ĉ������B
+program\actibook.dms を参照して下さい。
 
 
-ActiBook �I�u�W�F�N�g�̃v���p�e�B
+ActiBook オブジェクトのプロパティ
 =================================
 
-nameBuilder ... null (�Ăяo������ NameBuilder �I�u�W�F�N�g������)
+nameBuilder ... null (呼び出し側で NameBuilder オブジェクトを入れる)
 nameFormat ... string
 pageOrigin ... number
 list ... null or array
 http ... null or Http
 
-�ڍׂ͏ȗ��B
+詳細は省略。
 
 
-ActiBook �I�u�W�F�N�g�̃��\�b�h
+ActiBook オブジェクトのメソッド
 ===============================
 
-�R���X�g���N�^
+コンストラクタ
 new ActiBook ()
-  �߂�l ... ActiBook �C���X�^���X
+  戻り値 ... ActiBook インスタンス
 
-  ActiBook �C���X�^���X���쐬���ĕԂ��B
+  ActiBook インスタンスを作成して返す。
 
 retry_or_die (msg, ...)
 makeList (url)
 
-�ڍׂ͏ȗ��B
+詳細は省略。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
 
-�ύX����
+変更履歴
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
 2013-09-27  version 1.0
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

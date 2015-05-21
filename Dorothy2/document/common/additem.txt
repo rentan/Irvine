@@ -1,15 +1,15 @@
 common\additem.dms
 
 
-Irvine �ɃL���[�A�C�e����ǉ�����I�u�W�F�N�g�ł��B
+Irvine にキューアイテムを追加するオブジェクトです。
 
 
-�g�p���@(��ʃ��[�U����)
+使用方法(一般ユーザ向け)
 ========================
 
-���̃I�u�W�F�N�g���g�p�����X�N���v�g�̐ݒ�t�@�C���ɂ́A�ȉ��̂悤��
-�Z�N�V����������͂��ł�(�X�N���v�g�ɂ���Ă͈قȂ�ꍇ������܂��̂ŁA
-�X�N���v�g�̐��������Q�Ƃ��ĉ�����)�B
+このオブジェクトを使用したスクリプトの設定ファイルには、以下のような
+セクションがあるはずです(スクリプトによっては異なる場合がありますので、
+スクリプトの説明書を参照して下さい)。
 
 [AddItem]
 Mode=
@@ -18,65 +18,65 @@ Listname=
 Workaround=
 
 
-Mode �ł͓��샂�[�h���w�肵�܂��BAuto AddQueueItem Import OptionQueue
-�̂����ꂩ�ŁA�ȗ����� Auto �Ƃ݂Ȃ���܂��B
+Mode では動作モードを指定します。Auto AddQueueItem Import OptionQueue
+のいずれかで、省略時は Auto とみなされます。
 
-�EMode=Auto �̏ꍇ
-  AddQueueItem ���[�h�Ƃ��ē��삵�܂��B
+・Mode=Auto の場合
+  AddQueueItem モードとして動作します。
 
-�EMode=AddQueueItem �̏ꍇ
-  AddQueueItem ���A�C�e���������J��Ԃ����s���܂��B�C�ӂ̃L���[�t�H���_��
-  �ǉ����邱�Ƃ��o���܂��B
+・Mode=AddQueueItem の場合
+  AddQueueItem をアイテム数だけ繰り返し実行します。任意のキューフォルダに
+  追加することが出来ます。
 
-  Queue= �Œǉ�����L���[�t�H���_���w�肷�邱�Ƃ��o���܂��B�ȗ����̓J�����g
-  �L���[�t�H���_�ɒǉ�����܂��B
+  Queue= で追加するキューフォルダを指定することが出来ます。省略時はカレント
+  キューフォルダに追加されます。
 
-  �����́u�J�����g�L���[�t�H���_�v�́AAddItem ���Ăяo�����A�C�e��������
-    ����t�H���_�Ƃ����Ӗ��ł͂Ȃ��A���s���ꂽ���_�ł� Irvine �̃J�����g
-    �ł��B�A�C�e���Ƃ͕ʂ̃t�H���_���J�����g�ɂ��Ă���ꍇ�́A���̃t�H���_
-    �ɒǉ�����܂��B
+  ※この「カレントキューフォルダ」は、AddItem を呼び出したアイテムが存在
+    するフォルダという意味ではなく、実行された時点での Irvine のカレント
+    です。アイテムとは別のフォルダをカレントにしている場合は、そのフォルダ
+    に追加されます。
 
-�EMode=Import �̏ꍇ
-  �A�C�e�������X�g�t�@�C���Ƃ��ĕۑ����AImport �����s���܂��B�K���J�����g
-  �L���[�t�H���_�ɒǉ�����܂��B
+・Mode=Import の場合
+  アイテムをリストファイルとして保存し、Import を実行します。必ずカレント
+  キューフォルダに追加されます。
 
-  Listname= �Ń��X�g�t�@�C���̃t�@�C�������w�肷�邱�Ƃ��o���܂��B
-  �ȗ�����
-    Dorothy2\user\�v���O������\�v���O������.irv
-  �ɕۑ�����܂��B�܂��A�t�@�C�������w�肷��ƁA
-    Dorothy2\user\�v���O������\�w�肵���t�@�C����.irv
-  �ɕۑ�����܂��B�t���p�X�����w�肷��ƁA���̃p�X�ɕۑ�����܂��B
+  Listname= でリストファイルのファイル名を指定することが出来ます。
+  省略時は
+    Dorothy2\user\プログラム名\プログラム名.irv
+  に保存されます。また、ファイル名を指定すると、
+    Dorothy2\user\プログラム名\指定したファイル名.irv
+  に保存されます。フルパス名を指定すると、そのパスに保存されます。
 
-�EMode=OptionQueue �̏ꍇ
-  AddQueueItem ���A�C�e���������J��Ԃ����s���܂��B
+・Mode=OptionQueue の場合
+  AddQueueItem をアイテム数だけ繰り返し実行します。
 
-  �I�v�V�����ݒ�� queue= �Ŏw�肳�ꂽ�L���[�t�H���_�ɒǉ�����܂��B
-  �A�C�e���̃R�����g���܂��̓t�H���_�ݒ� �� HTTP(1) �� HTTP ���\�b�h
-  �� POST ���镶�����
-    queue=�L���[�t�H���_��
-  �̌`���Őݒ肵�ĉ������B
-    ��: queue=/Dorothy2/NecoNecoDouga
+  オプション設定の queue= で指定されたキューフォルダに追加されます。
+  アイテムのコメント欄またはフォルダ設定 → HTTP(1) → HTTP メソッド
+  → POST する文字列に
+    queue=キューフォルダ名
+  の形式で設定して下さい。
+    例: queue=/Dorothy2/NecoNecoDouga
 
-  �e�t�H���_�� queue= �ɂ��ꎩ�̂̃L���[�t�H���_����ݒ肵�Ă����΁A
-  �u�����t�H���_�ɒǉ�����v�Ƃ������삪�\�ł��B
+  各フォルダの queue= にそれ自体のキューフォルダ名を設定しておけば、
+  「同じフォルダに追加する」という動作が可能です。
 
-  �ʓr�z�z�����X�N���v�g d2_set_queue.dms ���g���΁A�ꊇ���Ċe�t�H
-  ���_�ɂ��̐ݒ���s�����Ƃ��ł��܂�(���ƂŐݒ肵�Ă��\���܂���)�B
-
-
-���D�݂ɂ�� Irvine �̃t�B���^�����O�ݒ�ł̐U�蕪�������p���ĉ������B
+  別途配布されるスクリプト d2_set_queue.dms を使えば、一括して各フォ
+  ルダにその設定を行うことができます(手作業で設定しても構いません)。
 
 
-Workaround �� true ���w�肷��ƁAIrvine �̕s���������鏈�����s���
-�܂��B���݂͈ȉ��̏������g�ݍ��܂�Ă��܂����A�����@�͏����ύX�����
-�\��������܂��B
-
-�EMode=AddQueueItem �܂��� OptionQueue �̏ꍇ
-  URL �̏d���m�F���s���Ȃ��s��΍�Ƃ��āA�J�����g�L���[�t�H���_��
-  ��u�����ύX���܂��B
+※好みにより Irvine のフィルタリング設定での振り分けを活用して下さい。
 
 
-�g�p���@(�X�N���v�g�쐬�Ҍ���)
+Workaround に true を指定すると、Irvine の不具合を回避する処理が行われ
+ます。現在は以下の処理が組み込まれていますが、回避方法は将来変更される
+可能性があります。
+
+・Mode=AddQueueItem または OptionQueue の場合
+  URL の重複確認が行われない不具合対策として、カレントキューフォルダを
+  一瞬だけ変更します。
+
+
+使用方法(スクリプト作成者向け)
 ==============================
 
   common_load ('additem');
@@ -95,137 +95,137 @@ Workaround �� true ���w�肷��ƁAIrvine �̕s���������鏈�����s���
   additem.send (list) || exit ();
 
 
-AddItem �I�u�W�F�N�g�̃v���p�e�B
+AddItem オブジェクトのプロパティ
 ================================
 
 mode ... string
-  ���샂�[�h�B'Auto' 'AddQueueItem' 'Import' �̂����ꂩ�B�󕶎���܂���
-  null �̏ꍇ�� 'Auto' �ƌ��Ȃ��B
+  動作モード。'Auto' 'AddQueueItem' 'Import' のいずれか。空文字列または
+  null の場合は 'Auto' と見なす。
 
 queue ... string
-  AddQueueItem ���[�h���A�ǉ�����L���[�t�H���_(�ȗ����̓J�����g�L���[
-  �t�H���_)�B
+  AddQueueItem モード時、追加するキューフォルダ(省略時はカレントキュー
+  フォルダ)。
 
 listname ... string
-  Import ���[�h���A�L���[���X�g�̃t�@�C����(�ȗ����̓v���O������)�B
+  Import モード時、キューリストのファイル名(省略時はプログラム名)。
 
 workaround ... boolean
-  Workaround �̒l�Btrue �ŕs�������s���B
+  Workaround の値。true で不具合回避を行う。
 
 iniTemplate ... object
-  new AddItem() �ɓn�������̍\����\�����`�I�u�W�F�N�g�B
-  common\rutil.dms Util.ini_load() �p�ł��B
+  new AddItem() に渡す引数の構造を表す雛形オブジェクト。
+  common\rutil.dms Util.ini_load() 用です。
 
 
-AddItem �I�u�W�F�N�g�̃��\�b�h
+AddItem オブジェクトのメソッド
 ==============================
 
-�R���X�g���N�^
+コンストラクタ
 new AddItem (opt)
-  opt ... object: �v���p�e�B�w��l(�ȗ���)
-  �߂�l ... AddItem �C���X�^���X
+  opt ... object: プロパティ指定値(省略可)
+  戻り値 ... AddItem インスタンス
 
-  AddItem �C���X�^���X���쐬���ĕԂ��Bopt �ŃI�u�W�F�N�g���w�肳�ꂽ
-  �ꍇ�͂��̒��g���v���p�e�B�ɐݒ肷��(iniTemplate �Œ�`����Ă���
-  ���̂̂݁B�܂��L�[���͑S�ď������ɂȂ�)�B
+  AddItem インスタンスを作成して返す。opt でオブジェクトが指定された
+  場合はその中身をプロパティに設定する(iniTemplate で定義されている
+  もののみ。またキー名は全て小文字になる)。
 
-  ��: var additem = new AddItem ({ Mode: 'Import' });
+  例: var additem = new AddItem ({ Mode: 'Import' });
 
 send (list)
-  list ... object �܂��� array: �_�E�����[�h���X�g
-  �߂�l ... boolean
+  list ... object または array: ダウンロードリスト
+  戻り値 ... boolean
 
-  �I�u�W�F�N�g���L���[�A�C�e���Ƃ��� Irvine �Ƀ_�E�����[�h�o�^����B
-  ���������ꍇ�� true�A���s�����ꍇ�� false ��Ԃ�(�m���ł͂Ȃ�)�B
+  オブジェクトをキューアイテムとして Irvine にダウンロード登録する。
+  成功した場合は true、失敗した場合は false を返す(確実ではない)。
 
 reQueue (list, force)
-  list ... array: �_�E�����[�h���X�g
-  force ... boolean: �A�C�e�����ЂƂł��ǉ����邩�ǂ���(�ȗ�)
-  �߂�l ... boolean
+  list ... array: ダウンロードリスト
+  force ... boolean: アイテムがひとつでも追加するかどうか(省略)
+  戻り値 ... boolean
 
-  list �̗v�f���ЂƂȂ���s���̃A�C�e���� urlinfo.url �����������A
-  �v�f�������Ȃ� Irvine �ɃA�C�e����ǉ�����B
+  list の要素がひとつなら実行中のアイテムの urlinfo.url を書き換え、
+  要素が複数なら Irvine にアイテムを追加する。
 
-  �������Aforce �� true ���w�肵���ꍇ�͗v�f���ЂƂ����ł����Ă�
-  �ǉ������s�����B
+  ただし、force に true を指定した場合は要素がひとつだけであっても
+  追加が実行される。
 
-  ���������ꍇ�� true�A���s�����ꍇ�� false ��Ԃ�(�m���ł͂Ȃ�)�B
+  成功した場合は true、失敗した場合は false を返す(確実ではない)。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�EImport ���[�h�ŃL���[�t�H���_�̎w�肪�o���܂���B
+・Import モードでキューフォルダの指定が出来ません。
 
 
-�ύX����
+変更履歴
 ========
 
 2015-01-03  version 20150103.0  rentan at rentan.org
-  Workaround=true �w�莞�AAddQueueItem ���[�h�ŃA�C�e���ǉ��O��
-  �J�����g�L���[�t�H���_��ύX����悤�ɂ����B
+  Workaround=true 指定時、AddQueueItem モードでアイテム追加前に
+  カレントキューフォルダを変更するようにした。
     thanks to http://toro.2ch.net/test/read.cgi/win/1348568425/893
 
 2014-12-08  version 20141208.0  rentan at rentan.org
-  reQueue(): �㏑�����[�h���� Referer�ACookie �𔽉f������悤�ɂ����B
-  item.filename ���ݒ肳��Ă���ꍇ�� Filename �𔽉f�����Ȃ��悤�ɂ����B
+  reQueue(): 上書きモード時に Referer、Cookie を反映させるようにした。
+  item.filename が設定されている場合は Filename を反映させないようにした。
 
 2014-11-04  version 20141104.0  rentan at rentan.org
-  reQueue() �Ŏ��s���̃A�C�e��������������ہA�_�E�����[�h���X�g��
-  Folder ������� item.folder �ɔ��f������悤�ɂ����B
+  reQueue() で実行中のアイテムを書き換える際、ダウンロードリストに
+  Folder があれば item.folder に反映させるようにした。
 
 2014-08-20  version 20140820.0  rentan at rentan.org
-  AddItem#reQueue() ��ǉ��B
+  AddItem#reQueue() を追加。
 
 2014-05-21  version 20140521.0  rentan at rentan.org
-  common_load() �̃^�C�~���O��ύX�B
+  common_load() のタイミングを変更。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
 2014-02-27  version 8.0
-  common\options.dms �̑���� common\rutil.dms Util.get_option()
-  ���g���悤�ɂ����B
+  common\options.dms の代わりに common\rutil.dms Util.get_option()
+  を使うようにした。
 
 2014-01-10  version 7.0
-  _optionQueue: Mode=OptionQueue �̎��A�I�v�V�����ɓ���̓��e��
-  �ݒ肳��Ă���� ECallError ����������s����C���B
+  _optionQueue: Mode=OptionQueue の時、オプションに特定の内容が
+  設定されていると ECallError が発生する不具合を修正。
 
-  common\call.dms �̑���� common\exec.dms ���g���悤�ɂ����B
+  common\call.dms の代わりに common\exec.dms を使うようにした。
 
-  �C���f���g��2�X�y�[�X�ɕύX�B�h�L�������g���M�C���B
+  インデントを2スペースに変更。ドキュメント加筆修正。
 
 2013-10-06  version 6.0
-  _callAddQueueItem: " \ �� \" \\ �ƃG�X�P�[�v����悤�ɂ����B
-  _makeList: \t \r \n ���X�y�[�X�ɒu������Ȃ��s����C���B
+  _callAddQueueItem: " \ を \" \\ とエスケープするようにした。
+  _makeList: \t \r \n がスペースに置換されない不具合を修正。
 
 2012-11-19  version 5.0
-  ��ƃt�@�C���̍쐬�ꏊ�� Dorothy.temp �ɕύX�B
+  作業ファイルの作成場所を Dorothy.temp に変更。
 
 2012-08-09  version 4.0
-  �J�����Ɏg�p���Ă� alert() ���폜���Y��Ă����̂��C���B
-  call() �̑ҋ@���Ԃ�10�b����100�b�ɕύX�B
+  開発中に使用してた alert() を削除し忘れていたのを修正。
+  call() の待機時間を10秒から100秒に変更。
 
 2012-08-04  version 3.0
-  AddQueueItem/OptionQueue ���[�h�ň����ɂ���Ă� ircom.exe �ŃA�C�e��
-  ���o�^����Ȃ�����������邽�߁AJScript �t�@�C���𓮓I�ɐ�������
-  wscript.exe �Ŏ��s������@�ɕύX�B
+  AddQueueItem/OptionQueue モードで引数によっては ircom.exe でアイテム
+  が登録されない問題を回避するため、JScript ファイルを動的に生成して
+  wscript.exe で実行する方法に変更。
 
-  AddQueueItem �� Import ���[�h�ő��x�����k�݁A�܂� Import ���[�h�ɂ�
-  �L���[�t�H���_���w��ł��Ȃ����_���c�邾���ɂȂ����̂ŁAAuto ���[�h��
-  AddQueueItem �Œ�ɕύX�B
+  AddQueueItem と Import モードで速度差が縮み、また Import モードには
+  キューフォルダを指定できない欠点が残るだけになったので、Auto モードを
+  AddQueueItem 固定に変更。
 
-  ���s���뒆�̂��ߍ�����d�l���ύX�����\��������܂��B
+  試行錯誤中のため今後も仕様が変更される可能性があります。
 
 2012-08-03  version 2.0
-  �����̃X���b�h�������ɓ��삵�Ȃ��悤�ɂ���(Mutex �ɂ��r������)�B
+  複数のスレッドが同時に動作しないようにした(Mutex による排他制御)。
 
 2012-07-29
-  �h�L�������g���M�B
+  ドキュメント加筆。
 
 2012-07-11  version 1.0
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

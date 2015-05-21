@@ -1,57 +1,57 @@
 common\domparser\core.dms
 
 
-DOMParser �̋[���I�Ȏ����ł��B
-���S�Ȏ����ł͂���܂���B
+DOMParser の擬似的な実装です。
+完全な実装ではありません。
 
-�܂��d�l���m�肵�Ă��܂���B
-�o�[�W�����A�b�v�ɔ����d�l���ύX�����\��������܂��B
+まだ仕様が確定していません。
+バージョンアップに伴い仕様が変更される可能性があります。
 
-����e�X�g���s�\���ł��B
+動作テストが不十分です。
 
-EInvalidPointer �G���[���������邱�Ƃ����邽�߁A���p�I�ł�
-����܂���B
+EInvalidPointer エラーが発生することがあるため、実用的では
+ありません。
 
 
-�g�p���@
+使用方法
 ========
 
-common\domparser\xml.dms �Ȃǂ���ǂݍ��܂�܂��B
-�ڂ����͂�������Q�Ƃ��ĉ������B
+common\domparser\xml.dms などから読み込まれます。
+詳しくはそちらを参照して下さい。
 
-�X�N���v�g�I������
+スクリプト終了時に
   EInvalidPointer: Invalid pointer operation
-�Ƃ����G���[���������ăX�N���v�g���ُ�I�����邱�Ƃ�����܂��B
-(DMonkey �̃K�x�[�W�R���N�^�֌W�̕s�?)
+というエラーが発生してスクリプトが異常終了することがあります。
+(DMonkey のガベージコレクタ関係の不具合?)
 
-document �̃f�X�g���N�^�Ƃ��� .destroy() �Ƃ������\�b�h���`
-���Ă���A������Ăяo������� document �ւ̎Q�Ƃ��폜����ƁA
-���������m����������悤�ȋC�����܂����C�̂�����������܂���B
+document のデストラクタとして .destroy() というメソッドを定義
+してあり、これを呼び出した上で document への参照も削除すると、
+多少発生確率が下がるような気がしますが気のせいかもしれません。
 
 
-DOMParser �I�u�W�F�N�g�̃v���p�e�B
+DOMParser オブジェクトのプロパティ
 ==================================
 
-�Ȃ�
+なし
 
 
-DOMParser �I�u�W�F�N�g�̃��\�b�h
+DOMParser オブジェクトのメソッド
 ================================
 
-�R���X�g���N�^
+コンストラクタ
 new DOMParser ()
-  �߂�l ... DOMParser �C���X�^���X
+  戻り値 ... DOMParser インスタンス
 
-  DOMParser �C���X�^���X���쐬���ĕԂ��B
+  DOMParser インスタンスを作成して返す。
 
 parseFromString (str, type)
-  str ... string: �e�L�X�g
+  str ... string: テキスト
   type ... string: Content-Type
 
-  str �Ŏw�肳�ꂽ��������Atype �Ŏw�肳�ꂽ�`���ƌ��Ȃ��ăp�[�X���܂��B
+  str で指定された文字列を、type で指定された形式と見なしてパースします。
 
 
-Node �I�u�W�F�N�g�̃v���p�e�B
+Node オブジェクトのプロパティ
 =============================
 
 ELEMENT_NODE
@@ -63,10 +63,10 @@ DOCUMENT_TYPE_NODE
 DOCUMENT_FRAGMENT_NODE
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�E�����ŉ��L�̃I�u�W�F�N�g���`���Ďg�p���Ă��܂��B
+・内部で下記のオブジェクトを定義して使用しています。
 
 NamedNodeMap
 Document
@@ -76,15 +76,15 @@ ProcessingInstruction
 Comment
 
 
-�ύX����
+変更履歴
 ========
 
 2014-06-13  version 20140613.0  rentan at rentan.org
-  .getElementsBy*() ���� ._getElements() �̌Ăяo���̊Ԃ�
-  ���������\�b�h�����ނ悤�ɂ����B
+  .getElementsBy*() から ._getElements() の呼び出しの間に
+  初期化メソッドを挟むようにした。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

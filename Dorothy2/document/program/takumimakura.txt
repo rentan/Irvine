@@ -1,50 +1,50 @@
 takumimakura.dms
 
 
-�����̃T���v���摜�p�̃X�N���v�g�ł��B
-itema.jpg�Aitemb.jpg�A���݂���ꍇ�� itemsp.jpg ���ꊇ�Ń_�E�����[�h���܂��B
+匠枕のサンプル画像用のスクリプトです。
+itema.jpg、itemb.jpg、存在する場合は itemsp.jpg を一括でダウンロードします。
 
 
-�g�p���@
+使用方法
 ========
 
-�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
-  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
-  �v���O�������E�N���b�N �� �ݒ�
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
 
-�ȉ��̃h�L�������g���Q�Ƃ��ĉ������B
+以下のドキュメントも参照して下さい。
 
-�E�A�C�e���ǉ�
+・アイテム追加
   Dorothy2\document\common\additem.txt
 
 
-�Ή� URL
+対応 URL
 ========
 
 http://takumimakura.com/(all|r18)/catalog/index.php?id=\d+
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�E�t�H���_�ݒ� �� HTTP(1) �� HTTP ���\�b�h�� GET �ɐݒ肷��K�v������܂��B
+・フォルダ設定 → HTTP(1) → HTTP メソッドを GET に設定する必要があります。
 
 
-�ύX����
+変更履歴
 ========
 
 2014-05-31  version 20140531.0  rentan at rentan.org
-  �T�C�g���j���[�A���ɑΉ��B
+  サイトリニューアルに対応。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
 2012-11-19
-  Http.expandUrl() �̎d�l�ύX�ɑΉ��B
+  Http.expandUrl() の仕様変更に対応。
 
 2012-07-29
-  �����o�[�W�����B
+  初期バージョン。
 
 
 [EOF]

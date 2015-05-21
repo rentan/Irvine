@@ -1,106 +1,106 @@
 twitpic_r.dms
 
 
-Twitpic �p�̃X�N���v�g�ł��B
+Twitpic 用のスクリプトです。
 
-�g�����ɂ���Ă͐ڑ���T�[�o�ɍ������ׂ��|���Ă��܂����Ƃ�����̂ŁA�\��
-�����Ӊ������B
+使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分
+ご注意下さい。
 
-�ꊇ�_�E�����[�h���� HTML ��͂Ɏ��s����悤�Ȃ��Ƃ����邩���m��Ȃ��̂ŁA
-�t�@�C������肱�ڂ��Ă��Ȃ����K���m�F���ĉ������B
+一括ダウンロード時に HTML 解析に失敗するようなことがあるかも知れないので、
+ファイルを取りこぼしていないか必ず確認して下さい。
 
 
-�g�p���@
+使用方法
 ========
 
-�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
-  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
-  �v���O�������E�N���b�N �� �ݒ�
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
 
 
-�Ή� URL
+対応 URL
 ========
 
 http://twitpic.com/[0-9a-z]+
 http://twitpic.com/[0-9a-z]+/full
-  �摜�Ɠ���̃y�[�W
+  画像と動画のページ
 
 http://twitpic.com/photos/[0-9a-zA-Z_]{1,15}
-  �摜�Ɠ���̈ꗗ�y�[�W
-  ���̍�҂̑S��i���_�E�����[�h�B
+  画像と動画の一覧ページ
+  その作者の全作品をダウンロード。
 
-  1�y�[�W�ڂ����_�E�����[�h�������ꍇ�� ?page=1 ��t����B
+  1ページ目だけダウンロードしたい場合は ?page=1 を付ける。
 
 http://twitpic.com/photos/[0-9a-zA-Z_]{1,15}?page=\d+
-  �摜�Ɠ���̈ꗗ�y�[�W
-  ���̃y�[�W�ɕ\������Ă���S��i���_�E�����[�h�B
+  画像と動画の一覧ページ
+  そのページに表示されている全作品をダウンロード。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�E�z�X�g���� twitpic.com �̑��Ɉȉ��̂��̂��󂯕t���܂����Atwitpic.com ��
-  �u�������Đڑ����܂��B
+・ホスト名は twitpic.com の他に以下のものも受け付けますが、twitpic.com に
+  置き換えて接続します。
   www.twitpic.com
   web\d+.twitpic.com
 
 
-�ύX����
+変更履歴
 ========
 
 2014-10-29  version 20141029.0  rentan at rentan.org
-  �T�C�g���̕ύX(�摜�܂��͓���� URL ��������܂���B)�ɑΉ��B
+  サイト側の変更(画像または動画の URL が見つかりません。)に対応。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
-  �Â��`���̃t�@�C�����ϐ� %CONTENT_ID% ���폜�B
+  古い形式のファイル名変数 %CONTENT_ID% を削除。
 
 2012-09-07
-  �摜 URL �̕ύX�ɑΉ��B
+  画像 URL の変更に対応。
 
 2012-07-11
-  �啝�ɕύX�B
+  大幅に変更。
 
 2012-03-29
-  common\{http,utf8}.dms ���g���悤�ɂ����B
+  common\{http,utf8}.dms を使うようにした。
 
 2012-01-22
-  �^�C�g�����Ȃ��f�[�^�̃t�@�C�����`����ʂɎw��o����悤�ɂ����B
-  �ݒ�t�@�C����
+  タイトルがないデータのファイル名形式を別に指定出来るようにした。
+  設定ファイルに
     [General]
     NoTitleFilename=true
     [Filename]
     PhotoNoTitle=twitpic_%CONTENT_ID%
     VideoNoTitle=twitpic_%CONTENT_ID%
-  �̂悤�ɋL�q����itwitpic_r.Default.ini �ɂ͏����ĂȂ��̂ŁA
-  twitpic_r.ini �ɐV���ɏ��������ĉ������j�B
+  のように記述する（twitpic_r.Default.ini には書いてないので、
+  twitpic_r.ini に新たに書き加えて下さい）。
 
 2012-01-21
-  %USER_ID% �� %TWITTER_ID% �ɕύX�B
-  HTML �\���̕ύX�ɑΉ��B
+  %USER_ID% を %TWITTER_ID% に変更。
+  HTML 構造の変更に対応。
 
 2011-12-18
-  Dorothy.userPath�ADorothy.userIniPath ���g���悤�ɂ����B
-  .ini �t�@�C���̓ǂݍ��݂� common\fnutil.dms �Ɏ����B
+  Dorothy.userPath、Dorothy.userIniPath を使うようにした。
+  .ini ファイルの読み込みを common\fnutil.dms に実装。
 
 2011-12-10
-  �V�����摜�T�[�o���ɑΉ��B
+  新しい画像サーバ名に対応。
 
 2011-12-05
-  �w�b�_�� match= ���C���B�R�����g�i�t�B���^�����O�ݒ�j���C���B
+  ヘッダの match= を修正。コメント（フィルタリング設定）を修正。
 
-  remove_this() �� common/fnutil.dms �Ɉړ��B
-  �\�[�X�̊ȑf���̂��߁Acommon_load() ��`���ňꊇ���čs���悤�ɂ����B
+  remove_this() を common/fnutil.dms に移動。
+  ソースの簡素化のため、common_load() を冒頭で一括して行うようにした。
 
 2011-10-22
-  ���[�U�[�̃y�[�W����̈ꊇ�_�E�����[�h���o���Ȃ������s����C���B
+  ユーザーのページからの一括ダウンロードが出来なかった不具合を修正。
 
-  full �y�[�W�� HTML �̕ύX�ɑΉ��B
+  full ページの HTML の変更に対応。
 
 2011-09-24
-  �����o�[�W�����B
+  初期バージョン。
 
 
 [EOF]

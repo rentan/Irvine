@@ -1,19 +1,19 @@
 common\domparser\xml.dms
 
 
-DOMParser/XML ‚Ì‹[Ž—“I‚ÈŽÀ‘•‚Å‚·B
-Š®‘S‚ÈŽÀ‘•‚Å‚Í‚ ‚è‚Ü‚¹‚ñB
+DOMParser/XML ã®æ“¬ä¼¼çš„ãªå®Ÿè£…ã§ã™ã€‚
+å®Œå…¨ãªå®Ÿè£…ã§ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚
 
-‚Ü‚¾Žd—l‚ªŠm’è‚µ‚Ä‚¢‚Ü‚¹‚ñB
-ƒo[ƒWƒ‡ƒ“ƒAƒbƒv‚É”º‚¢Žd—l‚ª•ÏX‚³‚ê‚é‰Â”\«‚ª‚ ‚è‚Ü‚·B
+ã¾ã ä»•æ§˜ãŒç¢ºå®šã—ã¦ã„ã¾ã›ã‚“ã€‚
+ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã‚¢ãƒƒãƒ—ã«ä¼´ã„ä»•æ§˜ãŒå¤‰æ›´ã•ã‚Œã‚‹å¯èƒ½æ€§ãŒã‚ã‚Šã¾ã™ã€‚
 
-“®ìƒeƒXƒg‚ª•s\•ª‚Å‚·B
+å‹•ä½œãƒ†ã‚¹ãƒˆãŒä¸ååˆ†ã§ã™ã€‚
 
-EInvalidPointer ƒGƒ‰[‚ª”­¶‚·‚é‚±‚Æ‚ª‚ ‚é‚½‚ßAŽÀ—p“I‚Å‚Í
-‚ ‚è‚Ü‚¹‚ñB
+EInvalidPointer ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã™ã‚‹ã“ã¨ãŒã‚ã‚‹ãŸã‚ã€å®Ÿç”¨çš„ã§ã¯
+ã‚ã‚Šã¾ã›ã‚“ã€‚
 
 
-Žg—p•û–@
+ä½¿ç”¨æ–¹æ³•
 ========
 
   var text = '<foo><bar /></foo>';
@@ -36,22 +36,22 @@ EInvalidPointer ƒGƒ‰[‚ª”­¶‚·‚é‚±‚Æ‚ª‚ ‚é‚½‚ßAŽÀ—p“I‚Å‚Í
     }
   }
 
-Ú‚µ‚­‚Í common\domparser\core.txt ‚ðŽQÆ‚µ‚Ä‰º‚³‚¢B
+è©³ã—ãã¯ common\domparser\core.txt ã‚’å‚ç…§ã—ã¦ä¸‹ã•ã„ã€‚
 
 
-Žd—lE§ŒÀŽ–€
+ä»•æ§˜ãƒ»åˆ¶é™äº‹é …
 ==============
 
-E“à•”‚Å DOMXml ƒIƒuƒWƒFƒNƒg‚ð’è‹`‚µ‚ÄŽg—p‚µ‚Ä‚¢‚Ü‚·B
+ãƒ»å†…éƒ¨ã§ DOMXml ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’å®šç¾©ã—ã¦ä½¿ç”¨ã—ã¦ã„ã¾ã™ã€‚
 
-Eƒp[ƒX‚É”ñí‚ÉŽžŠÔ‚ª‚©‚©‚è‚Ü‚·B
+ãƒ»ãƒ‘ãƒ¼ã‚¹ã«éžå¸¸ã«æ™‚é–“ãŒã‹ã‹ã‚Šã¾ã™ã€‚
 
 
-•ÏX—š—ð
+å¤‰æ›´å±¥æ­´
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  V‹Kì¬B
+  æ–°è¦ä½œæˆã€‚
 
 
 [EOF]

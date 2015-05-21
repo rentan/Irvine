@@ -1,25 +1,25 @@
 common\rutil.dms
 
 
-�e�탆�[�e�B���e�B�֐��p�̃I�u�W�F�N�g�ł��B
-DOA ����͎g�p�ł��܂���B
+各種ユーティリティ関数用のオブジェクトです。
+DOA からは使用できません。
 
 
-�g�p���@
+使用方法
 ========
 
-�ÓI�ȃI�u�W�F�N�g�Ƃ��Ē�`����Ă��邽�߁A���� Util �I�u�W�F�N�g��
-�v���p�e�B�⃁�\�b�h���Q�Ƃ��ĉ������B
+静的なオブジェクトとして定義されているため、直接 Util オブジェクトの
+プロパティやメソッドを参照して下さい。
 
-�ǂݍ��ݎ���
-�EDorothy2 �{�̂̃o�[�W��������
-�EUser-Agent �̌���
-���s���܂��B
+読み込み時に
+・Dorothy2 本体のバージョン検査
+・User-Agent の検査
+が行われます。
 
-Dorothy2 ����Ăяo���ꂽ�ꍇ�ADorothy �I�u�W�F�N�g��(�����)�g������܂��B
+Dorothy2 から呼び出された場合、Dorothy オブジェクトが(勝手に)拡張されます。
 
 
-Util �I�u�W�F�N�g�̃��\�b�h
+Util オブジェクトのメソッド
 ===========================
 
 Util.remove_this ()
@@ -28,10 +28,10 @@ Util.ini_save (data, iniFile)
 Util.ini_copy_edit ()
 Util.get_option (key)
 
-�ڍׂ͏ȗ��B
+詳細は省略。
 
 
-Dorothy2R �g���@�\
+Dorothy2R 拡張機能
 ==================
 
 Dorothy.isDOA
@@ -42,77 +42,77 @@ Dorothy.getItemFilename ()
 Dorothy.setUrl (url)
 Dorothy.setFilename (filename)
 
-�ڍׂ͏ȗ��B
+詳細は省略。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�E�g�p�s�� User-Agent
+・使用不可 User-Agent
   Irvine
-  Mozilla/4.* �ȉ�
-  MSIE 8.* �ȉ�
+  Mozilla/4.* 以下
+  MSIE 8.* 以下
 
-  ������ User-Agent �łȂ���΃_�E�����[�h�o���Ȃ��T�C�g��
-  �X�N���v�g���� headers ['User-Agent'] �����������ĉ������B
+  これらの User-Agent でなければダウンロード出来ないサイトは
+  スクリプト内で headers ['User-Agent'] を書き換えて下さい。
 
-�E�g�p�s�� HTTP ���\�b�h
+・使用不可 HTTP メソッド
   HEAD
   POST
 
-  HEAD/POST �łȂ���΃_�E�����[�h�o���Ȃ��T�C�g�������
-  �d�l��ύX���܂��B
+  HEAD/POST でなければダウンロード出来ないサイトがあれば
+  仕様を変更します。
 
 
-�ύX����
+変更履歴
 ========
 
 2015-03-16  version 20150316.0  rentan at rentan.org
-  ���s���̍Œ�o�[�W�������X�V�B
+  実行環境の最低バージョンを更新。
 
 2014-12-11  version 20141211.0  rentan at rentan.org
-  Util.min_version() �̍Œ�o�[�W�������X�V�B
+  Util.min_version() の最低バージョンを更新。
 
 2014-10-18  version 20141018.0  rentan at rentan.org
-  Dorothy2R �̏ꍇ�̍Œ�o�[�W������ 20141005 �ɍX�V�B
-  Util.min_version() ��ǉ��B
-  common_xload() ���t�b�N���ăo�[�W�����`�F�b�N���s���悤�ɂ����B
+  Dorothy2R の場合の最低バージョンを 20141005 に更新。
+  Util.min_version() を追加。
+  common_xload() をフックしてバージョンチェックを行うようにした。
 
 2014-10-06  version 20141006.0  rentan at rentan.org
-  Dorothy2 �{�̑��̕K�{�o�[�W������ύX�B
-    Dorothy2set.dms version 0.19 �ȏ�
-    Dorothy2ListMenu.dms version 0.43 �ȏ�
+  Dorothy2 本体側の必須バージョンを変更。
+    Dorothy2set.dms version 0.19 以上
+    Dorothy2ListMenu.dms version 0.43 以上
 
 2014-08-15  version 20140815.0  rentan at rentan.org
-  Dorothy.edit() �� Irvine �̐ݒ���Q�Ƃ���悤�ɂ����B
+  Dorothy.edit() で Irvine の設定を参照するようにした。
 
 2014-07-29  version 20140729.0  rentan at rentan.org
-  Dorothy2R �̏ꍇ�̍Œ�o�[�W������ 20140729 �ɍX�V�B
+  Dorothy2R の場合の最低バージョンを 20140729 に更新。
 
 2014-07-18  version 20140718.0  rentan at rentan.org
-  rutil_dorothy2r.dms: Dorothy.setUrl(), .setFilename() ��ǉ��B
+  rutil_dorothy2r.dms: Dorothy.setUrl(), .setFilename() を追加。
 
 2014-06-26  version 20140626.0  rentan at rentan.org
-  Dorothy2 �̃o�[�W�����`�F�b�N�� rutil_dorothy2r.dms �Ɉړ��B
-  �g�p�s�� User-Agent �� Mozilla/4.* �ȉ��AMSIE 8.* �ȉ���ǉ��B
+  Dorothy2 のバージョンチェックを rutil_dorothy2r.dms に移動。
+  使用不可 User-Agent に Mozilla/4.* 以下、MSIE 8.* 以下を追加。
 
 2014-06-08  version 20140608.0  rentan at rentan.org
-  rutil_dorothy2r.dms: Dorothy.getItemFilename() ��ǉ��B
+  rutil_dorothy2r.dms: Dorothy.getItemFilename() を追加。
 
 2014-05-21  version 20140521.0  rentan at rentan.org
-  Util.remove_this: nulUrl/nulProxy �̐ݒ�� Dorothy2R �{�̂ɂ܂�����
-  �悤�ɂ����B
-  Util.isDOA: �폜�B
+  Util.remove_this: nulUrl/nulProxy の設定を Dorothy2R 本体にまかせる
+  ようにした。
+  Util.isDOA: 削除。
 
-  rutil_dorothy2r.dms: �V�K�쐬�BDorothy2R �p�̃X�N���v�g�� Dorothy2
-  �œ��삷��悤�ɂ���݊��X�N���v�g�B
+  rutil_dorothy2r.dms: 新規作成。Dorothy2R 用のスクリプトを Dorothy2
+  で動作するようにする互換スクリプト。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  �h�L�������g�쐬�B
+  GNU GPL v3 or later を適用。
+  ドキュメント作成。
 
 2012-07-11  version 1.0
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

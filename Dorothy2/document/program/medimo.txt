@@ -1,56 +1,56 @@
 medimo.dms
 
 
-���f�B�A�t�@�N�g���[�̃��o�C���T�C�g( http://medimo.tv/ )�p��
-�X�N���v�g�ł��B
+メディアファクトリーのモバイルサイト( http://medimo.tv/ )用の
+スクリプトです。
 
-�Ҏ�摜���_�E�����[�h���܂��B
-�ݒ�t�@�C���Ŏw�肵���S�ẴT�C�Y�̉摜���ꊇ�ŏ������܂��B
+待受画像をダウンロードします。
+設定ファイルで指定した全てのサイズの画像を一括で処理します。
 
 
-�g�p���@
+使用方法
 ========
 
-�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
-  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
-  �v���O�������E�N���b�N �� �ݒ�
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
 
 
-�Ή� URL
+対応 URL
 ========
 
 http://medimo.tv/sp/
-  ��)
+  例)
   http://medimo.tv/sp/bunkoj/p3
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�EURL �̏d��������邽�߂ƁA�摜�T�C�Y�̎w��̂��߁AURL �Ɏ��ʎq��t����
-  �L���[�ɒǉ����܂��B
+・URL の重複を避けるためと、画像サイズの指定のため、URL に識別子を付けて
+  キューに追加します。
 
-�EiPhone 5 �p�̃T�C�Y�̓T�C�g��ŕʓr�A�ÓI�� URL �Ƀ����N����Ă���̂�
-  �Ή����Ă��܂���B������̓X�N���v�g���g�킸�Ƀ_�E�����[�h�o���܂��B
+・iPhone 5 用のサイズはサイト上で別途、静的な URL にリンクされているので
+  対応していません。そちらはスクリプトを使わずにダウンロード出来ます。
 
 
-�ύX����
+変更履歴
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
 2012-11-25
-  URL ���Ԉ���Ă���ꍇ�͕␳�����݁A���s�����ꍇ�̓G���[�I������
-  �悤�ɂ����B
+  URL が間違っている場合は補正を試み、失敗した場合はエラー終了する
+  ようにした。
 
 2012-11-19
-  common\options.dms ���g��Ȃ��悤�ɂ����B
-  �ÓI�ȉ摜 URL(iPhone 5 �p�̃t�@�C��)�𖳎�����悤�ɂ����B
+  common\options.dms を使わないようにした。
+  静的な画像 URL(iPhone 5 用のファイル)を無視するようにした。
 
 2012-09-19
-  �����o�[�W�����B
+  初期バージョン。
 
 
 [EOF]

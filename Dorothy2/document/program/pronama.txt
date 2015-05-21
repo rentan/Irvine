@@ -1,40 +1,40 @@
 pronama.dms
 
 
-ƒvƒƒOƒ‰ƒ~ƒ“ƒO¶•ú‘—‚ÌƒTƒCƒg—p‚ÌƒXƒNƒŠƒvƒg‚Å‚·B
+ãƒ—ãƒ­ã‚°ãƒ©ãƒŸãƒ³ã‚°ç”Ÿæ”¾é€ã®ã‚µã‚¤ãƒˆç”¨ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆã§ã™ã€‚
 
-Žg‚¢•û‚É‚æ‚Á‚Ä‚ÍÚ‘±æƒT[ƒo‚É‚‚¢•‰‰×‚ðŠ|‚¯‚Ä‚µ‚Ü‚¤‚±‚Æ‚ª‚ ‚é‚Ì‚ÅA\•ª
-‚²’ˆÓ‰º‚³‚¢B
+ä½¿ã„æ–¹ã«ã‚ˆã£ã¦ã¯æŽ¥ç¶šå…ˆã‚µãƒ¼ãƒã«é«˜ã„è² è·ã‚’æŽ›ã‘ã¦ã—ã¾ã†ã“ã¨ãŒã‚ã‚‹ã®ã§ã€ååˆ†
+ã”æ³¨æ„ä¸‹ã•ã„ã€‚
 
 
-Žg—p•û–@
+ä½¿ç”¨æ–¹æ³•
 ========
 
-Ý’è‹@”\‚Í‚È‚¢‚Ì‚ÅAƒJƒXƒ^ƒ}ƒCƒY‚µ‚½‚¢ê‡‚ÍƒXƒNƒŠƒvƒg‚ð‘‚«Š·‚¦‚Ä‰º‚³‚¢B
+è¨­å®šæ©Ÿèƒ½ã¯ãªã„ã®ã§ã€ã‚«ã‚¹ã‚¿ãƒžã‚¤ã‚ºã—ãŸã„å ´åˆã¯ã‚¹ã‚¯ãƒªãƒ—ãƒˆã‚’æ›¸ãæ›ãˆã¦ä¸‹ã•ã„ã€‚
 
 
-‘Î‰ž URL
+å¯¾å¿œ URL
 ========
 
 http://pronama.jp/wallpaper/calendar_20\d\d/
-  ŽÀs‚µ‚½ŒŽ‚Æ Content-Type ‚©‚çƒtƒ@ƒCƒ‹–¼‚ð¶¬B
+  å®Ÿè¡Œã—ãŸæœˆã¨ Content-Type ã‹ã‚‰ãƒ•ã‚¡ã‚¤ãƒ«åã‚’ç”Ÿæˆã€‚
 
 i\d+.wp.com/pronama.azurewebsites.net/
-  CDN ‚Å‚Í‚È‚­Œ³‚Ì URL ‚©‚çƒ_ƒEƒ“ƒ[ƒhB
+  CDN ã§ã¯ãªãå…ƒã® URL ã‹ã‚‰ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰ã€‚
 
 
-Žd—lE§ŒÀŽ–€
+ä»•æ§˜ãƒ»åˆ¶é™äº‹é …
 ==============
 
 
-•ÏX—š—ð
+å¤‰æ›´å±¥æ­´
 ========
 
 2015-02-09  version 20150209.0  rentan at rentan.org
-  calendar_2015 ‚É‘Î‰žB
+  calendar_2015 ã«å¯¾å¿œã€‚
 
 2014-05-08  version 20140508.0  rentan at rentan.org
-  V‹Kì¬B
+  æ–°è¦ä½œæˆã€‚
 
 
 [EOF]

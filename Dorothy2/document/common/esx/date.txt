@@ -1,35 +1,35 @@
 common\esx\date.dms
 
 
-Date �I�u�W�F�N�g�� EcmaScript �̃��\�b�h��ǉ�(polyfill)���܂��B
+Date オブジェクトに EcmaScript のメソッドを追加(polyfill)します。
 
 
-�g�p���@
+使用方法
 ========
 
   common_load ('esx\date');
 
 
-Date �I�u�W�F�N�g�ɒǉ�����郁�\�b�h
+Date オブジェクトに追加されるメソッド
 =====================================
 
 toISOString ()
 toJSON ()
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�E�ǉ����ꂽ���\�b�h�ɑ΂��� .call()�A.apply() ���g�p���Ȃ����ƁB
-  �֐��̓��샂�[�h���ύX����� DMoneky �̕s��ɂ��A�Ȍチ�\�b�h
-  �����퓮�삵�Ȃ��Ȃ�B
+・追加されたメソッドに対して .call()、.apply() を使用しないこと。
+  関数の動作モードが変更される DMoneky の不具合により、以後メソッド
+  が正常動作しなくなる。
 
 
-�ύX����
+変更履歴
 ========
 
 2014-10-05  version 20141005.0  rentan at rentan.org
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

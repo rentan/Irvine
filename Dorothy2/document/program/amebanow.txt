@@ -1,84 +1,84 @@
 amebanow.dms
 
 
-Ameba�Ȃ��p�̃X�N���v�g�ł��B
+Amebaなう用のスクリプトです。
 
-�g�����ɂ���Ă͐ڑ���T�[�o�ɍ������ׂ��|���Ă��܂����Ƃ�����̂ŁA�\��
-�����Ӊ������B
+使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分
+ご注意下さい。
 
-�ꊇ�_�E�����[�h���� HTML ��͂Ɏ��s����悤�Ȃ��Ƃ����邩���m��Ȃ��̂ŁA
-�t�@�C������肱�ڂ��Ă��Ȃ����K���m�F���ĉ������B
+一括ダウンロード時に HTML 解析に失敗するようなことがあるかも知れないので、
+ファイルを取りこぼしていないか必ず確認して下さい。
 
 
-�g�p���@
+使用方法
 ========
 
-�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
-  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
-  �v���O�������E�N���b�N �� �ݒ�
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
 
 
-�Ή� URL
+対応 URL
 ========
 
 http://stat\d+.ameba.jp/user_images/\d+/\d+/[^\/]+/[^\/]+/[^\/]+/[^\/]+/o\d+.*
-  �摜
+  画像
 
 http://stat\d+.ameba.jp/user_images/\d+/\d+/[^\/]+/[^\/]+/[^\/]+/[^\/]+/t\d+_\d+.*
-  �T���l�C���摜
-  �����摜���_�E�����[�h�B
+  サムネイル画像
+  原寸画像をダウンロード。
 
 http://now.ameba.jp/[^\/]+/\d+/
-  ���e�̃p�[�}�����N
-  ���̓��e�Ɋ܂܂��摜���_�E�����[�h�B
+  投稿のパーマリンク
+  その投稿に含まれる画像をダウンロード。
 
 http://now.ameba.jp/[^\/]+/archive/\d{4}/\d{2}/
-  ���ʂ̃A�[�J�C�u�y�[�W
-  ���̌��̂��ׂĂ̓��e�Ɋ܂܂��摜���_�E�����[�h�B
+  月別のアーカイブページ
+  その月のすべての投稿に含まれる画像をダウンロード。
 
 http://now.ameba.jp/[^\/]+/(archive/(\?year=\d+)?)?
-  �g�b�v�y�[�W�A�܂��͌��ʃA�[�J�C�u�̃g�b�v�y�[�W
-  ���̍�҂�1�N�Ԃ̑S��i���_�E�����[�h�i���ʂ̃A�[�J�C�u�y�[�W��V����
-  �_�E�����[�h�o�^���܂��j�B
+  トップページ、または月別アーカイブのトップページ
+  その作者の1年間の全作品をダウンロード（月別のアーカイブページを新たに
+  ダウンロード登録します）。
 
-  ���N�i\?year=\d+ ���w�肳�ꂽ�ꍇ�͂��̔N�j�ȊO�̓_�E�����[�h���܂���B
+  当年（\?year=\d+ が指定された場合はその年）以外はダウンロードしません。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�E�g�b�v�y�[�W�⌎�ʃA�[�J�C�u�̃g�b�v�y�[�W���w�肵���ہA�f�[�^�̑��݂��Ȃ�
-  �ߋ��▢���̌��ʃy�[�W���_�E�����[�h�o�^���Ă��܂��܂��B
+・トップページや月別アーカイブのトップページを指定した際、データの存在しない
+  過去や未来の月別ページもダウンロード登録してしまいます。
 
 
-�ύX����
+変更履歴
 ========
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
-  �Â��`���̃t�@�C�����ϐ� %IMAGE_ID% ���폜�B
+  古い形式のファイル名変数 %IMAGE_ID% を削除。
 
 2012-11-19
-  user\amebanow.default.ini ���X�V�B
+  user\amebanow.default.ini を更新。
 
 2012-07-11
-  �啝�ɕύX�B
+  大幅に変更。
 
-  �t�@�C�����ϐ� %ID% %IMAGE_ID% ����ύX
+  ファイル名変数 %ID% %IMAGE_ID% から変更
 
 2012-03-29
-  common\{http,utf8}.dms ���g���悤�ɂ����B
+  common\{http,utf8}.dms を使うようにした。
 
 2012-01-20
-  Dorothy.userPath�ADorothy.userIniPath ���g���悤�ɂ����B
-  .ini �t�@�C���̓ǂݍ��݂� common\fnutil.dms �Ɏ����B
+  Dorothy.userPath、Dorothy.userIniPath を使うようにした。
+  .ini ファイルの読み込みを common\fnutil.dms に実装。
 
-  ���ʃA�[�J�[�u�̐���w��ɑΉ��B
+  月別アーカーブの西暦指定に対応。
 
 2011-12-11
-  �����o�[�W�����B
+  初期バージョン。
 
 
 [EOF]

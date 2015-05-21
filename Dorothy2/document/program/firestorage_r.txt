@@ -1,36 +1,36 @@
 firestorage_r.dms
 
 
-firestorage �p�̃X�N���v�g�ł��B
+firestorage 用のスクリプトです。
 
 
-�g�p���@
+使用方法
 ========
 
-�ݒ�@�\�͂���܂���B
+設定機能はありません。
 
-�A�C�e���ǉ��� AddItem �̊���l�ɏ]���Ď��s����܂��B
+アイテム追加は AddItem の既定値に従って実行されます。
 
-�ȉ��̃h�L�������g���Q�Ƃ��ĉ������B
+以下のドキュメントも参照して下さい。
 
-�E�A�C�e���ǉ�
+・アイテム追加
   Dorothy2\document\common\additem.txt
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
 2014-12-09  version 20141209.0  rentan at rentan.org
-  common\getter.dms ���g���悤�ɂ����B
+  common\getter.dms を使うようにした。
 
 2014-11-04  version 20141104.0  rentan at rentan.org
-  �����t�@�C���̃_�E�����[�h���ɕۑ��t�H���_�����f����Ȃ��s����C���B
+  複数ファイルのダウンロード時に保存フォルダが反映されない不具合を修正。
 
 2014-09-27  version 20140927.0  rentan at rentan.org
-  �p�X���[�h���̓L�����Z������ NG �ł͂Ȃ� EXIT ��Ԃ��悤�ɂ����B
+  パスワード入力キャンセル時は NG ではなく EXIT を返すようにした。
 
 2014-08-20  version 20140820.0  rentan at rentan.org
-  �V�K�쐬�B
+  新規作成。
 
 
 [EOF]

@@ -1,95 +1,95 @@
 circlems.dms
 
 
-Circle.ms �p�̃X�N���v�g�ł��B
+Circle.ms 用のスクリプトです。
 
-�g�����ɂ���Ă͐ڑ���T�[�o�ɍ������ׂ��|���Ă��܂����Ƃ�����̂ŁA�\��
-�����Ӊ������B
+使い方によっては接続先サーバに高い負荷を掛けてしまうことがあるので、十分
+ご注意下さい。
 
-�ꊇ�_�E�����[�h���� HTML ��͂Ɏ��s����悤�Ȃ��Ƃ����邩���m��Ȃ��̂ŁA
-�t�@�C������肱�ڂ��Ă��Ȃ����K���m�F���ĉ������B
+一括ダウンロード時に HTML 解析に失敗するようなことがあるかも知れないので、
+ファイルを取りこぼしていないか必ず確認して下さい。
 
 
-�g�p���@
+使用方法
 ========
 
-�ȉ��̎菇�Őݒ�t�@�C���i.ini�j���J���̂ŁA�D�݂ŏ��������ĉ������B
-  �c�[�� �� ���C�����j���[ �� ����_�E�����[�h�ݒ�Q
-  �v���O�������E�N���b�N �� �ݒ�
+以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
 
 
-�Ή� URL
+対応 URL
 ========
 
 https://c\d+.circle.ms/pics.aspx?PCODE=[^&]+
-  �摜�t�@�C��
+  画像ファイル
 
 https://c\d+.circle.ms/oc/CircleProfile.aspx
-  �T�[�N���C���[�W�M�������[�̑S��i���_�E�����[�h
+  サークルイメージギャラリーの全作品をダウンロード
 
 https://c\d+.circle.ms/oc/CircleImages.aspx
-  �T�[�N���C���[�W�M�������[
-  �y�[�W�ԍ����w�肳��Ă���΂��̃y�[�W�A�����łȂ���ΑS�y�[�W��
-  ��i���_�E�����[�h�B
+  サークルイメージギャラリー
+  ページ番号が指定されていればそのページ、そうでなければ全ページの
+  作品をダウンロード。
 
-  1�y�[�W�ڂ����_�E�����[�h�������ꍇ�� ?page=1 ��t����B
+  1ページ目だけダウンロードしたい場合は ?page=1 を付ける。
 
 
-�d�l�E��������
+仕様・制限事項
 ==============
 
-�E���O�C���̕K�v�ȍ�i�� Internet Explorer�i�ی샂�[�h�����j�Ń��O�C�����Ă���
-  �K�v������܂��B
-    �ECircle.ms �̎d�l�i�T�[�N�����̋@�\�j�ŁA�񃍃O�C����Ԃł̓T�[�N��
-      �C���[�W�M�������[�ɕ\������Ȃ��y�[�p�[�B
-      (�u���C�ɓ���o�^�҂܂Ō��J�v�̃y�[�p�[�ɂ��Ă͓��얢�m�F)
+・ログインの必要な作品は Internet Explorer（保護モード無効）でログインしておく
+  必要があります。
+    ・Circle.ms の仕様（サークル側の機能）で、非ログイン状態ではサークル
+      イメージギャラリーに表示されないペーパー。
+      (「お気に入り登録者まで公開」のペーパーについては動作未確認)
 
-�E�X�N���v�g���ŉ摜���_�E�����[�h���Ċg���q�𔻕ʂ��Ă��܂��B
+・スクリプト内で画像をダウンロードして拡張子を判別しています。
 
 
-�ύX����
+変更履歴
 ========
 
 2014-04-08  version 20140408.0  rentan at rentan.org
-  emesStore �̃T�[�r�X�I���ɔ����Ή��R�[�h���폜�B
+  emesStore のサービス終了に伴い対応コードを削除。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
-  GNU GPL v3 or later ��K�p�B
-  ���̃t�@�C���� UTF-8 �ɕύX�B
+  GNU GPL v3 or later を適用。
+  このファイルを UTF-8 に変更。
 
 2012-11-19
-  �T�C�g�� https:// ���ɑΉ��B
-  PageOrigin=0 �̎� %MANGA_PZ% �ɗ]�v�� 0 ���t�����Ƃ�����s����C���B
+  サイトの https:// 化に対応。
+  PageOrigin=0 の時 %MANGA_PZ% に余計な 0 が付くことがある不具合を修正。
 
 2012-07-11
-  �啝�ɕύX�B
+  大幅に変更。
 
 2012-03-29
-  common\{http,utf8}.dms ���g���悤�ɂ����B
-  ctype2ext.dms ���g��Ȃ��悤�ɂ����B
+  common\{http,utf8}.dms を使うようにした。
+  ctype2ext.dms を使わないようにした。
 
-  �t�@�C�����ϐ� %AUTHOR2% �ǉ��B%AUTHOR% �Ɠ��������A���ݒ�̏ꍇ��
-  %REPRESENT% �ɒu������B
+  ファイル名変数 %AUTHOR2% 追加。%AUTHOR% と同じだが、未設定の場合は
+  %REPRESENT% に置換する。
 
-  emesStore �� HTML ���ύX����ă_�E�����[�h�o���Ȃ��Ȃ��Ă����̂��C���B
+  emesStore で HTML が変更されてダウンロード出来なくなっていたのを修正。
 
 2011-12-18
-  Dorothy.userPath�ADorothy.userIniPath ���g���悤�ɂ����B
-  .ini �t�@�C���̓ǂݍ��݂� common\fnutil.dms �Ɏ����B
+  Dorothy.userPath、Dorothy.userIniPath を使うようにした。
+  .ini ファイルの読み込みを common\fnutil.dms に実装。
 
 2011-12-05
-  �w�b�_�� match= ���C���B�R�����g�i�t�B���^�����O�ݒ�j���C���B
+  ヘッダの match= を修正。コメント（フィルタリング設定）を修正。
 
-  remove_this() �� common/fnutil.dms �Ɉړ��B
-  �\�[�X�̊ȑf���̂��߁Acommon_load() ��`���ňꊇ���čs���悤�ɂ����B
+  remove_this() を common/fnutil.dms に移動。
+  ソースの簡素化のため、common_load() を冒頭で一括して行うようにした。
 
 2011-10-19
-  �����o�[�W�����B
+  初期バージョン。
 
-  Set-Cookie: .ASPXAUTH=�`; HttpOnly �Ƃ��� Cookie �� Internet Explorer
-  ����ǂݍ��ނ��߁Acommon/InternetGetCookieEx.dms ���쐬�B
+  Set-Cookie: .ASPXAUTH=～; HttpOnly という Cookie を Internet Explorer
+  から読み込むため、common/InternetGetCookieEx.dms を作成。
 
-  �Q�l -- MSDN InternetGetCookieEx function
+  参考 -- MSDN InternetGetCookieEx function
   http://msdn.microsoft.com/en-us/library/windows/desktop/aa384714(v=vs.85).aspx
 
 
