@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20150503.0
+//version=20150522.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -94,10 +94,17 @@ Twitter.prototype._analyzeVideoCards = function (cardsUrl) {
 // ツイート内の画像URLを抽出する
 Twitter.prototype._analyzeTweetImage = function () {
   var http = this.http;
-
   var html = http.data;
-  var n = html.indexOf ('<div class="js-machine-translated-tweet-container">');
-  html = (n < 0) ? html : html.slice (0, n);
+
+  if (!/<div class="[^"]*permalink-tweet-container[^"]*"[^>]*>/.test (html)) {
+    return this._ng ('<div class="permalink-tweet-container"> が見つかりません。');
+  }
+  html = RegExp.rightContext;
+
+  if (!/<div class="[^"]*js-machine-translated-tweet-container/.test (html)) {
+    return this._ng ('<div class="js-machine-translated-tweet-container"> が見つかりません。');
+  }
+  html = RegExp.leftContext;
 
   // RegExp.test 高速化
   function testRegExp (re, text) {

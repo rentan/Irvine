@@ -33,6 +33,11 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2015-05-22  version 20150522.0  rentan at rentan.org
+  複数画像ツイートへのリプライで複数画像を貼ったツイートを指定した時に
+  元ツイートの画像をダウンロードする不具合を修正。
+    thanks to http://peace.2ch.net/test/read.cgi/win/1412399700/874-875
+
 2015-05-03  version 20150503.0  rentan at rentan.org
   HTML の仕様変更に対応。
 
