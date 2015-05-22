@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20150522.0
+//version=20150523.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -27,11 +27,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 function (scriptMode) {
 
-  common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20150316.0);
+  common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
+  Util.min_version (20150523.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
+    Cookie: BrowserCookie.prototype.iniTemplate,
     General: {
       Zen2Han: false,
       PageOrigin: 0
@@ -44,6 +45,10 @@ function (scriptMode) {
     }
   };
 
+  if (Dorothy.userName == 'rentan') {
+    defaultIni.Cookie.Browser = 'Firefox';
+  }
+
 
 //-------------------------------- Twitter ---------------------------------
 
@@ -52,7 +57,10 @@ common_load ('getter', 'http', 'utf8');
 
 
 // コンストラクタ
-Getter (function Twitter () {
+Getter (function Twitter (opt) {
+  var config = opt || { };
+
+  this._cookie = config.hasKey ('Cookie') ? config.Cookie : null;
 });
 
 
@@ -226,29 +234,56 @@ Twitter.prototype._analyzeTweet = function () {
 };
 
 
+// ブラウザからCookieを読み込む
+Twitter.prototype._importCookie = function (http, url) {
+  var bcookie = new BrowserCookie (this._cookie);
+
+  var host = '.' + (new URL (url)).hostname;
+  var o = { https: true, host: host, name: 'auth_token' };
+
+  var cookie = bcookie.import (o);
+  print_debug ('Cookie: ' + cookie);
+
+  if (!cookie) {
+    return this._ng ('Cookieが読み込めませんでした。');
+  }
+
+  http.setRequestHeader ('Cookie', cookie);
+  return this._ok ();
+};
+
+
 // 単一のツイートに含まれる画像を抽出する
 Twitter.prototype._getTweetImage = function (url) {
   var http = this.http = new Http ();
-
-  function getRetweetOriginalUrl () {
-    var tweetUrl = /^https:\/\/twitter\.com\/[^\/]+\/status\/\d+$/;
-
-    if (http.code == 302 && tweetUrl.test (http.location)) {
-      return http.location;
-    }
-    return null;
-  }
+  var cookieImported = false;
 
   for (;;) {
     if (http.get (url)) {
       // ツイートのHTMLが取得できた成功
       break;
     }
+    var loc = (http.code == 302) ? http.location : '';
 
-    var retweet = getRetweetOriginalUrl ();
-    if (retweet) {
-      // 自分がリツイートした他人の画像ツイート
-      url = retweet;
+    // 自分がリツイートした他人の画像ツイート
+    if (/^https:\/\/twitter\.com\/[^\/]+\/status\/\d+$/.test (loc)) {
+      url = loc;
+      continue;
+    }
+
+    if (/\?protected_redirect=true(&|$)/.test (loc)) {
+      if (cookieImported) {
+        return this._ng ('非公開設定アカウント: 未フォローです。');
+      }
+      if (!Util.isHttpsNoCookies ()) {
+        return this._ng ('非公開設定アカウント: IEでログインしていないか、未フォローです。');
+      }
+
+      // Cookieを読み込んでもう一度だけ試す
+      if (!this._importCookie (http, url)) {
+        return false;
+      }
+      cookieImported = true;
       continue;
     }
 
@@ -298,9 +333,32 @@ Twitter.prototype._getMediaImage = function (url) {
   var json = head + 'i/profiles/show/' + twitterId + '/media_timeline';
   var maxId = '';
 
+  var cookieImported = false;
+
+  function minus1 (id) {
+    var sb = new StringBuffer (id.replace (/^0+/, ''));
+    for (var i = sb.length - 1; i >= 0; --i) {
+      if (sb [i] != '0') {
+        sb [i] = String.fromCharCode (sb.charCodeAt [i] - 1);
+        break;
+      }
+      sb [i] = '9';
+    }
+
+    return sb.text.replace (/^0+(.)/, '$1') || '0';
+  }
+
   for (;;) {
     if (!http.getXhr (json + maxId)) {
-      return http._httpError ();
+      if (http.code != 404 || cookieImported || !Util.isHttpsNoCookies ()) {
+        return this._httpError ();
+      }
+
+      if (!this._importCookie (http, json)) {
+        return false;
+      }
+      cookieImported = true;
+      continue;
     }
     if (this.debug) {
       http.capture ('media_timeline' + maxId.replace (/\?max_id=/, '_') + '_json.txt');
@@ -319,7 +377,7 @@ Twitter.prototype._getMediaImage = function (url) {
     }
 
     // 2回目以降は URL に ?max_id=～ をつける
-    maxId = '?max_id=' + lastId;
+    maxId = '?max_id=' + minus1 (lastId);
 
     if (!/"has_more_items"\s*:\s*(true|false)/.test (http.data)) {
       return this._unknown ('has_more_items が見つかりません。');
@@ -457,7 +515,7 @@ Twitter.prototype.download = function (args) {
 
   var ini = Util.ini_load (defaultIni);
 
-  var getter = new Twitter ();
+  var getter = new Twitter ({ Cookie: ini.Cookie });
 
   if (getter.get (urlinfo.url)) {
     var type = getter.type;

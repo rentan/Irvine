@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20150318.0
+//version=20150523.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -191,6 +191,20 @@ describe ('リプライツイートの画像', function () {
 
     getter.buildFilename ({ NameBuilder: nb, Format: fmt });
     expect (getter.items).toEqual ([ { Url: image, Filename: filename } ]);
+  });
+
+  it ('複数画像ツイートへの複数画像リプライ', function () {
+    var url = 'https://twitter.com/rentan_org/status/601787846807068672';
+    var itemData = [
+      { Url: 'https://pbs.twimg.com/media/CFn623yUMAA6ZRe.png:orig' },
+      { Url: 'https://pbs.twimg.com/media/CFn6235UEAARpLN.png:orig' },
+      { Url: 'https://pbs.twimg.com/media/CFn624MUUAER32A.png:orig' }
+    ];
+
+    expect (getter.get (url)).toBe (true);
+    expect (getter.status).toBe (getter.OK);
+    expect (getter.type).toBe ('Photo2');
+    expect (getter.items).toEqual (itemData);
   });
 });
 
