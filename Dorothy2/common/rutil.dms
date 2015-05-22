@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20150316.0
+//version=20150523.0
 //hint=utility
 //match=
 //author=rentan
@@ -198,6 +198,34 @@ Util.fatal = function (s) {
 };
 
 
+// INTERNET_FLAG_NO_COOKIES パッチの有無を返す
+Util.isHttpsNoCookies = function () {
+  var b = (function () {
+    var f = new File (WScript.FullName);
+
+    if (IrvineInfo.version != '1.3.1' || f.length != 3030528) {
+      return false;
+    }
+
+    try {
+      f.open ('rd');
+      f.seek (0xb03bd);
+      return (f.read (1).charCodeAt (0) & 8) == 8;
+    }
+    catch (e) {
+      return false;
+    }
+    finally {
+      f.close ();
+    }
+  }) ();
+
+  Util.isHttpsNoCookies = function () { return b; };
+
+  return b;
+};
+
+
 // rutil.dms のバージョンチェック
 Util.min_version = function (reqVer) {
   var fileVer = parseFloat (Dorothy.common ['rutil'].version);
@@ -222,11 +250,11 @@ common_xload = (function (common_xload) {
 
     actibook: 20140331.0,
     additem: 20150103.0,
-    browsercookie: 20140403.0,
+    browsercookie: 20150523.0,
     exec: 20140331.0,
-    getter: 20150316.0,
+    getter: 20150425.0,
     htmlform: 20150119.0,
-    http: 20141111.0,
+    http: 20150425.0,
     jinput: 20140908.0,
     namebuilder: 20141215.0,
     rutil_dorothy2r: 20141018.0,

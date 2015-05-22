@@ -27,6 +27,7 @@ Util.ini_load (defaulData, iniFile)
 Util.ini_save (data, iniFile)
 Util.ini_copy_edit ()
 Util.get_option (key)
+Util.isHttpsNoCookies()
 
 詳細は省略。
 
@@ -66,6 +67,9 @@ Dorothy.setFilename (filename)
 
 変更履歴
 ========
+
+2015-05-23  version 20150523.0  rentan at rentan.org
+  Util.isHttpsNoCookies() を追加。
 
 2015-03-16  version 20150316.0  rentan at rentan.org
   実行環境の最低バージョンを更新。
