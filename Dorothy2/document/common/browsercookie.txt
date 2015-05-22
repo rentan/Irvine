@@ -52,6 +52,7 @@ CefCookie=
   common_load ('browsercookie');
   var bcookie = new BrowserCookie ();
   var o = {
+    https: false,
     host: '.example.com',
     name: 'session_id'
   };
@@ -121,6 +122,10 @@ getChromeCookiePath ()
 
 変更履歴
 ========
+
+2015-05-23  version 20150523.0  rentan at rentan.org
+  IE からの Secure Cookie の読み込みに対応。
+  .import({ https: true, ... }) のように https: true を指定する。
 
 2014-04-03  version 20140403.0  rentan at rentan.org
   BrowserCookie._sql(): Cookie ファイルにデータが一つもない時に正しく
