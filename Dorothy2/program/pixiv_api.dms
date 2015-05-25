@@ -1,0 +1,706 @@
+//Dorothy2
+//caption=pixiv_api
+//version=20150519.0
+//hint=pixiv (public API)
+//match=^http://www\.pixiv\.net/member(_illust)?\.php
+//author=rentan
+//path=program
+//priority=510
+//end
+
+/*
+Copyright (C) 2015 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function (scriptMode) {
+
+  common_load ('rutil', 'additem', 'namebuilder');
+  Util.min_version (20150316.0);
+
+  var defaultIni = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      Zen2Han: false,
+      PageOrigin: 0,
+      NoTitle: 'no-title'
+    },
+    Filename: {
+      Illust: 'pixiv_%ID%',
+      Ugoira: 'pixiv_%ID%',
+      Manga: 'pixiv_%ID%_p%P%'
+    }
+  };
+
+
+//------------------------------- PixivAuth --------------------------------
+
+
+// コンストラクタ
+void function PixivAuth () {
+  this._ini = new RegIni ('\Software\WildForce\Irvine\accounts');
+
+  this._clearTokens ();
+};
+
+
+PixivAuth.prototype._section = 'pixiv';
+
+
+// 読み込み済みトークンの値を初期化
+PixivAuth.prototype._clearTokens = function () {
+  this.access_token = '';
+  this.refresh_token = '';
+  this.expires = 0;
+};
+
+
+// public: トークンを削除する
+PixivAuth.prototype.eraseTokens = function () {
+  var ini = this._ini;
+  var sec = this._section;
+
+  ini.deleteKey (sec, 'AccessToken');
+  ini.deleteKey (sec, 'RefreshToken');
+  ini.deleteKey (sec, 'Expires');
+
+  this._clearTokens ();
+};
+
+
+// 文字列を読み込む
+PixivAuth.prototype._read = function (name, defaultValue) {
+  return this._ini.read (this._section, name, defaultValue);
+};
+
+
+// 文字列を書き込む
+PixivAuth.prototype._write = function (name, value) {
+  this._ini.write (this._section, name, value);
+};
+
+
+// public: トークンを読み込む
+PixivAuth.prototype.loadTokens = function () {
+  this.access_token = Base64.decode (this._read ('AccessToken', ''));
+  this.refresh_token = Base64.decode (this._read ('RefreshToken', ''));
+  this.expires = parseFloat (this._read ('Expires', '0'));
+
+  return (this.access_token && this.refresh_token && this.expires) ? true : false;
+};
+
+
+// public: トークンを書き込む
+PixivAuth.prototype.saveTokens = function () {
+  this._write ('AccessToken', Base64.encode (this.access_token));
+  this._write ('RefreshToken', Base64.encode (this.refresh_token));
+  this._write ('Expires', this.expires + '');
+
+  if (typeof this._ini.update == 'function') {
+    this._ini.update ();
+  }
+};
+
+
+// public: アカウント情報を読み込む
+PixivAuth.prototype.readIdPassword = function () {
+  return {
+    id: Base64.decode (this._read ('id', '')),
+    password: Base64.decode (this._read ('password', ''))
+  };
+};
+
+
+//-------------------------------- PixivApi --------------------------------
+
+
+common_load ('getter', 'esx/json', 'http', 'utf8');
+
+
+// コンストラクタ
+Getter (function PixivApi () {
+  this._auth = new PixivAuth ();
+});
+
+PixivApi.prototype.PER_PAGE = 50;
+
+PixivApi.prototype.json = null;
+
+
+// Http オブジェクト初期化
+PixivApi.prototype._newHttp = function (setAuth) {
+  var http = this.http = new Http ();
+
+  http.setRequestHeader ('Referer', 'http://www.pixiv.net/');
+  http.setRequestHeader ('User-Agent', 'PixivIOSApp/5.1.1');
+
+  if (setAuth) {
+    http.setRequestHeader ('Authorization', this._auth.access_token);
+  }
+
+  return http;
+};
+
+
+// OAUTH POST
+PixivApi.prototype._postOauth = function (http, queries) {
+  var url = 'https://oauth.secure.pixiv.net/auth/token';
+
+  var query = [ ].concat (queries).concat ([
+    'client_id=' + Base64.decode ('YllHS3VHVnc5MWUwTk1mUEdwNDRldXZHdDU5cw=='),
+    'client_secret=' + Base64.decode ('SFAzUm1rZ0FtRUdybzBnbjF4OWlvYXdRRThXTWZ2TFhEejNacXhwSw==')
+  ]).join ('&');
+
+  http.setRequestHeader ('Content-Type', 'application/x-www-form-urlencoded');
+
+  // トークン更新の起点となる時刻を記録
+  http.postTime = new Date ();
+
+  return http.post (url, query);
+};
+
+
+// 取得したJSONからトークンを抽出して保存する
+PixivApi.prototype._updateToken = function (http) {
+  var access_token = /"access_token":"([^"]+)"/.test (http.data) ? RegExp.$1 : null;
+  var refresh_token = /"refresh_token":"([^"]+)"/.test (http.data) ? RegExp.$1 : null;
+  var expires_in = /"expires_in":(\d+)/.test (http.data) ? RegExp.$1 : null;
+
+  if (!access_token || !refresh_token || !expires_in) {
+    return this._ng ('access_token/refresh_token/expires_in が得られませんでした。');
+  }
+
+  var auth = this._auth;
+  auth.access_token = 'Bearer ' + access_token;
+  auth.refresh_token = refresh_token;
+  auth.expires = http.postTime + (parseFloat (expires_in) - 10) * 1000;
+  auth.saveTokens ();
+
+  return this._ok ();
+};
+
+
+// ログインしてトークンを取得する
+PixivApi.prototype._login = function () {
+  var auth = this._auth;
+
+  var idpw = auth.readIdPassword ();
+  if (!idpw.id || !idpw.password) {
+    return this._ng ('アカウント情報がありません。');
+  }
+
+  var queries = [
+    'grant_type=password',
+    'username=' + encodeURIComponent (idpw.id),
+    'password=' + encodeURIComponent (idpw.password)
+  ];
+
+  var http = this._newHttp (false);
+  if (!this._postOauth (http, queries)) {
+    return this._ng ('ログイン失敗: ' + http.statusLine);
+  }
+
+  return this._updateToken (http);
+};
+
+
+// トークンを更新する
+PixivApi.prototype._refreshToken = function () {
+  var queries = [
+    'grant_type=refresh_token',
+    'refresh_token=' + encodeURIComponent (this._auth.refresh_token)
+  ];
+
+  var http = this._newHttp (true);
+  if (!this._postOauth (http, queries)) {
+    return this._ng ('トークン更新に失敗しました。');
+  }
+
+  return this._updateToken (http);
+};
+
+
+// エラー code
+PixivApi.prototype._errorCodeMessage = {
+  '206': '削除されたか存在しない作品IDです。',
+  '229': '閲覧制限されています(R-18)。'  // R-18以外でも発生するかは不明
+};
+
+
+// エラーの種類を調べる
+// トークン無効時のみ(更新やログインにより続行できるので) true を返す
+PixivApi.prototype._isInvalidToken = function (http) {
+  if (http.code != 400) {
+    return this._httpError ();
+  }
+
+  var message = /"message":"([^"]+)"/.test (http.data) ? RegExp.$1 : '';
+  if (message == 'The access token provided is invalid.') {
+    return this._ok ();
+  }
+
+  if (!/"code":(\d+)/.test (http.data)) {
+    http.capture ();
+    return this._ng ('APIエラー: code なし');
+  }
+  var code = RegExp.$1;
+
+  if (this._errorCodeMessage.hasKey (code)) {
+    return this._ng (this._errorCodeMessage [code]);
+  }
+
+  http.capture ();
+  if (message == '400 Bad Request') {
+    return this._httpError ();
+  }
+  return this._ng ('APIエラー: ' + code);
+};
+
+
+// 有効なトークンを取得してAPIを実行する
+PixivApi.prototype._authState = null;
+PixivApi.prototype._api = function (url) {
+
+  var state = this._authState;
+  for (;;) {
+
+    if (!state) {
+      if (!this._auth.loadTokens ()) {
+        state = 'login';
+        continue;
+      }
+
+      state = (Date.getTime () < this._auth.expires) ? 'loaded' : 'refresh';
+      continue;
+    }
+
+    if (state == 'refresh') {
+      state = this._refreshToken () ? 'refreshed' : 'login';
+      continue;
+    }
+
+    if (state == 'login') {
+      if (this._login ()) {
+        state = 'loggedin';
+        continue;
+      }
+
+      // ログイン失敗
+      this._auth.eraseTokens ();
+      this._authState = state;
+      return false;
+    }
+
+    this._authState = state;
+    if (!/^(loaded|refreshed|loggedin|active)$/.test (state)) {
+      break;
+    }
+
+    var http = this._newHttp (true);
+    if (http.get (url)) {
+      this._authState = 'active';
+      return this._ok ();
+    }
+    if (!this._isInvalidToken (http)) {
+      return false;
+    }
+
+    if (state == 'loaded' || state == 'active') {
+      state = 'refresh';
+      continue;
+    }
+    if (state == 'refreshed') {
+      // 更新成功したのにエラーなら、念のため再ログインを試す
+      state = 'login';
+      continue;
+    }
+
+    // state == 'loggedin'  ログイン直後なのに無効なトークンなら続行不可
+    this._authState = 'login';
+    return this._ng ('トークンが無効です。');
+  }
+
+  // ここには到達しないなず
+  return this._ng ('内部エラー: state=' + state);
+};
+
+
+// APIを実行する
+PixivApi.prototype._v1 = function (path, query) {
+  var baseUrl = 'https://public-api.secure.pixiv.net/v1/' + path;
+  var url = baseUrl + (query ? '?' + query : '');
+
+  return this._api (url);
+};
+
+
+// public: 作品の情報を得る
+PixivApi.prototype.works = function (illust_id) {
+  var path = 'works/' + illust_id + '.json';
+  var query = 'image_sizes=large';
+
+  if (!this._v1 (path, query)) {
+    return false;
+  }
+
+  try {
+    this.json = JSON.parse (this.http.data);
+  }
+  catch (e) {
+    return this._ng (e);
+  }
+
+  return this._ok ();
+};
+
+
+// public: ユーザーの作品一覧を得る
+PixivApi.prototype.users_works = function (user_id, page) {
+  var path = 'users/' + user_id + '/works.json';
+  var query = 'per_page=' + this.PER_PAGE + (page ? '&page=' + page : '');
+
+  if (!this._v1 (path, query)) {
+    return false;
+  }
+
+  try {
+    this.json = JSON.parse (this.http.data);
+  }
+  catch (e) {
+    return this._ng (e);
+  }
+
+  return this._ok ();
+};
+
+
+//--------------------------------- Pixiv ----------------------------------
+
+
+// コンストラクタ
+Getter (function Pixiv () {
+  this._api = new PixivApi ();
+  this._api.quiet = true;
+});
+
+
+Pixiv.prototype._referer = 'http://www.pixiv.net/';
+
+
+// 複数画像のURLを抽出する
+Pixiv.prototype._getImageUrls = function (result, page_count) {
+  var json = this._api.json;
+
+  try {
+    var pages = json.response [0].metadata.pages;
+
+    if (pages.length != page_count) {
+      return this._ng ('pages の要素数が page_count と異なります。');
+    }
+
+    for (var i = 0; i < page_count; ++i) {
+      var imageUrl = pages [i].image_urls.large;
+      result.push (imageUrl);
+    }
+  }
+  catch (e) {
+    return this._ng ('未対応のJSONデータ構造です(image_urls)。');
+  }
+
+  return this._ok ();
+};
+
+
+// 複数画像を取得する
+Pixiv.prototype._getIllustMulti = function (page_count) {
+  var urls = [ ];
+  if (!this._getImageUrls (urls, page_count)) {
+    return false;
+  }
+
+  var ref = this._referer;
+
+  var len = urls.length;
+  for (var i = 0; i < len; ++i) {
+    this._add ({ Url: urls [i], Referer: ref });
+  }
+
+  this.type = 'Manga';
+  return this._ok ();
+};
+
+
+// 単独画像を取得する
+Pixiv.prototype._getIllustSingle = function () {
+  var json = this._api.json;
+  try {
+    var imageUrl = json.response [0].image_urls.large;
+  }
+  catch (e) {
+    return this._ng ('未対応のJSONデータ構造です(image_urls)。');
+  }
+
+  this.type = 'Illust';
+  return this._add ({ Url: imageUrl, Referer: this._referer });
+};
+
+
+// うごイラを取得する
+Pixiv.prototype._getUgoira = function () {
+  var json = this._api.json;
+  try {
+    var zip_urls = json.response [0].metadata.zip_urls;
+    var zip600 = zip_urls.ugoira600x600;
+
+    // 高解像度データが出力されたらスクリプトを対応させる
+    if (zip_urls.getProperties ().length != 1) {
+      return this._ng ('JSONデータに ugoira600x600 以外があります。');
+    }
+  }
+  catch (e) {
+    return this._ng ('未対応のJSONデータ構造です(zip_urls)。');
+  }
+
+  var zipUrl = zip600.replace (/_ugoira600x600\.zip$/, '_ugoira1920x1080.zip');
+  if (zipUrl == zip600) {
+    return this._ng ('未対応のうごイラZIP URLです。');
+  }
+
+  this.type = 'Ugoira';
+  return this._add ({ Url: zipUrl, Referer: this._referer });
+};
+
+
+// ID等の情報を取り出す
+Pixiv.prototype._getDataFromJson = function () {
+  var json = this._api.json;
+  try {
+    this.title = json.response [0].title;
+
+    var user = json.response [0].user;
+    this.user_id = user.id;
+    this.pixiv_id = user.account;
+    this.user_name = user.name;
+  }
+  catch (e) {
+    return this._ng ('未対応のJSONデータ構造です(title/user.*)。');
+  }
+
+  return this._ok ();
+};
+
+
+// 一つの作品を取得する
+Pixiv.prototype._getIllust = function () {
+  var api = this._api;
+
+  if (!api.works (this.illust_id)) {
+    return this._raise (api);
+  }
+
+  if (!this._getDataFromJson ()) {
+    return false;
+  }
+
+  var json = api.json;
+  try {
+    var type = json.response [0].type;
+    var page_count = json.response [0].page_count;
+  }
+  catch (e) {
+    return this._ng ('未対応のJSONデータ構造です(type/page_count)。');
+  }
+
+  if (type == 'ugoira') {
+    if (page_count != 1) {
+      return this._ng ('未対応のうごイラのページ数です。');
+    }
+    return this._getUgoira ();
+  }
+
+  if (type == 'illustration' || type == 'manga') {
+    return (page_count > 1) ? this._getIllustMulti (page_count)
+                            : this._getIllustSingle ();
+  }
+
+  return this._ng ('未対応の type です。');
+};
+
+
+Pixiv.prototype._getUsersWorks = function (user_id, page) {
+  var api = this._api;
+
+  if (!api.users_works (user_id, page)) {
+    return this._raise (api);
+  }
+
+  var ids = [ ];
+
+  var json = api.json;
+  try {
+    var count = json.count;
+    var response = json.response;
+
+    if (response.length != count) {
+      return this._ng ('response の要素数が count と異なります。');
+    }
+
+    for (var i = 0; i < count; ++i) {
+      ids.push (response [i].id);
+    }
+  }
+  catch (e) {
+    return this._ng ('未対応のJSONデータ構造です(count/response)。');
+  }
+
+  var len = ids.length;
+  if (len == 0) {
+    return this._ng ('作品がありません。');
+  }
+
+  var base = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=';
+  for (var i = 0; i < len; ++i) {
+    this._add ({ Url: base + ids [i] });
+  }
+
+  return this._ok ();
+};
+
+
+// 全ての作品を取得する
+Pixiv.prototype._getAllIllust = function () {
+  var api = this._api;
+
+  for (var page = 1;; ++page) {
+    if (!this._getUsersWorks (this.user_id, page)) {
+      return false;
+    }
+
+    var json = api.json;
+    var next = null;
+    try {
+      next = json.pagination.next;
+    }
+    catch (e) {
+      return this._ng ('未対応のJSONデータ構造です(pagination.next)。');
+    }
+
+    if (next == null) {
+      break;
+    }
+  }
+
+  this.type = null;
+  return this._ok ();
+};
+
+
+// public: ファイル URL を取得する
+Pixiv.prototype.get = function (url) {
+  this.items = [ ];
+  this.type = null;
+
+  this.pixiv_id = null;
+  this.user_name = null;
+  this.title = null;
+
+  var path = /^(http:\/\/www\.pixiv\.net\/)([^#]+)/.test (url) ? RegExp.$2 : '';
+
+  this.user_id = /[?&]id=([^&]+)/.test (path) ? RegExp.$1 : null;
+  this.illust_id = /[?&]illust_id=([^&]+)/.test (path) ? RegExp.$1 : null;
+  var mode = /[?&]mode=([^&]+)/.test (path) ? RegExp.$1 : null;
+
+  if (/^member\.php\?/.test (path)) {
+    if (this.user_id) {
+      return this._getAllIllust ();
+    }
+  }
+  else if (/^member_illust\.php\?/.test (path)) {
+    if (this.user_id) {
+      return this._getAllIllust ();
+    }
+    else if (/^(medium|manga)$/.test (mode) && this.illust_id) {
+      return this._getIllust ();
+    }
+  }
+
+  return this._mis ();
+};
+
+
+// public: ファイル名を生成する
+//   NameBuilder 指定時は必ず Format も指定すること。
+Pixiv.prototype.buildFilename = function (args) {
+  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
+  if (!nb) {
+    return this._ok ();
+  }
+
+  nb.user_id = this.user_id;
+  nb.pixiv_id = this.pixiv_id;
+  nb.nickname = new Utf8 (this.user_name);
+  nb.id = this.illust_id;
+  nb.pages = this.items.length;
+
+  var noTitle = args.hasKey ('NoTitle') ? args.NoTitle : '';
+  nb.title = this.title ? new Utf8 (this.title) : noTitle;
+
+  return this._buildFilename (args);
+};
+
+
+// public: ダウンロード情報を登録する
+Pixiv.prototype.download = function (args) {
+  return this._downloadFiles (args);
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
+  }
+
+  var ini = Util.ini_load (defaultIni);
+
+  var getter = new Pixiv ();
+
+  if (getter.get (urlinfo.url)) {
+    var type = getter.type;
+
+    if (type) {
+      var nb = new NameBuilder ({
+        zen2han: ini.General.Zen2Han,
+        definePPZ: ini.General.PageOrigin
+      });
+
+      getter.buildFilename ({
+        NameBuilder: nb,
+        NoTitle: ini.General.NoTitle,
+        Format: ini.Filename [type]
+      });
+    }
+
+    getter.download ({
+      AddItem: new AddItem (ini.AddItem)
+    });
+  }
+
+  getter.end ();
+}
+
+
+// EOF

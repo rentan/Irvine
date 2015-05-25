@@ -1,0 +1,87 @@
+pixiv_api.dms
+
+
+pixiv 用のスクリプトです(public API版)。
+
+レジストリおよびアカウント情報を使用します。
+使用する場合は各自の責任で使用すること。
+自己責任で使用できない場合は使用禁止。
+
+pixiv_r.dms より機能が少ないです。
+画像URLによる指定、うごイラのJSON保存、小説などには対応していません。
+
+
+使用方法
+========
+
+後述のスクリプトでアカウント情報をレジストリに書き込んで下さい。
+
+以下の手順で設定ファイル(.ini)が開くので、好みで書き換えて下さい。
+  ツール → メインメニュー → 動画ダウンロード設定２
+  プログラムを右クリック → 設定
+
+フォルダ設定 → キューフォルダ → ファイル名の重複の設定は、「許可する」を
+選択し、「確認する」のチェックを外しておいた方がよいです。
+(作品一覧ページの処理で member_illust.php が複数登録されるので)
+
+以下のドキュメントも参照して下さい。
+
+・アイテム追加
+  Dorothy2\document\common\additem.txt
+
+
+アカウント情報書き込み用スクリプト
+==================================
+
+1. 全ドライブのバックアップを取る。
+2. 何が起きても自己責任であることを確認する。
+3. id と password を自分のものに書き換える。
+5. スクリプトを実行する。
+6. OKが表示されれば完了。
+
+
+var id = 'pixivID';
+var password = 'パスワード';
+
+var reg = new RegIni ('\Software\WildForce\Irvine\accounts');
+reg.write ('pixiv', 'id', Base64.encode (id));
+reg.write ('pixiv', 'password', Base64.encode (password));
+alert ('OK');
+
+
+対応 URL
+========
+
+http://www.pixiv.net/member.php?id=\d+
+  プロフィールのページ
+  その作者の全作品をダウンロード。
+
+http://www.pixiv.net/member_illust.php?id=\d+
+  作品一覧のページ
+  その作者の全作品をダウンロード。
+
+http://www.pixiv.net/member_illust.php?mode=medium&illust_id=\d+
+  イラストやうごイラ、漫画のページ
+  漫画の場合は全画像をダウンロード。
+
+http://www.pixiv.net/member_illust.php?mode=manga&illust_id=\d+
+  漫画のページ
+
+
+仕様・制限事項
+==============
+
+・認証すると、Internet Explorer が pixiv からログアウトします。
+
+・アカウント情報および認証情報をレジストリに保存します。
+  HKEY_CURRENT_USER\Software\WildForce\Irvine\accounts\pixiv
+
+
+変更履歴
+========
+
+2015-05-19  version 20150519.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]

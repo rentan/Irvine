@@ -1,0 +1,17 @@
+//Dorothy2
+//caption=pixiv_api ópê›íË
+//version=20150518.0
+//hint=
+//match=
+//author=rentan
+//path=setting
+//priority=
+//end
+function () {
+  common_load ('rutil');
+
+  Util.ini_copy_edit ();
+}
+
+
+// EOF
