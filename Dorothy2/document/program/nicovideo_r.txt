@@ -7,7 +7,7 @@ nicovideo_r.dms
 使用方法
 ========
 
-以下の手順で設定ファイル（.ini）が開くので、好みで書き換えて下さい。
+以下の手順で設定ファイル(.ini)が開くので、好みで書き換えて下さい。
   ツール → メインメニュー → 動画ダウンロード設定２
   プログラムを右クリック → 設定
 
@@ -35,6 +35,9 @@ http://www.nicovideo.jp/watch/([a-z]{2})?\d+
 
 変更履歴
 ========
+
+2015-05-30  version 20150530.0  rentan at rentan.org
+  強制エコノミーモードに対応([General] Eco=true)。
 
 2014-12-09  version 20141209.0  rentan at rentan.org
   common\getter.dms を使うようにした。
