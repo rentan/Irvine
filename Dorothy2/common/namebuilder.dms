@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=NameBuilder
-//version=20141215.0
+//version=20150531.0
 //hint=new NameBuilder ()
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -243,71 +243,119 @@ NameBuilder.prototype._extractExt = function (ext) {
 };
 
 
-// ファイル名を作成する(下請け)
-NameBuilder.prototype._assemble = function (fmt, ext) {
-  var self = this;
+// 最長変数値を切り詰めてファイル名を縮める
+NameBuilder.prototype._truncate = function (head, v, tail, path) {
+  var PATH_MAX = 260;
+  var DOTS = '…';
 
-  function rep (s, p1) {
-    var name = p1;
+  var allowedBytes = PATH_MAX - (path + head + tail).sizeOf ();
 
-    if (name == '') {
-      // %% なら % に変換
-      return '%';
-    }
-
-    if (!/^[A-Z0-9_]+$/.test (name)) {
-      self._p ('変数名として使用できない文字です: ' + s);
-      return s;
-    }
-    // この時点で name == /^[A-Z0-9_]+$/
-
-    if (self._prototypeKeys.hasKey (name)) {
-      self._p ('変数名として使用できない単語です: ' + s);
-      return s;
-    }
-
-    // 大文字、小文字の順にプロパティがあるか調べる
-    var k = [ name, name.toLowerCase () ];
-    for (var i = 0; i < k.length; ++i) {
-      var v = k [i];
-      if (!self.hasKey (v)) {
-        continue;
-      }
-
-      v = self [v];  // プロパティの値
-      if (isNull (v) || isUndefined (v)) {
-        v = 'Unknown';
-      }
-
-      if (typeof v == 'function') {
-        // 関数型なら呼び出し
-        v = v.call (self);
-      }
-
-      // Utf8 オブジェクトなら Shift_JIS string に変換
-      if (nameOf (v) == 'Utf8') {
-        v = v.toSJIS ();
-      }
-
-      // 正規化
-      v = self.normalize (v.toString ());
-
-      return v;
-    }
-
-    self._p ('未対応の変数です: ' + s);
-    return s;
+  var overBytes = v.sizeOf () - allowedBytes;
+  if (overBytes <= 0) {
+    // 短いのでそのまま
+    return head + v + tail;
   }
 
-  var f = fmt.replace (/%([^%]*)%/g, rep);
+  allowedBytes -= DOTS.sizeOf ();
+  if (allowedBytes <= 0) {
+    // 他の部分が長すぎて最長変数値を全て捨てても足りなければ諦める
+    return head + tail;
+  }
 
-  return this.trim (f + ext);
+  // 超過バイトだけ縮めたいがバイト単位の操作が出来ない。
+  // 超過バイト「文字数」だけ縮めると末尾が2バイト文字の場合に縮めすぎる。
+  // よって、(超過バイト / 2)文字数の切り詰めを繰り返す
+  do {
+    v = v.slice (0, -((overBytes + 1) >> 1));
+    overBytes = v.sizeOf () - allowedBytes;
+  } while (overBytes > 0);
+
+  return head + v + DOTS + tail;
+};
+
+
+// ファイル名変数を文字列に変換
+NameBuilder.prototype._getValue = function (name) {
+  if (!/^[A-Z0-9_]+$/.test (name) || this._prototypeKeys.hasKey (name)) {
+    throw '変数名として使用できない単語です';
+  }
+
+  // 大文字 -> 小文字の順に探す
+  if (!this.hasKey (name)) {
+    name = name.toLowerCase ();
+    if (!this.hasKey (name)) {
+      throw '未対応の変数です';
+    }
+  }
+  var v = this [name];
+
+  // まず、関数型なら呼び出して値にする
+  if (typeof v == 'function') {
+    v = v.call (this);
+  }
+
+  if (v == null) {
+    // null, undefined -> Unknown
+    v = 'Unknown';
+  }
+  else if (nameOf (v) == 'Utf8') {
+    // Utf8 オブジェクト -> Shift_JIS 文字列
+    v = v.toSJIS ();
+  }
+  else {
+    v = v.toString ();
+  }
+
+  return this.trim (this.normalize (v));
+};
+
+
+// ファイル名を作成する(下請け)
+NameBuilder.prototype._assemble = function (fmt, ext, path) {
+  var before = '';   // 左側
+  var longest = '';  // 最長変数値
+  var after = '';    // 右側
+
+  var self = this;
+  function replacer (s, skipped, name) {
+    // %% -> %
+    if (name == '') {
+      after += skipped + '%';
+      return '';
+    }
+
+    try {
+      var v = self._getValue (name);
+    }
+    catch (e) {
+      self._p (e + ': ' + name);
+      after += s;
+      return '';
+    }
+
+    if (longest.sizeOf () <= v.sizeOf ()) {
+      // いままでの最長変数値以上の長さなら新しい最長とする
+      before += longest + after + skipped;
+      longest = v;
+      after = '';
+    }
+    else {
+      // そうでなければ最長より右側にある文字列の一部にすぎない
+      after += skipped + v;
+    }
+
+    return '';
+  }
+
+  var remain = fmt.replace (/([^%]*)%([^%]*)%/g, replacer);
+
+  return this._truncate (before, longest, after + remain + ext, path);
 };
 
 
 // ファイル名を作成する
 NameBuilder.prototype.assemble = function (fmt, ext) {
-  return this._assemble (fmt, this._extractExt (ext));
+  return this._assemble (fmt, this._extractExt (ext), Dorothy.getSaveFolder ());
 };
 
 
@@ -323,25 +371,20 @@ NameBuilder.prototype.buildFilename = function (fmt, ext) {
     return '';
   });
 
-  // ファイル名を作成
-  var itemData = { Filename: this._assemble (fmt, this._extractExt (ext)) };
+  var folder = Dorothy.getSaveFolder ();
+  var cmdFolder = item.folder;
 
   // [[md=...]] 指定フォルダに保存
   function md (path) {
-    if (!path) {
-      return;
-    }
-
-    path = Dorothy.createSaveFolder (path);
     if (path) {
-      itemData.Folder = path;
+      cmdFolder = Dorothy.createSaveFolder (path);
     }
   }
 
   // コマンドを実行する
   for (var i = 0; i < commands.length; ++i) {
     var command = commands [i];
-    var arg = this._assemble (command.arg, '');
+    var arg = this._assemble (command.arg, '', folder);
 
     if (command.cmd == 'md' || command.cmd == 'cd') {
       md (arg);
@@ -351,9 +394,10 @@ NameBuilder.prototype.buildFilename = function (fmt, ext) {
     }
   }
 
-  if (!itemData.hasKey ('Folder') && item.folder) {
-    itemData.Folder = item.folder;
-  }
+  var itemData = cmdFolder ? { Folder: cmdFolder } : { };
+
+  // ファイル名を作成
+  itemData.Filename = this._assemble (fmt, this._extractExt (ext), cmdFolder || folder);
 
   return itemData;
 };

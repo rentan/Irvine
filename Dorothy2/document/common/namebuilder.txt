@@ -149,6 +149,9 @@ contentToExt (data)
 変更履歴
 ========
 
+2015-05-31  version 20150531.0  rentan at rentan.org
+  buildFilename(): 長すぎる変数値を自動的に切り詰めるようにした。
+
 2014-12-15  version 20141215.0  rentan at rentan.org
   コンストラクタの引数に definePPZ: number を追加。
 

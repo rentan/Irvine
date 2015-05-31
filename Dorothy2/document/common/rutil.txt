@@ -68,6 +68,9 @@ Dorothy.setFilename (filename)
 変更履歴
 ========
 
+2015-05-31  version 20150531.0  rentan at rentan.org
+  namebuilder.dms の最低バージョンを更新。
+
 2015-05-23  version 20150523.0  rentan at rentan.org
   Util.isHttpsNoCookies() を追加。
 

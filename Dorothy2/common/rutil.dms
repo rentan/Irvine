@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20150523.0
+//version=20150531.0
 //hint=utility
 //match=
 //author=rentan
@@ -256,7 +256,7 @@ common_xload = (function (common_xload) {
     htmlform: 20150119.0,
     http: 20150425.0,
     jinput: 20140908.0,
-    namebuilder: 20141215.0,
+    namebuilder: 20150531.0,
     rutil_dorothy2r: 20141018.0,
     threadstorage: 20140913.0,
     utf8: 20140811.0,
