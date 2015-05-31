@@ -33,6 +33,10 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2015-06-01  version 20150601.0  rentan at rentan.org
+  ファイル名の切り詰めを NameBuilder で行うようにした。
+  /media のHTML変更に対応。
+
 2015-05-23  version 20150523.0  rentan at rentan.org
   media で同じツイートを二つダウンロードする不具合を修正。
   Util.isHttpsNoCookies() に対応。

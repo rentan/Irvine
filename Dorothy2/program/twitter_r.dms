@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20150523.0
+//version=20150601.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
-  Util.min_version (20150523.0);
+  Util.min_version (20150531.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -227,7 +227,7 @@ Twitter.prototype._analyzeTweet = function () {
     this.pic_id = RegExp.$2;
   }
 
-  this.title = (new Utf8 (t)).removeTags ().decodeCharRef ();
+  this.title = (new Utf8 (t)).removeTags ().decodeCharRef ().toUTF8 ();
 
   // 画像(または動画)のURLを抽出する
   return this._analyzeTweetImage ();
@@ -297,21 +297,21 @@ Twitter.prototype._getTweetImage = function (url) {
 
 
 // media/grid の JSON を解析してリストに追加
-//  最後の data-item-id を返す
+//  最後の id を返す
 Twitter.prototype._analyzeMediaGridJson = function (http, base) {
   var urls = [ ];
   var lastId = null;
 
-  function add (s, p1) {
-    lastId = p1;
-    urls.push (p1);
+  function add (s, path, id) {
+    lastId = id;
+    urls.push (path);
     return '';
   }
-  http.data.replace (/role=\\"listitem\\"\s+data-item-id=\\"(\d+)\\"/g, add);
+  http.data.replace (/data-permalink-path=\\"\\\/([^"]+\\\/(\d+))\\"/g, add);
 
   var len = urls.length;
   for (var i = 0; i < len; ++i) {
-    this._add ({ Url: base + urls [i] });
+    this._add ({ Url: base + urls [i].replace (/\\/g, '') });
   }
 
   return lastId;
@@ -329,7 +329,7 @@ Twitter.prototype._getMediaImage = function (url) {
   var http = this.http = new Http ();
   http.setRequestHeader ('Referer', head + twitterId + '/media');
 
-  var base = head + twitterId + '/status/';
+  var base = head;
   var json = head + 'i/profiles/show/' + twitterId + '/media_timeline';
   var maxId = '';
 
@@ -373,7 +373,7 @@ Twitter.prototype._getMediaImage = function (url) {
         break;
       }
 
-      return this._unknown ('data-item-id が見つかりません。');
+      return this._unknown ('data-permalink-path が見つかりません。');
     }
 
     // 2回目以降は URL に ?max_id=～ をつける
@@ -420,57 +420,17 @@ Twitter.prototype.get = function (url) {
 };
 
 
-// ファイル名関係の定数
-Twitter.prototype._PATH_MAX = 260;
-Twitter.prototype._DOTS = '…';
-
-// タイトルを短くする
-Twitter.prototype._compactTitle = function (nb, itemData, title) {
-  var folder = itemData.hasKey ('Folder') ? itemData.Folder : Dorothy.getSaveFolder ();
-  var filenameMax = this._PATH_MAX - folder.sizeOf ();
-
-  // 超過しているバイト数
-  var overBytes = itemData.Filename.sizeOf () - filenameMax;
-  if (overBytes <= 0) {
-    return null;
-  }
-  overBytes += this._DOTS.sizeOf ();
-
-  if (nameOf (title) === 'Utf8') {
-    title = title.toSJIS ();
-  }
-
-  // タイトルに許されるバイト数
-  var allowedBytes = title.sizeOf () - overBytes;
-
-  // 十分短くなるまで、後ろから1文字ずつ削ってバイト数を確かめる
-  for (var i = title.length; --i >= 0;) {
-    var s = title.slice (0, i);
-    if (nb.normalize (s).sizeOf () <= allowedBytes) {
-      return s + this._DOTS;
-    }
-  }
-
-  // タイトルを0文字にしても長過ぎるので諦める
-  return this._DOTS;
-};
-
-
 // public: ファイル名を生成する
-//   NameBuilder 指定時は必ず Format も指定すること。
+//   NameBuilder/Format 必須
 Twitter.prototype.buildFilename = function (args) {
-  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
-  if (!nb) {
-    return this._ok ();
-  }
+  var nb = args.NameBuilder;
   var fmt = args.Format;
 
   nb.twitter_id = this.twitter_id;
   nb.user_name = this.user_name;
   nb.id = this.id;
   nb.pic_id = this.pic_id;
-
-  var title = this.title.toSJIS ();
+  nb.title = new Utf8 (this.title);
 
   var items = this.items;
   var len = nb.pages = items.length;
@@ -481,15 +441,8 @@ Twitter.prototype.buildFilename = function (args) {
     var urlWithoutSize = itemData.Url.replace (/:[a-z]*$/, '');
 
     nb.f = urlWithoutSize.replace (/^.*\/|\.[^.\/]*$/g, '');
-    nb.title = title;
 
     var fnData = nb.buildFilename (fmt, urlWithoutSize);
-
-    var compacted = this._compactTitle (nb, fnData, title);
-    if (compacted) {
-      nb.title = compacted;
-      fnData = nb.buildFilename (fmt, urlWithoutSize);
-    }
 
     for (var key in fnData) {
       itemData [key] = fnData [key];
