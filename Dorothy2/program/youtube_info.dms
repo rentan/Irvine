@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/“®‰æî•ñ
-//version=20141209.0
+//version=20150611.0
 //hint=
 //match=^https?://www\.youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -1064,7 +1064,7 @@ YouTubeVideo.prototype.getFileSize = function (fmt, sep) {
 
 // public: Šù’m‚Ì itag ‚Ìˆê——
 YouTubeVideo.prototype.knownItags = [
-  303,302,
+  313,303,302,
   299,298,278,272,271,266,264,251,250,249,248,247,246,245,244,243,242,
   172,171,160,141,140,139,138,137,136,135,134,133,102,101,100,
   85,84,83,82,78,59,46,45,44,43,38,37,36,35,34,22,18,17,5
