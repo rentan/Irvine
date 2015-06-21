@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/動画情報
-//version=20150611.0
+//version=20150622.0
 //hint=
 //match=^https?://www\.youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'http', 'namebuilder', 'utf8');
-  Util.min_version (20141209.0);
+  Util.min_version (20150531.0);
 
   // 設定ファイルの読み込み
   var default_ini = {
@@ -1064,7 +1064,7 @@ YouTubeVideo.prototype.getFileSize = function (fmt, sep) {
 
 // public: 既知の itag の一覧
 YouTubeVideo.prototype.knownItags = [
-  313,303,302,
+  313,308,303,302,
   299,298,278,272,271,266,264,251,250,249,248,247,246,245,244,243,242,
   172,171,160,141,140,139,138,137,136,135,134,133,102,101,100,
   85,84,83,82,78,59,46,45,44,43,38,37,36,35,34,22,18,17,5
