@@ -1,0 +1,90 @@
+//Dorothy2
+//caption=tco_r
+//version=20150702.0
+//hint=
+//match=^https?://t\.co/.
+//author=rentan
+//path=program
+//priority=720
+//end
+
+/*
+Copyright (C) 2015 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function (scriptMode) {
+
+  common_load ('rutil', 'additem', 'getter', 'http');
+  Util.min_version (20150702.0);
+
+
+//---------------------------------- Tco -----------------------------------
+
+
+// コンストラクタ
+Getter (function Tco () {
+});
+
+
+// public: ファイルURLを取得する
+Tco.prototype.get = function (url) {
+  this.items = [ ];
+
+  if (!/^https?:\/\/t\.co\/([^\/?&#]+)/.test (url) || RegExp.$1 === 'static') {
+    return this._mis ();
+  }
+
+  var http = this.http = new Http ();
+  http.setRequestHeader ('Referer', 'http://t.co/');
+
+  if (!http.getLocation (url)) {
+    if (http.code === 200 && http.data.indexOf ('<title>警告</title>'.toUTF8 ()) != -1) {
+      return this._ng ('転送先URLが安全ではない可能性があります。');
+    }
+    return this._httpError ();
+  }
+
+  return this._add ({ Url: http.location });
+};
+
+
+// public: ダウンロード情報を登録する
+Tco.prototype.download = function (args) {
+  return this._downloadFiles (args);
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
+  }
+
+  var getter = new Tco ();
+
+  if (getter.get (urlinfo.url)) {
+    getter.download ({
+      AddItem: new AddItem (),
+      ReQueue: true
+    });
+  }
+
+  getter.end ();
+}
+
+
+// EOF
