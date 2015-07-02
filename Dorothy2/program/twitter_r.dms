@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20150601.0
+//version=20150702.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
-  Util.min_version (20150531.0);
+  Util.min_version (20150702.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -101,8 +101,34 @@ Twitter.prototype._analyzeVideoCards = function (cardsUrl) {
 
 // ツイート内の画像URLを抽出する
 Twitter.prototype._analyzeTweetImage = function () {
+  function addImage (url) {
+    this._add ({ Url: url.replace (/(:[a-z]*)?$/, ':orig') });
+  }
+
   var http = this.http;
   var html = http.data;
+
+
+  var head = html.slice (0, html.indexOf ('</head'));
+
+  var ogimages = [ ];
+  function add (s, p1) {
+    ogimages.push (p1);
+  }
+
+  var meta = /<meta\s+property="og:image"\s+content="(https:\/\/pbs\.twimg\.com\/media\/[^"]+)"/g;
+  head.replace (meta, add);
+
+  var len = ogimages.length;
+  if (len) {
+    for (var i = 0; i < len; ++i) {
+      addImage (ogimages [i]);
+    }
+
+    this.type = (len >= 2) ? 'Photo2' : 'Photo';
+    return this._ok ();
+  }
+
 
   if (!/<div class="[^"]*permalink-tweet-container[^"]*"[^>]*>/.test (html)) {
     return this._ng ('<div class="permalink-tweet-container"> が見つかりません。');
@@ -129,60 +155,21 @@ Twitter.prototype._analyzeTweetImage = function () {
     return re.test (text);
   }
 
-  function addImage (url) {
-    this._add ({ Url: url.replace (/(:[a-z]*)?$/, ':orig') });
-  }
-
-  // 画像表示ページ
-  if (testRegExp (/<img class="large\s+media-slideshow-image"\s[^>]*src="([^"]+)"/, html)) {
-    addImage (RegExp.$1);
-    this.type = 'Photo';
-  }
-
-  // 単一画像
-  else if (testRegExp (/<a class="media[^"]*"[^>]*\sdata-resolved-url-large="([^"]+)"/, html)) {
-    addImage (RegExp.$1);
-    this.type = 'Photo';
-  }
-
-  // 複数画像
-  else if (testRegExp (/<div class="multi-photos[^>]*>(.*?)(<\/div>\s*){3}/, html)) {
-    var html = RegExp.$1;
-
-    var urls = [ ];
-    var re = /<div\s+class="multi-photo[^>]*data-resolved-url-large="([^"]+)"/g;
-    function add (s, p1) {
-      urls.push (p1);
-      return '';
-    }
-    html.replace (re, add);
-
-    for (var i = 0; i < urls.length; ++i) {
-      addImage (urls [i]);
-    }
-    this.type = 'Photo2';
-  }
-
   // 動画
-  else if (testRegExp (/<source video-src="(https:\/\/pbs\.twimg\.com\/tweet_video\/[^"]+)"/, html)) {
+  if (testRegExp (/<source video-src="(https:\/\/pbs\.twimg\.com\/tweet_video\/[^"]+)"/, html)) {
     this._add ({ Url: RegExp.$1 });
     this.type = 'Video';
+    return this._ok ();
   }
 
   // アプリで撮影した動画
-  else if (testRegExp (/<div class="js-macaw-cards-iframe-container"[^>]*data-src="(\/i\/cards\/tfw\/v1\/[^"]*cardname=__entity_video[^"]*)"/, html)) {
+  if (testRegExp (/<div class="js-macaw-cards-iframe-container"[^>]*data-src="(\/i\/cards\/tfw\/v1\/[^"]*cardname=__entity_video[^"]*)"/, html)) {
     var cardsUrl = RegExp.$1.replace (/&amp;/g, '&');
-    if (!this._analyzeVideoCards (cardsUrl)) {
-      return false;
-    }
+    return this._analyzeVideoCards (cardsUrl);
   }
 
-  if (this.items.length == 0) {
-    http.capture ();
-    return this._ng ('画像URLが見つかりません。');
-  }
-
-  return this._ok ();
+  http.capture ();
+  return this._ng ('画像URLが見つかりません。');
 };
 
 
@@ -330,23 +317,12 @@ Twitter.prototype._getMediaImage = function (url) {
   http.setRequestHeader ('Referer', head + twitterId + '/media');
 
   var base = head;
-  var json = head + 'i/profiles/show/' + twitterId + '/media_timeline';
+  var json = head + 'i/profiles/show/' + twitterId + '/media_timeline?include_available_features=1&include_entities=1';
+
+  var lastId = '', prevId = '';
   var maxId = '';
 
   var cookieImported = false;
-
-  function minus1 (id) {
-    var sb = new StringBuffer (id.replace (/^0+/, ''));
-    for (var i = sb.length - 1; i >= 0; --i) {
-      if (sb [i] != '0') {
-        sb [i] = String.fromCharCode (sb.charCodeAt [i] - 1);
-        break;
-      }
-      sb [i] = '9';
-    }
-
-    return sb.text.replace (/^0+(.)/, '$1') || '0';
-  }
 
   for (;;) {
     if (!http.getXhr (json + maxId)) {
@@ -361,10 +337,12 @@ Twitter.prototype._getMediaImage = function (url) {
       continue;
     }
     if (this.debug) {
-      http.capture ('media_timeline' + maxId.replace (/\?max_id=/, '_') + '_json.txt');
+      http.capture ('media_timeline_json' + maxId.replace (/&max_position=/, '_') + '.txt');
     }
 
-    var lastId = this._analyzeMediaGridJson (http, base);
+    prevId = lastId;
+    lastId = this._analyzeMediaGridJson (http, base);
+
     if (!lastId) {
       if (/"max_id"\s*:\s*"-1"/.test (http.data)) {
         // {"max_id":"-1","has_more_items":true,"items_html":""}
@@ -375,9 +353,12 @@ Twitter.prototype._getMediaImage = function (url) {
 
       return this._unknown ('data-permalink-path が見つかりません。');
     }
+    if (prevId === lastId) {
+      return this._unknown ('同じツイートが読み込まれました。');
+    }
 
     // 2回目以降は URL に ?max_id=～ をつける
-    maxId = '?max_id=' + minus1 (lastId);
+    maxId = '&max_position=' + lastId;
 
     if (!/"has_more_items"\s*:\s*(true|false)/.test (http.data)) {
       return this._unknown ('has_more_items が見つかりません。');

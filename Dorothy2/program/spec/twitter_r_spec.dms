@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20150601.0
+//version=20150702.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -177,10 +177,10 @@ describe ('リプライツイートの画像', function () {
 
   cases ([
     // [ url, image, filename ]
-    [ 'https://twitter.com/fumi104/status/486724140196311040',
-      'https://pbs.twimg.com/media/BsExBcSCMAAPDY8.jpg:orig',
-      'fumi [fumi104] - @Melpomeneco ステラちゃんに伊東ライフされたい人生だった' +
-      ' [486724140196311040] [FsJ7PoDYWX].jpg' ]
+    [ 'https://twitter.com/rentan_org/status/592312651306258432',
+      'https://pbs.twimg.com/media/CDhRN6hUkAEgJxC.jpg:orig',
+      '練炭 [rentan_org] - @noresanoreka イケメンホストによるお仕置き' +
+      ' [592312651306258432] [XaoXTd3xlt].jpg' ]
   ])
   .it ('[ url, image, filename ]', function (url, image, filename) {
     expect (getter.get (url)).toBe (true);
