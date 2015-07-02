@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20150531.0
+//version=20150702.0
 //hint=utility
 //match=
 //author=rentan
@@ -236,6 +236,16 @@ Util.min_version = function (reqVer) {
 };
 
 
+// 関数の this と引数を束縛する
+Util.bind = function (f, self) {
+  return (function (f, self, args) {
+    return function () {
+      return f.apply (self, args.concat (arguments));
+    };
+  }) (f, self, arguments.slice (2));
+};
+
+
 // common_xload() にバージョンチェックを組み込む
 common_xload = (function (common_xload) {
   var versions = {
@@ -248,16 +258,20 @@ common_xload = (function (common_xload) {
     'esx\date': 20141005.0,
     'esx\json': 20141018.0,
 
+    'getter\chklistbox': 20150319.0,
+    'getter\redir': 20150701.0,
+
     actibook: 20140331.0,
     additem: 20150103.0,
     browsercookie: 20150523.0,
     exec: 20140331.0,
-    getter: 20150425.0,
+    getter: 20150702.0,
     htmlform: 20150119.0,
     http: 20150425.0,
     jinput: 20140908.0,
     namebuilder: 20150531.0,
     rutil_dorothy2r: 20141018.0,
+    sleeptimer: 20150701.0,
     threadstorage: 20140913.0,
     utf8: 20140811.0,
     utf8_charref: 20140811.0,

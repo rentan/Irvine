@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util spec
-//version=20140605.0
+//version=20150702.0
 //hint=http://yasmine.dorothy.test/common/spec/rutil_spec.dms
 //match=
 //author=rentan
@@ -75,6 +75,45 @@ describe ('Util.get_option()', function () {
     folderdata.Post = '=';
 
     expect (Util.get_option ('hasKey')).toBe ('3.14');
+  });
+});
+
+
+describe ('Util.bind()', function () {
+  it ('returns function', function () {
+    function f () {
+      return 'foo';
+    }
+    var b = Util.bind (f);
+
+    expect (typeof b).toBe ('function');
+    expect (b ()).toBe ('foo');
+  });
+
+  it ('binds object as "this"', function () {
+    var obj = { a: 123 };
+    function f () {
+      return this.a;
+    }
+    var b = Util.bind (f, obj);
+
+    expect (b ()).toBe (123);
+  });
+
+  it ('binds arguments', function () {
+    function f (a) {
+      return a;
+    }
+    var b = Util.bind (f, null, 'foo');
+
+    expect (b ()).toBe ('foo');
+
+    function f2 (a, b) {
+      return a + '-' + b;
+    }
+    var b2 = Util.bind (f2, null, 'foo');
+
+    expect (b2 ('bar')).toBe ('foo-bar');
   });
 });
 
