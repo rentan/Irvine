@@ -22,6 +22,9 @@ getterobject.dms がイマイチ使いづらかったので作りなおしまし
 変更履歴
 ========
 
+2015-07-02  version 20150702.0  rentan at rentan.org
+  _httpError(): 引数で Http オブジェクトを渡せるようにした。
+
 2015-04-25  version 20150425.0  rentan at rentan.org
   _buildFilenames(): Format を配列で指定できるようにした。
 
@@ -36,7 +39,7 @@ getterobject.dms がイマイチ使いづらかったので作りなおしまし
 
 2014-12-15  version 20141215.0  rentan at rentan.org
   debug プロパティを追加(現在は Getter 側では未使用)。
-  ._downloadFiles(): 引数に複数のオブジェクトを渡せるようにした。
+  _downloadFiles(): 引数に複数のオブジェクトを渡せるようにした。
 
 2014-12-09  version 20141209.0  rentan at rentan.org
   新規作成。

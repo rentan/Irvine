@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Getter()
-//version=20150425.0
+//version=20150702.0
 //hint=
 //match=
 //author=rentan
@@ -130,7 +130,10 @@ Getter.prototype._exit = function (msg) {
 };
 
 // HTTPÉGÉâÅ[
-Getter.prototype._httpError = function () {
+Getter.prototype._httpError = function (h) {
+  if (h) {
+    this.http = h;
+  }
   var http = this.http;
 
   var c = http && http.code;
