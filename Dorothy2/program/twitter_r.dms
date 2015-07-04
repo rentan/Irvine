@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20150702.0
+//version=20150705.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -35,13 +35,15 @@ function (scriptMode) {
     Cookie: BrowserCookie.prototype.iniTemplate,
     General: {
       Zen2Han: false,
-      PageOrigin: 0
+      PageOrigin: 0,
+      SaveHtml: false
     },
     Filename: {
       Photo: 'twitter_%ID%',
       Photo2: 'twitter_%ID%_%P%',
       Video: 'twitter_%ID%',
-      Video2: 'twitter_%ID%_%P%'
+      Video2: 'twitter_%ID%_%P%',
+      Html: 'twitter_%ID%'
     }
   };
 
@@ -58,9 +60,7 @@ common_load ('getter', 'http', 'utf8');
 
 // コンストラクタ
 Getter (function Twitter (opt) {
-  var config = opt || { };
-
-  this._cookie = config.hasKey ('Cookie') ? config.Cookie : null;
+  this._cookie = this._getArg (opt, 'Cookie', null);
 });
 
 
@@ -278,6 +278,8 @@ Twitter.prototype._getTweetImage = function (url) {
     return this._httpError ();
   }
 
+  this._html = http.data;
+
   // 取得したHTMLを解析する
   return this._analyzeTweet ();
 };
@@ -381,6 +383,7 @@ Twitter.prototype._getMediaImage = function (url) {
 Twitter.prototype.get = function (url) {
   this.items = [ ];
   this.type = null;
+  this._html = null;
 
   this.twitter_id = null;
   this.user_name = null;
@@ -401,17 +404,23 @@ Twitter.prototype.get = function (url) {
 };
 
 
+// NameBuilder インスタンスに変数値を書き込む
+Twitter.prototype._setNameBuilderVar = function (nb) {
+  nb.twitter_id = this.twitter_id;
+  nb.user_name = this.user_name;
+  nb.id = this.id;
+  nb.pic_id = this.pic_id;
+  nb.title = new Utf8 (this.title);
+};
+
+
 // public: ファイル名を生成する
 //   NameBuilder/Format 必須
 Twitter.prototype.buildFilename = function (args) {
   var nb = args.NameBuilder;
   var fmt = args.Format;
 
-  nb.twitter_id = this.twitter_id;
-  nb.user_name = this.user_name;
-  nb.id = this.id;
-  nb.pic_id = this.pic_id;
-  nb.title = new Utf8 (this.title);
+  this._setNameBuilderVar (nb);
 
   var items = this.items;
   var len = nb.pages = items.length;
@@ -440,6 +449,24 @@ Twitter.prototype.download = function (args) {
 };
 
 
+// public: HTML をファイルに保存する
+Twitter.prototype.saveHtml = function (args) {
+  if (this._html == null) {
+    return;
+  }
+
+  var nb = args.NameBuilder;
+  this._setNameBuilderVar (nb);
+
+  var f = nb.buildFilename (args.Format, '.html');
+  var result = this.http.saveFile ({ filename: f, data: this._html });
+
+  if (result.error) {
+    this._p (result.error);
+  }
+};
+
+
 //------------------------------- メイン処理 -------------------------------
 
 
@@ -449,17 +476,16 @@ Twitter.prototype.download = function (args) {
 
   var ini = Util.ini_load (defaultIni);
 
+  var nb = new NameBuilder ({
+    zen2han: ini.General.Zen2Han,
+    definePPZ: ini.General.PageOrigin
+  });
+
   var getter = new Twitter ({ Cookie: ini.Cookie });
 
   if (getter.get (urlinfo.url)) {
     var type = getter.type;
-
     if (type) {
-      var nb = new NameBuilder ({
-        zen2han: ini.General.Zen2Han,
-        definePPZ: ini.General.PageOrigin
-      });
-
       getter.buildFilename ({
         NameBuilder: nb,
         Format: ini.Filename [type]
@@ -469,6 +495,10 @@ Twitter.prototype.download = function (args) {
     getter.download ({
       AddItem: new AddItem (ini.AddItem)
     });
+  }
+
+  if (ini.General.SaveHtml) {
+    getter.saveHtml ({ NameBuilder: nb, Format: ini.Filename.Html });
   }
 
   getter.end ();
