@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20150702.0
+//version=20150705.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -160,7 +160,6 @@ describe ('メディア', function () {
   .it ('.items が [ { Url: ... }, ... ] 形式 [ no, url ]', function (no, url) {
     var idx = getter.items.length - no - 1;
     expect (getter.items [idx]).toEqual ({ Url: url });
-println (getter.items [idx].Url);
   });
 });
 
@@ -177,10 +176,10 @@ describe ('リプライツイートの画像', function () {
 
   cases ([
     // [ url, image, filename ]
-    [ 'https://twitter.com/rentan_org/status/592312651306258432',
-      'https://pbs.twimg.com/media/CDhRN6hUkAEgJxC.jpg:orig',
-      '練炭 [rentan_org] - @noresanoreka イケメンホストによるお仕置き' +
-      ' [592312651306258432] [XaoXTd3xlt].jpg' ]
+    [ 'https://twitter.com/rentan_org/status/617520898728267776',
+      'https://pbs.twimg.com/media/CJHf_CTUYAUvUbb.png:orig',
+      '練炭 [rentan_org] - @rentan_org 画像リプライ' +
+      ' [617520898728267776] [pYshMKu08T].png' ]
   ])
   .it ('[ url, image, filename ]', function (url, image, filename) {
     expect (getter.get (url)).toBe (true);
