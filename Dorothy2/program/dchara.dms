@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dキャラめ～る。
-//version=20150425.0
+//version=20150815.0
 //hint=購読者限定壁紙
 //match=^http://www\.dmm\.co\.jp/(dc|digital/nijigen)/mlmg_present/
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20150316.0);
+  Util.min_version (20150702.0);
 
   // 設定ファイルの読み込み
   var defaultIni = {
@@ -106,7 +106,7 @@ DcharaMlmg.prototype.get = function (url) {
 
   var u = url.replace (/#.*$/, '');
 
-  if (!/^http:\/\/www\.dmm\.co\.jp\/(dc|digital\/nijigen)\/mlmg_present\/\d{6}\/page_([^\/]+)[._]html\//.test (u)) {
+  if (!/^http:\/\/www\.dmm\.co\.jp\/(dc|digital\/nijigen)\/mlmg_present\/[^\/]+\/page_([^\/]+)[._]html/.test (u)) {
     return this._mis ();
   }
   this.name = RegExp.$2;

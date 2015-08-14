@@ -19,7 +19,7 @@ Dキャラめ～る。から開いた壁紙プレゼントページの URL を�
 対応 URL
 ========
 
-http://www.dmm.co.jp/(dc|digital/nijigen)/mlmg_present/\d{6}/page_[^\/]+[._]html/
+http://www.dmm.co.jp/(dc|digital/nijigen)/mlmg_present/[^\/]+/page_[^\/]+[._]html
 
 
 仕様・制限事項
@@ -31,6 +31,9 @@ http://www.dmm.co.jp/(dc|digital/nijigen)/mlmg_present/\d{6}/page_[^\/]+[._]html
 
 変更履歴
 ========
+
+2015-08-15  version 20150815.0  rentan at rentan.org
+  ～/mlmg_present/150731_2/～ という形式の URL に対応。
 
 2015-04-25  version 20150425.0  rentan at rentan.org
   common\getter.dms を使うようにして作りなおした。
