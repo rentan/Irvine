@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DOMParser/XML (pseudo version)
-//version=20140816.0
+//version=20150821.0
 //hint=
 //match=
 //author=rentan
@@ -128,7 +128,7 @@ PseudoXmlDocument.prototype.getElementById = function (id) {
 
 
 PseudoXmlDocument.prototype.getElementsByTagName = function (tagName) {
-  var re = new RegExp ('<' + tagName + '(\s[^>]*)?(/>|>(.*?)</' + tagName + '>)', 'g');
+  var re = new RegExp ('<' + tagName + '(\s[^>]*)?(/>|>(.*?)</' + tagName + '>)()', 'g');
 
   var elements = [ ];
 

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DOMParser/XML (pseudo version) spec
-//version=20140816.0
+//version=20150821.0
 //hint=http://yasmine.dorothy.test/common/spec/domparser/pseudo_xml_spec.dms
 //match=
 //author=rentan
@@ -45,21 +45,19 @@ describe ('.getElementById()', function () {
     var s = '<?xml version="1.0" encoding="UTF-8"?><abc id="def">test</abc><foo id="bar" />';
     var doc = new DOMPseudoXml (s).document;
 
-    var element = doc.getElementById ('def');
-    expect (element).not.toBeNull ();
-    expect (nameOf (element)).toBe ('Element');
-    if (element) {
-      expect (element.tagName).toBe ('abc');
-      expect (element.id).toBe ('def');
-    }
+    var def = doc.getElementById ('def');
+    expect (def).not.toBeNull ();
+    expect (nameOf (def)).toBe ('Element');
+    expect (def.tagName).toBe ('abc');
+    expect (def.id).toBe ('def');
+    expect (def.firstChild.nodeValue).toBe ('test');
 
-    element = doc.getElementById ('bar');
-    expect (element).not.toBeNull ();
-    expect (nameOf (element)).toBe ('Element');
-    if (element) {
-      expect (element.tagName).toBe ('foo');
-      expect (element.id).toBe ('bar');
-    }
+    var bar = doc.getElementById ('bar');
+    expect (bar).not.toBeNull ();
+    expect (nameOf (bar)).toBe ('Element');
+    expect (bar.tagName).toBe ('foo');
+    expect (bar.id).toBe ('bar');
+    expect (bar.firstChild.nodeValue).toBe ('');
   });
 });
 
@@ -86,6 +84,17 @@ describe ('.getElementsByTagName()', function () {
     expect (t.nodeValue).toBe (tt);
   });
 
+  it ('supports empty element tag', function () {
+    var elements = document.getElementsByTagName ('last_res_body');
+    expect (elements.length).toBe (1);
+
+    var lrb = elements [0];
+    expect (lrb.childNodes.length).toBe (1);
+
+    var t = lrb.firstChild;
+    expect (t.nodeName).toBe ('#text');
+    expect (t.nodeValue).toBe ('');
+  });
 });
 
 
