@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ニコニコ動画_r
-//version=20150530.0
+//version=20150821.0
 //hint=
 //match=^http://www\.nicovideo\.jp/watch\/([a-z]{2})?\d+
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'browsercookie', 'namebuilder');
-  Util.min_version (20150523.0);
+  Util.min_version (20150702.0);
 
   // 設定ファイルの読み込み
   var defaultIni = {
@@ -46,7 +46,7 @@ function (scriptMode) {
 //------------------------------- NicoVideo --------------------------------
 
 
-common_load ('browsercookie', 'domparser\pseudo_xml', 'getter', 'http', 'utf8');
+common_load ('browsercookie', 'esx\json', 'getter', 'http', 'utf8');
 
 
 // コンストラクタ
@@ -71,149 +71,6 @@ NicoVideo.prototype._importCookie = function (url) {
 };
 
 
-// thumbinfo のエラー情報を文字列化
-NicoVideo.prototype._getFailCodeMessage = function (status, code) {
-  var s = {
-    DELETED: '動画が削除されています。',
-    NOT_FOUND: '動画がありません。'
-  };
-
-  if (fc && s.hasKey (fc)) {
-    return s [fc];
-  }
-
-  return 'エラー: status=' + this.status + ', code=' + fc;
-};
-
-
-// thumbinfo を解析する
-NicoVideo.prototype._analyzeThumbinfo = function () {
-  var ctype = this.http.getResponseHeader ('content-type') || '';
-  ctype = ctype.replace (/;.*$/, '');
-  if (ctype != 'application/xml') {
-    return this._unknown ('未対応の Content-Type です。');
-  }
-
-  function getElement (node, tagName) {
-    var elements = node.getElementsByTagName (tagName);
-    if (!elements.length) {
-      throw tagName + ' がありません。';
-    }
-    if (elements.length > 1) {
-      throw tagName + ' が複数あります。';
-    }
-
-    return elements [0];
-  }
-
-  function getTextValue (e) {
-    var len = e.childNodes.length;
-    if (!len) {
-      throw e.tagName + ' の子ノードがありません。';
-    }
-    if (len > 1) {
-      throw e.tagName + ' の子ノードが複数あります。';
-    }
-    if (e.firstChild.nodeName != '#text') {
-      throw e.tagName + ' の子ノードがテキストではありません。';
-    }
-
-    return e.firstChild.nodeValue;
-  }
-
-  function getText (node, tagName) {
-    return getTextValue (getElement (node, tagName));
-  }
-
-  function getText2 (node, tagName) {
-    var elements = node.getElementsByTagName (tagName);
-    if (!elements.length) {
-      return '';
-    }
-    if (elements.length > 1) {
-      throw tagName + ' が複数あります。';
-    }
-
-    return getTextValue (elements [0]);
-  }
-
-  var document;
-  try {
-    document = (new DOMParser ()).parseFromString (this.http.data, ctype);;
-
-    var resp = getElement (document, 'nicovideo_thumb_response');
-    var status = resp.getAttribute ('status');
-
-    if (nameOf (document) === 'PseudoXmlDocument') {
-      resp = document;
-    }
-
-    if (status == null) {
-      throw 'status="..." がありません。';
-    }
-    if (status == 'fail') {
-      var code = getText (resp, 'code');
-      throw this._getFailCodeMessage (status, code);
-    }
-    if (status != 'ok') {
-      throw '未対応の status="..." です。';
-    }
-
-    this.video_id = getText (resp, 'video_id');
-    this.title = getText (resp, 'title');
-    this.length = getText (resp, 'length');
-    this.movie_type = getText (resp, 'movie_type');
-
-    // <user_id>: 一般動画のみ
-    // <ch_id>: チャンネル動画のみ
-    this.user_id = getText2 (resp, 'user_id');
-    this.channel_no = getText2 (resp, 'ch_id');
-
-    if (!this.user_id && !this.channel_no) {
-      throw 'user_id または ch_id がありません。';
-    }
-
-    // <user_nickname>: 一般動画のみ
-    // <ch_name>: チャンネル動画のみ
-    var name = getText2 (resp, 'user_nickname') || getText2 (resp, 'ch_name');
-    if (!name) {
-      throw 'user_nickname または ch_name がありません。';
-    }
-    this.nickname = name;
-  }
-  catch (e) {
-    return this._unknown (e);
-  }
-  finally {
-    if (document) {
-      document.destroy ();
-      document = null;
-    }
-  }
-
-  return this._ok ();
-};
-
-
-// thumbinfo を取得する
-NicoVideo.prototype._loadThumbinfo = function () {
-  var url = 'http://ext.nicovideo.jp/api/getthumbinfo/' + this.id;
-
-  this.http = new Http ();
-  if (!this.http.get (url)) {
-    return this._httpError ();
-  }
-
-  return this._ok ();
-};
-
-
-// thumbinfo を取得して解析する
-NicoVideo.prototype._scanThumbinfo = function () {
-  return this._loadThumbinfo () && this._analyzeThumbinfo ();
-};
-
-
 // Eco: true ならURLに ?eco=1 を付ける
 NicoVideo.prototype._appendQuery = function (url) {
   return url + (this._eco ? '?eco=1' : '');
@@ -221,6 +78,8 @@ NicoVideo.prototype._appendQuery = function (url) {
 
 
 // 視聴ページを取得する
+//  削除動画 -> 404 Not Found
+//  コミュニティ専用動画 -> 403 Forbidden
 NicoVideo.prototype._loadWatchPage = function (url) {
   var http = this.http = new Http ();
 
@@ -245,18 +104,121 @@ NicoVideo.prototype._loadWatchPage = function (url) {
 };
 
 
+// JSON のプロパティ参照用メソッドを設定する
+NicoVideo.prototype._jsonAccessor = function (obj) {
+  obj.get = function (key, type, typeJp) {
+    if (!this.hasKey (key)) {
+      throw key + ' がありません。';
+    }
+    var v = this [key];
+
+    if (type && type != typeof v) {
+      throw key + ' が' + typeJp + 'ではありません。';
+    }
+
+    return v;
+  };
+
+  obj.getStr = function (key) {
+    return this.get (key, 'string', '文字列');
+  };
+  obj.getNum = function (key) {
+    return this.get (key, 'number', '数値');
+  };
+
+  return obj;
+};
+
+
+// 秒数を MM:SS 形式の文字列に変換する
+//  MMの上位桁はゼロサプレス、60分以上の場合も時間に分割しない。
+NicoVideo.prototype._lengthToString = function (n) {
+  var sec = n % 60;
+  var ss = (sec < 10) ? '0' + sec : sec;
+  var m = (n - sec) / 60;
+
+  return m + ':' + ss;
+};
+
+
+// nickname の末尾の「 さん」を削除する
+NicoVideo.prototype._stripHonorific = function (s) {
+  var tail = ' さん'.toUTF8 ();
+
+  var sb = new StringBuffer (s);
+  var len = sb.length - tail.sizeOf ();
+  return (sb.substr (len) == tail) ? sb.substr (0, len) : sb.toString ();
+};
+
+
+// 視聴ページを解析する
+NicoVideo.prototype._analyzeWatchPage = function () {
+
+  if (!/<div\s+id="watchAPIDataContainer"[^>]*>([^<]+)/.test (this.http.data)) {
+    return this._ng ('watchAPIDataContainer がありません。');
+  }
+  var s = (new Utf8 (RegExp.$1)).decodeCharRef ().toUTF8 ();
+
+  if (this.debug) {
+    (new Http ()).saveFile ({ filename: 'watchAPIDataContainer.json', data: s });
+  }
+
+  function getObj (obj, key) {
+    return this._jsonAccessor (obj.get (key, 'object', 'オブジェクト'));
+  }
+
+  try {
+    var json = this._jsonAccessor (JSON.parse (s));
+
+    var flashvars = getObj (json, 'flashvars');
+
+    this.movie_type = flashvars.getStr ('movie_type');
+
+    var videoDetail = getObj (json, 'videoDetail');
+
+    this.video_id = videoDetail.getStr ('id');
+    this.title = videoDetail.getStr ('title');
+    this.length = this._lengthToString (videoDetail.getNum ('length'));
+
+    this.user_id = this.channel_no = this.community_id = '';
+
+    if (json.hasKey ('channelInfo')) {
+      var channelInfo = getObj (json, 'channelInfo');
+
+      this.channel_no = videoDetail.getNum ('channelId');
+      this.nickname = channelInfo.getStr ('name');
+    }
+    else if (json.hasKey ('communityInfo')) {
+      var communityInfo = getObj (json, 'communityInfo');
+
+      this.user_id = communityInfo.getStr ('id');
+      this.nickname = communityInfo.getStr ('name');
+    }
+    else {
+      var uploaderInfo = getObj (json, 'uploaderInfo');
+
+      this.user_id = uploaderInfo.getStr ('id');
+      this.nickname = this._stripHonorific (uploaderInfo.getStr ('nickname'));
+    }
+  }
+  catch (e) {
+    return this._ng (e);
+  }
+
+  return this._ok ();
+
+};
+
+
 // 視聴ページを取得して解析する
+// 視聴ページにアクセスしてからでないと getflv が失敗するので省略不可
 NicoVideo.prototype._scanWatchPage = function (url) {
   if (!this._loadWatchPage (url)) {
     return false;
   }
   this.cookie = this.http.getRequestHeader ('Cookie');
 
-  // 現状では解析の必要なし
-  // ただし視聴ページにアクセスしてからでないと getflv が失敗するので
-  // ページの読み込みは省略不可
-
-  return this._ok ();
+  return this._analyzeWatchPage ();
 };
 
 
@@ -311,9 +273,11 @@ NicoVideo.prototype.get = function (url) {
   this.eco = false;
   this.title = null;
   this.length = null;  // 再生時間
+
+  this.channel_no = null;  // チャンネル番号 \d+
+  this.community_id = null;  // co\d+
   this.user_id = null;
   this.nickname = null;
-  this.channel_no = null;  // チャンネル番号 \d+
 
   // 動画ID (チャンネル動画は後で \d+ に書き換わる)
   if (!/^(http:\/\/www\.nicovideo\.jp\/watch\/(([a-z]{2})?\d+))([?#].*)?$/.test (url)) {
@@ -322,8 +286,7 @@ NicoVideo.prototype.get = function (url) {
   this.id = RegExp.$2;
   url = RegExp.$1;
 
-  return this._scanThumbinfo ()
-      && this._scanWatchPage (url)
+  return this._scanWatchPage (url)
       && this._getFlv ();
 };
 
@@ -336,7 +299,7 @@ NicoVideo.prototype.buildFilename = function (args) {
   nb.video_id = this.video_id;
   nb.title = new Utf8 (this.title);
   nb.time = this.length;
-  nb.user_id = this.user_id || 'ch' + this.channel_no;
+  nb.user_id = this.user_id || this.community_id || 'ch' + this.channel_no;
   nb.nickname = new Utf8 (this.nickname);
 
   return this._buildFilename (args);
