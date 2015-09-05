@@ -1,15 +1,15 @@
 //Dorothy2
 //caption=URL転送サービス
-//version=20141004.0
+//version=20150906.0
 //hint=
-//match=^https?://((bit\.ly|ilix\.in|ime\.nu|jump\.2ch\.net|lix\.in|pinktower\.com|t\.co|wk\.tk)/.|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|baberepublic\.com|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|placepictures\.com|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|youfap\.me|yyv\.co|zff\.co|zxxo\.net)([/?#].*)?$)
+//match=^https?://((bit\.ly|ilix\.in|ime\.nu|jump\.2ch\.net|lix\.in|pinktower\.com|t\.co|wk\.tk)/.|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|baberepublic\.com|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|eafyfsuh\.net|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|placepictures\.com|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|youfap\.me|yyv\.co|zff\.co|zxxo\.net)([/?#].*)?$)
 //author=rentan
 //path=program
 //priority=710
 //end
 
 /*
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -362,6 +362,7 @@ UrlRedirector.prototype.linkbucksRe = (function () {
     'deb.gs',
     'drstickyfingers.com',
     'dyo.gs',
+    'eafyfsuh.net',
     'fapoff.com',
     'filesonthe.net',
     'freean.us',
@@ -497,6 +498,10 @@ UrlRedirector.prototype.linkbucks = function (u, path) {
     }
   }
 
+  // ホストを www.eafyfsuh.net に変更
+  var base = 'http://www.eafyfsuh.net/';
+  u = new URL (u.url.replace (/^https?:\/\/[^\/]*\//, base));
+
   var retryMax = 3;
   for (var i = 0; i < retryMax; ++i) {
     if (i) {
@@ -511,6 +516,11 @@ UrlRedirector.prototype.linkbucks = function (u, path) {
     var verify = u.url.replace (/\/?$/, '/verify/url/');
     if (http.code == 302 && http.location == verify) {
       continue;
+    }
+
+    var loc = http.location || '';
+    if (http.code == 302 && loc.slice (0, base.length) != base) {
+      return this.add (loc);
     }
 
     var broken = 'http://your-dns-is-broken-let-me-help.www.linkbucksdns.com';
