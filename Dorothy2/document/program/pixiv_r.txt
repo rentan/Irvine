@@ -48,11 +48,8 @@ http://www.pixiv.net/member_illust.php?mode=(big|medium|manga|ugoira_view)&illus
   イラストやうごイラ、漫画のページ
   漫画の場合は全画像をダウンロード。
 
-http://i\d+.pixiv.net/img\d+/img/[^/]+/\d+(_[0-9a-f]+)?
-  イラストの画像ファイル
-
-http://i\d+.pixiv.net/img\d+/img/[^/]+/\d+(_big)?_p\d+
-  漫画の画像ファイル
+http://i\d+.pixiv.net/img-original/img/\d+/\d+/\d+/\d+/\d+/\d+/\d+?_p\d+
+  イラストまたは漫画の画像ファイル
 
 http://i\d+.pixiv.net/img\d+/profile/[^/]+/(bg_)?\d+
   プロフィールと背景の画像ファイル
@@ -89,6 +86,10 @@ http://www.pixiv.net/novel/show.php?id=\d+
 
 変更履歴
 ========
+
+2015-09-10  version 20150910.0  rentan at rentan.org
+  画像URLの変更に対応。
+    thanks to http://peace.2ch.net/test/read.cgi/win/1437882775/170
 
 2015-02-21  version 20150221.0  rentan at rentan.org
   タイトルが空文字列のイラストに対応。
