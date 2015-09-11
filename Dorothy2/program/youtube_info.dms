@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/“®‰æî•ñ
-//version=20150909.0
+//version=20150912.0
 //hint=
 //match=^https?://www\.youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -733,12 +733,6 @@ YouTubeVideo.prototype._analyzeRep = function (rep) {
     return this._p ('BaseURL ‚ª‚ ‚è‚Ü‚¹‚ñB');
   }
   m.push ({ key: 'BaseURL', value: url });
-
-  var len = baseurl.getAttribute ('yt:contentLength');
-  if (!len) {
-    return this._p ('contentLength ‚ª‚ ‚è‚Ü‚¹‚ñB');
-  }
-  m.push ({ key: 'contentLength', value: len });
 
   this.representation.push (m);
   return true;

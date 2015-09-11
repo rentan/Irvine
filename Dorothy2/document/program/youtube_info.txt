@@ -28,6 +28,9 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
 変更履歴
 ========
 
+2015-09-12  version 20150912.0  rentan at rentan.org
+  DASH MPD に yt:contentLength 属性がなくても許容するようにした。
+
 2015-09-09  version 20150909.0  rentan at rentan.org
   knownItags に 13 を追加。
 
