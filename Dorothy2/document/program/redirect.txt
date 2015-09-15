@@ -96,6 +96,9 @@ http://ws1.y-bbs.net/
 変更履歴
 ========
 
+2015-09-15  version 20150915.0  rentan at rentan.org
+  linkbucks intermissionLink.v2.js に対応。
+
 2015-09-06  version 20150906.0  rentan at rentan.org
   linkbucks 系で待機画面を挟まず直接 302 で転送する形式、www.eafyfsuh.net
   に対応。
