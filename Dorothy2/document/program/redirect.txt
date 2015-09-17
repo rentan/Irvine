@@ -96,6 +96,9 @@ http://ws1.y-bbs.net/
 変更履歴
 ========
 
+2015-09-17  version 20150917.0  rentan at rentan.org
+  linkbucks AdBlock 対策に対応。
+
 2015-09-15  version 20150915.0  rentan at rentan.org
   linkbucks intermissionLink.v2.js に対応。
 
