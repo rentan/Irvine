@@ -38,7 +38,8 @@ function () {
       Zen2Han: false,
       PageOrigin: 0,
       NoTitle: 'no-title',
-      NovelExt: '.html'
+      NovelExt: '.html',
+      UpdateMode: false
     },
     Ugoira: {
       SaveJson: false,
@@ -59,8 +60,24 @@ function () {
   };
   var ini = Util.ini_load (default_ini);
 
+  var updateMode = Util.get_option('UpdateMode');
+  updateMode = updateMode || (updateMode = Util.get_option('updateMode')) ? (updateMode == 1 || updateMode == 'true') : ini.General.UpdateMode;
 
 //---------------------- 下請け ----------------------//
+
+
+function getLatestId(user_id, novel){
+  return new Ini(Dorothy.userPath + 'latestIds.ini').read(user_id, novel ? 'novel' : 'illust', 0) | 0;
+}
+
+function updateLatestId(user_id, id, novel){
+  var m = new Mutex(Dorothy.userIniPath);
+  m.lock();
+  var ini_ids = new Ini(Dorothy.userPath + 'latestIds.ini');
+  ini_ids.write(user_id, novel ? 'novel' : 'illust', id);
+  ini_ids.update();
+  m.unlock();
+}
 
 
 // ブラウザから Cookie を読み込んでヘッダに設定する
@@ -623,7 +640,7 @@ function dl_profile_bg (url) {
 
 // イラストの作品一覧のページを解析してリストに追加
 //  true: 次のページあり  false: 次のページなし
-function dl_index_p (list, http) {
+function dl_index_p (list, http, latestId) {
   var start_len = list.length;
 
   var base = http.expandUrl ('/member_illust.php?mode=medium&illust_id=');
@@ -632,9 +649,20 @@ function dl_index_p (list, http) {
     return '';
   }
 
-  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
-  http.data.replace (/<a\s+href="\/?member_illust\.php\?mode=medium&(amp;)?illust_id=(\d+)"\s*>/g, add_list);
-
+  if(latestId){
+    println('UpdateMode');
+    var m = http.data.match(/<a\s+href="\/?member_illust\.php\?mode=medium&(amp;)?illust_id=\d+"\s*>/g) || [];
+    var id;
+    for(var i = 0; i < m.length; i++){
+      /=(\d+)/.test(m[i]);
+      id = RegExp.$1;
+      if(parseInt(id) <= latestId) return false;
+      add_list(null, null, id);
+    }
+  }else{
+    // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+    http.data.replace (/<a\s+href="\/?member_illust\.php\?mode=medium&(amp;)?illust_id=(\d+)"\s*>/g, add_list);
+  }
   if (start_len == list.length) {
     http.die ('ダウンロード対象が見つかりませんでした。');
   }
@@ -659,13 +687,17 @@ function dl_index_p (list, http) {
 function dl_index (url) {
   var list = [ ];
 
+  /\?id=(\d+)/.test(url);
+  nb.user_id = RegExp.$1;
+  var latestId = updateMode ? getLatestId(nb.user_id) : 0;
+  
   // 1ページ目を処理
   var http = new_http (url);
   if (!http.get_and_login_check (url)) {
     return retry ();
   }
 
-  var next = dl_index_p (list, http);
+  var next = dl_index_p (list, http, latestId);
 
   var p = /[?&]p=\d+/.test (url);  // ページ指定はあるか？
 
@@ -677,7 +709,16 @@ function dl_index (url) {
       if (!http.get_and_login_check (url + page)) {
         return retry ();
       }
-      next = dl_index_p (list, http);
+      next = dl_index_p (list, http, latestId);
+    }
+  }
+
+  if(updateMode){
+    if(list.length){
+      updateLatestId(nb.user_id, list[0].Url.replace(/^.+?id=(\d+)/, '$1'));
+      println('新規登録数: ' + list.length);
+    }else{
+      println('更新はありませんでした');
     }
   }
 
@@ -774,7 +815,7 @@ function dl_novel (url) {
 
 // 小説の作品一覧のページを解析してリストに追加
 //  true: 次のページあり  false: 次のページなし
-function dl_novel_index_p (list, http) {
+function dl_novel_index_p (list, http, latestId) {
   var start_len = list.length;
 
   function add_list (s, p) {
@@ -782,8 +823,21 @@ function dl_novel_index_p (list, http) {
     return '';
   }
 
-  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
-  http.data.replace (/<h1\s+class="title"><a\s+href="(\/novel\/show\.php\?id=\d+)"/g, add_list);
+  if(latestId){
+    println('UpdateMode');
+    var m = http.data.match(/<h1\s+class="title"><a\s+href="\/novel\/show\.php\?id=\d+"/g) || [];
+    var id;
+    for(var i = 0; i < m.length; i++){
+      /\/novel\/show\.php\?id=(\d+)/.test(m[i]);
+      id = RegExp.$1;
+      if(parseInt(id) <= latestId) return false;
+      add_list(null, RegExp.$0);
+    }
+  }else{
+    // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+    http.data.replace (/<h1\s+class="title"><a\s+href="(\/novel\/show\.php\?id=\d+)"/g, add_list);
+
+  }
 
   if (start_len == list.length) {
     http.die ('ダウンロード対象が見つかりませんでした。');
@@ -809,13 +863,17 @@ function dl_novel_index_p (list, http) {
 function dl_novel_index (url) {
   var list = [ ];
 
+  /\?id=(\d+)/.test(url);
+  nb.user_id = RegExp.$1;
+  var latestId = updateMode ? getLatestId(nb.user_id, true) : 0;
+
   // 1ページ目を処理
   var http = new_http (url);
   if (!http.get_and_login_check (url)) {
     return retry ();
   }
 
-  var next = dl_novel_index_p (list, http);
+  var next = dl_novel_index_p (list, http, latestId);
 
   var p = /[?&]p=\d+/.test (url);  // ページ指定はあるか？
 
@@ -827,10 +885,18 @@ function dl_novel_index (url) {
       if (!http.get_and_login_check (url + page)) {
         return retry ();
       }
-      next = dl_novel_index_p (list, http);
+      next = dl_novel_index_p (list, http, latestId);
     }
   }
 
+  if(updateMode){
+    if(list.length){
+      updateLatestId(nb.user_id, list[0].Url.replace(/^.+\id=(\d+)/, '$1'), true);
+      println('新規登録数: ' + list.length);
+    }else{
+      println('更新はありませんでした');
+    }
+  }
   additem.send (list) || exit ();
   Util.remove_this ();
 }
