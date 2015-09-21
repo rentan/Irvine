@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20150910.0
+//version=20150921.0
 //hint=pixiv 別バージョン
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?)
 //author=rentan
@@ -783,7 +783,7 @@ function dl_novel_index_p (list, http) {
   }
 
   // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
-  http.data.replace (/<a\s+class="title"\s+href="(\/novel\/show\.php\?id=\d+)"/g, add_list);
+  http.data.replace (/<h1\s+class="title"><a\s+href="(\/novel\/show\.php\?id=\d+)"/g, add_list);
 
   if (start_len == list.length) {
     http.die ('ダウンロード対象が見つかりませんでした。');
