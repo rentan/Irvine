@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=URL転送サービス
-//version=20150917.0
+//version=20150923.0
 //hint=
 //match=^https?://((bit\.ly|ilix\.in|ime\.nu|jump\.2ch\.net|lix\.in|pinktower\.com|t\.co|wk\.tk)/.|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|baberepublic\.com|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|eafyfsuh\.net|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|placepictures\.com|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|youfap\.me|yyv\.co|zff\.co|zxxo\.net)([/?#].*)?$)
 //author=rentan
@@ -467,11 +467,12 @@ UrlRedirector.prototype.linkbucks = function (u, path) {
 
     script.replace (/^\s*params\[([^\]]+)\] = (params\[([^\]]+)\]\s*\+\s*)?(\d+);/gm, calc);
 
-    if (!/AdUrl\s*:\s*'(http:\/\/yqjbmfem\.net\/[^']+)'/.test (script)) {
+    if (!/AdUrl\s*:\s*'([^']+)'/.test (script)) {
       return this.unknown ('linkbucks: AdUrl がありません。');
     }
-    if (!http.getXhr (RegExp.$1)) {
-      return this.httpError ();
+    var adHttp = new Http ();
+    if (!adHttp.get (RegExp.$1)) {
+      return this.httpError (adHttp);
     }
 
     println ('linkbucks: wait ' + waitSec + 'sec');

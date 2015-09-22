@@ -96,6 +96,9 @@ http://ws1.y-bbs.net/
 変更履歴
 ========
 
+2015-09-23  version 20150923.0  rentan at rentan.org
+  linkbucks AdUrl に任意のホスト名を受け付けるようにした。
+
 2015-09-17  version 20150917.0  rentan at rentan.org
   linkbucks AdBlock 対策に対応。
 
