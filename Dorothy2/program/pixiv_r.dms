@@ -654,13 +654,13 @@ function dl_profile_bg (url) {
 //プロフィール画像と背景画像のURLを取得
 function get_profile_bg(http){
   var list = [];
-  if(/background:(\s*#[A-F0-9]+)?\s*url\('([^']+\/([^\/]+)\.[^\.']+)'/.test(http.data)){
+  if(/background:(\s*#[A-F0-9]+)?\s*url\('([^']+\/([^\/']+)\.[^\.']+)'/.test(http.data)){
     list.push({url: RegExp.$2, id: RegExp.$3, img_type: 'Bg'});
   }else{
     println('背景画像が見つかりませんでした');
     println('背景が設定されていない、または仕様が変更されました');
   }
-  if(/<a href="\/member.php\?id=\d+" class="user-link"><img src="([^"]+\/([^\/]+)\.[^\."]+)"/.test(http.data)){
+  if(/<a href="\/member.php\?id=\d+" class="user-link"><img src="([^"]+\/([^\/"]+)\.[^\."]+)"/.test(http.data)){
     list.push({url: RegExp.$1, id: RegExp.$2, img_type: 'Profile'});
   }
   return list;
