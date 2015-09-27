@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20150910.0
+//version=20150922.0
 //hint=pixiv 別バージョン
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?)
 //author=rentan
@@ -23,6 +23,10 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+Copyright (C) 2015 wan at thewanwan111@gmail.com
+
 */
 
 function () {
@@ -38,7 +42,9 @@ function () {
       Zen2Han: false,
       PageOrigin: 0,
       NoTitle: 'no-title',
-      NovelExt: '.html'
+      NovelExt: '.html',
+      UpdateMode: false,
+      SaveProfileBg: false
     },
     Ugoira: {
       SaveJson: false,
@@ -59,8 +65,32 @@ function () {
   };
   var ini = Util.ini_load (default_ini);
 
+  var updateMode = Util.get_option('UpdateMode');
+  updateMode = updateMode || (updateMode = Util.get_option('updateMode')) ? (updateMode == 1 || updateMode == 'true') : ini.General.UpdateMode;
 
 //---------------------- 下請け ----------------------//
+
+
+function getLatestId(user_id, data){
+  data = data || {};
+  var ini_ids = new Ini(Dorothy.userPath + 'latestIds.ini');
+  data.Illust = ini_ids.read(user_id, 'Illust', 0);
+  data.Novel = ini_ids.read(user_id, 'Novel', 0);
+  data.Bg = ini_ids.read(user_id, 'Bg', 0);
+  data.Profile = ini_ids.read(user_id, 'Profile', 0);
+  return data;
+}
+
+function updateLatestId(user_id, data){
+  var m = new Mutex(Dorothy.userIniPath);
+  m.lock();
+  var ini_ids = new Ini(Dorothy.userPath + 'latestIds.ini');
+  for(var key in data){
+    ini_ids.write(user_id, key, data[key]);
+  }
+  ini_ids.update();
+  m.unlock();
+}
 
 
 // ブラウザから Cookie を読み込んでヘッダに設定する
@@ -621,9 +651,25 @@ function dl_profile_bg (url) {
 }
 
 
+//プロフィール画像と背景画像のURLを取得
+function get_profile_bg(http){
+  var list = [];
+  if(/background:(\s*#[A-F0-9]+)?\s*url\('([^']+\/([^\/']+)\.[^\.']+)'/.test(http.data)){
+    list.push({url: RegExp.$2, id: RegExp.$3, img_type: 'Bg'});
+  }else{
+    println('背景画像が見つかりませんでした');
+    println('背景が設定されていない、または仕様が変更されました');
+  }
+  if(/<a href="\/member.php\?id=\d+" class="user-link"><img src="([^"]+\/([^\/"]+)\.[^\."]+)"/.test(http.data)){
+    list.push({url: RegExp.$1, id: RegExp.$2, img_type: 'Profile'});
+  }
+  return list;
+}
+
+
 // イラストの作品一覧のページを解析してリストに追加
 //  true: 次のページあり  false: 次のページなし
-function dl_index_p (list, http) {
+function dl_index_p (list, http, latestId) {
   var start_len = list.length;
 
   var base = http.expandUrl ('/member_illust.php?mode=medium&illust_id=');
@@ -632,9 +678,19 @@ function dl_index_p (list, http) {
     return '';
   }
 
-  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
-  http.data.replace (/<a\s+href="\/?member_illust\.php\?mode=medium&(amp;)?illust_id=(\d+)"\s*>/g, add_list);
-
+  if(latestId){
+    var m = http.data.match(/<a\s+href="\/?member_illust\.php\?mode=medium&(amp;)?illust_id=\d+"\s*>/g) || [];
+    var id;
+    for(var i = 0; i < m.length; i++){
+      /=(\d+)/.test(m[i]);
+      id = RegExp.$1;
+      if(parseInt(id) <= latestId) return false;
+      add_list(null, null, id);
+    }
+  }else{
+    // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+    http.data.replace (/<a\s+href="\/?member_illust\.php\?mode=medium&(amp;)?illust_id=(\d+)"\s*>/g, add_list);
+  }
   if (start_len == list.length) {
     http.die ('ダウンロード対象が見つかりませんでした。');
   }
@@ -659,13 +715,40 @@ function dl_index_p (list, http) {
 function dl_index (url) {
   var list = [ ];
 
+  /\?id=(\d+)/.test(url);
+  nb.user_id = RegExp.$1;
+  var latestIds;
+  var currentIds = {};
+  if(updateMode){
+    println('UpdateMode');
+    latestIds = getLatestId(nb.user_id);
+  }else{
+    latestIds = {Illust: 0, Bg: 0, Profile: 0};
+  }
+  
   // 1ページ目を処理
   var http = new_http (url);
   if (!http.get_and_login_check (url)) {
     return retry ();
   }
 
-  var next = dl_index_p (list, http);
+  //プロフィール画像と背景画像
+  var index = 0;
+  var profileBgList = [];
+  if(ini.General.SaveProfileBg){
+    var profileBgList = get_profile_bg(http);
+    var type, id;
+    for(var i = 0; i < profileBgList.length; i++){
+      type = profileBgList[i].img_type;
+      id = profileBgList[i].id;
+      currentIds[type] = id;
+      if(!updateMode || latestIds[type] != id){
+        list[index++] = {Url: profileBgList[i].url};
+      }
+    }
+  }
+
+  var next = dl_index_p (list, http, latestIds.Illust);
 
   var p = /[?&]p=\d+/.test (url);  // ページ指定はあるか？
 
@@ -677,9 +760,15 @@ function dl_index (url) {
       if (!http.get_and_login_check (url + page)) {
         return retry ();
       }
-      next = dl_index_p (list, http);
+      next = dl_index_p (list, http, latestIds.Illust);
     }
   }
+
+  if(list.length){
+    if(list.length > index) currentIds.Illust = list[index].Url.replace(/^.+?id=(\d+)/, '$1');
+    updateLatestId(nb.user_id, currentIds);
+  }
+  println('新規登録数: ' + list.length);
 
   additem.send (list) || exit ();
   Util.remove_this ();
@@ -774,7 +863,7 @@ function dl_novel (url) {
 
 // 小説の作品一覧のページを解析してリストに追加
 //  true: 次のページあり  false: 次のページなし
-function dl_novel_index_p (list, http) {
+function dl_novel_index_p (list, http, latestId) {
   var start_len = list.length;
 
   function add_list (s, p) {
@@ -782,8 +871,21 @@ function dl_novel_index_p (list, http) {
     return '';
   }
 
-  // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
-  http.data.replace (/<a\s+class="title"\s+href="(\/novel\/show\.php\?id=\d+)"/g, add_list);
+  if(latestId){
+    println('UpdateMode');
+    var m = http.data.match(/<h1\s+class="title"><a\s+href="\/novel\/show\.php\?id=\d+"/g) || [];
+    var id;
+    for(var i = 0; i < m.length; i++){
+      /\/novel\/show\.php\?id=(\d+)/.test(m[i]);
+      id = RegExp.$1;
+      if(parseInt(id) <= latestId) return false;
+      add_list(null, RegExp.$0);
+    }
+  }else{
+    // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
+    http.data.replace (/<h1\s+class="title"><a\s+href="(\/novel\/show\.php\?id=\d+)"/g, add_list);
+
+  }
 
   if (start_len == list.length) {
     http.die ('ダウンロード対象が見つかりませんでした。');
@@ -809,13 +911,24 @@ function dl_novel_index_p (list, http) {
 function dl_novel_index (url) {
   var list = [ ];
 
+  /\?id=(\d+)/.test(url);
+  nb.user_id = RegExp.$1;
+  var latestIds = updateMode ? getLatestId(nb.user_id) : {Novel: 0};
+  var currentIds = {};
+  if(updateMode){
+    println('UpdateMode');
+    latestIds = getLatestId(nb.user_id);
+  }else{
+    latestIds = {Novel: 0};
+  }
+
   // 1ページ目を処理
   var http = new_http (url);
   if (!http.get_and_login_check (url)) {
     return retry ();
   }
 
-  var next = dl_novel_index_p (list, http);
+  var next = dl_novel_index_p (list, http, latestIds.Novel);
 
   var p = /[?&]p=\d+/.test (url);  // ページ指定はあるか？
 
@@ -827,10 +940,16 @@ function dl_novel_index (url) {
       if (!http.get_and_login_check (url + page)) {
         return retry ();
       }
-      next = dl_novel_index_p (list, http);
+      next = dl_novel_index_p (list, http, latestIds.Novel);
     }
   }
 
+  if(list.length){
+    currentIds.Novel = list[0].Url.replace(/^.+\id=(\d+)/, '$1');
+    updateLatestId(nb.user_id, currentIds);
+  }
+  println('新規登録数: ' + list.length);
+  
   additem.send (list) || exit ();
   Util.remove_this ();
 }
