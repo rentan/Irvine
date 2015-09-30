@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ユーザー設定
-//version=20140507.0
+//version=20140930.0
 //hint=
 //match=
 //author=rentan
@@ -45,7 +45,7 @@ function () {
 
     // Dorothy2R 拡張
     this.groupR = d.group ('Dorothy2R 拡張');
-    var t = (Dorothy.temp == Dorothy.path + 'temp\') ? '' : Dorothy.temp;
+    var t = (Dorothy.temp == this._defaultTemp) ? '' : Dorothy.temp;
     this.user_temp = d.label_edit ('tempフォルダ', t, w1, w2);
     this.user_nulurl = d.label_edit   ('NUL URL     ', Dorothy.nulUrl, w1, w2);
     this.user_nulproxy = d.label_edit ('NUL プロキシ', Dorothy.nulProxy, w1, w2);
@@ -62,6 +62,9 @@ function () {
     this.ok_cancel = d.ok_cancel ();
   }
 
+  // Dorothy.temp の既定値
+  UserSettingDialog.prototype._defaultTemp = Dorothy.path + 'temp\';
+
   // ダイアログを表示してOK終了なら true を返す
   UserSettingDialog.prototype.show = function () {
     return this.dialog.showModal () == 1;
@@ -72,7 +75,7 @@ function () {
     USER_NAME = Dorothy.userName = this.user_name.edit.text;
 
     var t = this.user_temp.edit.text;
-    Dorothy.temp = t ? (new Directory (t)).path : Dorothy.temp;
+    Dorothy.temp = t ? (new Directory (t)).path : this._defaultTemp;
     Dorothy.nulUrl = this.user_nulurl.edit.text;
     Dorothy.nulProxy = this.user_nulproxy.edit.text;
 

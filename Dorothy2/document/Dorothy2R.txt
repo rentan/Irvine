@@ -131,6 +131,12 @@ Dorothy.loadDorothyIni ();
 変更履歴
 ========
 
+2015-09-30  version 20150930.0  rentan at rentan.org
+
+Dorothy2R\system\menu\set\usersetting.dms
+  issues #1 - temp フォルダ欄を空にしても変更が反映されない不具合を修正。
+
+
 2015-03-16  version 20150316.0  rentan at rentan.org
 
 scripts\Dorothy2R_a.dms
@@ -138,6 +144,7 @@ scripts\Dorothy2R_a.dms
 
 Dorothy2R\system\settingform.dms
   rVersion を 20150316 に更新。「Dorothy2R 設定」で上書き保存して下さい。
+
 
 2015-01-27  version 20150127.0  rentan at rentan.org
 
@@ -147,12 +154,14 @@ scripts\Dorothy2R_a.dms
   不具合を修正。
     thanks to http://peace.2ch.net/test/read.cgi/win/1412399700/477
 
+
 2014-12-14  version 20141214.0  rentan at rentan.org
 
 scripts\Dorothy2R_resp.dms
   ステータス 200 以外の時は何も行わないようにした。
   tosjis.Content-Disposition=true でファイル名を UTF-8 から
   Shift_JIS に変換する。
+
 
 2014-12-08  version 20141208.0  rentan at rentan.org
 
