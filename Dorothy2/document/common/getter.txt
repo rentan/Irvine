@@ -22,6 +22,9 @@ getterobject.dms がイマイチ使いづらかったので作りなおしまし
 変更履歴
 ========
 
+2015-09-30  version 20150930.0  rentan at rentan.org
+  既定で download() を定義するようにした。
+
 2015-07-02  version 20150702.0  rentan at rentan.org
   _httpError(): 引数で Http オブジェクトを渡せるようにした。
 

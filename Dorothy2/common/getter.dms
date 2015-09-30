@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Getter()
-//version=20150702.0
+//version=20150930.0
 //hint=
 //match=
 //author=rentan
@@ -307,6 +307,12 @@ Getter.prototype._downloadFiles = function (/* args, ... */) {
     return this._ng ('アイテムの追加に失敗しました。');
   }
   return this._ok ();
+};
+
+
+// public: ダウンロード情報を登録する
+Getter.prototype.download = function (args) {
+  return this._downloadFiles (args);
 };
 
 
