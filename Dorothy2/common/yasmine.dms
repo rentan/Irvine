@@ -147,7 +147,7 @@ Yasmine.prototype._stringify = function (v, inner) {
     if (!isFinite (v)) return v > 0 ? 'infinity' : '-infinity';
     return v.toString ();
   }
-
+/*
   if (name === 'Array') {
     if (inner) {
       // ”z—ñ’†‚Ì”z—ñ‚ÍÈ—ª
@@ -160,7 +160,11 @@ Yasmine.prototype._stringify = function (v, inner) {
     }
     return '[ ' + s.join (', ') + ' ]';
   }
-
+*/
+  if (name === 'Object' || name === 'Array') {
+    common_load ('esx\json');
+    return JSON.stringify (v, function (k, v) {return typeof v == 'function' ? 'function(){}' : isNaN(v) ? 'NaN' : v;});
+  }
   return v.toString ();
 };
 
