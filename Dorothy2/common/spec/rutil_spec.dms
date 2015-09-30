@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util spec
-//version=20150702.0
+//version=20150930.0
 //hint=http://yasmine.dorothy.test/common/spec/rutil_spec.dms
 //match=
 //author=rentan
@@ -114,6 +114,17 @@ describe ('Util.bind()', function () {
     var b2 = Util.bind (f2, null, 'foo');
 
     expect (b2 ('bar')).toBe ('foo-bar');
+  });
+});
+
+
+describe ('Util.isHttpsNoCookies()', function () {
+  it ('returns true or false', function () {
+    var a = Util.isHttpsNoCookies ();
+    expect (a).toBe (a ? true : false);
+
+    var b = Util.isHttpsNoCookies ();
+    expect (b).toBe (a);
   });
 });
 

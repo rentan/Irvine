@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20150702.0
+//version=20150930.0
 //hint=utility
 //match=
 //author=rentan
@@ -220,7 +220,7 @@ Util.isHttpsNoCookies = function () {
     }
   }) ();
 
-  Util.isHttpsNoCookies = function () { return b; };
+  Util.isHttpsNoCookies = (function (b) { return function () { return b; }; }) (b);
 
   return b;
 };
@@ -265,7 +265,7 @@ common_xload = (function (common_xload) {
     additem: 20150103.0,
     browsercookie: 20150523.0,
     exec: 20140331.0,
-    getter: 20150702.0,
+    getter: 20150930.0,
     htmlform: 20150119.0,
     http: 20150425.0,
     jinput: 20140908.0,
