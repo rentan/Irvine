@@ -495,8 +495,8 @@ Yasmine.prototype._util._strictEqual = function (a, b) {
     return true;
   }
 
-  // 0 === 0.0 ‚ª false ‚É‚È‚é DMonkey ‚Ì•s‹ï‡‘Îˆ
-  if (typeof a === 'number' && typeof b === 'number' && a == b) {
+  // 0 === 0.0 ‚ª false ‚É‚È‚é DMonkey ‚Ì•s‹ï‡‘Îˆ ‚ÆNaN
+  if (typeof a === 'number' && typeof b === 'number' && (a == b || !(a === a) && !(b === b)) ) {
     return true;
   }
 
