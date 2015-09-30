@@ -143,6 +143,10 @@ Yasmine.prototype._stringify = function (v, inner) {
   if (name === 'String' || type === 'string') {
     return "'" + v.toString () + "'";
   }
+  if (name === 'Number' || type === 'number'){
+    if (!isFinite (v)) return v > 0 ? 'infinity' : '-infinity';
+    return v.toString ();
+  }
 
   if (name === 'Array') {
     if (inner) {
