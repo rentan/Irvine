@@ -50,6 +50,21 @@ http://yasmine.dorothy.test/arguments
 変更履歴
 ========
 
+2015-10-01  wan at thewanwa111@gmail.com
+  Dorothy2\common\yasmine.dms version 20150930.0
+    見易くする為にログにインデントを追加するようにした。
+
+    Yasmine.prototype._stringify: ObjectとArrayはjson.dmsを使用して文字列化するように変更した。
+                                  値がinfinityの場合にエラーとなる問題を修正。
+
+    Yasmine.prototype._util._strictEqual: 値がNaN同士である場合にfalseとなる問題を修正
+
+  Dorothy2\DOA\yasmine.dms  version 20151001.0
+    DOAからyasmineを実行可能にした
+
+  Dorothy2\setting\yasmine.set  version 20151001.0
+    Dorothy2サイト設定 または 動画ダウンロード２設定 からyasmineを実行可能にした
+
 2014-07-14  rentan at rentan.org  version 20140714.0
 Dorothy2\common\yasmine.dms
   Dorothy2\program\spec\*.dms を実行できるようにした。
