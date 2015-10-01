@@ -1,0 +1,56 @@
+//Dorothy2
+//caption=yasmine DOA
+//version=0.1
+//hint=
+//match=^http://yasmine\.dorothy\.test/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+  item = itemData;
+
+  //rutil_dorothy2RのDOAバージョンチェック無効化
+  var _frmDOA = frmDOA;
+  var _println = println;
+  frmDOA = null;
+  println = function () { frmDOA.StatusBar1.SimpleText = arguments.join (""); };
+  common_load ('DorothyEx');//folderdataとDorothy.versionのセット
+  common_load ('rutil');
+  Dorothy.isDOA = true;
+  frmDOA = _frmDOA;
+  println = _println;
+  _frmDOA = _println = null;
+
+this.main = function (url, itemIndex, itemData) {
+  item = itemData;
+  function testSpec (file) {
+    common_load ('yasmine');
+    var ya = new Yasmine ();
+    ya.test (file);
+    var logFile = ya.saveLog ();
+    if (ya.count.fail) {
+      Dorothy.edit (file);
+      Dorothy.edit (logFile);
+      DOA.status = DOA_NG;
+      DOA.comment = ya.count.fail;
+    }else{
+      DOA.status = DOA_OK;
+    }
+    mutex.unlock();
+    return;
+  };
+  var path = (new URL (urlinfo.url)).path.slice (1);
+  
+  if (/^((common|program)\/spec\/.+)$/.test (path)) {
+    return testSpec (Dorothy.path + RegExp.$1.replace (/\//g, '\\'));
+  }
+  
+  alert ('未対応の URL です。');
+};
+
+
+this._ = function(){
+  
+};
+}
