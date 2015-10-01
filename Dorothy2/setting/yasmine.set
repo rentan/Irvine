@@ -1,0 +1,150 @@
+//Dorothy2
+//caption=yasmine Dorothy2Set
+//version=0.1
+//hint=URLを選択して「Dorothy2サイト設定」または「動画ダウンロード２設定」から起動する
+//match=
+//author=wan
+//path=setting
+//priority=
+//end
+function () {
+  common_load ('rutil', 'yasmine');
+  common_load ('DorothyEx');//folderdataとitemをセット
+  
+  if (!DorothyEx.isDorothy2set) {
+    alert ('「Dorothy2サイト設定」または「動画ダウンロード２設定」から起動して下さい');
+    return;
+  }
+
+  var frmTest = new VCLForm (true);
+  frmTest.Position = 'poScreenCenter';
+  frmTest.width = 600;
+  frmTest.height = 500;
+  frmTest.KeyPreview = true;
+  
+  frmTest.logPath = '';
+  if (!/^http:\/\/yasmine\.dorothy\.test\/((common|program)\/spec\/.+)$/.test(item.url)) {
+    alert ('未対応の URL です。');
+  }
+  frmTest.Caption = Dorothy.matchFile + ' (' + RegExp.$1 + ')';
+  frmTest.scriptPath = Dorothy.path + RegExp.$1.replace(/\//g, '\\');
+
+  var ListBox1 = new VCLListBox (frmTest);
+  ListBox1.top = 0;
+  ListBox1.left = 0;
+  ListBox1.width = frmTest.ClientWidth;
+  ListBox1.height = frmTest.ClientHeight - 40;
+  ListBox1.Anchors = '[akLeft, akTop, akRight, akBottom]';
+  ListBox1.TabOrder = 2;
+  ListBox1.MultiSelect = true;
+  
+  var PopUp1 = new VCLPopupMenu (ListBox1);
+  var PoPMenu1 = new VCLMenuItem (PopUp1);
+  PoPMenu1.Caption = 'コピー(&C)';
+  PoPMenu1.Enabled = false;
+  var PoPMenu2 = new VCLMenuItem (PopUp1);
+  PoPMenu2.Caption = 'すべてコピー(&A)';
+  PopUp1.Items.add (PoPMenu1);
+  PopUp1.Items.add (PoPMenu2);
+  
+  ListBox1.PopupMenu = PopUp1;
+  
+  var LogBtn = new VCLButton (frmTest);
+  LogBtn.top = ListBox1.height + 10;
+  LogBtn.left = 20;
+  LogBtn.Anchors = 'akBottom';
+  LogBtn.Caption = 'ログを開く(&O)';
+  LogBtn.TabOrder = 3;
+  LogBtn.Enabled = false;
+  
+  var ScriptBtn = new VCLButton (frmTest);
+  ScriptBtn.top = ListBox1.height + 10;
+  ScriptBtn.left = LogBtn.left + LogBtn.width + 20;;
+  ScriptBtn.Anchors = 'akBottom';
+  ScriptBtn.Caption = 'スクリプトを開く(&S)';
+  ScriptBtn.Width = 100;
+  ScriptBtn.TabOrder = 4;
+
+  var RunBtn = new VCLButton (frmTest);
+  RunBtn.top = ListBox1.height + 10;
+  RunBtn.left = frmTest.width / 2 + 20;
+  RunBtn.Anchors = 'akBottom';
+  RunBtn.Caption = 'テスト開始(&R)';
+  RunBtn.Width = 80;
+  RunBtn.TabOrder = 0;
+  RunBtn.Default = true;
+  
+  var CancelBtn = new VCLButton (frmTest);
+  CancelBtn.left = RunBtn.left + RunBtn.width + 20;
+  CancelBtn.top = RunBtn.top;
+  CancelBtn.Anchors = 'akBottom';
+  CancelBtn.Caption = 'キャンセル(&C)';
+  CancelBtn.TabOrder = 1;
+  CancelBtn.ModalResult = 2;
+  CancelBtn.Cancel = true;
+  
+  PoPMenu1.onClick = function () {
+    if (ListBox1.SelCount > 0) {
+      var s = [];
+      var count = ListBox1.Items.Count;
+      for (var i = 0; i < count; i++) {
+        if (ListBox1.selected (i)) {
+          s.push (ListBox1.Items[i].Caption);
+        }
+      }
+      Clipboard.asText = s.join ("\n");
+    }
+  };
+
+  PoPMenu2.onClick = function () {
+    var count = ListBox1.Items.Count;
+    var s = [];
+    for (var i = 0; i < count; i++) {
+      s.push (ListBox1.Items[i].Caption);
+    }
+    if (s.length) {
+      Clipboard.asText = s.join ("\n");
+    }
+  };
+
+  ListBox1.onClick = function (sender, button) {
+    if (ListBox1.SelCount > 0) PoPMenu1.Enabled = true;
+    else PoPMenu1.Enabled = false;
+  };
+
+  LogBtn.onClick = function () {
+    Dorothy.edit (frmTest.logPath);
+  };
+
+  ScriptBtn.onClick = function () {
+    Dorothy.edit (frmTest.scriptPath);
+  };
+
+  RunBtn.onClick = function () {
+    RunBtn.Enabled = false;
+    ListBox1.clear ();
+    
+    var ya = new Yasmine ();
+    ya.test (frmTest.scriptPath);
+    frmTest.logPath = ya.saveLog ();
+    LogBtn.Enabled = true;
+    if (ya.count.fail) {
+      //Dorothy.edit (frmTest.scriptPath);
+      //Dorothy.edit (frmTest.logPath);
+    }
+
+    RunBtn.Enabled = true;
+  };
+  
+  println = function () {
+    var Items = ListBox1.Items;
+    for (var i = 0; i < arguments.length; i++) {
+      Items.add (arguments[i]);
+      if (Items.Count > 300) Items.delete (0);
+    }
+    
+    ListBox1.ItemIndex = Items.Count - 1;
+  };
+  
+  frmTest.showModal ();
+}
