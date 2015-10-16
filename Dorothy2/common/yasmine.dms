@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20140714.0
+//version=20150930.0
 //hint=
 //match=
 //author=rentan
@@ -22,6 +22,10 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+Copyright (C) 2015 wan at thewawan111@gmail.com
+
 */
 
 
@@ -34,14 +38,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // コンストラクタ
 void function Yasmine () {
   this._log = new Strings ();
-
+  this.indent = 0;
+  this.space = "\t";
   this.count = { success: 0, fail: 0,  pending: 0 };
 };
 
 
 // ログに追加
 Yasmine.prototype.log = function (s) {
-  if (s) {
+  if (s != '') {
+    s = this.space.multiply(this.indent) + s;
     println (s);
   }
   this._log.add (s);
@@ -137,7 +143,11 @@ Yasmine.prototype._stringify = function (v, inner) {
   if (name === 'String' || type === 'string') {
     return "'" + v.toString () + "'";
   }
-
+  if (name === 'Number' || type === 'number'){
+    if (!isFinite (v)) return v > 0 ? 'infinity' : '-infinity';
+    return v.toString ();
+  }
+/*
   if (name === 'Array') {
     if (inner) {
       // 配列中の配列は省略
@@ -150,7 +160,11 @@ Yasmine.prototype._stringify = function (v, inner) {
     }
     return '[ ' + s.join (', ') + ' ]';
   }
-
+*/
+  if (name === 'Object' || name === 'Array') {
+    common_load ('esx\json');
+    return JSON.stringify (v, function (k, v) {return typeof v == 'function' ? 'function(){}' : isNaN(v) ? 'NaN' : v;});
+  }
   return v.toString ();
 };
 
@@ -198,6 +212,7 @@ Yasmine.prototype._describe = function (title, descFunc) {
   array = [ ];
   array.parent = yasmine._afterEachList;
   yasmine._afterEachList = array;
+  yasmine.indent++;
 
   try {
     // describe() で指定した関数を実行
@@ -208,6 +223,7 @@ Yasmine.prototype._describe = function (title, descFunc) {
     ++yasmine.count.fail;
   }
 
+  yasmine.indent--;
   yasmine._afterEachList = yasmine._afterEachList.parent;
   yasmine._beforeEachList = yasmine._beforeEachList.parent;
 
@@ -298,11 +314,11 @@ Yasmine.prototype._it = function (title, itFunc) {
   catch (e) {
     if (yasmine._itContext.pended) {
       // pending() 実行前に出力されたログは破棄する
-      context._log = [ 'pended' ];
+      context._log = [ yasmine.space + 'pended' ];
       ++yasmine.count.pending;
     }
     else {
-      context.log (e);
+      context.log (yasmine.space + e);
       ++yasmine.count.fail;
     }
   }
@@ -341,6 +357,7 @@ Yasmine.prototype._cases = function (cases) {
 // cases().it(), .xit() の本体
 Yasmine.prototype._casesIt = function (cases, itName, title, itFunc) {
   yasmine.log ('cases.' + itName + ': ' + title);
+  yasmine.indent++;
 
   var itRunner = Global [itName];  // it() or xit()
 
@@ -363,6 +380,7 @@ Yasmine.prototype._casesIt = function (cases, itName, title, itFunc) {
     // it() または xit() を呼び出す
     itRunner (ttl, itWrapper (itFunc, args));
   }
+  yasmine.indent--;
 };
 
 
@@ -485,8 +503,8 @@ Yasmine.prototype._util._strictEqual = function (a, b) {
     return true;
   }
 
-  // 0 === 0.0 が false になる DMonkey の不具合対処
-  if (typeof a === 'number' && typeof b === 'number' && a == b) {
+  // 0 === 0.0 が false になる DMonkey の不具合対処 とNaN
+  if (typeof a === 'number' && typeof b === 'number' && (a == b || !(a === a) && !(b === b)) ) {
     return true;
   }
 
@@ -784,7 +802,7 @@ YasmineExpect.prototype._addMatchers = function (matchersArray, addToPrototype) 
         result.message = util.buildFailureMessage.apply (util, args);
       }
 
-      this._itContext.log ('line ' + this._line + ': ' + result.message);
+      this._itContext.log (yasmine.space + 'Error-> line ' + this._line + ': ' + result.message);
       this._itContext.fail = true;
     };
   }

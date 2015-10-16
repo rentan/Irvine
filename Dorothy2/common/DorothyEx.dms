@@ -1,0 +1,401 @@
+//Dorothy2
+//caption=DorothyEx
+//version=0.14
+//hint=
+//match=
+//author=wan
+//path=common
+//end
+
+/*
+Copyright (C) 2015 wan at thewanwan111@gmail.com
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+(function(){
+DorothyEx = {};
+DorothyEx.queueFolder = '';
+DorothyEx.isDorothy2A = false;
+DorothyEx.isDorothy2set = false;
+DorothyEx.isDOA = false;
+DorothyEx.isRentan = typeof Dorothy.rVersion != 'undefined';
+switch(WScript.ScriptName){
+	case 'Dorothy2A.dms':
+	case 'Dorothy2R_a.dms':
+		DorothyEx.isDorothy2A = true;
+		DorothyEx.queueFolder = /queue\s*=\s*(\/[^;]+)/g.test(folderdata.Post) ? RegExp.$1 : '';
+		break;
+	case 'Dorothy2R_listmenu.dms':
+	case 'Dorothy2set.dms':
+	case 'Dorothy2ListMenu.dms':
+	case 'Dorothy2R_set.dms':
+		DorothyEx.isDorothy2set = true;
+		DorothyEx.queueFolder = Irvine.Current.Path;
+		break;
+	case 'DOA.dms':
+	case 'xor100813_2.dms':
+	case 'Dorothy2R_doa_list.dms':
+	case 'Dorothy2R_doa_tree.dms':
+		DorothyEx.isDOA = true;
+		DorothyEx.queueFolder = DOA.CurrentQueueFolder;
+		break;
+	default:
+		alert('DorothyExエラー 不明な実行環境: ' + WScript.ScriptName);
+		exit();
+}
+/*
+if((typeof SettingForm != 'undefined' && typeof OnMainMenuClick == 'function') ||
+	 (typeof OnListMenuClick == 'function' && (typeof Dorothy.url == 'string' || typeof _ == 'object') )){
+	DorothyEx.isDorothy2set = true;
+	DorothyEx.queueFolder = Irvine.Current.Path;
+}else if(typeof frmDOA == 'object' && nameOf(frmDOA) == 'VCLForm' && typeof OnListMenuClick == 'function'){
+	DorothyEx.isDOA = true;
+	DorothyEx.queueFolder = DOA.CurrentQueueFolder;
+}else if(typeof OnHttpRequest == 'function'){
+	DorothyEx.isDorothy2A = true;
+	DorothyEx.queueFolder = /queue\s*=\s*([^;]+)/g.test(folderdata.Post) ? RegExp.$1 : '';
+}
+*/
+
+DorothyEx._getVersion = (function(){
+	var cache = {};
+	return function(path){
+			if(cache.hasKey(path)) return cache[path];
+			var sl = new Strings();
+			cache[path] = '';
+			try{
+				sl.loadFromFile(path);
+				if(/^version=([^\n]+)/m.test(sl.text)){
+					cache[path] = RegExp.$1;
+				}
+			}catch(e){
+				println(e);
+			}
+			return cache[path];
+		};
+})();
+DorothyEx.getVersionDorothy2A = function(){
+	return this.isRentan ? Dorothy.rVersion : (this.isDorothy2A ? Dorothy.version : this._getVersion((new irvinePath).scripts + 'Dorothy2A.dms'));
+};
+DorothyEx.getVersionDorothy2set = function(){
+	return this.isRentan ? Dorothy.rVersion : this._getVersion((new irvinePath).scripts + 'Dorothy2set.dms');
+};
+DorothyEx.getVersionDOA = function(){
+	return this.isRentan ? Dorothy.rVersion : this._getVersion((new irvinePath).scripts + 'DOA.dms');
+};
+//実行環境別にアイテムの保存場所を取得する 相対パスの場合は絶対パスになるまで上位キューフォルダから取得していく
+DorothyEx.getSaveFolder = function(){
+	if(this.isDOA){
+		var item = typeof item != 'undefined' ? item : new IrvineItem();
+	}else if(this.isDorothy2set){
+		return Dorothy.userPath;
+	}
+	var ipath = item.folder;
+	if(/^[a-z]:/i.test(ipath)){
+		ipath += '\';//C: -> C:\  \が二重になっても問題ない
+		return new Directory(ipath).path;
+	}
+
+	//絶対パスになるまで順に上位キューフォルダから保存パスを取得
+	var path;
+	if(this.isDOA){
+		var folder = new ActiveXObject('Irvine.Folder');
+		folder.path = DorothyEx.queueFolder;
+		path = folder.Data['queue', 'folder'] + '\' + ipath;
+		while(!/^[a-z]:/i.test(path) && folder.path != '/'){
+			folder = folder.Parent;
+			path = folder.Data['queue', 'folder'] + '\' + path;
+		}
+	}else{
+		path = folderdata.Folder + '\' + ipath;
+		var qPath = (new irvinePath).queue;
+		var irvQPath = DorothyEx.queueFolder;
+		var ini;
+		while(!/^[a-z]:/i.test(path)){
+			irvQPath = irvQPath.slice(0, irvQPath.lastIndexOf('/'));
+			ini = new Ini(new Directory(qPath + irvQPath).path + 'queue.ini');
+			path = ini.read('queue', 'folder', '') + '\' + path;
+			if(!irvQPath) break;
+		}
+	}
+	return new Directory(path).path;
+};
+//Dorothy.userPath Dorothy.userIniPathが使えないDOA用
+DorothyEx.getUserPath = function(){
+	return this.isDOA ? Dorothy.path + 'user' + Dorothy.matchFile + '\' : Dorothy.userPath;
+};
+DorothyEx.getUserIniPath = function(){
+	return this.isDOA ? this.getUserPath() + Dorothy.matchFile + '.ini' : Dorothy.userIniPath;
+};
+//DOA Dorothy2set でもfolderdataを使えるようにする
+DorothyEx.setFolderData = function(){
+	if(this.isDorothy2A) return;
+	var toDateTime = function(str){
+		var d = new Date();
+		if(/^((\d{4})\/(\d+)\/(\d+))?\s*((\d+):(\d+):(\d+))?$/.test(str)){
+			if(RegExp.$1){
+				d.setYear(RegExp.$2);
+				d.setMonth(RegExp.$3 - 1);
+				d.setDate(RegExp.$4);
+			}
+			d.setHours(RegExp.$6);
+			d.setMinutes(RegExp.$7);
+			d.setSeconds(RegExp.$8);
+			d.setMilliseconds(0);
+			return d.getIrvineTime();
+		};
+		return '';
+	};
+	common_load('DateExtension');
+	var folder = new ActiveXObject('Irvine.Folder');
+	folder.path = this.isDOA ? DOA.CurrentQueueFolder : Irvine.Current.path;
+	folderdata = new IrvineFolderData;
+	//folderdata.AbsolutePath        = folder.AbsolutePath;
+	folderdata.Agent               = folder.Values['agent'];
+	folderdata.AutoRemoveFolder    = folder.Values['autoremovefolder'] == 1;
+	folderdata.AutoRename          = folder.Values['autorename'] == 1;
+	folderdata.AutoRenameDate      = folder.Values['autorenamedate'] == 1;
+	folderdata.AutoRenameHash      = folder.Values['autorenamehash'] == 1;
+	folderdata.AutoRenameHashNum   = folder.Values['autorenamehashnum'] == 1;
+	folderdata.AutoSort            = folder.Values['autosort'] == 1;
+	folderdata.AutoStart           = folder.Values['autostart'] == 1;
+	folderdata.BeginAutoStart      = folder.Values['beginautostart'] == 1;
+	folderdata.BeginTime           = toDateTime(folder.Values['begintime']);
+	if(folderdata.BeginTime < new Date().getIrvineTime()) folderdata.BeginTime += 1;
+	folderdata.BufferSize          = folder.Values['buffersize'];
+	folderdata.CernType            = folder.Values['cerntype'] == 1;
+	folderdata.ChangeImportFolder  = folder.Values['changeimportfolder'] == 1;
+	folderdata.CharCode            = folder.Values['charcode'] == 1;
+	folderdata.ClearTrash          = folder.Values['cleartrash'] == 1;
+	folderdata.Cookie              = folder.Values['cookie'] == 1;
+	folderdata.CookieStr           = folder.Values['cookiestr'];
+	folderdata.CrcTryCount         = folder.Values['crctrycount'];
+	folderdata.CreateDate          = toDateTime(folder.Values['createdate']);
+	folderdata.DateFolder          = folder.Values['datefolder'] == 1;
+	folderdata.DownloadCount       = folder.Values['downloadcount'];
+	folderdata.DupFile             = folder.Values['dupfile'] == 1;
+	folderdata.DupFileConfirm      = folder.Values['dupfileconfirm'] == 1;
+	folderdata.DupUrl              = folder.Values['dupurl'] == 1;
+	folderdata.DupUrlConfirm       = folder.Values['dupurlconfirm'] == 1;
+	folderdata.EndTime             = toDateTime(folder.Values['endtime']);
+	if(folderdata.EndTime < new Date().getIrvineTime()) folderdata.EndTime += 1;
+	folderdata.Expanded            = folder.Values['expanded'] == 1;
+	folderdata.Folder              = folder.Values['folder'];
+	folderdata.FtpDirSearch        = folder.Values['ftpdirsearch'] == 1;
+	folderdata.FtpProxy            = folder.Values['ftpproxy'];
+	folderdata.FtpProxyPassword    = folder.Values['ftpproxypassword'];
+	folderdata.FtpProxyUserId      = folder.Values['ftpproxyuserid'];
+	folderdata.FtpSubDirSearch     = folder.Values['ftpsubdirsearch'] == 1;
+	folderdata.FtpTimeout          = folder.Values['ftptimeout'];
+	folderdata.GetDate             = folder.Values['getdate'] == 1;
+	folderdata.HiddenAttr          = folder.Values['hiddenattr'] == 1;
+	folderdata.History             = folder.Values['history'] == 1;
+	folderdata.HttpMethod          = folder.Values['httpmethod'] == 1;
+	folderdata.HttpProxy           = folder.Values['httpproxy'];
+	folderdata.HttpProxyPassword   = folder.Values['httpproxypassword'];
+	folderdata.HttpProxyUserId     = folder.Values['httpproxyuserid'];
+	folderdata.HttpTimeout         = folder.Values['httptimeout'];
+	folderdata.HttpVersion         = folder.Values['httpversion'] == 1;
+	folderdata.Ignore3xx           = folder.Values['ignore3xx'] == 1;
+	folderdata.Ignore404           = folder.Values['ignore404'] == 1;
+	folderdata.Image               = folder.Values['image'];
+	folderdata.InvalidSplitDownload= folder.Values['invalidsplitdownload'] == 1;
+	folderdata.LessSize            = folder.Values['lesssize'];
+	folderdata.LessSpeed           = folder.Values['lessspeed'];
+	folderdata.LessSpeedRetry      = folder.Values['lessspeedretry'] == 1;
+	folderdata.LimitSpeed          = folder.Values['limitspeed'] == 1;
+	folderdata.ListViewStyle       = folder.Values['listviewstyle'] == 1;
+	folderdata.MailAddress         = folder.Values['mailaddress'];
+	folderdata.Mark                = folder.Values['mark'] == 1;
+	folderdata.MaxItemCount        = folder.Values['maxitemcount'];
+	folderdata.MaxSpeed            = folder.Values['maxspeed'];
+	folderdata.MoreSize            = folder.Values['moresize'];
+	folderdata.MoveTrash           = folder.Values['movetrash'] == 1;
+	folderdata.Nlst                = folder.Values['nlst'] == 1;
+	folderdata.NoCache             = folder.Values['nocache'] == 1;
+	folderdata.Pasv                = folder.Values['pasv'] == 1;
+	//folderdata.Path                = folder.Path;
+	folderdata.Post                = folder.Values['post'];
+	folderdata.Postpone            = folder.Values['postpone'];
+	folderdata.Priority            = folder.Values['priority'];
+	folderdata.ProxyErrorCount     = folder.Values['proxyerrorcount'];
+	folderdata.ProxyErrorTo        = folder.Values['proxyerrorto'] == 1;
+	folderdata.RandomAgent         = folder.Values['randomagent'] == 1;
+	folderdata.RandomFtpProxy      = folder.Values['randomftpproxy'] == 1;
+	folderdata.RandomHttpProxy     = folder.Values['randomhttpproxy'] == 1;
+	folderdata.Referer             = folder.Values['referer'] == 1;
+	folderdata.RefererStr          = folder.Values['refererstr'];
+	folderdata.RemoveCrcError      = folder.Values['removecrcerror'] == 1;
+	folderdata.RemoveQuery         = folder.Values['removequery'] == 1;
+	folderdata.RemoveTrashItem     = folder.Values['removetrashitem'] == 1;
+	folderdata.ResumeOverwrite     = folder.Values['resumeoverwrite'] == 1;
+	folderdata.RollBackBytes       = folder.Values['rollbackbytes'];
+	folderdata.SelectIndex         = folder.Values['selectindex'];
+	folderdata.SortItem            = folder.Values['sortitem'] == 1;
+	folderdata.SplitCount          = folder.Values['splitcount'];
+	folderdata.StorageTrashCount   = folder.Values['storagetrashcount'];
+	folderdata.TryConnect          = folder.Values['tryconnect'] == 1;
+	folderdata.TryConnectCount     = folder.Values['tryconenctcount'];//iniの方は元から綴りが間違っている
+	folderdata.TryConnectWait      = folder.Values['tryconnectwait'];
+	folderdata.TryResume           = folder.Values['tryresume'] == 1;
+	folderdata.UrlEncode           = folder.Values['urlencode'] == 1;
+	folderdata.UrlFolder           = folder.Values['urlfolder'] == 1;
+	folderdata.UrlUtf8             = folder.Values['urlutf8'] == 1;
+	folderdata.UseBeginTime        = folder.Values['usebegintime'] == 1;
+	folderdata.UseCrc              = folder.Values['usecrc'] == 1;
+	folderdata.UseEndTime          = folder.Values['useendtime'] == 1;
+	folderdata.UseFtpProxy         = folder.Values['useftpproxy'] == 1;
+	folderdata.UseHttpProxy        = folder.Values['usehttpproxy'] == 1;
+	folderdata.UseHttpProxyForFtp  = folder.Values['usehttpproxyforftp'] == 1;
+	folderdata.UseHttpProxyForHttps= folder.Values['usehttpproxyforhttps'] == 1;
+	folderdata.UseLessSize         = folder.Values['uselesssize'] == 1;
+	folderdata.UseMoreSize         = folder.Values['usemoresize'] == 1;
+	folderdata.UseRecycle          = folder.Values['userecycle'] == 1;
+	folderdata.UseResume           = folder.Values['useresume'] == 1;
+	folderdata.UseRollBack         = folder.Values['userollback'] == 1;
+	folderdata.ViewIndex           = folder.Values['viewindex'];
+};
+//環境別の差異がなるべく少なくなる様に再定義する
+DorothyEx.define = function(){
+	if(this.isRentan){
+		Global.common_reload = function(){
+			for (var i = 0; i < arguments.length; i++) {
+				common_xload (arguments [i]);
+			}
+		};
+	}
+	if(this.isDorothy2A){
+		if(this.isRentan){
+			Global.reset = function(){
+				for(var i = 0 ; i < arguments.length ; i++){
+					println(arguments[i]);
+				}
+				var url = new URL(Dorothy.oldUrl);
+				urlinfo.url = url.url;
+				headers.host = url.host;
+			};
+			
+		}
+		dorothy2_path                = Dorothy.path;
+		dorothy2_temp                = dorothy2_path + 'temp\';
+		dorothy2_document            = dorothy2_path + 'document\';
+		dorothy2_common              = dorothy2_path + 'common\';
+		dorothy2_program             = dorothy2_path + 'program\';
+		dorothy2_setting             = dorothy2_path + 'setting\';
+		dorothy2_system              = dorothy2_path + 'system\';
+		dorothy2_project             = dorothy2_path + 'project\';
+		dorothy2_projectdata         = dorothy2_path + 'projectdata\';
+		dorothy2_bin                 = dorothy2_path + 'bin\';
+		dorothy2_user                = dorothy2_path + 'user\';
+		dorothy2_system_menu         = dorothy2_system + 'menu\';
+		dorothy2_system_menu_new     = dorothy2_system_menu + 'new\';
+		dorothy2_system_menu_setting = dorothy2_system_menu + 'setting\';
+		dorothy2_system_menu_edit    = dorothy2_system_menu + 'edit\';
+		dorothy2_system_menu_project = dorothy2_system_menu + 'project\';
+		dorothy2_system_menu_tool    = dorothy2_system_menu + 'tool\';
+		dorothy2_system_menu_set     = dorothy2_system_menu + 'set\';
+		dorothy2_system_menu_package = dorothy2_system_menu + 'package\';
+		dorothy2_system_menu_help    = dorothy2_system_menu + 'help\';
+		dorothy2_system_ini          = dorothy2_system + 'ini\';
+		irvine_script_path           = (new irvinePath).scripts;
+		Dorothy.url = Dorothy.oldUrl;
+	}else if(this.isDOA){
+		if(this.isRentan){
+			irvine_script_path = (new irvinePath).scripts;
+		}else{
+			Dorothy.programDir = dorothy2_program;
+			Dorothy.version = this.getVersionDorothy2A();
+			version = this.getVersionDOA();
+			Dorothy.temp = dorothy2_temp;
+		}
+		//Dorothy.userPath = dorothy2_user + Dorothy.matchFile + '\';
+		//Dorothy.userIniPath = Dorothy.userPath + Dorothy.matchFile + '.ini';
+	}else if(this.isDorothy2set){
+		if(!this.isRentan){
+			void function print_debug(str){
+				if(debug) println(str);
+			};
+		}
+		if(typeof OnMainMenuClick === 'function'){
+			if(!this.isRentan){
+				void function program_load(name){
+					return file_load('program\' + name + '.dms');
+				};
+				void function user_load(name){
+					return file_load('user\' + Dorothy.matchFile + '\' + name);//'
+				};
+				void function user_program_load(){
+					for(var i = 0 ; i < arguments.length ; i++){
+						try{
+							eval( file_load('user\' + Dorothy.matchFile + '\' + arguments[i] + '.dms') );
+						}
+						catch(e){
+							println(e+' '+Dorothy.matchFile + '\' + arguments[i]+'.dms');
+							eval( file_load('user\' + Dorothy.matchFile + '\' + arguments[i] + '.dms') );
+						}
+					}
+				};
+			}
+			//無理矢理 選択アイテム取得
+			item = new IrvineItem;
+			var count = Irvine.ItemCount;
+			for(var i = 0; i < count; i++){
+				if(Irvine.GetItemSelected(i)){
+					item.data = Irvine.GetItemData(i);
+					if(item.url.indexOf('ttp://') == 0){
+						item.url = 'h' + item.url;
+					}
+					break;
+				}
+			}
+			Dorothy.url = item.url;
+		}else{
+			if(this.isRentan){
+				irvine_script_path = (new irvinePath).scripts;
+				Dorothy.url = item.url;
+			}
+		}
+	}
+};
+DorothyEx.doaSetitem = function(){
+	if(typeof item == 'undefined' || typeof DOA_IT == 'undefined') return false;
+
+	DOA.status = DOA_IT;
+	item.filename = DOA.name;
+	if(DOA.comment) item.comment = DOA.comment;
+	if(!item.url) item.url = urlinfo.url;
+	switch(DOA.size.replace(/,/g, '')){
+		case /^\s*([\d\.]+)\s*(B|Byte)?\s*$/i:
+			item.filesize = RegExp.$1;
+			break;
+		case /^\s*([\d\.]+)\s*K(B|Byte)\s*$/i:
+			item.filesize = RegExp.$1 * 1024;
+			break;
+		case /^\s*([\d\.]+)\s*M(B|Byte)\s*$/i:
+			item.filesize = RegExp.$1 * 1048576;
+			break;
+		case /^\s*([\d\.]+)\s*G(B|Byte)\s*$/i:
+			item.filesize = RegExp.$1 * 1073741824;
+			break;
+	}
+	return true;
+};
+
+//------------------------------------------------------------------------------
+
+DorothyEx.setFolderData();
+DorothyEx.define();
+})();
