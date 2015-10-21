@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Getter()
-//version=20150930.0
+//version=20151021.0
 //hint=
 //match=
 //author=rentan
@@ -61,6 +61,12 @@ Getter.prototype.comment = '';
 
 // public: Http オブジェクト
 Getter.prototype.http = null;
+
+
+// 例外を投げる
+Getter.prototype._throw = function (s) {
+  throw nameOf (this) + ': ' + s;
+};
 
 
 // メッセージ表示&commentに保存
@@ -125,8 +131,7 @@ Getter.prototype._mis = function (msg) {
 };
 
 Getter.prototype._exit = function (msg) {
-  this.status = this.EXIT;
-  return false;
+  return this._error (msg, this.EXIT);
 };
 
 // HTTPエラー

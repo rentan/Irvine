@@ -22,6 +22,10 @@ getterobject.dms がイマイチ使いづらかったので作りなおしまし
 変更履歴
 ========
 
+2015-10-21  version 20151021.0  rentan at rentan.org
+  _throw(): メソッド追加。
+  _exit(): メッセージの表示に対応。
+
 2015-09-30  version 20150930.0  rentan at rentan.org
   既定で download() を定義するようにした。
 
