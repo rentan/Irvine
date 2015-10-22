@@ -33,6 +33,9 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2015-10-22  version 20151022.0  rentan at rentan.org
+  MSIE 9.* の User-Agent を使用不可にした。
+
 2015-07-05  version 20150705.0  rentan at rentan.org
   HTML の保存機能を追加。
 
