@@ -87,6 +87,9 @@ http://www.pixiv.net/novel/show.php?id=\d+
 変更履歴
 ========
 
+2015-10-22  version 20151022.0  wan at thewanwan111@gmail.com
+  latestIds.iniの読み込み時にもmutexを使用するようにしました
+
 2015-10-03  version 20151003.0  wan at thewanwan111@gmail.com
   プロフィール画像と背景画像で未対応だったURLに対応しました
   ファイル名変数に%FILENAME%を追加しました

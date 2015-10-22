@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20151003.0
+//version=20151022.0
 //hint=pixiv ï ÉoÅ[ÉWÉáÉì
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?|source.pixiv.net/)
 //author=rentan
@@ -73,16 +73,19 @@ function () {
 
 function getLatestId(user_id, data){
   data = data || {};
+  var m = new Mutex(Dorothy.userPath + 'latestIds.ini');
+  m.lock();
   var ini_ids = new Ini(Dorothy.userPath + 'latestIds.ini');
   data.Illust = ini_ids.read(user_id, 'Illust', 0);
   data.Novel = ini_ids.read(user_id, 'Novel', 0);
   data.Bg = ini_ids.read(user_id, 'Bg', 0);
   data.Profile = ini_ids.read(user_id, 'Profile', 0);
+  m.unlock();
   return data;
 }
 
 function updateLatestId(user_id, data){
-  var m = new Mutex(Dorothy.userIniPath);
+  var m = new Mutex(Dorothy.userPath + 'latestIds.ini');
   m.lock();
   var ini_ids = new Ini(Dorothy.userPath + 'latestIds.ini');
   for(var key in data){
