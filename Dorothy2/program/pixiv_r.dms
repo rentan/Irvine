@@ -3,13 +3,14 @@
 //version=20151022.0
 //hint=pixiv ï ÉoÅ[ÉWÉáÉì
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?|source.pixiv.net/)
-//author=rentan
+//author=rentan, wan
 //path=program
 //priority=500
 //end
 
 /*
 Copyright (C) 2010,2011,2012,2013,2014,2015 rentan at rentan.org
+Copyright (C) 2015 wan at thewanwan111@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,10 +24,6 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Copyright (C) 2015 wan at thewanwan111@gmail.com
-
 */
 
 function () {
