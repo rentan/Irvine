@@ -50,6 +50,15 @@ http://yasmine.dorothy.test/arguments
 変更履歴
 ========
 
+2015-11-06  wan at thewanwa111@gmail.com
+  Dorothy2\common\yasmine.dms version 20150930.0
+    toStringメソッドを持たないオブジェクトにも対応させました
+    JSON.stringifyでundefinedも文字列化するように変更しました
+
+  Dorothy2\common\DorothyEx.dms version 0.15
+    DateExtension.dmsを使用しない様に変更しました
+  
+
 2015-10-01  wan at thewanwa111@gmail.com
   Dorothy2\common\yasmine.dms version 20150930.0
     見易くする為にログにインデントを追加するようにした。
