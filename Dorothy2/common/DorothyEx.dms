@@ -143,8 +143,11 @@ DorothyEx.getUserIniPath = function(){
 //DOA Dorothy2set Ç≈Ç‡folderdataÇégÇ¶ÇÈÇÊÇ§Ç…Ç∑ÇÈ
 DorothyEx.setFolderData = function(){
 	if(this.isDorothy2A) return;
-	var toDateTime = function(str){
-		var d = new Date();
+	var strToDateTime = function(str){
+		var d = new Date(),
+			oneday = 86400000, //àÍì˙
+			unixDateDelta = 25569, //UnixDateDelta[UNIXéûä‘Ç∆TDateTimeÇ∆ÇÃç∑]
+			offset = d.getTimezoneOffset() * 60 * 1000; //ê¢äEã¶íËéûçè(UTC)Ç∆ÇÃç∑
 		if(/^((\d{4})\/(\d+)\/(\d+))?\s*((\d+):(\d+):(\d+))?$/.test(str)){
 			if(RegExp.$1){
 				d.setYear(RegExp.$2);
@@ -155,11 +158,12 @@ DorothyEx.setFolderData = function(){
 			d.setMinutes(RegExp.$7);
 			d.setSeconds(RegExp.$8);
 			d.setMilliseconds(0);
-			return d.getIrvineTime();
+			
+			return (d.getTime() - offset + unixDateDelta * oneday) / oneday;
+			//return (d.getTime() - offset) / oneday + UnixDateDelta;
 		};
-		return '';
+		return 0;
 	};
-	common_load('DateExtension');
 	var folder = new ActiveXObject('Irvine.Folder');
 	folder.path = this.isDOA ? DOA.CurrentQueueFolder : Irvine.Current.path;
 	folderdata = new IrvineFolderData;
@@ -173,7 +177,7 @@ DorothyEx.setFolderData = function(){
 	folderdata.AutoSort            = folder.Values['autosort'] == 1;
 	folderdata.AutoStart           = folder.Values['autostart'] == 1;
 	folderdata.BeginAutoStart      = folder.Values['beginautostart'] == 1;
-	folderdata.BeginTime           = toDateTime(folder.Values['begintime']);
+	folderdata.BeginTime           = strToDateTime(folder.Values['begintime']);
 	if(folderdata.BeginTime < new Date().getIrvineTime()) folderdata.BeginTime += 1;
 	folderdata.BufferSize          = folder.Values['buffersize'];
 	folderdata.CernType            = folder.Values['cerntype'] == 1;
@@ -183,14 +187,14 @@ DorothyEx.setFolderData = function(){
 	folderdata.Cookie              = folder.Values['cookie'] == 1;
 	folderdata.CookieStr           = folder.Values['cookiestr'];
 	folderdata.CrcTryCount         = folder.Values['crctrycount'];
-	folderdata.CreateDate          = toDateTime(folder.Values['createdate']);
+	folderdata.CreateDate          = strToDateTime(folder.Values['createdate']);
 	folderdata.DateFolder          = folder.Values['datefolder'] == 1;
 	folderdata.DownloadCount       = folder.Values['downloadcount'];
 	folderdata.DupFile             = folder.Values['dupfile'] == 1;
 	folderdata.DupFileConfirm      = folder.Values['dupfileconfirm'] == 1;
 	folderdata.DupUrl              = folder.Values['dupurl'] == 1;
 	folderdata.DupUrlConfirm       = folder.Values['dupurlconfirm'] == 1;
-	folderdata.EndTime             = toDateTime(folder.Values['endtime']);
+	folderdata.EndTime             = strToDateTime(folder.Values['endtime']);
 	if(folderdata.EndTime < new Date().getIrvineTime()) folderdata.EndTime += 1;
 	folderdata.Expanded            = folder.Values['expanded'] == 1;
 	folderdata.Folder              = folder.Values['folder'];
