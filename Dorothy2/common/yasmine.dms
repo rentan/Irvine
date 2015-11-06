@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20150930.0
+//version=20151106.0
 //hint=
 //match=
 //author=rentan
@@ -163,9 +163,9 @@ Yasmine.prototype._stringify = function (v, inner) {
 */
   if (name === 'Object' || name === 'Array') {
     common_load ('esx\json');
-    return JSON.stringify (v, function (k, v) {return typeof v == 'function' ? 'function(){}' : isNaN(v) ? 'NaN' : v;});
+    return JSON.stringify (v, function (k, v) {return typeof v == 'function' ? 'function(){}' : isNaN(v) ? 'NaN' : isUndefined(v) ? 'undefined' : v;});
   }
-  return v.toString ();
+	return typeof v.toString == 'function' ? v.toString() : new String(v).toString();
 };
 
 
