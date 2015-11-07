@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=esx/JSON spec
-//version=20141018.0
+//version=20151108.0
 //hint=http://yasmine.dorothy.test/common/spec/esx/json_spec.dms
 //match=
 //author=rentan
@@ -384,6 +384,13 @@ describe ('JSON.stringify', function () {
     var json = '{"s":"abc","n":1}';
     expect (JSON.stringify (value)).toBe (json);
   });
+
+  it ('converts NaN and Infinity to null', function () {
+    expect (JSON.stringify (NaN)).toBe ('null');
+    expect (JSON.stringify (Number.POSITIVE_INFINITY)).toBe ('null');
+    expect (JSON.stringify (Number.NEGATIVE_INFINITY)).toBe ('null');
+  });
+
 });
 
 

@@ -33,6 +33,10 @@ stringify (value, replacer, space)
 変更履歴
 ========
 
+2015-11-08  version 20151108.0  rentan at rentan.org
+JSON.stringify():
+  NaN、±Infinity で ENameError が発生する不具合を修正。
+
 2014-10-18  version 20141018.0  rentan at rentan.org
 JSON.stringify():
   prototype オブジェクトで ENameError が発生する不具合を修正。
