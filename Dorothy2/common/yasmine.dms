@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20151108.0
+//version=20151108.1
 //hint=
 //match=
 //author=rentan
@@ -33,22 +33,60 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 // コンストラクタ
-void function Yasmine () {
+void function Yasmine (opt) {
   this._log = new Strings ();
   this._indentLevel = 0;
-  this.space = "\t";
+
+  if (opt && opt.hasKey ('Indent')) {
+    this._indent = opt.Indent;
+  }
+
+  var fmt = this._logFormat = { };
+  for (var key in this._defaultFormat) {
+    fmt [key] = (opt && opt.hasKey (key)) ? opt [key] : this._defaultFormat [key];
+  }
+
+  fmt.IndentText = fmt.IndentText.replace (/^['"]|['"]$/g, '');
 
   this.count = { success: 0, fail: 0,  pending: 0 };
 };
 
 
+Yasmine.prototype._indent = false;
+
+Yasmine.prototype._defaultFormat = {
+  IndentText: '',
+  Error: 'line %LINE%: %MESSAGE%'
+};
+
+
+// エラー文字列を組み立てる
+Yasmine.prototype._formatString = function (name, variables) {
+  return this._logFormat [name].replace (/%(LINE|MESSAGE)%/g, function (s, p1) {
+    return variables [p1];
+  });
+};
+
+
+// インデントレベルに従って文字列の左側に空白を加える
+Yasmine.prototype._indentText = function (s, level) {
+  if (!this._indent) {
+    return s;
+  }
+
+  var lv = isUndefined (level) ? 1 : level;
+  return this._logFormat.IndentText.multiply (lv) + s;
+};
+
+
 // ログに追加
 Yasmine.prototype.log = function (s) {
-  if (s != '') {
-    s = this.space.multiply (this._indentLevel) + s;
-    println (s);
+  var t = (s == '') ? s : this._indentText (s, this._indentLevel);
+
+  if (t) {
+    println (t);
   }
-  this._log.add (s);
+  this._log.add (t);
 };
 
 
@@ -301,11 +339,11 @@ Yasmine.prototype._it = function (title, itFunc) {
   catch (e) {
     if (yasmine._itContext.pended) {
       // pending() 実行前に出力されたログは破棄する
-      context._log = [ yasmine.space + 'pended' ];
+      context._log = [ yasmine._indentText ('pended') ];
       ++yasmine.count.pending;
     }
     else {
-      context.log (yasmine.space + e);
+      context.log (yasmine._indentText (e));
       ++yasmine.count.fail;
     }
   }
@@ -789,7 +827,12 @@ YasmineExpect.prototype._addMatchers = function (matchersArray, addToPrototype) 
         result.message = util.buildFailureMessage.apply (util, args);
       }
 
-      this._itContext.log (yasmine.space + 'Error-> line ' + this._line + ': ' + result.message);
+      var s = yasmine._formatString ('Error', {
+        LINE: this._line,
+        MESSAGE: result.message
+      });
+
+      this._itContext.log (yasmine._indentText (s));
       this._itContext.fail = true;
     };
   }

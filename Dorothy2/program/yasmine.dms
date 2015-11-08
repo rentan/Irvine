@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20140714.0
+//version=20151108.1
 //hint=
 //match=^http://yasmine\.dorothy\.test/
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,6 +28,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function () {
 
   common_load ('rutil');
+  Util.min_version (20150930.0);
+
+  var defaultIni = {
+    Config: {
+      Indent: false,
+      IndentText: '',
+      Error: 'line %LINE%: %MESSAGE%'
+    }
+  };
+  var ini = Util.ini_load (defaultIni);
 
 
 // spec ファイルの実行 -----------------------------------------------------
@@ -38,7 +48,7 @@ function () {
 function testSpec (file) {
   common_load ('yasmine');
 
-  var ya = new Yasmine ();
+  var ya = new Yasmine (ini.Config);
   ya.test (file);
   var logFile = ya.saveLog ();
 

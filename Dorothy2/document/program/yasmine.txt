@@ -51,6 +51,11 @@ http://yasmine.dorothy.test/arguments
 ========
 
 2015-11-08  rentan at rentan.org
+Dorothy2\common\yasmine.dms version 20151108.1
+Dorothy2\program\yasmine.dms version 20151108.1
+  設定ファイルに対応。
+
+2015-11-08  rentan at rentan.org
 Dorothy2\common\yasmine.dms version 20151108.0
   ソースコード整形。
 
