@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20151106.0
+//version=20151108.0
 //hint=
 //match=
 //author=rentan
@@ -8,7 +8,8 @@
 //end
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2015 wan at thewawan111@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,10 +23,6 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-Copyright (C) 2015 wan at thewawan111@gmail.com
-
 */
 
 
@@ -38,8 +35,9 @@ Copyright (C) 2015 wan at thewawan111@gmail.com
 // コンストラクタ
 void function Yasmine () {
   this._log = new Strings ();
-  this.indent = 0;
+  this._indentLevel = 0;
   this.space = "\t";
+
   this.count = { success: 0, fail: 0,  pending: 0 };
 };
 
@@ -47,7 +45,7 @@ void function Yasmine () {
 // ログに追加
 Yasmine.prototype.log = function (s) {
   if (s != '') {
-    s = this.space.multiply(this.indent) + s;
+    s = this.space.multiply (this._indentLevel) + s;
     println (s);
   }
   this._log.add (s);
@@ -144,28 +142,17 @@ Yasmine.prototype._stringify = function (v, inner) {
     return "'" + v.toString () + "'";
   }
   if (name === 'Number' || type === 'number'){
-    if (!isFinite (v)) return v > 0 ? 'infinity' : '-infinity';
-    return v.toString ();
+    return isFinite (v) ? v.toString () : (v > 0) ? 'infinity' : '-infinity';
   }
-/*
-  if (name === 'Array') {
-    if (inner) {
-      // 配列中の配列は省略
-      return '[ ... ]';
-    }
 
-    var s = [ ];
-    for (var i = 0; i < v.length; ++i) {
-      s.push (this._stringify (v [i], true));
-    }
-    return '[ ' + s.join (', ') + ' ]';
-  }
-*/
   if (name === 'Object' || name === 'Array') {
     common_load ('esx\json');
-    return JSON.stringify (v, function (k, v) {return typeof v == 'function' ? 'function(){}' : isNaN(v) ? 'NaN' : isUndefined(v) ? 'undefined' : v;});
+    return JSON.stringify (v, function (k, v) {
+      return typeof v == 'function' ? 'function(){}' : isNaN (v) ? 'NaN' : isUndefined (v) ? 'undefined' : v;
+    });
   }
-	return typeof v.toString == 'function' ? v.toString() : new String(v).toString();
+
+  return typeof v.toString == 'function' ? v.toString () : (new String (v)).toString ();
 };
 
 
@@ -212,7 +199,7 @@ Yasmine.prototype._describe = function (title, descFunc) {
   array = [ ];
   array.parent = yasmine._afterEachList;
   yasmine._afterEachList = array;
-  yasmine.indent++;
+  ++yasmine._indentLevel;
 
   try {
     // describe() で指定した関数を実行
@@ -223,7 +210,7 @@ Yasmine.prototype._describe = function (title, descFunc) {
     ++yasmine.count.fail;
   }
 
-  yasmine.indent--;
+  --yasmine._indentLevel;
   yasmine._afterEachList = yasmine._afterEachList.parent;
   yasmine._beforeEachList = yasmine._beforeEachList.parent;
 
@@ -357,7 +344,7 @@ Yasmine.prototype._cases = function (cases) {
 // cases().it(), .xit() の本体
 Yasmine.prototype._casesIt = function (cases, itName, title, itFunc) {
   yasmine.log ('cases.' + itName + ': ' + title);
-  yasmine.indent++;
+  ++yasmine._indentLevel;
 
   var itRunner = Global [itName];  // it() or xit()
 
@@ -380,7 +367,7 @@ Yasmine.prototype._casesIt = function (cases, itName, title, itFunc) {
     // it() または xit() を呼び出す
     itRunner (ttl, itWrapper (itFunc, args));
   }
-  yasmine.indent--;
+  --yasmine._indentLevel;
 };
 
 

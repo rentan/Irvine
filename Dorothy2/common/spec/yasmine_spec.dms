@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine spec
-//version=20140714.0
+//version=20151108.0
 //hint=http://yasmine.dorothy.test/common/spec/yasmine_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -76,6 +76,10 @@ describe ('NaN', function () {
     expect (NaN).toBeFalsy ();
     expect (NaN).not.toBeTruthy ();
   });
+
+  it ('is the same as NaN', function () {
+    expect (NaN).toBe (NaN);
+  });
 });
 
 
@@ -134,14 +138,38 @@ describe ('parameterized test', function () {
 });
 
 
-describe ('”z—ñ‚Ì”äŠr', function () {
-  it ('“YŽš—v‘f‚ð”äŠr‚·‚é', function () {
+describe ('comparing arrays', function () {
+  it ('compares each elements', function () {
     expect ([ 'aaa', 'bbb' ]).toEqual ([ 'aaa', 'bbb' ]);
     expect ([ { a: 'aaa' }, { b: 'bbb' } ]).toEqual ([ { a: 'aaa' }, { b: 'bbb' } ]);
 
     expect ([ 'aaa', 'bbb' ]).not.toEqual ([ 'aaa', 'zzz' ]);
     expect ([ 'aaa', 'bbb' ]).not.toEqual ([ 'xxx', 'bbb' ]);
     expect ([ { a: 'aaa' }, { b: 'bbb' } ]).not.toEqual ([ { a: 'xxx' }, { b: 'yyy' } ]);
+  });
+});
+
+
+describe ('Yasmine#_stringify', function () {
+  var ya = new Yasmine ();
+  function s (v) {
+    return ya._stringify (v);
+  }
+
+  it ('converts undefined to "undefined"', function () {
+    var u = { u }.u;
+
+    expect (s (u)).toBe ('undefined');
+
+    // expect (s ([ u ])).toBe ('[undefined]');
+    // expect (s ({ x: u })).toBe ('{"x":undefined}');
+  });
+
+  it ('converts infinity to "infinity"', function () {
+    expect (s (Number.POSITIVE_INFINITY)).toBe ('infinity');
+    expect (s (Number.NEGATIVE_INFINITY)).toBe ('-infinity');
+
+    // expect (s ([ Number.POSITIVE_INFINITY ])).toBe ('[infinity]');
   });
 });
 
