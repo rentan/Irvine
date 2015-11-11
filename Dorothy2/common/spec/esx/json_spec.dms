@@ -367,10 +367,38 @@ describe ('JSON.stringify', function () {
   });
 
   it ('converts Date object to string', function () {
+    var r = null;
+    function s (d) {
+      r = '*threw*';
+
+      r = JSON.stringify (d, function (k, v) {
+        return (k == 'format') ? undef : v;
+      });
+    }
+
+    // common\esx\date.dms をロードする前に変換すると
+    // ECallError が発生する不具合の修正確認。
     var d = new Date ();
+    d.toJSON = null;
+    expect (function () { s (d); }).not.toThrow ();
+    expect (r).toBe ('{"toJSON":null}');
+
+    d.toJSON = undef;
+    expect (function () { s (d); }).not.toThrow ();
+    expect (r).toBe ('{}');
+
+    // 標準の変換
+    d = new Date ();
     d.setTime (1412123456789);
 
     expect (JSON.stringify (d)).toBe ('"2014-10-01T00:30:56.789Z"');
+
+    // toJSON() が上書きされている場合
+    d.toJSON = function () {
+      return 'foo"bar';
+    };
+
+    expect (JSON.stringify (d)).toBe ('"foo\"bar"');
   });
 
   it ('converts StringBuffer object to string', function () {

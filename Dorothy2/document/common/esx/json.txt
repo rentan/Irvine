@@ -38,6 +38,7 @@ stringify (value, replacer, space)
 
 JSON.stringify():
   new Boolean (true) が {"bool":true} になる不具合を修正。
+  Date の変換時に ECallError が発生することがある不具合を修正。
 
 2015-11-09  version 20151109.0  rentan at rentan.org
   JSON オブジェクトを直接定義するようにした。

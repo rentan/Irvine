@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 (function () {
 
-common_load ('utf8');
+common_load ('esx\date', 'utf8');
 
 
 //------------------------------- JSON.parse -------------------------------
@@ -574,6 +574,7 @@ JSONstringify.prototype._object = function (stack, indent, value) {
 // •¶Žš—ñ‰»
 JSONstringify.prototype._value = function (stack, indent, value) {
   // .toJSON() ‚ª‚ ‚ê‚Î‚»‚ê‚ðŽg‚¤
+  // Date
   if (typeof value.toJSON === 'function') {
     value = value.toJSON ();
   }
@@ -603,10 +604,6 @@ JSONstringify.prototype._value = function (stack, indent, value) {
     return value ? 'true' : 'false';
   }
 
-  if (n === 'Date') {
-    common_load ('esx\date');
-    return '"' + value.toJSON () + '"';
-  }
   if (n === 'StringBuffer' || n === 'StringList') {
     return this._string (value.text);
   }
