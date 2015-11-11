@@ -585,14 +585,6 @@ JSONstringify.prototype._value = function (stack, indent, value) {
     return 'undefined';
   }
 
-  // boolean, Boolean
-  if (value === true) {
-    return 'true';
-  }
-  if (value === false) {
-    return 'false';
-  }
-
   var t = typeof value;
   if (t == 'function') {
     return 'null';
@@ -604,6 +596,11 @@ JSONstringify.prototype._value = function (stack, indent, value) {
   }
   if (t === 'number' || n === 'Number') {
     return this._number (value);
+  }
+
+  // boolean, Boolean
+  if (t === 'boolean' || n === 'Boolean') {
+    return value ? 'true' : 'false';
   }
 
   if (n === 'Date') {

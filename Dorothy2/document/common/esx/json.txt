@@ -36,6 +36,9 @@ stringify (value, replacer, space)
 2015-11-12  version 20151112.0  rentan at rentan.org
   JSON オブジェクトの定義方法を元に戻した。
 
+JSON.stringify():
+  new Boolean (true) が {"bool":true} になる不具合を修正。
+
 2015-11-09  version 20151109.0  rentan at rentan.org
   JSON オブジェクトを直接定義するようにした。
 

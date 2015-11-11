@@ -405,6 +405,10 @@ describe ('JSON.stringify', function () {
     expect (JSON.stringify (Number.NEGATIVE_INFINITY)).toBe ('null');
   });
 
+  it ('converts Boolean object to true/false', function () {
+    expect (JSON.stringify (new Boolean (true))).toBe ('true');
+    expect (JSON.stringify (new Boolean (false))).toBe ('false');
+  });
 });
 
 
