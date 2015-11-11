@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=esx/JSON spec
-//version=20151108.0
+//version=20151112.0
 //hint=http://yasmine.dorothy.test/common/spec/esx/json_spec.dms
 //match=
 //author=rentan
@@ -31,6 +31,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 common_load ('esx\json');
 
 var undef = { u }.u;
+
+
+describe ('JSON', function () {
+  it ('is JSON instance', function () {
+    expect (typeof JSON).toBe ('object');
+
+    expect (JSON.toString ()).toBe ('[object JSON]');
+    expect (nameOf (JSON)).toBe ('JSON');
+  });
+
+  it ('can not create new instance', function () {
+    expect (function () { new JSON (); }).toThrow ();
+  });
+});
 
 
 describe ('JSON.parse', function () {

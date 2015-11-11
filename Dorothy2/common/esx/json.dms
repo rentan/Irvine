@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=esx/JSON
-//version=20151109.0
+//version=20151112.0
 //hint=
 //match=
 //author=rentan
@@ -646,19 +646,23 @@ JSONstringify.prototype.stringify = function (value) {
 
 
 // グローバルオブジェクトとして定義
-JSON = {
-  parse: (function (JSONparse) {
+JSON = (function () {
+  function JSON () { }
+
+  JSON.prototype.parse = (function (JSONparse) {
     return function (text, reviver) {
       return (new JSONparse (reviver)).parse (text);
     };
-  }) (JSONparse),
+  }) (JSONparse);
 
-  stringify: (function (JSONstringify) {
+  JSON.prototype.stringify = (function (JSONstringify) {
     return function (value, replacer, space) {
       return (new JSONstringify (replacer, space)).stringify (value);
     };
-  }) (JSONstringify)
-};
+  }) (JSONstringify);
+
+  return new JSON ();
+}) ();
 
 
 }) ()
