@@ -22,6 +22,9 @@ getterobject.dms がイマイチ使いづらかったので作りなおしまし
 変更履歴
 ========
 
+2015-11-13  version 20151113.0  rentan at rentan.org
+  モジュールに対応。
+
 2015-10-21  version 20151021.0  rentan at rentan.org
   _throw(): メソッド追加。
   _exit(): メッセージの表示に対応。

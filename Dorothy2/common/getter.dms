@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Getter()
-//version=20151021.0
+//version=20151113.0
 //hint=
 //match=
 //author=rentan
@@ -30,12 +30,34 @@ common_load ('rutil');
 
 
 // オブジェクトに getter に必要な機能を追加する
-void function Getter (obj) {
+void function Getter (target) {
   var from = Getter.prototype;
-  var to = obj.prototype;
+  var to = target.prototype;
 
   for (var key in from) {
     to [key] = from [key];
+  }
+
+  var g = {
+    _to: to,
+
+    include: function (module) {
+      var isFunc = typeof module === 'function';
+      if (isFunc) {
+        module (this);
+      }
+
+      var from = isFunc ? module.prototype : module;
+      var to = this._to;
+      for (key in from) {
+        to [key] = from [key];
+      }
+    }
+  };
+
+  // モジュールを組み込む
+  for (var i = 1; i < arguments.length; ++i) {
+    g.include (arguments [i]);
   }
 };
 
