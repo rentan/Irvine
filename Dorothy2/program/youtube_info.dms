@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/動画情報
-//version=20150912.0
+//version=20151118.0
 //hint=
 //match=^https?://www\.youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'http', 'namebuilder', 'utf8');
-  Util.min_version (20150702.0);
+  Util.min_version (20150930.0);
 
   // 設定ファイルの読み込み
   var default_ini = {
@@ -70,36 +70,46 @@ YouTubeSig.prototype._throw = function (s) {
 
 // 復号関数名を探す
 YouTubeSig.prototype._findDecryptFuncName = function (js) {
-  var t = js.slice (js.indexOf ('"signature"'));
+  var t = js.slice (js.indexOf ('.set("signature",'));
+  if (/\.set\("signature",([A-Za-z_$][A-Za-z_$\d]*)\(/.test (t)) {
+    return RegExp.$1;
+  }
+
+  t = js.slice (js.indexOf ('"signature"'));
   if (/"signature"\s*,\s*([A-Za-z_$][A-Za-z_$\d]*)\s*\(/.test (t)) {
     return RegExp.$1;
   }
 
   t = js.slice (js.indexOf ('.signature'));
-
-  if (!/\.signature\s*=\s*([A-Za-z_$][A-Za-z_$\d]*)/.test (t)) {
-    this._throw ('復号関数名が見つかりません。');
+  if (/\.signature\s*=\s*([A-Za-z_$][A-Za-z_$\d]*)/.test (t)) {
+    return RegExp.$1;
   }
-  return RegExp.$1;
+
+  this._throw ('復号関数名が見つかりません。');
 };
 
 
 // 復号関数の中身を返す
 YouTubeSig.prototype._findDecryptFuncBody = function (js) {
-  var decryptFuncName = this._findDecryptFuncName (js);
+  var funcName = this._findDecryptFuncName (js);
+  var escaped = funcName.replace (/\$/g, '\\$');
 
-  var fn = decryptFuncName.replace (/\$/g, '\\$');
-  var re = new RegExp ('function\s*' + fn + '\s*\([^)]+\)\s*\{([^}]*)\}');
+  function findBody (head, src) {
+    var n = js.slice (js.indexOf (head));
+    var t = (n > 0) ? js.slice (n) : js;
 
-  var n = js.indexOf ('function ' + decryptFuncName + '(');
-  if (n > 0) {
-    js = js.slice (n);
+    var re = new RegExp (src + '\s*\([^)]+\)\s*\{([^}]*)\}');
+    return re.test (t) ? re.$1 : null;
   }
 
-  if (!re.test (js)) {
-    this._throw ('復号関数が見つかりません: ' + decryptFuncName);
+  var body = findBody ('var ' + funcName + '=', 'var\s+' + escaped + '=function')
+          || findBody ('function ' + funcName + '(', 'function\s*' + escaped);
+
+  if (body) {
+    return body.trim ();
   }
-  return RegExp.$1.trim ();
+
+  this._throw ('復号関数が見つかりません: ' + funcName);
 };
 
 
