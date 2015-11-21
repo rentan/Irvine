@@ -114,6 +114,7 @@ download_by_irvine.htm をテキストエディタで書き換えることで、
   以下のページで実行した場合
     http://local.ptron/
     http://(www.)?inoreader.com/
+    http://([^./]+.)?inoreader.com/
 
 ・範囲選択したリンクが相対リンクだった場合に、やむを得ずページ内の DOM を
   一時的に書き換えます。
@@ -141,6 +142,9 @@ http://scripting.cocolog-nifty.com/blog/2007/11/post_4bb2.html
 
 変更履歴
 ========
+
+2015-11-21  version 20151121
+  us.inoreader.com などのサブドメインに対応。
 
 2015-03-18  version 20150318
   前回の変更が動作していなかった不具合を修正。
