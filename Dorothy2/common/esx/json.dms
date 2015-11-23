@@ -431,8 +431,7 @@ function JSONstringify (replacer, space) {
     this.replacer = replacer;
   }
   else if (nameOf (replacer) == 'Array') {
-    this.keyList = new Strings ();
-    this.keyList.assign (replacer);
+    this.keyList = new Strings ().assign (replacer);
   }
 
   var t = typeof space;
