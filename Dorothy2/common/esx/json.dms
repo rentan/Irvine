@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=esx/JSON
-//version=20151112.0
+//version=20151124.0
 //hint=
 //match=
 //author=rentan
@@ -73,8 +73,8 @@ JSONparse.prototype._parseArray = function (src) {
   for (var i = 0; src.index < src.length; ++i) {
 
     if (this.reviver) {
-      var value = this.reviver (i + '', this._parseValue (src));
-      array.push (isUndefined (value) ? null : value);
+      var v = this.reviver (i + '', this._parseValue (src));
+      array.push (isUndefined (v) ? null : v);
     }
     else {
       array.push (this._parseValue (src));
@@ -132,9 +132,9 @@ JSONparse.prototype._parseObject = function (src) {
     this._skipBlank (src);
 
     if (this.reviver) {
-      var value = this.reviver (name, this._parseValue (src));
-      if (!isUndefined (value)) {
-        obj [name] = value;
+      var v = this.reviver (name, this._parseValue (src));
+      if (!isUndefined (v)) {
+        obj [name] = v;
       }
     }
     else {
@@ -404,10 +404,10 @@ JSONparse.prototype.parse = function (text) {
   src.index = 0;
 
   this._skipBlank (src);
-  var value = this._parseValue (src);
+  var v = this._parseValue (src);
 
   if (this.reviver) {
-    value = this.reviver ('', value);
+    v = this.reviver ('', v);
   }
 
   this._skipBlank (src);
@@ -415,7 +415,7 @@ JSONparse.prototype.parse = function (text) {
     this._throw ('ルート値の後ろに不正な文字', src);
   }
 
-  return value;
+  return v;
 };
 
 
@@ -460,14 +460,14 @@ JSONstringify.prototype._throw = function (e) {
 
 
 // 文字列 string, String
-JSONstringify.prototype._string = function (value) {
-  if (value == '') {
+JSONstringify.prototype._string = function (v) {
+  if (v == '') {
     return '""';
   }
 
   var r = '';
 
-  var src = new StringBuffer (value);
+  var src = new StringBuffer (v);
   src.index = 0;
   var len = src.length;
 
@@ -511,27 +511,27 @@ JSONstringify.prototype._string = function (value) {
 
 
 //数値 number, Number
-JSONstringify.prototype._number = function (value) {
-  return isFinite (value) ? value.toString () : 'null';
+JSONstringify.prototype._number = function (v) {
+  return isFinite (v) ? v.toString () : 'null';
 };
 
 
 // 配列 Array
-JSONstringify.prototype._array = function (stack, indent, value) {
+JSONstringify.prototype._array = function (stack, indent, v) {
   var s = [ ];
-  stack.push (value);
+  stack.push (v);
   var indent2 = indent + this.indentDelta;
 
-  var len = value.length;
+  var len = v.length;
 
   for (var i = 0; i < len; ++i) {
-    var v = value [i];
+    var x = v [i];
 
     if (this.replacer) {
-      v = this.replacer (i + '', v);
+      x = this.replacer (i + '', x);
     }
 
-    s.push (isUndefined (v) ? 'null' : this._value (stack, indent2, v));
+    s.push (isUndefined (x) ? 'null' : this._value (stack, indent2, x));
   }
 
   stack.pop ();
@@ -540,30 +540,30 @@ JSONstringify.prototype._array = function (stack, indent, value) {
 
 
 // オブジェクト object
-JSONstringify.prototype._object = function (stack, indent, value) {
+JSONstringify.prototype._object = function (stack, indent, v) {
   var s = [ ];
-  stack.push (value);
+  stack.push (v);
   var indent2 = indent + this.indentDelta;
 
-  for (var key in value) {
+  for (var key in v) {
     if (this.keyList && this.keyList.indexOf (key) == -1) {
       continue;
     }
 
-    var v = value [key];
+    var x = v [key];
 
     if (this.replacer) {
-      v = this.replacer (key, v);
+      x = this.replacer (key, x);
     }
 
     // undefined なら出力しない
     // function なら出力しない(prototype オブジェクトは for in で関数が列挙される)
-    if (isUndefined (v) || typeof v === 'function') {
+    if (isUndefined (x) || typeof x === 'function') {
       continue;
     }
 
-    v = this._value (stack, indent2, v);
-    s.push (this._string (key) + this.colon + v);
+    x = this._value (stack, indent2, x);
+    s.push (this._string (key) + this.colon + x);
   }
 
   stack.pop ();
@@ -572,67 +572,67 @@ JSONstringify.prototype._object = function (stack, indent, value) {
 
 
 // 文字列化
-JSONstringify.prototype._value = function (stack, indent, value) {
+JSONstringify.prototype._value = function (stack, indent, v) {
   // .toJSON() があればそれを使う
   // Date
-  if (typeof value.toJSON === 'function') {
-    value = value.toJSON ();
+  if (typeof v.toJSON === 'function') {
+    v = v.toJSON ();
   }
 
-  if (value === null || isNaN (value)) {
+  if (v === null || isNaN (v)) {
     return 'null';
   }
-  if (isUndefined (value)) {
+  if (isUndefined (v)) {
     return 'undefined';
   }
 
-  var t = typeof value;
+  var t = typeof v;
   if (t == 'function') {
     return 'null';
   }
 
-  var n = nameOf (value);
+  var n = nameOf (v);
   if (t === 'string' || n === 'String') {
-    return this._string (value);
+    return this._string (v);
   }
   if (t === 'number' || n === 'Number') {
-    return this._number (value);
+    return this._number (v);
   }
 
   // boolean, Boolean
   if (t === 'boolean' || n === 'Boolean') {
-    return value ? 'true' : 'false';
+    return v ? 'true' : 'false';
   }
 
   if (n === 'StringBuffer' || n === 'StringList') {
-    return this._string (value.text);
+    return this._string (v.text);
   }
 
   // var a = { }; a.b = a; のような循環参照をエラーにする
   var len = stack.length;
   for (var i = 0; i < len; ++i) {
-    if (stack [i] === value) {
+    if (stack [i] === v) {
       this._throw ('オブジェクトの参照が循環している');
     }
   }
 
   if (n === 'Array') {
-    return this._array (stack, indent, value);
+    return this._array (stack, indent, v);
   }
   if (t === 'object') {
-    return this._object (stack, indent, value);
+    return this._object (stack, indent, v);
   }
 
   this._throw ('変換できない値');
 };
 
 
-JSONstringify.prototype.stringify = function (value) {
+JSONstringify.prototype.stringify = function (v) {
   if (this.replacer) {
-    value = this.replacer ('', value);
+    v = this.replacer ('', v);
   }
 
-  return this._value ([ ], this.indent, value);
+  return this._value ([ ], this.indent, v);
 };
 
 
@@ -650,8 +650,8 @@ JSON = (function () {
   }) (JSONparse);
 
   JSON.prototype.stringify = (function (JSONstringify) {
-    return function (value, replacer, space) {
-      return (new JSONstringify (replacer, space)).stringify (value);
+    return function (v, replacer, space) {
+      return (new JSONstringify (replacer, space)).stringify (v);
     };
   }) (JSONstringify);
 

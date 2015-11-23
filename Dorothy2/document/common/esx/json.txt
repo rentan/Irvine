@@ -33,6 +33,9 @@ stringify (value, replacer, space)
 変更履歴
 ========
 
+2015-11-24  version 20151124.0  rentan at rentan.org
+  変数名 value を v に変更。
+
 2015-11-12  version 20151112.0  rentan at rentan.org
   JSON オブジェクトの定義方法を元に戻した。
 
