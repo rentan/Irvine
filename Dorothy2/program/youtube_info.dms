@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/動画情報
-//version=20151118.0
+//version=20151123.0
 //hint=
 //match=^https?://www\.youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -337,6 +337,7 @@ YouTubeVideo.prototype._decodeVideoInfo = function (html) {
   html = RegExp.$1;
 
   var keys = [
+    'adaptive_fmts',
     'fmt_list',
     'url_encoded_fmt_stream_map',
     'dashmpd',
@@ -455,17 +456,18 @@ YouTubeVideo.prototype.getAdaptiveFmts = function (itag) {
 YouTubeVideo.prototype._decodeAdaptiveFmts = function (html) {
   var k = 'adaptive_fmts';
 
-  if (!/"adaptive_fmts"\s*:\s*"([^"]*)/.test (html)) {
+  var af = this.getVideoInfo (k);
+  if (af === null) {
     // RTMP 動画にはない
-    return this._ok (k + ' が見つかりません。');
+    return this._ok ('adaptive_fmts が見つかりません。');
   }
-  html = RegExp.$1.split (/,/);
 
+  var afs = af.split (/,/);
 
-  for (var i = 0; i < html.length; ++i) {
-    var a = this._decodeStreamMap2 (html [i].replace (/\\u0026/g, '&'), k);
+  for (var i = 0; i < afs.length; ++i) {
+    var a = this._decodeStreamMap2 (afs [i], k);
     if (!a) {
-      return this._unknown (k + ' が未対応の構造です。');
+      return this._unknown ('adaptive_fmts が未対応の構造です。');
     }
     this.adaptiveFmts.push (a);
   }
