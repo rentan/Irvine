@@ -252,6 +252,7 @@ Getter (YouTubeVideo);
 YouTubeVideo.prototype.id = null;
 YouTubeVideo.prototype.url = null;
 YouTubeVideo.prototype.rental = false;
+YouTubeVideo.prototype.live = false;
 YouTubeVideo.prototype.stereo3d = false;
 YouTubeVideo.prototype.isRTMP = false;
 YouTubeVideo.prototype.dashmpd = '';
@@ -341,6 +342,7 @@ YouTubeVideo.prototype._decodeVideoInfo = function (html) {
     'fmt_list',
     'url_encoded_fmt_stream_map',
     'dashmpd',
+    'live_playback',
     'ypc_video_rental_bar_text',
     'length_seconds',
     'url',
@@ -350,7 +352,7 @@ YouTubeVideo.prototype._decodeVideoInfo = function (html) {
 
   for (var i = 0; i < keys.length; ++i) {
     var k = keys [i];
-    var re = new RegExp ('"' + k + '"\s*:\s*"([^"]+)"');
+    var re = new RegExp ('"' + k + '"\s*:\s*"([^"]*)"');
 
     if (re.test (html)) {
       var v = re.$1.replace (/\\\//g, '/').replace (/\\u0026/g, '&');
@@ -426,6 +428,9 @@ YouTubeVideo.prototype._getVideoSpec = function (html) {
   if (this.getVideoInfo ('ypc_video_rental_bar_text')) {
     this.rental = true;
   }
+  if (this.getVideoInfo ('live_playback') === '1') {
+    this.live = true;
+  }
 
   return this._ok ();
 };
@@ -458,7 +463,7 @@ YouTubeVideo.prototype._decodeAdaptiveFmts = function (html) {
 
   var af = this.getVideoInfo (k);
   if (af === null) {
-    // RTMP 動画にはない
+    // RTMP、ライブ動画にはない
     return this._ok ('adaptive_fmts が見つかりません。');
   }
 
@@ -529,7 +534,7 @@ YouTubeVideo.prototype.fmtListToStrings = function () {
 YouTubeVideo.prototype._decodeFmtList = function () {
   var s = this.getVideoInfo ('fmt_list');
   if (!s) {
-    return this._unknown ('fmt_list が見つかりません。');
+    return this._unknown (isNull (s) ? 'fmt_list が見つかりません。' : 'fmt_list が空です。');
   }
 
   s = s.split (/,/);
@@ -985,6 +990,9 @@ YouTubeVideo.prototype.get = function (url) {
   if (this.rental) {
     // 有料動画はエラー扱い
     return this._ng ('有料動画です。');
+  }
+  if (this.live) {
+    return this._ng ('ライブ動画です。');
   }
 
   return this._decodeFmtList ()

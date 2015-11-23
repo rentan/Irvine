@@ -22,7 +22,9 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
 仕様・制限事項
 ==============
 
-・RTMP 形式の動画のファイルサイズには対応していません。
+・下記形式の動画のファイルサイズには対応していません。
+  RTMP
+  ライブ動画
 
 
 変更履歴
@@ -30,6 +32,7 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
 
 2015-11-23  version 20151123.0  rentan at rentan.org
   adaptive_fmts を _decodeVideoInfo() で抽出するようにした。
+  ライブ動画の検出に対応。
 
 2015-11-18  version 20151118.0  rentan at rentan.org
   signature スクリプトの変更に対応。
