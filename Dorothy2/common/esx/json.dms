@@ -56,8 +56,8 @@ JSONparse.prototype._skipBlank = function (src) {
 };
 
 
-// array をパースする
-JSONparse.prototype._parseArray = function (src) {
+// 配列 array
+JSONparse.prototype._array = function (src) {
   // 開始の [
   ++src.index;
   this._skipBlank (src);
@@ -73,11 +73,11 @@ JSONparse.prototype._parseArray = function (src) {
   for (var i = 0; src.index < src.length; ++i) {
 
     if (this.reviver) {
-      var v = this.reviver (i + '', this._parseValue (src));
+      var v = this.reviver (i + '', this._value (src));
       array.push (isUndefined (v) ? null : v);
     }
     else {
-      array.push (this._parseValue (src));
+      array.push (this._value (src));
     }
 
     this._skipBlank (src);
@@ -104,8 +104,8 @@ JSONparse.prototype._parseArray = function (src) {
 };
 
 
-// object をパースする
-JSONparse.prototype._parseObject = function (src) {
+// オブジェクト Object
+JSONparse.prototype._object = function (src) {
   // 開始の {
   ++src.index;
   this._skipBlank (src);
@@ -122,7 +122,7 @@ JSONparse.prototype._parseObject = function (src) {
     if (src.charCodeAt (src.index) != 0x22) {
       this._throw ('オブジェクトのメンバー名が文字列でない', src);
     }
-    var name = this._parseString (src);
+    var name = this._string (src);
 
     this._skipBlank (src);
     if (src.length <= src.index || src.charCodeAt (src.index) != 0x3a) {
@@ -132,13 +132,13 @@ JSONparse.prototype._parseObject = function (src) {
     this._skipBlank (src);
 
     if (this.reviver) {
-      var v = this.reviver (name, this._parseValue (src));
+      var v = this.reviver (name, this._value (src));
       if (!isUndefined (v)) {
         obj [name] = v;
       }
     }
     else {
-      obj [name] = this._parseValue (src);
+      obj [name] = this._value (src);
     }
 
     this._skipBlank (src);
@@ -170,8 +170,8 @@ JSONparse.prototype._unescapeMap = {
   'r': "\r", 'n': String.fromCharCode (10)
 };
 
-// string をパースする
-JSONparse.prototype._parseString = function (src) {
+// 文字列 string
+JSONparse.prototype._string = function (src) {
   var r = new StringBuffer ();
   var fromUnicode = Utf8.prototype.fromUnicode;
 
@@ -273,9 +273,9 @@ JSONparse.prototype._parseString = function (src) {
 };
 
 
-// number をパースする
+// 数値 number
 // number = [ minus ] int [ frac ] [ exp ]
-JSONparse.prototype._parseNumber = function (src) {
+JSONparse.prototype._number = function (src) {
 
   function seekToDigitsEnd (errMes) {
     var len = src.length;
@@ -349,25 +349,25 @@ JSONparse.prototype._parseNumber = function (src) {
 };
 
 
-// value をパースする
+// value
 // value = false / null / true / object / array / number / string
-JSONparse.prototype._parseValue = function (src) {
+JSONparse.prototype._value = function (src) {
   if (src.length <= src.index) {
     this._throw ('テキスト末尾に到達', src);
   }
 
   var cc = src.charCodeAt (src.index);
   if (cc == 0x5b) {
-    return this._parseArray (src);
+    return this._array (src);
   }
   if (cc == 0x7b) {
-    return this._parseObject (src);
+    return this._object (src);
   }
   if (cc == 0x22) {
-    return this._parseString (src);
+    return this._string (src);
   }
   if (cc == 0x2d || (0x30 <= cc && cc <= 0x39)) {
-    return this._parseNumber (src);
+    return this._number (src);
   }
 
 
@@ -404,7 +404,7 @@ JSONparse.prototype.parse = function (text) {
   src.index = 0;
 
   this._skipBlank (src);
-  var v = this._parseValue (src);
+  var v = this._value (src);
 
   if (this.reviver) {
     v = this.reviver ('', v);
