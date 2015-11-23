@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=esx/JSON spec
-//version=20151112.0
+//version=20151124.0
 //hint=http://yasmine.dorothy.test/common/spec/esx/json_spec.dms
 //match=
 //author=rentan
@@ -72,29 +72,26 @@ describe ('JSON.parse', function () {
     expect (JSON.parse (json)).toBe (value);
   });
 
-  // オブジェクト構造は面倒なので stringify した結果で比較する
   cases ([
-    // [ json, stringified_json ]
-    [ '[]', '[]' ],
-    [ '[true]', '[true]' ],
-    [ '{}', '{}' ],
-    [ '{"a":true}', '{"a":true}' ]
+    // [ json, value ]
+    [ '[]', [] ],
+    [ '[true]', [true] ],
+    [ '{}', {} ],
+    [ '{"a":true}', {"a":true} ]
   ])
-  .it ('parses JSON string (validate by JSON.stringify', function (json, value) {
-    var s = JSON.stringify (JSON.parse (json));
-    expect (s).toBe (value);
+  .it ('parses JSON string (array, object)', function (json, value) {
+    expect (JSON.parse (json)).toEqual (value);
   });
 
   cases ([
-    [ ' true ', 'true' ],
-    [ '[ ]', '[]' ],
-    [ '[ false ]', '[false]' ],
-    [ '{ }', '{}' ],
-    [ '{ "a" : true }', '{"a":true}' ]
+    [ ' true ', true ],
+    [ '[ ]', [ ] ],
+    [ '[ false ]', [ false ] ],
+    [ '{ }', { } ],
+    [ '{ "a" : true }', { a: true } ]
   ])
   .it ('ignores white space', function (json, value) {
-    var s = JSON.stringify (JSON.parse (json));
-    expect (s).toBe (value);
+    expect (JSON.parse (json)).toEqual (value);
   });
 
   it ('callbacks reviver', function () {
@@ -298,11 +295,9 @@ describe ('JSON.stringify', function () {
     expect (JSON.stringify (value, rep)).toBe ('{"":true,"b":2}');
   });
 
-  var lf = String.fromCharCode (10);
-
-  it ('indents specified space in number', function () {
-    var value = [ true, [ [ null ], 1 ], false ];
-    var json = [
+  cases ([
+    // [ value, indent, space, json ]
+    [ [ true, [ [ null ], 1 ], false ], 1, ' ', [
 '[',
 '_true,',
 '_[',
@@ -312,13 +307,13 @@ describe ('JSON.stringify', function () {
 '__1',
 '_],',
 '_false',
-']'
-].join (lf).replace (/_/g, ' ');
-    expect (JSON.stringify (value, null, 1)).toBe (json);
+']' ]
+    ],
 
-    var space10 = '          ';
-    var value2 = { a: true, b: { c: { d: null }, e: 1 }, f: false };
-    var json2 = [
+    [ { a: true, b: { c: { d: null }, e: 1 }, f: false },
+      20,
+      ' '.multiply (10),
+      [
 '{',
 '_"a": true,',
 '_"b": {',
@@ -328,14 +323,10 @@ describe ('JSON.stringify', function () {
 '__"e": 1',
 '_},',
 '_"f": false',
-'}'
-].join (lf).replace (/_/g, space10);
-    expect (JSON.stringify (value2, null, 20)).toBe (json2);
-  });
+'}' ]
+    ],
 
-  it ('indents specified space in string', function () {
-    var value = [ true, [ [ null ], 1 ], false ];
-    var json = [
+    [ [ true, [ [ null ], 1 ], false ], '-', '-', [
 '[',
 '_true,',
 '_[',
@@ -345,13 +336,13 @@ describe ('JSON.stringify', function () {
 '__1',
 '_],',
 '_false',
-']'
-].join (lf).replace (/_/g, '-');
-    expect (JSON.stringify (value, null, '-')).toBe (json);
+']' ]
+    ],
 
-    var hyphen10 = '----------';
-    var value2 = { a: true, b: { c: { d: null }, e: 1 }, f: false };
-    var json2 = [
+    [ { a: true, b: { c: { d: null }, e: 1 }, f: false },
+      '-'.multiply (10) + '****',
+      '-'.multiply (10),
+      [
 '{',
 '_"a": true,',
 '_"b": {',
@@ -361,9 +352,14 @@ describe ('JSON.stringify', function () {
 '__"e": 1',
 '_},',
 '_"f": false',
-'}'
-].join (lf).replace (/_/g, hyphen10);
-    expect (JSON.stringify (value2, null, hyphen10 + '****')).toBe (json2);
+'}' ]
+    ]
+
+  ])
+  .it ('indents if specified [ value, indent, space, json ]', function (v, indent,  sp, json) {
+    var s = json.join (String.fromCharCode (10)).replace (/_/g, sp);
+
+    expect (JSON.stringify (v, null, indent)).toBe (s);
   });
 
   it ('converts Date object to string', function () {
