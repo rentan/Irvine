@@ -543,14 +543,30 @@ JSONstringify.prototype._array = function (stack, indent, v) {
 };
 
 
+// RegExp のプロパティのうち無視するもの
+JSONstringify.prototype._regexpProperties = new RegExp ('^(' + [
+  '\$\d',
+  'global',
+  'ignoreCase',
+  'in(dex|put)',
+  'last(Index|Match|Paren)',
+  '(lef|righ)tContext',
+  'multiline',
+  'source'
+].join ('|') + ')$');
+
+
 // オブジェクト object
-JSONstringify.prototype._object = function (stack, indent, v) {
+JSONstringify.prototype._object = function (stack, indent, v, ignore) {
   var s = [ ];
   stack.push (v);
   var indent2 = indent + this.indentDelta;
 
   for (var key in v) {
     if (this.keyList && this.keyList.indexOf (key) == -1) {
+      continue;
+    }
+    if (ignore && ignore.test (key)) {
       continue;
     }
 
@@ -594,6 +610,9 @@ JSONstringify.prototype._value = function (stack, indent, v) {
   if (t == 'function') {
     return 'null';
   }
+  if (t === 'regexp') {
+    return '{}';
+  }
 
   var n = nameOf (v);
   if (t == 'string' || n == 'String') {
@@ -623,6 +642,10 @@ JSONstringify.prototype._value = function (stack, indent, v) {
   if (n == 'Array') {
     return this._array (stack, indent, v);
   }
+  if (n === 'RegExp') {
+    return this._object (stack, indent, v, this._regexpProperties);
+  }
+
   if (t == 'object') {
     return this._object (stack, indent, v);
   }

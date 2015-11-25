@@ -37,6 +37,9 @@ stringify (value, replacer, space)
 JSON.parse():
   空白を飛ばすタイミングを、リテラルを解釈した直後に変更。
 
+JSON.stringify():
+  regexp、RegExp に対応。
+
 2015-11-24  version 20151124.0  rentan at rentan.org
   ソースコード整理。
 

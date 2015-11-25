@@ -436,6 +436,28 @@ describe ('JSON.stringify', function () {
     expect (JSON.stringify (new Boolean (true))).toBe ('true');
     expect (JSON.stringify (new Boolean (false))).toBe ('false');
   });
+
+  cases ([
+    // [ value, json ]
+    [ /^abc$/i, '{}' ],
+    [ new RegExp ('^abc$', 'i'), '{}' ],
+
+    [ (function () {
+        var re = new RegExp ('^abc$', 'i');
+        re.a = 1;
+        re.b = 'foo';
+        return re;
+      }) (),
+      '{"a":1,"b":"foo"}'
+    ]
+  ])
+  .it ('treat regexp as an object [ value, json ]', function (value, json) {
+    var s = 'N/A';
+
+    expect (function () { s = JSON.stringify (value); }).not.toThrow ();
+    expect (s).toBe (json);
+  });
+
 });
 
 
