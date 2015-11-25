@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=esx/JSON
-//version=20151124.0
+//version=20151125.0
 //hint=
 //match=
 //author=rentan
@@ -45,7 +45,7 @@ JSONparse.prototype._throw = function (e, src) {
 
 // 空白を飛ばす
 JSONparse.prototype._skipBlank = function (src) {
-  for (var i = src.index; i < src.length; ++i) {
+  for (var i = src.index;; ++i) {
     var cc = src.charCodeAt (i);
     if (cc != 0x20 && cc != 0x0a && cc != 0x0d && cc != 0x09) {
       break;
@@ -64,13 +64,15 @@ JSONparse.prototype._array = function (src) {
 
   var array = [ ];
 
-  if (src.index < src.length && src.charCodeAt (src.index) == 0x5d) {
+  if (src.charCodeAt (src.index) == 0x5d) {
     // [ ] 空配列
     ++src.index;
+    this._skipBlank (src);
     return array;
   }
 
-  for (var i = 0; src.index < src.length; ++i) {
+  var len = src.length;
+  for (var i = 0; src.index < len; ++i) {
 
     if (this.reviver) {
       var v = this.reviver (i + '', this._value (src));
@@ -80,23 +82,23 @@ JSONparse.prototype._array = function (src) {
       array.push (this._value (src));
     }
 
-    this._skipBlank (src);
-    if (src.length <= src.index) {
-      break;
-    }
-
-    var cc = src.charCodeAt (src.index++);
+    var cc = src.charCodeAt (src.index);
     if (cc == 0x2c) {
       // , 次の値が必ずある
+      ++src.index;
       this._skipBlank (src);
       continue;
     }
     if (cc == 0x5d) {
       // ] 終了
+      ++src.index;
+      this._skipBlank (src);
       return array;
     }
 
-    --src.index;
+    if (len <= src.index) {
+      break;
+    }
     this._throw ('配列の値が連続している', src);
   }
 
@@ -112,21 +114,22 @@ JSONparse.prototype._object = function (src) {
 
   var obj = { };
 
-  if (src.index < src.length && src.charCodeAt (src.index) == 0x7d) {
+  if (src.charCodeAt (src.index) == 0x7d) {
     // { } 空オブジェクト
     ++src.index;
+    this._skipBlank (src);
     return obj;
   }
 
-  while (src.index < src.length) {
+  var len = src.length;
+  while (src.index < len) {
     if (src.charCodeAt (src.index) != 0x22) {
-      this._throw ('オブジェクトのメンバー名が文字列でない', src);
+      this._throw ('オブジェクトのプロパティ名が文字列でない', src);
     }
     var name = this._string (src);
 
-    this._skipBlank (src);
-    if (src.length <= src.index || src.charCodeAt (src.index) != 0x3a) {
-      this._throw ('オブジェクトのメンバー名の直後が:でない', src);
+    if (src.charCodeAt (src.index) != 0x3a) {
+      this._throw ('オブジェクトのプロパティ名の直後に:がない', src);
     }
     ++src.index;
     this._skipBlank (src);
@@ -141,23 +144,23 @@ JSONparse.prototype._object = function (src) {
       obj [name] = this._value (src);
     }
 
-    this._skipBlank (src);
-    if (src.length <= src.index) {
-      break;
-    }
-
-    var cc = src.charCodeAt (src.index++);
+    var cc = src.charCodeAt (src.index);
     if (cc == 0x2c) {
       // , 次の値が必ずある
+      ++src.index;
       this._skipBlank (src);
       continue;
     }
     if (cc == 0x7d) {
       // } 終了
+      ++src.index;
+      this._skipBlank (src);
       return obj;
     }
 
-    --src.index;
+    if (len <= src.index) {
+      break;
+    }
     this._throw ('オブジェクトの値が連続している', src);
   }
 
@@ -201,6 +204,7 @@ JSONparse.prototype._string = function (src) {
     // 終了の "
     if (cc == 0x22) {
       ++src.index;
+      this._skipBlank (src);
       return r.text;
     }
 
@@ -331,13 +335,13 @@ JSONparse.prototype._number = function (src) {
     if ((cc | 0x20) == 0x65) {
       // 指数部
       ++src.index;
-      if (src.index < src.length) {
-        cc = src.charCodeAt (src.index);
-        if (cc == 0x2b || cc == 0x2d) {
-          // 指数部の符号
-          ++src.index;
-        }
+
+      cc = src.charCodeAt (src.index);
+      if (cc == 0x2b || cc == 0x2d) {
+        // 指数部の符号
+        ++src.index;
       }
+
       seekToDigitsEnd ('指数部の数字がない');
     }
   }
@@ -345,7 +349,16 @@ JSONparse.prototype._number = function (src) {
   var start = src.index;
   seekToNumberEnd ();
 
-  return parseFloat (src.substring (start, src.index));
+  var n = parseFloat (src.substring (start, src.index));
+  this._skipBlank (src);
+  return n;
+};
+
+
+JSONparse.prototype._literals = {
+  'null': null,
+  'true': true,
+  'false': false
 };
 
 
@@ -381,17 +394,10 @@ JSONparse.prototype._value = function (src) {
   }
   var s = src.substring (src.index, i);
 
-  if (s == 'null') {
+  if (this._literals.hasKey (s)) {
     src.index = i;
-    return null;
-  }
-  if (s == 'true') {
-    src.index = i;
-    return true;
-  }
-  if (s == 'false') {
-    src.index = i;
-    return false;
+    this._skipBlank (src);
+    return this._literals [s];
   }
 
   this._throw ('不正なリテラル', src);
@@ -410,7 +416,6 @@ JSONparse.prototype.parse = function (text) {
     v = this.reviver ('', v);
   }
 
-  this._skipBlank (src);
   if (src.index < src.length) {
     this._throw ('ルート値の後ろに不正な文字', src);
   }
@@ -557,7 +562,7 @@ JSONstringify.prototype._object = function (stack, indent, v) {
 
     // undefined なら出力しない
     // function なら出力しない(prototype オブジェクトは for in で関数が列挙される)
-    if (isUndefined (x) || typeof x === 'function') {
+    if (isUndefined (x) || typeof x == 'function') {
       continue;
     }
 
@@ -574,7 +579,7 @@ JSONstringify.prototype._object = function (stack, indent, v) {
 JSONstringify.prototype._value = function (stack, indent, v) {
   // .toJSON() があればそれを使う
   // Date
-  if (typeof v.toJSON === 'function') {
+  if (typeof v.toJSON == 'function') {
     v = v.toJSON ();
   }
 
@@ -591,19 +596,19 @@ JSONstringify.prototype._value = function (stack, indent, v) {
   }
 
   var n = nameOf (v);
-  if (t === 'string' || n === 'String') {
+  if (t == 'string' || n == 'String') {
     return this._string (v);
   }
-  if (t === 'number' || n === 'Number') {
+  if (t == 'number' || n == 'Number') {
     return this._number (v);
   }
 
   // boolean, Boolean
-  if (t === 'boolean' || n === 'Boolean') {
+  if (t == 'boolean' || n == 'Boolean') {
     return v ? 'true' : 'false';
   }
 
-  if (n === 'StringBuffer' || n === 'StringList') {
+  if (n == 'StringBuffer' || n == 'StringList') {
     return this._string (v.text);
   }
 
@@ -615,10 +620,10 @@ JSONstringify.prototype._value = function (stack, indent, v) {
     }
   }
 
-  if (n === 'Array') {
+  if (n == 'Array') {
     return this._array (stack, indent, v);
   }
-  if (t === 'object') {
+  if (t == 'object') {
     return this._object (stack, indent, v);
   }
 

@@ -33,6 +33,10 @@ stringify (value, replacer, space)
 変更履歴
 ========
 
+2015-11-25  version 20151125.0  rentan at rentan.org
+JSON.parse():
+  空白を飛ばすタイミングを、リテラルを解釈した直後に変更。
+
 2015-11-24  version 20151124.0  rentan at rentan.org
   ソースコード整理。
 

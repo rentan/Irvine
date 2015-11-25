@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=esx/JSON spec
-//version=20151124.0
+//version=20151125.0
 //hint=http://yasmine.dorothy.test/common/spec/esx/json_spec.dms
 //match=
 //author=rentan
@@ -88,7 +88,9 @@ describe ('JSON.parse', function () {
     [ '[ ]', [ ] ],
     [ '[ false ]', [ false ] ],
     [ '{ }', { } ],
-    [ '{ "a" : true }', { a: true } ]
+    [ '{ "a" : true }', { a: true } ],
+    [ ' [ true, null, 123, "foo", [], {}, false]', [ true, null, 123, "foo", [ ], { }, false ] ],
+    [ '[true ,null ,123 ,"foo" ,[] ,{} ,false ] ', [ true, null, 123, "foo", [ ], { }, false ] ]
   ])
   .it ('ignores white space', function (json, value) {
     expect (JSON.parse (json)).toEqual (value);
@@ -413,14 +415,15 @@ describe ('JSON.stringify', function () {
   });
 
   it ('ignores function in prototype object', function () {
-    function f () { }
-    var value = f.prototype;
-    value.n = 1;
-    value.s = 'abc';
-    value.m = function () { return true; };
+    function json_spec_prototype_test () { }
+
+    var p = json_spec_prototype_test.prototype;
+    p.n = 1;
+    p.s = 'abc';
+    p.m = function () { return true; };
 
     var json = '{"s":"abc","n":1}';
-    expect (JSON.stringify (value)).toBe (json);
+    expect (JSON.stringify (p)).toBe (json);
   });
 
   it ('converts NaN and Infinity to null', function () {
