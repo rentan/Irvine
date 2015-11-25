@@ -20,7 +20,7 @@ Instagram 用のスクリプトです。
 対応 URL
 ========
 
-http://instagr(.am|am.com)/p/[^/]+
+https?://(www.)?instagram.com/p/[^/]+
   画像/動画のページ
 
 
@@ -30,6 +30,10 @@ http://instagr(.am|am.com)/p/[^/]+
 
 変更履歴
 ========
+
+2015-11-25  version 20151125.0  rentan at rentan.org
+  URL の変更に対応。
+    thanks to http://peace.2ch.net/test/read.cgi/win/1437882775/523
 
 2015-05-05  version 20150505.0  rentan at rentan.org
   common\getter.dms を使うようにして作りなおした。

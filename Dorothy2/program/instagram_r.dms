@@ -1,8 +1,8 @@
 //Dorothy2
 //caption=instagram_r
-//version=20150505.0
+//version=20151125.0
 //hint=Instagram 別バージョン
-//match=^https://instagram\.com/p/.
+//match=^https://(www\.)?instagram\.com/p/.
 //author=rentan
 //path=program
 //priority=500
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20150316.0);
+  Util.min_version (20150930.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -62,8 +62,7 @@ Instagram.prototype.get = function (url) {
   this.id = null;
   this.title = null;
 
-  var u = url.replace (/^http:/, 'https:')
-             .replace (/^https:\/\/instagr\.am\//, 'https://instagram.com/')
+  var u = url.replace (/^https?:\/\/instagram\.com\//, 'https://www.instagram.com/')
              .replace (/[?#].*$/, '');
 
   var path = (new URL (u)).path.slice (1);
@@ -73,7 +72,7 @@ Instagram.prototype.get = function (url) {
   this.id = RegExp.$1;
 
   var http = this.http = new Http ();
-  if (!http.get (url)) {
+  if (!http.get (u)) {
     return this._httpError ();
   }
 
@@ -120,12 +119,6 @@ Instagram.prototype.buildFilename = function (args) {
   nb.title = new Utf8 (this.title);
 
   return this._buildFilename (args);
-};
-
-
-// public: ダウンロード情報を登録する
-Instagram.prototype.download = function (args) {
-  return this._downloadFiles (args);
 };
 
 
