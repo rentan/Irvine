@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_api spec
-//version=20150518.0
+//version=20151127.0
 //hint=http://yasmine.dorothy.test/program/spec/pixiv_api_spec.dms
 //match=
 //author=rentan
@@ -33,7 +33,6 @@ eval (program_load ('pixiv_api')) ('DEFINE_ONLY');
 
 describe ('pixiv', function () {
   var getter = null;
-  var ref = 'http://www.pixiv.net/';
 
   beforeEach (function () {
     getter = new Pixiv ();
@@ -42,105 +41,55 @@ describe ('pixiv', function () {
     getter = null;
   });
 
-  it ('pixiv_8389501', function () {
-    var url = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=8389501';
-    var img0 = 'http://i3.pixiv.net/img27/img/yotayotayota/8389501.jpg';
+  cases ([
+    // [ type, url, [ urls ] ]
 
+    [ 'Illust',
+      'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=47429766',
+      [ 'http://i3.pixiv.net/img-original/img/2014/12/06/20/53/20/47429766_p0.png' ]
+    ],
+
+    [ 'Manga',
+      'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=16664033',
+      [ 'http://i2.pixiv.net/img-original/img/2011/02/14/06/12/26/16664033_p0.png',
+        'http://i2.pixiv.net/img-original/img/2011/02/14/06/12/26/16664033_p1.png' ]
+    ],
+
+    [ 'Manga',
+      'http://www.pixiv.net/member_illust.php?mode=manga&illust_id=15838964' ,
+      [ 'http://i1.pixiv.net/img-original/img/2011/01/10/18/52/45/15838964_p0.jpg',
+        'http://i1.pixiv.net/img-original/img/2011/01/10/18/52/45/15838964_p1.jpg' ]
+    ],
+
+    [ 'Manga',
+      'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=46562355',
+      [ 'http://i4.pixiv.net/img-original/img/2014/10/15/11/56/46/46562355_p0.png',
+        'http://i4.pixiv.net/img-original/img/2014/10/15/11/56/46/46562355_p1.png',
+        'http://i4.pixiv.net/img-original/img/2014/10/15/11/56/46/46562355_p2.png' ]
+    ],
+
+    [ 'Ugoira',
+      'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=47427327',
+      [ 'http://i4.pixiv.net/img-zip-ugoira/img/2014/12/06/17/52/22/47427327_ugoira1920x1080.zip' ]
+    ]
+
+  ])
+  .it ('get [ type, url, [ urls ] ]', function (type, url, urls) {
     expect (getter.get (url)).toBe (true);
-    expect (getter.type).toBe ('Illust');
 
     var items = getter.items;
-    expect (items.length).toBe (1);
+    expect (items.length).toBe (urls.length);
 
-    expect (items [0]).toEqual (jasmine.objectContaining ({ Url: img0, Referer: ref }));
-  });
+    if (getter.status != getter.OK || items.length != urls.length) {
+      return;
+    }
 
-  it ('pixiv_47429766', function () {
-    var url = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=47429766';
-    var img0 = 'http://i3.pixiv.net/img-original/img/2014/12/06/20/53/20/47429766_p0.png';
+    expect (getter.type).toBe (type);
 
-    expect (getter.get (url)).toBe (true);
-    expect (getter.type).toBe ('Illust');
-
-    var items = getter.items;
-    expect (items.length).toBe (1);
-
-    expect (items [0]).toEqual (jasmine.objectContaining ({ Url: img0, Referer: ref }));
-  });
-
-  it ('pixiv_16664033', function () {
-    var url = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=16664033';
-    var img0 = 'http://i2.pixiv.net/img14/img/saasan/16664033_big_p0.png';
-    var img1 = 'http://i2.pixiv.net/img14/img/saasan/16664033_big_p1.png';
-
-    expect (getter.get (url)).toBe (true);
-    expect (getter.type).toBe ('Manga');
-
-    var items = getter.items;
-    expect (items.length).toBe (2);
-
-    expect (items [0]).toEqual (jasmine.objectContaining ({ Url: img0, Referer: ref }));
-    expect (items [1]).toEqual (jasmine.objectContaining ({ Url: img1, Referer: ref }));
-  });
-
-  it ('pixiv_15838964', function () {
-    var url = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=15838964';
-    var img0 = 'http://i1.pixiv.net/img01/img/radicaldash0218/15838964_big_p0.jpg';
-    var img1 = 'http://i1.pixiv.net/img01/img/radicaldash0218/15838964_big_p1.jpg';
-
-    expect (getter.get (url)).toBe (true);
-    expect (getter.type).toBe ('Manga');
-
-    var items = getter.items;
-    expect (items.length).toBe (2);
-
-    expect (items [0]).toEqual (jasmine.objectContaining ({ Url: img0, Referer: ref }));
-    expect (items [1]).toEqual (jasmine.objectContaining ({ Url: img1, Referer: ref }));
-  });
-
-  it ('pixiv_46562355', function () {
-    var url = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=46562355';
-    var img0 = 'http://i4.pixiv.net/img-original/img/2014/10/15/11/56/46/46562355_p0.png';
-    var img1 = 'http://i4.pixiv.net/img-original/img/2014/10/15/11/56/46/46562355_p1.png';
-    var img2 = 'http://i4.pixiv.net/img-original/img/2014/10/15/11/56/46/46562355_p2.png';
-
-    expect (getter.get (url)).toBe (true);
-    expect (getter.type).toBe ('Manga');
-
-    var items = getter.items;
-    expect (items.length).toBe (3);
-
-    expect (items [0]).toEqual (jasmine.objectContaining ({ Url: img0, Referer: ref }));
-    expect (items [1]).toEqual (jasmine.objectContaining ({ Url: img1, Referer: ref }));
-    expect (items [2]).toEqual (jasmine.objectContaining ({ Url: img2, Referer: ref }));
-  });
-
-  it ('pixiv_47427327', function () {
-    var url = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=47427327';
-    var zip0 = 'http://i4.pixiv.net/img-zip-ugoira/img/2014/12/06/17/52/22/47427327_ugoira1920x1080.zip';
-
-    expect (getter.get (url)).toBe (true);
-    expect (getter.type).toBe ('Ugoira');
-
-    var items = getter.items;
-    expect (items.length).toBe (1);
-
-    expect (items [0]).toEqual (jasmine.objectContaining ({ Url: zip0, Referer: ref }));
-  });
-
-  it ('pixiv_48532102', function () {
-    var url = 'http://www.pixiv.net/member_illust.php?mode=manga&illust_id=48532102';
-    var img0 = 'http://i3.pixiv.net/img-original/img/2015/02/03/13/54/58/48532102_p0.jpg';
-    var img1 = 'http://i3.pixiv.net/img-original/img/2015/02/03/13/54/58/48532102_p1.jpg';
-
-    expect (getter.get (url)).toBe (true);
-    expect (getter.type).toBe ('Manga');
-
-    var items = getter.items;
-    expect (items.length).toBe (2);
-
-    expect (items [0]).toEqual (jasmine.objectContaining ({ Url: img0, Referer: ref }));
-    expect (items [1]).toEqual (jasmine.objectContaining ({ Url: img1, Referer: ref }));
+    for (var i = 0; i < urls.length; ++i) {
+      expect (items [i].Url).toBe (urls [i]);
+      expect (items [i].Referer).toBe ('http://www.pixiv.net/');
+    }
   });
 
 });

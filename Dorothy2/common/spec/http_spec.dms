@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Http spec
-//version=20140605.0
+//version=20151127.0
 //hint=http://yasmine.dorothy.test/common/spec/http_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -395,8 +395,8 @@ describe ('HTTP POST', function () {
   it ('.post()', function () {
     var h = new Http ();
 
-    var url = 'http://standards.ieee.org/cgi-bin/ouisearch';
-    var postdata = 'x=0007E9';
+    var url = 'http://httpbin.org/post';
+    var postdata = 'message=thankyou';
 
     expect (h.post (url, postdata)).toBe (true);
   });
@@ -422,14 +422,14 @@ describe ('.exec()', function () {
   it ('get if method omitted', function () {
     h.removeRequestHeader ('User-Agent');
 
-    expect (h.exec ({ url: 'http://www.google.co.jp/' })).toBe (true);
+    expect (h.exec ({ url: 'http://httpbin.org/get' })).toBe (true);
   });
 
   it ('post', function () {
     var submit = {
       method: 'POST',
-      url: 'http://standards.ieee.org/cgi-bin/ouisearch',
-      postdata: 'x=0007E9'
+      url: 'http://httpbin.org/post',
+      postdata: 'message=thankyou'
     };
 
     expect (h.exec (submit)).toBe (true);

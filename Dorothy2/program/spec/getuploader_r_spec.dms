@@ -63,10 +63,10 @@ describe ('download test', function () {
   cases ([
 
     [ 'normal',
-      'irvn',
-      'http://u1.getuploader.com/$$$/download/6/Dorothy2A.rar',
-      'http://download2.getuploader.com/g/###/1%7C$$$/6/Dorothy2A.rar',
-      'Dorothy2A.rar',
+      'sample',
+      'http://u1.getuploader.com/$$$/download/4243/sample_4243.jpg',
+      'http://download4.getuploader.com/g/###/4243/sample_4243.jpg',
+      'tukutuku.jpg',
       null
     ],
 
@@ -87,13 +87,13 @@ describe ('download test', function () {
     ],
 
     [ 'ViewPassword + DownloadPassword',
-      Base64.decode ('a29ob3JpeWFtYQ=='),
-      'http://ux.getuploader.com/$$$/download/40',
-      'http://download5.getuploader.com/g/###/$$$/40/download',
-      Base64.decode ('go2CjYKEj9KKlyiKyIjVlMUpgsaDZYNOg1iDYIODLnppcA=='),
+      Base64.decode ('dG9kYWlfMTFfc2hpa2VucHJpbnQ='),
+      'http://ux.getuploader.com/$$$/download/187/',
+      'http://dl6.getuploader.com/g/###/$$$/187/download',
+      Base64.decode ('l/COaodUkU+Db4OJg1aRzo30LmRvY3g='),
       [
-        { s: 'General', k: 'ViewPassword', v: Base64.decode ('k7mWvo6bjfeW3Q==').toUTF8 () },
-        { s: 'DownloadPassword', k: '40', v: Base64.decode ('k22O4Q==').toUTF8 () }
+        { s: 'General', k: 'ViewPassword', v: Base64.decode ('bWFydW1hcnU=') },
+        { s: 'DownloadPassword', k: '40', v: Base64.decode ('bWFydW1hcnU=') }
       ]
     ]
 

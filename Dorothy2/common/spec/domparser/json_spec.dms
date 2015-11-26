@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DOMParser/JSON spec
-//version=20140928.0
+//version=20151127.0
 //hint=http://yasmine.dorothy.test/common/spec/domparser/json_spec.dms
 //match=
 //author=rentan
@@ -183,22 +183,23 @@ describe ('assert bug fix', function () {
 describe ('string', function () {
   cases ([
     // [ escaped, unescaped ]
-    [ '"\/bfnrt'.replace (/(.)/g, '\\$1'),
-      '"\/' + String.fromCharCode (0x08, 0x0c, 0x0a, 0x0d, 0x09) ],
+    [ '\"\\\/\b\f\n\r\t', '\x22\x5c\x2f\x08\x0c\x0a\x0d\x09' ],
 
     [ '\u002F \u002f \/ /', '/ / / /' ],
 
-    [ '\u0123', String.fromCharCode (0xc4, 0xa3) ],
-    [ '\uabcd', String.fromCharCode (0xea, 0xaf, 0x8d) ],
+    [ '\u0123', '\xc4\xa3' ],
+    [ '\uabcd', '\xea\xaf\x8d' ],
 
-    [ '\uD842\uDFB7', String.fromCharCode (0xf0, 0xa0, 0xae, 0xb7) ]
+    [ '\uD842\uDFB7', '\xf0\xa0\xae\xb7' ]
   ])
   .it ('decodes escape sequence [ escaped, unescaped ]', function (escaped, unescaped) {
     var domjson = new DOMJson ('"' + escaped + '"');
     var document = domjson.document;
 
-    var s = document.firstChild.nodeValue;
-    expect (s).toBe (unescaped);
+    var b = unescaped.replace (/\\x(..)/g, function (s, p1) {
+      return String.fromCharCode (parseInt ('0x' + p1));
+    });
+    expect (document.firstChild.nodeValue).toBe (b);
 
     document.destroy ();
     document = null;
