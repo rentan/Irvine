@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine spec
-//version=20151108.0
+//version=20151127.0
 //hint=http://yasmine.dorothy.test/common/spec/yasmine_spec.dms
 //match=
 //author=rentan
@@ -152,24 +152,20 @@ describe ('comparing arrays', function () {
 
 describe ('Yasmine#_stringify', function () {
   var ya = new Yasmine ();
-  function s (v) {
-    return ya._stringify (v);
-  }
+  var u = { u }.u;
 
-  it ('converts undefined to "undefined"', function () {
-    var u = { u }.u;
+  cases ([
+    // [ value, string ]
+    [ u, 'undefined' ],
+    [ [ u ], '[undefined]' ],
+    [ { x: u }, '{x:undefined}' ],
 
-    expect (s (u)).toBe ('undefined');
-
-    // expect (s ([ u ])).toBe ('[undefined]');
-    // expect (s ({ x: u })).toBe ('{"x":undefined}');
-  });
-
-  it ('converts infinity to "infinity"', function () {
-    expect (s (Number.POSITIVE_INFINITY)).toBe ('infinity');
-    expect (s (Number.NEGATIVE_INFINITY)).toBe ('-infinity');
-
-    // expect (s ([ Number.POSITIVE_INFINITY ])).toBe ('[infinity]');
+    [ Number.POSITIVE_INFINITY, 'Infinity' ],
+    [ Number.NEGATIVE_INFINITY, '-Infinity' ],
+    [ [ Number.POSITIVE_INFINITY ], '[Infinity]' ]
+  ])
+  .it ('returns stringified value [ value, string ]', function (value, s) {
+    expect (ya._stringify (value)).toBe (s);
   });
 });
 

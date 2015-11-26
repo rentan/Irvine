@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20151108.1
+//version=20151127.0
 //hint=
 //match=^http://yasmine\.dorothy\.test/
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function () {
 
   common_load ('rutil');
-  Util.min_version (20150930.0);
+  Util.min_version (20151127.0);
 
   var defaultIni = {
     Config: {

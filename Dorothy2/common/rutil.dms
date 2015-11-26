@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20150930.0
+//version=20151127.0
 //hint=utility
 //match=
 //author=rentan
@@ -256,26 +256,27 @@ common_xload = (function (common_xload) {
 
     'esx\array': 20140714.0,
     'esx\date': 20141005.0,
-    'esx\json': 20141018.0,
+    'esx\json': 20151125.0,
 
-    'getter\chklistbox': 20150319.0,
-    'getter\redir': 20150701.0,
+    'getter\chklistbox': 20150721.0,
+    'getter\redir': 20151022.0,
 
     actibook: 20140331.0,
     additem: 20150103.0,
     browsercookie: 20150523.0,
+    dmon: 20151127.0,
     exec: 20140331.0,
-    getter: 20150930.0,
+    getter: 20151113.0,
     htmlform: 20150119.0,
     http: 20150425.0,
     jinput: 20140908.0,
     namebuilder: 20150531.0,
     rutil_dorothy2r: 20141018.0,
-    sleeptimer: 20150701.0,
+    sleeptimer: 20151022.0,
     threadstorage: 20140913.0,
     utf8: 20140811.0,
     utf8_charref: 20140811.0,
-    yasmine: 20140714.0
+    yasmine: 20151127.0
   };
 
   return function (name) {

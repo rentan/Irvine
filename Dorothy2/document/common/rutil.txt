@@ -69,6 +69,9 @@ Dorothy.setFilename (filename)
 変更履歴
 ========
 
+2015-11-27  version 20151127.0  rentan at rentan.org
+  各種 common の最低バージョンを更新。
+
 2015-09-30  version 20150930.0  rentan at rentan.org
   issues #2 - Util.isHttpsNoCookies() を2回呼び出すと ENameError になる不具合を修正。
 

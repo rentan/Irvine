@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20151108.1
+//version=20151127.0
 //hint=
 //match=
 //author=rentan
@@ -27,6 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 (function () {
+
+common_load ('dmon');
 
 
 //-------------------------------- Yasmine ---------------------------------
@@ -156,41 +158,8 @@ Yasmine.prototype._loadScript = function () {
 
 // オブジェクトを文字列化する
 // todo: deep conversion
-Yasmine.prototype._stringify = function (v, inner) {
-  if (isNull (v)) {
-    return 'null';
-  }
-  if (isUndefined (v)) {
-    return 'undefined';
-  }
-  if (isNaN (v)) {
-    return 'NaN';
-  }
-
-  var type = typeof v;
-  if (type === 'function') {
-    return 'function';
-  }
-
-  var name = nameOf (v);
-  if (name === 'Utf8') {
-    return "'" + v.toSJIS () + "'";
-  }
-  if (name === 'String' || type === 'string') {
-    return "'" + v.toString () + "'";
-  }
-  if (name === 'Number' || type === 'number'){
-    return isFinite (v) ? v.toString () : (v > 0) ? 'infinity' : '-infinity';
-  }
-
-  if (name === 'Object' || name === 'Array') {
-    common_load ('esx\json');
-    return JSON.stringify (v, function (k, v) {
-      return typeof v == 'function' ? 'function(){}' : isNaN (v) ? 'NaN' : isUndefined (v) ? 'undefined' : v;
-    });
-  }
-
-  return typeof v.toString == 'function' ? v.toString () : (new String (v)).toString ();
+Yasmine.prototype._stringify = function (v) {
+  return DMON.stringify (v);
 };
 
 

@@ -50,6 +50,11 @@ http://yasmine.dorothy.test/arguments
 変更履歴
 ========
 
+2015-11-27  rentan at rentan.org
+Dorothy2\common\yasmine.dms version 20151127.0
+Dorothy2\program\yasmine.dms version 20151127.0
+  文字列化を JSON から DMON に変更。
+
 2015-11-08  rentan at rentan.org
 Dorothy2\common\yasmine.dms version 20151108.1
 Dorothy2\program\yasmine.dms version 20151108.1
