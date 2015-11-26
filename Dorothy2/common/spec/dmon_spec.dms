@@ -1,0 +1,472 @@
+//Dorothy2
+//caption=DMON spec
+//version=20151127.0
+//hint=http://yasmine.dorothy.test/common/spec/dmon_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//Åıxyzzyï∂éöâªÇØâÒî
+
+
+/*
+Copyright (C) 2015 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('dmon');
+
+
+describe ('DMON', function () {
+  it ('is DMON instance', function () {
+    expect (typeof DMON).toBe ('object');
+
+    expect (DMON.toString ()).toBe ('[object DMON]');
+    expect (nameOf (DMON)).toBe ('DMON');
+  });
+
+  it ('can not create new instance', function () {
+    expect (function () { new DMON (); }).toThrow ();
+  });
+
+  it ('.undefined is undefined', function () {
+    expect (DMON.undefined).toBeUndefined ();
+  });
+});
+
+
+describe ('DMON.parse', function () {
+  cases ([
+    // [ dmon, value ]
+    [ 'true', true ],
+    [ 'false', false ],
+    [ 'null', null ],
+    [ 'undefined', DMON.undefined ],
+
+    [ '0', 0 ],
+    [ '-0', 0 ],
+    [ '123', 123 ],
+    [ '-123', -123 ],
+    [ '0.5', 0.5 ],
+    [ '-0.5', -0.5 ],
+    [ '1.5e2', 150 ],
+    [ '-1.5e2', -150 ],
+    [ '100e-2', 1 ],
+    [ '-100e-2', -1 ],
+
+    [ 'NaN', NaN ],
+    [ 'Infinity', Number.POSITIVE_INFINITY ],
+    [ '-Infinity', Number.NEGATIVE_INFINITY ]
+  ])
+  .it ('parses DMON string [ dmon, value ]', function (dmon, value) {
+    expect (DMON.parse (dmon)).toBe (value);
+  });
+
+  cases ([
+    // [ dmon, value ]
+    [ '[]', [ ] ],
+    [ '[true]', [ true ] ],
+    [ '{}', { } ],
+    [ '{"a":true}', { a: true } ]
+  ])
+  .it ('parses DMON string (array, object)', function (dmon, value) {
+    expect (DMON.parse (dmon)).toEqual (value);
+  });
+
+  cases ([
+    // [ dmon, value ]
+    [ '{a:true}', { a: true } ],
+    [ '{$_az09:true}', { $_az09: true } ],
+    [ '{"a":1,b:2,"c":3}', { a: 1, b: 2, c: 3 } ]
+  ])
+  .it ('accepts unquoted property name in object initializer [ dmon, value ]', function (dmon, value) {
+    expect (DMON.parse (dmon)).toEqual (value);
+  });
+
+  cases ([
+    // [ dmon, value ]
+    [ '""', '' ],
+    [ '"abc"', 'abc' ],
+
+    [ '"\\"', '\' ],
+    [ '"\""', '"' ],
+
+    [ '"a\x00b"', String.fromCharCode (0x61, 0x00, 0x62) ],
+    [ '"\x01\x10\x1f"', String.fromCharCode (0x01, 0x10, 0x1f) ],
+    [ '"\x0A"', String.fromCharCode (0x0a) ],
+    [ '"\x0D"', String.fromCharCode (0x0d) ],
+    [ '"a\x0D\x0Ab"', String.fromCharCode (0x61, 0x0d, 0x0a, 0x62) ],
+
+    [ '"\t"', String.fromCharCode (0x09) ],
+    [ '"\n"', String.fromCharCode (0x0a) ],
+    [ '"\r"', String.fromCharCode (0x0d) ],
+    [ '"a\r\nb"', String.fromCharCode (0x61, 0x0d, 0x0a, 0x62) ]
+  ])
+  .it ('parses JavaScript like string [ dmon, value ]', function (dmon, value) {
+    var v = DMON.parse (dmon);
+    expect (typeof v).toBe ('string');
+    expect (v).toBe (value);
+  });
+
+  cases ([
+    [ 'function(){}' ],
+    [ 'function(){/*...*/}' ]
+  ])
+  .it ('parses DMON string (function)', function (dmon) {
+    expect (DMON.parse (dmon)).toEqual (jasmine.any (Function));
+  });
+
+  cases ([
+    // [ value, dmon ]
+    [ 'String("foo")', new String ('foo') ],
+
+    [ 'Boolean(true)', new Boolean (true) ],
+    [ 'Boolean(false)', new Boolean (false) ],
+
+    [ 'Number(0)', new Number (0) ],
+    [ 'Number(1)', new Number (1) ],
+    [ 'Number(-1)', new Number (-1) ],
+
+    [ 'Date("2014-10-01T00:30:56.789Z")', new Date (1412123456789) ],
+
+    [ 'StringBuffer("\"foo bar\"")', new StringBuffer ('"foo bar"') ],
+
+    [ 'Strings(["foo","bar"])', new Strings ().assign ([ 'foo', 'bar' ]) ]
+  ])
+  .it ('converts Xxx() to builtin object[ dmon, value ]', function (dmon, value) {
+    expect (DMON.parse (dmon)).toEqual (value);
+  });
+
+  it ('callbacks unserializer', function () {
+    function Foo (n) {
+      this.x = n;
+    }
+    var unser = {
+      toFoo: function (v) {
+        return new Foo (v);
+      }
+    };
+
+    var dmon = 'Foo(123)';
+
+    var v = DMON.parse (dmon, unser);
+    expect (nameOf (v)).toBe ('Foo');
+    expect (v.x).toBe (123);
+  });
+
+  cases ([
+    [ ' true ', true ],
+    [ '[ ]', [ ] ],
+    [ '[ false ]', [ false ] ],
+    [ '{ }', { } ],
+    [ '{ "a" : true }', { a: true } ],
+    [ ' [ true, null, 123, "foo", [], {}, false]', [ true, null, 123, "foo", [ ], { }, false ] ],
+    [ '[true ,null ,123 ,"foo" ,[] ,{} ,false ] ', [ true, null, 123, "foo", [ ], { }, false ] ]
+  ])
+  .it ('ignores white space', function (dmon, value) {
+    expect (DMON.parse (dmon)).toEqual (value);
+  });
+
+  cases ([
+    [ '/**/true', true ],
+    [ 'true/**/', true ],
+    [ '/**/true/**/', true ],
+    [ '/*abc*/1/*def*/', 1 ]
+  ])
+  .it ('ignores comment', function (dmon, value) {
+    expect (DMON.parse (dmon)).toEqual (value);
+  });
+
+});
+
+
+describe ('DMON.stringify', function () {
+  cases ([
+    // [ value, dmon ]
+    [ true, 'true' ],
+    [ false, 'false' ],
+    [ null, 'null' ],
+    [ DMON.undefined, 'undefined' ],
+
+    [ 0, '0' ],
+    [ 123, '123' ],
+    [ -123, '-123' ],
+    [ 0.5, '0.5' ],
+    [ -0.5, '-0.5' ],
+
+    [ NaN, 'NaN' ],
+    [ Number.POSITIVE_INFINITY, 'Infinity' ],
+    [ Number.NEGATIVE_INFINITY, '-Infinity' ],
+
+    [ /^abc$/, '/^abc$/' ],
+    [ /a\(b\/c/, '/a\(b\/c/' ],
+    [ /a"b'c/ig, "/a\"b'c/ig" ],
+
+    [ [ ], '[]' ],
+    [ [ true ], '[true]' ],
+    [ [ false, null ], '[false,null]' ],
+
+    [ { }, '{}' ],
+    [ { a: 1 }, '{a:1}' ],
+    [ { a: 'foo', b: 'bar' }, '{a:"foo",b:"bar"}' ]
+  ])
+  .it ('converts to DMON string [ value, dmon ]', function (value, dmon) {
+    expect (DMON.stringify (value)).toBe (dmon);
+  });
+
+  cases ([
+    // [ value, dmon ]
+    [ { ":": true }, '{":":true}' ],
+    [ { "0": true }, '{"0":true}' ],
+    [ { "if": true }, '{"if":true}' ],
+
+    [ { a: true }, '{a:true}' ],
+    [ { $_az09: true }, '{$_az09:true}' ],
+    [ { a: 1, "for": 2 }, '{a:1,"for":2}' ]
+  ])
+  .it ('omits if possible quoting property name in object initializer [ value, dmon ]', function (value, dmon) {
+    expect (DMON.stringify (value)).toBe (dmon);
+  });
+
+  cases ([
+    [ [ { } ], '[{}]' ],
+    [ { a: [ ] }, '{a:[]}' ],
+    [ [ 1, { a: [ true ] }, 2 ], '[1,{a:[true]},2]' ],
+    [ { a: [ { z: false }, [ ] ], b: null }, '{a:[{z:false},[]],b:null}' ]
+  ])
+  .it ('accepts nested object [ value, dmon ]', function (value, dmon) {
+    expect (DMON.stringify (value)).toBe (dmon);
+  });
+
+  cases ([
+    // [ constructor, destructor, dmon ]
+
+    [ function () {
+        var v = [ ];
+        v.push (v);
+        return v;
+      },
+      function (v) {
+        v [0] = null;
+        v.pop ();
+      },
+      '[{/*recursive(0)*/}]'
+    ],
+
+    [ function () {
+        var v = { };
+        v.x = v;
+        return v;
+      },
+      function (v) {
+        v.x = null;
+        v.removeKey ('x');
+      },
+      '{x:{/*recursive(0)*/}}'
+    ],
+
+    [ function () {
+        var v = [ [ ] ];
+        v [0].push (v);
+        return v;
+      },
+      function (v) {
+        v [0] [0] = null;
+        v [0].pop ();
+        v [0] = null;
+        v.pop ();
+      },
+      '[[{/*recursive(0)*/}]]'
+    ],
+
+    [ function () {
+        var v = { a: { } };
+        v.a.b = v;
+        return v;
+      },
+      function (v) {
+        v.a.b = null;
+        v.a.removeKey ('b');
+        v.a = null;
+        v.removeKey ('a');
+      },
+      '{a:{b:{/*recursive(0)*/}}}'
+    ]
+  ])
+  .it ('replaces nested reference with empty object', function (ctor, dtor, dmon) {
+    var value = ctor ();
+    expect (DMON.stringify (value)).toBe (dmon);
+    dtor (value);
+    value = null;
+  });
+
+  cases ([
+    // [ value, dmon ]
+    [ '', '""' ],
+    [ 'abc', '"abc"' ],
+
+    [ '\', '"\\"' ],
+    [ '"', '"\""' ],
+
+    [ String.fromCharCode (0x61, 0x00, 0x62), '"a\x00b"' ],
+    [ String.fromCharCode (0x01, 0x10, 0x1f), '"\x01\x10\x1f"' ],
+
+    [ String.fromCharCode (0x09), '"\t"' ],
+    [ String.fromCharCode (0x0a), '"\n"' ],
+    [ String.fromCharCode (0x0d), '"\r"' ],
+    [ String.fromCharCode (0x61, 0x0d, 0x0a, 0x62), '"a\r\nb"' ]
+  ])
+  .it ('converts string to JavaScript like string [ value, dmon ]', function (value, dmon) {
+    expect (DMON.stringify (value)).toBe (dmon);
+  });
+
+  it ('does not ignore undefined in array', function () {
+    var value = [ 1, DMON.undefined, 2 ];
+    expect (DMON.stringify (value)).toBe ('[1,undefined,2]');
+  });
+
+  it ('does not ignore undefined in object', function () {
+    var value = { a: 1, b: DMON.undefined, c: 2 };
+    expect (DMON.stringify (value)).toBe ('{a:1,b:undefined,c:2}');
+  });
+
+  it ('does not ignore function in prototype object', function () {
+    function dmon_spec_prototype_test () { }
+
+    var p = dmon_spec_prototype_test.prototype;
+    p.n = 1;
+    p.s = 'abc';
+    p.m = function () { return true; };
+
+    var dmon = '{/*Prototype*/s:"abc",m:function(){/*...*/},n:1}';
+    expect (DMON.stringify (p)).toBe (dmon);
+  });
+
+  cases ([
+    // [ value, dmon ]
+    [ new String ('foo'), 'String("foo")' ],
+
+    [ new Boolean (true), 'Boolean(true)' ],
+    [ new Boolean (false), 'Boolean(false)' ],
+
+    [ new Number (0), 'Number(0)' ],
+    [ new Number (1), 'Number(1)' ],
+    [ new Number (-1), 'Number(-1)' ],
+
+    [ new RegExp (/^abc$/), 'RegExp(/^abc$/)' ],
+    [ new RegExp (/a\(b\)c/), 'RegExp(/a\(b\)c/)' ],
+    [ new RegExp (/a\/b\/c/), 'RegExp(/a\/b\/c/)' ],
+    [ new RegExp (/a"b'c/ig), "RegExp(/a\"b'c/ig)" ],
+    [ new RegExp (/É\/), "RegExp(/É\/)" ],
+
+    [ new Date (1412123456789), 'Date("2014-10-01T00:30:56.789Z")' ],
+
+    [ new StringBuffer ('"foo bar"'), 'StringBuffer("\"foo bar\"")' ],
+
+    [ new Strings ().assign ([ 'foo', 'bar' ]), 'Strings(["foo","bar"])' ]
+  ])
+  .it ('converts builtin object to ObjectName(...) [ value, dmon ]', function (value, dmon) {
+    expect (DMON.stringify (value)).toBe (dmon);
+  });
+
+  it ('callbacks serializer', function () {
+    function Foo (n) {
+      this.x = n;
+    }
+    var ser = {
+      fromFoo: function (v) {
+        return 'Foo(' + v.x + ')';
+      }
+    };
+
+    var value = new Foo (123);
+    var dmon = 'Foo(123)';
+
+    expect (DMON.stringify (value, ser)).toBe (dmon);
+  });
+
+  cases ([
+    // [ value, indent, space, dmon ]
+    [ [ true, [ [ null ], 1 ], false ], 1, ' ', [
+'[',
+'_true,',
+'_[',
+'__[',
+'___null',
+'__],',
+'__1',
+'_],',
+'_false',
+']' ]
+    ],
+
+    [ { a: true, b: { c: { d: null }, e: 1 }, f: false },
+      20,
+      ' '.multiply (10),
+      [
+'{',
+'_a: true,',
+'_b: {',
+'__c: {',
+'___d: null',
+'__},',
+'__e: 1',
+'_},',
+'_f: false',
+'}' ]
+    ],
+
+    [ [ true, [ [ null ], 1 ], false ], '-', '-', [
+'[',
+'_true,',
+'_[',
+'__[',
+'___null',
+'__],',
+'__1',
+'_],',
+'_false',
+']' ]
+    ],
+
+    [ { a: true, b: { c: { d: null }, e: 1 }, f: false },
+      '-'.multiply (10) + '****',
+      '-'.multiply (10),
+      [
+'{',
+'_a: true,',
+'_b: {',
+'__c: {',
+'___d: null',
+'__},',
+'__e: 1',
+'_},',
+'_f: false',
+'}' ]
+    ]
+
+  ])
+  .it ('indents if specified [ value, indent, space, dmon ]', function (v, indent, sp, dmon) {
+    var s = dmon.join (String.fromCharCode (10)).replace (/_/g, sp);
+
+    expect (DMON.stringify (v, null, indent)).toBe (s);
+  });
+
+});
+
+
+// EOF

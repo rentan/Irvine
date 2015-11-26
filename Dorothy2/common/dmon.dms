@@ -1,0 +1,895 @@
+//Dorothy2
+//caption=DMON
+//version=20151127.0
+//hint=
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2014,2015 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+common_load ('esx\date');
+
+
+//------------------------------- DMON.parse -------------------------------
+
+
+// コンストラクタ
+function DMONparse (unserializer) {
+  this.unserializer = unserializer || { };
+}
+
+
+DMONparse.prototype.undefined = { u }.u;
+
+
+DMONparse.prototype._throw = function (e, src) {
+  throw 'DMON.parse: ' + e + ' at ' + src.index;
+};
+
+
+// 空白を飛ばす
+DMONparse.prototype._skipBlank = function (src) {
+  var i = src.index;
+
+  for (;;) {
+    var cc = src.charCodeAt (i);
+    if (cc === 0x20 || cc === 0x0a || cc === 0x0d || cc === 0x09) {
+      ++i;
+      continue;
+    }
+
+    // /* ... */
+    if (cc === 0x2f && src.charCodeAt (i + 1) === 0x2a) {
+      var n = src.indexOf ('*/', i + 2);
+      if (n < 0) {
+        this._throw ('コメントが閉じていない', src);  // テキスト末尾に到達
+      }
+
+      i = n + 2;
+      continue;
+    }
+
+    // 空白でもコメントでもない文字まで進んだ
+    break;
+  }
+
+  src.index = i;
+};
+
+
+// 配列 Array
+DMONparse.prototype._array = function (src) {
+  // 開始の [
+  ++src.index;
+  this._skipBlank (src);
+
+  var array = [ ];
+
+  if (src.charCodeAt (src.index) === 0x5d) {
+    // [ ] 空配列
+    ++src.index;
+    this._skipBlank (src);
+    return array;
+  }
+
+  var len = src.length;
+  for (var i = 0; src.index < len; ++i) {
+
+    array.push (this._value (src));
+
+    var cc = src.charCodeAt (src.index);
+    if (cc === 0x2c) {
+      // , 次の値が必ずある
+      ++src.index;
+      this._skipBlank (src);
+      continue;
+    }
+    if (cc === 0x5d) {
+      // ] 終了
+      ++src.index;
+      this._skipBlank (src);
+      return array;
+    }
+
+    if (len <= src.index) {
+      break;
+    }
+    this._throw ('配列の値が連続している', src);
+  }
+
+  this._throw ('配列が閉じていない', src);  // テキスト末尾に到達
+};
+
+
+// オブジェクトリテラルのプロパティ名
+DMONparse.prototype._propertyName = function (src) {
+  // "～"
+  if (src.charCodeAt (src.index) == 0x22) {
+    return this._string (src);
+  }
+
+  // クオーティングされていない
+  var len = src.length;
+  var i = src.index;
+
+  if (len <= i || !/[$_a-z]/i.test (src [i])) {
+    this._throw ('オブジェクトのプロパティ名がない', src);
+  }
+
+  var re = /[$_a-z\d]/i;
+  while (i < len) {
+    if (!re.test (src [++i])) {
+      break;
+    }
+  }
+
+  var s = src.substring (src.index, i);
+  src.index = i;
+  this._skipBlank (src);
+
+  return s;
+};
+
+
+// オブジェクト Object
+DMONparse.prototype._object = function (src) {
+  // 開始の {
+  ++src.index;
+  this._skipBlank (src);
+
+  var obj = { };
+
+  if (src.charCodeAt (src.index) === 0x7d) {
+    // { } 空オブジェクト
+    ++src.index;
+    this._skipBlank (src);
+    return obj;
+  }
+
+  var len = src.length;
+  while (src.index < len) {
+    var name = this._propertyName (src);
+
+    if (src.charCodeAt (src.index) != 0x3a) {
+      this._throw ('オブジェクトのプロパティ名の直後に:がない', src);
+    }
+    ++src.index;
+    this._skipBlank (src);
+
+    obj [name] = this._value (src);
+
+    var cc = src.charCodeAt (src.index);
+    if (cc === 0x2c) {
+      // , 次の値が必ずある
+      ++src.index;
+      this._skipBlank (src);
+      continue;
+    }
+    if (cc === 0x7d) {
+      // } 終了
+      ++src.index;
+      this._skipBlank (src);
+      return obj;
+    }
+
+    if (len <= src.index) {
+      break;
+    }
+    this._throw ('オブジェクトの値が連続している', src);
+  }
+
+  this._throw ('オブジェクトが閉じていない', src);  // テキスト末尾に到達
+};
+
+
+DMONparse.prototype._unescapeMap = {
+  'b': "\b", 'f': "\f", 't': "\t", '"': '"', '\': '\', '/': '/',
+  'r': "\r", 'n': String.fromCharCode (10)
+};
+
+// 文字列 string
+DMONparse.prototype._string = function (src) {
+  var r = new StringBuffer ();
+
+  // 開始の "
+  ++src.index;
+
+  var cc, i;
+  for (;;) {
+    var startPos = src.index;
+
+    // " \ 制御文字 以外の文字が続く間ポインタを進める
+    for (i = startPos; ; ++i) {
+      cc = src.charCodeAt (i);
+      if (cc === 0x22 || cc === 0x5c || cc < 0x20 || isNaN (cc)) {
+        break;
+      }
+    }
+
+    // ポインタを進めた間の文字を処理済みバッファへコピー
+    if (startPos < i) {
+      r.append (src.substring (startPos, i));
+      src.index = i;
+    }
+
+    // 出現したメタキャラクタごとに処理
+
+    // 終了の "
+    if (cc === 0x22) {
+      ++src.index;
+      break;
+    }
+
+    if (cc != 0x5c) {
+      if (cc < 0x20) {
+        this._throw ('文字列中に制御文字がある', src);
+      }
+
+      // isNaN (cc) == true ... " が現れないまま末尾に到達した
+      this._throw ('文字列が閉じていない', src);
+    }
+
+    // \ エスケープシーケンス
+    ++i;
+    var c = (src.length <= i) ? '' : src [i++];
+
+    if (c === 'x') {
+      // \xHH ... \x00～\xff
+      var s = src.substr (i, 2);
+      if (!/^[0-9a-f]{2}/i.test (s)) {
+        this._throw ('不正な16進数エスケープシーケンス', src);
+      }
+
+      r.append (String.fromCharCode (parseInt ('0x' + s)));
+      src.index = i + 2;
+      continue;
+    }
+
+    // \x 以外のエスケープシーケンス
+    if (!this._unescapeMap.hasKey (c)) {
+      this._throw ('不正なエスケープシーケンス', src);
+    }
+
+    r.append (this._unescapeMap [c]);
+    src.index = i;
+  }
+
+  this._skipBlank (src);
+  return r.text;
+};
+
+
+// 正規表現 regexp
+DMONparse.prototype._regexp = function (src) {
+  var start = src.index;
+
+  var r = new StringBuffer ('/');
+
+  // 開始の /
+  ++src.index;
+
+  var cc, i;
+  for (;;) {
+
+    // / \ 以外の文字が続く間ポインタを進める
+    var startPos = src.index;
+    for (i = startPos; ; ++i) {
+      cc = src.charCodeAt (i);
+      if (cc === 0x2f || cc === 0x5c || isNaN (cc)) {
+        break;
+      }
+
+      // Shift_JIS 2バイト文字 0x81-0x9f,0xe0-0xfc
+      cc ^= 0x20;
+      if (0xa1 <= cc && cc <= 0xdc) {
+        ++i;
+      }
+    }
+
+    // ポインタを進めた間の文字を処理済みバッファへコピー
+    if (startPos < i) {
+      r.append (src.substring (startPos, i));
+      src.index = i;
+    }
+
+    // \
+    if (cc === 0x5c) {
+      cc = src.charCodeAt (src.index + 1) ^ 0x20;
+      var len = 2 + (0xa1 <= cc && cc <= 0xdc);
+
+      r.append (src.substr (src.index, len));
+      src.index += len;
+      continue;
+    }
+
+    // 終了の /
+    if (cc === 0x2f) {
+      break;
+    }
+
+    // / が現れないまま末尾に到達した
+    this._throw ('正規表現が閉じていない', src);
+  }
+
+  // フラグ
+  var slash = src.index++;
+  for (;; ++src.index) {
+    cc = src.charCodeAt (src.index);
+    if (cc != 0x69 && cc != 0x67 && cc != 0x6d) {
+      break;
+    }
+  }
+  r.append (src.substring (slash, src.index));
+
+  try {
+    var re = eval (r.text);
+  }
+  catch (e) {
+    src.index = start;
+    this._throw ('regexp 生成エラー: ' + e, src);
+  }
+
+  this._skipBlank (src);
+  return re;
+};
+
+
+// 数値 number
+// number = [ minus ] int [ frac ] [ exp ]
+DMONparse.prototype._number = function (src) {
+
+  function seekToDigitsEnd (errMes) {
+    var len = src.length;
+    for (var i = src.index; i < len; ++i) {
+      cc = src.charCodeAt (i);
+      if (cc < 0x30 || 0x39 < cc) {
+        break;
+      }
+    }
+
+    if (src.index === i) {
+      this._throw (errMes, src);
+    }
+
+    src.index = i;
+  }
+
+  function seekToNumberEnd () {
+    var cc;
+
+    // 符号 - のみ
+    if (src.charCodeAt (src.index) === 0x2d) {
+      ++src.index;
+    }
+
+    // 整数部が 0 以外の場合は、先頭に 0 を置けない
+    if (src.charCodeAt (src.index) === 0x30) {
+      cc = src.charCodeAt (src.index + 1);
+      if (0x30 <= cc && cc <= 0x39) {
+        this._throw ('0の直後に数字がある', src);
+      }
+    }
+
+    // 整数部
+    seekToDigitsEnd ('-の直後に数字がない');
+
+    if (src.length <= src.index) {
+      return;
+    }
+    cc = src.charCodeAt (src.index);
+
+    if (cc === 0x2e) {
+      // 小数点+小数部
+      ++src.index;
+      seekToDigitsEnd ('小数部の数字がない');
+
+      if (src.length <= src.index) {
+        return;
+      }
+      cc = src.charCodeAt (src.index);
+    }
+
+    if ((cc | 0x20) === 0x65) {
+      // 指数部
+      ++src.index;
+
+      cc = src.charCodeAt (src.index);
+      if (cc === 0x2b || cc === 0x2d) {
+        // 指数部の符号
+        ++src.index;
+      }
+
+      seekToDigitsEnd ('指数部の数字がない');
+    }
+  }
+
+  var start = src.index;
+  seekToNumberEnd ();
+
+  var n = parseFloat (src.substring (start, src.index));
+  this._skipBlank (src);
+  return n;
+};
+
+
+// function
+DMONparse.prototype._function = function (src) {
+  var s = '(){}';
+
+  for (var i = 0; i < s.length; ++i) {
+    if (s.charCodeAt (i) != src.charCodeAt (src.index)) {
+      this._throw ('関数式が正しくない', src);
+    }
+
+    ++src.index;
+    this._skipBlank (src);
+  }
+
+  return function () { };
+};
+
+
+// 組み込みオブジェクト生成
+//   各メソッドは this == DMONparse として呼び出される。
+DMONparse.prototype._objectParsers = {
+  String: function (v) {
+    return new String (v);
+  },
+
+  Boolean: function (v) {
+    return new Boolean (v);
+  },
+
+  Number: function (v) {
+    return new Number (v);
+  },
+
+  Date: function (v) {
+    var re = /^(\d+)-(\d+)-(\d+)T(\d+):(\d+):(\d+)\.(\d+)Z$/;
+
+    if (re.test (v)) {
+      // ecma_object.pas TJDateObject.DoParse で -1 している分を補正する
+      return new Date (+re.$1, +re.$2 + 1, +re.$3, +re.$4, +re.$5, +re.$6, +re.$7);
+    }
+    return new Date ();
+  },
+
+  StringBuffer: function (v) {
+    return new StringBuffer (v);
+  },
+
+  Strings: function (v) {
+    return new Strings ().assign (v);
+  }
+};
+
+
+// オブジェクト生成 Xxx(...)
+DMONparse.prototype._objectExpr = function (thisArg, parser, src) {
+  if (src.charCodeAt (src.index) != 0x28) {
+    this._throw ('オブジェクト生成に引数がない', src);
+  }
+  ++src.index;
+  this._skipBlank (src);
+
+  var v = this._value (src);
+
+  if (src.charCodeAt (src.index) != 0x29) {
+    this._throw ('オブジェクト生成の引数が閉じていない', src);
+  }
+  ++src.index;
+  this._skipBlank (src);
+
+  return parser.call (thisArg, v);
+};
+
+
+DMONparse.prototype._literals = {
+  'null': null,
+  'true': true,
+  'false': false,
+  'undefined': DMONparse.prototype.undefined,
+  'NaN': NaN,
+  'Infinity': Number.POSITIVE_INFINITY,
+  '-Infinity': Number.NEGATIVE_INFINITY
+};
+
+
+// value
+// value = false / null / true / object / array / number / string
+//         / undefined / NaN / Infinity
+DMONparse.prototype._value = function (src) {
+  if (src.length <= src.index) {
+    this._throw ('テキスト末尾に到達', src);
+  }
+
+  var cc = src.charCodeAt (src.index);
+  if (cc === 0x5b) {
+    return this._array (src);
+  }
+  if (cc === 0x7b) {
+    return this._object (src);
+  }
+  if (cc === 0x22) {
+    return this._string (src);
+  }
+  if (cc === 0x2f) {
+    return this._regexp (src);
+  }
+  if (0x30 <= cc && cc <= 0x39) {
+    return this._number (src);
+  }
+
+  var minus = (cc === 0x2d);
+  if (minus && src.substr (src.index, 9) != '-Infinity') {
+    return this._number (src);
+  }
+
+  // (先頭ハイフン) + 連続する英字の文字数
+  var len = src.length;
+  for (var i = src.index + minus; i < len; ++i) {
+    cc = src.charCodeAt (i) | 0x20;
+    if (cc < 0x61 || 0x7a < cc) {
+      break;
+    }
+  }
+  var s = src.substring (src.index, i);
+
+  if (this._literals.hasKey (s)) {
+    src.index = i;
+    this._skipBlank (src);
+    return this._literals [s];
+  }
+
+  if (s === 'function') {
+    src.index = i;
+    return this._function (src);
+  }
+
+  // 組み込み
+  if (this._objectParsers.hasKey (s)) {
+    src.index = i;
+    return this._objectExpr (this, this._objectParsers [s], src);
+  }
+
+  var to = 'to' + s;
+  var unser = this.unserializer;
+  if (unser.hasKey (to)) {
+    src.index = i;
+    return this._objectExpr (unser, unser [to], src);
+  }
+
+  this._throw ('不正なリテラル', src);
+};
+
+
+// DMON をパースする
+DMONparse.prototype.parse = function (text) {
+  var src = new StringBuffer (text);
+  src.index = 0;
+
+  this._skipBlank (src);
+  var v = this._value (src);
+
+  if (src.index < src.length) {
+    this._throw ('ルート値の後ろに不正な文字', src);
+  }
+
+  return v;
+};
+
+
+//----------------------------- DMON.stringify -----------------------------
+
+
+// コンストラクタ
+function DMONstringify (serializer, space) {
+  this.serializer = serializer || { };
+
+  var t = typeof space;
+  var n = nameOf (space);
+
+  if (t === 'number' || n === 'Number') {
+    space = ' '.multiply (Math.min (space, 10));
+  }
+  else if (t === 'string' || t === 'String') {
+    space = space.slice (0, 10);
+  }
+  else {
+    space = '';
+  }
+
+  this.indent = space && String.fromCharCode (0x0a);
+  this.indentDelta = space;
+  this.colon = space ? ': ' : ':';
+}
+
+
+DMONstringify.prototype._escapeMap = (function () {
+  var map = [
+    '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07',
+    '\b',   '\t',   '\n',   '\x0b', '\f',   '\r',   '\x0e', '\x0f',
+    '\x10', '\x11', '\x12', '\x13', '\x14', '\x15', '\x16', '\x17',
+    '\x18', '\x19', '\x1a', '\x1b', '\x1c', '\x1d', '\x1e', '\x1f'
+  ];
+
+  map [0x22] = '\"';
+  map [0x5c] = '\\';
+
+  return map;
+}) ();
+
+// 文字列を JavaScript 風の文字列リテラルに変換する
+//
+//   "～" のみ
+//
+//   Shift_JIS として読み取り、Shift_JIS として出力する
+//   (注:漢字の2バイト目に 0x5C がある)
+//
+//   "→\"  \→\\
+//   0x00～0x1f→\xHH  0x0a 0x0d などは \r \n など
+//
+DMONstringify.prototype._string = function (s) {
+  if (s === '') {
+    return '""';
+  }
+
+  var r = '';
+
+  var len = s.length;
+  for (var i = 0;;) {
+
+    // エスケープ不要な文字が続く間ポインタを進める
+    for (var startPos = i; i < len; ++i) {
+      var cc = s.charCodeAt (i);
+      if (cc === 0x22 || cc === 0x5c || cc < 0x20) {
+        break;
+      }
+    }
+
+    // ポインタを進めた間の文字を処理済みバッファへコピー
+    if (startPos < i) {
+      r += s.substring (startPos, i);
+    }
+
+    if (i === len) {
+      // バッファ末尾に到達した
+      break;
+    }
+
+    ++i;
+
+    // 文字をエスケープ
+    r += this._escapeMap [cc];
+  }
+
+  return '"' + r + '"';
+};
+
+
+// 数値 number
+DMONstringify.prototype._number = function (v) {
+  return isFinite (v) ? v.toString () : isNaN (v) ? 'NaN' : (v < 0) ? '-Infinity' : 'Infinity';
+};
+
+
+// 正規表現 regexp
+DMONstringify.prototype._regexp = function (v) {
+  var s = v.toString ();
+  var slash = s.lastIndexOf ('/');
+  return '/' + s.slice (1, slash).replace (/\//g, '\\/') + s.slice (slash);
+};
+
+
+// 配列 Array
+DMONstringify.prototype._array = function (stack, indent, v) {
+  var s = [ ];
+  stack.push (v);
+  var indent2 = indent + this.indentDelta;
+
+  var len = v.length;
+
+  for (var i = 0; i < len; ++i) {
+    s.push (this._value (stack, indent2, v [i]));
+  }
+
+  stack.pop ();
+  return '[' + indent2 + s.join (',' + indent2) + indent + ']';
+};
+
+
+// DMonkey の予約語 (#, #= は除く)
+DMONstringify.prototype._dmonkeyKeywords = new RegExp (
+  '^(NaN|break|ca(se|tch)|class|con(st|tinue)|de(bugger|fault|lete)|' +
+  'do|else|enum|ex(port|tends)|false|finally|for(each)?|function|' +
+  'global|if|import|in(finity)?|new|null|return|static|super|switch|' + 
+  'th(is|row)|tr(ue|y)|typeof|undefined|var|void|while|with)$'
+);
+
+
+// オブジェクトリテラルのプロパティ名
+//   "～" でくくらなくても構わないものはくくらない
+DMONstringify.prototype._propertyName = function (key) {
+  if (/^[$_a-z][$_a-z\d]*$/i.test (key)) {
+    if (!this._dmonkeyKeywords.test (key)) {
+      return key;
+    }
+  }
+
+  return this._string (key);
+};
+
+
+// オブジェクト Object
+DMONstringify.prototype._object = function (stack, indent, v) {
+  var n = nameOf (v);
+
+  // fromObjectName が用意されていればそれを使って変換する
+  var from = 'from' + n;
+  var ser = this.serializer;
+  if (ser.hasKey (from)) {
+    return ser [from].call (ser, v);
+  }
+
+  var s = [ ];
+  stack.push (v);
+  var indent2 = indent + this.indentDelta;
+
+  for (var key in v) {
+    var x = this._value (stack, indent2, v [key]);
+    s.push (this._propertyName (key) + this.colon + x);
+  }
+
+  stack.pop ();
+
+  // ユーザー定義オブジェクト(と prototype)は型名コメントをつける
+  var head = (n === 'Object') ? '{' : '{/*' + n + '*/';
+
+  return head + indent2 + s.join (',' + indent2) + indent + '}';
+};
+
+
+DMONstringify.prototype._types = {
+  'null': function () {
+    return 'null';
+  },
+
+  'undefined': function () {
+    return 'undefined';
+  },
+
+  'boolean': function (v) {
+    return v ? 'true' : 'false';
+  },
+
+  'string': function (v) {
+    return this._string (v);
+  },
+
+  'number': function (v) {
+    return this._number (v);
+  },
+
+  'regexp': function (v) {
+    return this._regexp (v);
+  },
+
+  'function': function () {
+    return 'function(){/*...*/}';
+  }
+};
+
+
+DMONstringify.prototype._objects = {
+  String: function (v) {
+    return 'String(' + this._string (v) + ')';
+  },
+
+  'Boolean': function (v) {
+    return v ? 'Boolean(true)' : 'Boolean(false)';
+  },
+
+  // Number インスタンスが NaN や Infinity になることはない
+  'Number': function (v) {
+    return 'Number(' + this._number (v) + ')';
+  },
+
+  'RegExp': function (v) {
+    return 'RegExp(' + this._regexp (v) + ')';
+  },
+
+  'Date': function (v) {
+    return 'Date(' + this._string (v.toJSON ()) + ')';
+  },
+
+  'StringBuffer': function (v) {
+    return 'StringBuffer(' + this._string (v) + ')';
+  },
+
+  'StringList': function (v, stack, indent) {
+    return 'Strings(' + this._array (stack, indent, v) + ')';
+  }
+};
+
+
+// 文字列化
+DMONstringify.prototype._value = function (stack, indent, v) {
+  var t = typeof v;
+  if (this._types.hasKey (t)) {
+    return this._types [t].call (this, v);
+  }
+
+  var n = nameOf (v);
+  if (this._objects.hasKey (n)) {
+    return this._objects [n].call (this, v, stack, indent);
+  }
+
+  // var a = { }; a.b = a; のような循環参照は空オブジェクトに差し替える
+  var len = stack.length;
+  for (var i = 0; i < len; ++i) {
+    if (stack [i] === v) {
+      return '{/*recursive(' + i + ')*/}';
+    }
+  }
+
+  if (n === 'Array') {
+    return this._array (stack, indent, v);
+  }
+
+  return this._object (stack, indent, v);
+};
+
+
+DMONstringify.prototype.stringify = function (v) {
+  return this._value ([ ], this.indent, v);
+};
+
+
+//---------------------------------- DMON ----------------------------------
+
+
+// グローバルオブジェクトとして定義
+DMON = (function () {
+  function DMON () { }
+
+  DMON.prototype.undefined = DMONparse.prototype.undefined;
+
+  DMON.prototype.parse = (function (DMONparse) {
+    return function (text, unserializer) {
+      return (new DMONparse (unserializer)).parse (text);
+    };
+  }) (DMONparse);
+
+  DMON.prototype.stringify = (function (DMONstringify) {
+    return function (v, serializer, space) {
+      return (new DMONstringify (serializer, space)).stringify (v);
+    };
+  }) (DMONstringify);
+
+  return new DMON ();
+}) ();
+
+
+}) ()
+
+
+// EOF

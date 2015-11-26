@@ -1,0 +1,44 @@
+common\dmon.dms
+
+
+DMonkey のオブジェクトを文字列化、またはその逆を行います。
+情報交換用ではなく、デバッグ表示用です。
+
+
+使用方法
+========
+
+  common_load ('dmon');
+
+  var dmon = '{"a":true}';
+  var obj = DMON.parse (dmon);
+
+  var obj2 = [ true, false, null ];
+  var dmon2 = DMON.stringify (obj2);
+
+
+DMON オブジェクトのメソッド
+===========================
+
+parse (text, unserializer)
+stringify (value, serializer, space)
+
+
+仕様・制限事項
+==============
+
+・JSON を参考に改変、拡張した文法になっています。
+  ただし仕様は今後変更される可能性があります。
+
+・DMonkey ネイティブの文法ではありません。
+  DMON.parse() の代わりに eval() でパースすることは出来ません。
+
+
+変更履歴
+========
+
+2015-11-27  version 20151127.0  rentan at rentan.org
+  common\esx\json.dms version 20151125.0 を元にして新規作成。
+
+
+[EOF]
