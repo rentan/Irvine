@@ -1,0 +1,207 @@
+//Dorothy2
+//caption=redir spec
+//version=20151204.0
+//hint=http://yasmine.dorothy.test/common/spec/getter/redir_spec.dms
+//match=
+//author=rentan
+//path=common\spec\getter
+//end
+
+//Åıxyzzyï∂éöâªÇØâÒî
+
+
+/*
+Copyright (C) 2015 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('getter\redir');
+
+
+describe ('Redir#get', function () {
+
+  cases ([
+    // from, to
+
+    [ 'http://adf.ly/1IViAF', 'http://example.com/adfly' ],
+
+    [ 'http://www.linkbucks.com/BfOXO', 'http://kaheel7.com/eng/' ],
+
+//  [ 'http://lix.in/-de6c11', 'http://example.com/single_cap-on' ],
+    [ 'http://lix.in/-dce570', 'http://example.com/single_cap-off' ],
+
+    [ 'http://t.co/gZIiQGoMbp', 'http://example.com/tco' ],
+    [ 'http://bit.ly/1Huy8Xw', 'http://example.com/bitly' ],
+    [ 'http://goo.gl/S8qTmW', 'http://example.com/googl' ],
+    [ 'http://ime.nu/example.com/imenu', 'http://example.com/imenu' ],
+    [ 'http://jump.2ch.net/?example.com/jump2chnet', 'http://example.com/jump2chnet' ],
+    [ 'http://pinktower.com/?example.com/pinktowercom', 'http://example.com/pinktowercom' ]
+
+  ])
+  .it ('redirects url [from,to]', function (from, to) {
+    var getter = new Redir ();
+
+    expect (getter.get (from)).toBe (true);
+    expect (getter.items).toEqual ([ { Url: to } ]);
+  });
+
+  cases ([
+    // from, to1, to2
+
+//  [ 'http://lix.in/-d6caf6', 'http://example.com/multi_cap-on_1',
+//                             'http://example.com/multi_cap-on_2' ],
+    [ 'http://lix.in/-d3bdb4', 'http://example.com/multi_cap-off_1',
+                               'http://example.com/multi_cap-off_2' ]
+
+  ])
+  .it ('redirects url to multiple urls [from,to1,to2]', function (from, to1, to2) {
+    var getter = new Redir ();
+
+    expect (getter.get (from)).toBe (true);
+    expect (getter.items.length).toEqual (2);
+    expect (getter.items [0]).toEqual ({ Url: to1 });
+    expect (getter.items [1]).toEqual ({ Url: to2 });
+  });
+
+  it ('returns false when url is invalid redirect', function () {
+    var from = 'http://www.cash4files.com/linknotfound';
+
+    var getter = new Redir ();
+
+    expect (getter.get (from)).toBe (false);
+    expect (getter.status).toBe (getter.NG);
+  });
+});
+
+
+describe ('Redir#getAsync and Redir#getResult', function () {
+  it ('redirects url asynchronously', function () {
+    var THRESHOLD_MSEC = 4000;
+    var fromTo = [
+      [ 'http://ime.nu/example.com/imenu', 'http://example.com/imenu' ],
+      [ 'http://jump.2ch.net/?example.com/jump2chnet', 'http://example.com/jump2chnet' ]
+    ];
+    var fromToLen = fromTo.length;
+
+    var getters = [ ];
+    for (var i = 0; i < fromToLen; ++i) {
+      getters [i] = new Redir ();
+    }
+
+    var tc = Win32.getTickCount ();
+    for (i = 0; i < fromToLen; ++i) {
+      getters [i].getAsync (fromTo [i][0]);
+    }
+    var msec = Win32.getTickCount () - tc;
+    expect (msec).toBeLessThan (THRESHOLD_MSEC);
+
+    for (i = 0; i < fromTo.length; ++i) {
+      expect (getters [i].getResult ()).toBe (true);
+      expect (getters [i].items [0].Url).toBe (fromTo [i][1]);
+    }
+  });
+});
+
+
+describe ('Redir#getAll', function () {
+  it ('redirects multiple urls', function () {
+    var getter = new Redir ();
+    var from = [
+      { Url: 'http://ime.nu/example.com/imenu' },
+      { Url: 'http://jump.2ch.net/?example.com/jump2chnet' }
+    ];
+    var to = [
+      { Url: 'http://example.com/imenu' },
+      { Url: 'http://example.com/jump2chnet' }
+    ];
+
+    expect (getter.getAll (from)).toBe (true);
+    expect (getter.items).toEqual (to);
+  });
+
+  it ('pass through unsupported urls', function () {
+    var getter = new Redir ();
+    var from = [
+      { Url: 'http://example.com/' },
+      { Url: 'http://example.jp/' }
+    ];
+
+    expect (getter.getAll (from)).toBe (true);
+    expect (getter.status).toBe (getter.OK);
+    expect (getter.items).toEqual (from);
+  });
+});
+
+
+describe ('Redir#getParallel', function () {
+  var getter;
+
+  beforeEach (function () {
+    getter = new Redir ();
+  });
+  afterEach (function () {
+    getter = null;
+  });
+
+  it ('returns empty array when url is not specified', function () {
+    var getters = getter.getParallel ([ ]);
+
+    expect (nameOf (getters)).toBe ('Array');
+    expect (getters.length).toBe (0);
+  });
+
+  it ('redirects multiple items and returns array of Redir instance', function () {
+    var from = [
+      { Url: 'http://ime.nu/example.com/imenu' },
+      { Url: 'http://jump.2ch.net/?example.com/jump2chnet' },
+      { Url: 'http://example.com/' }    // MIS
+    ];
+    var to = [
+      [ { Url: 'http://example.com/imenu' } ],
+      [ { Url: 'http://example.com/jump2chnet' } ],
+      [ ]
+    ];
+
+    var getters = getter.getParallel (from);
+    expect (getters.length).toBe (to.length);
+
+    for (var i = 0; i < to.length; ++i) {
+      var r = getters [i];
+      expect (nameOf (r)).toBe ('Redir');
+      expect (r.status).toBe (to [i].length ? r.OK : r.MIS);
+      expect (r.items).toEqual (to [i]);
+    }
+  });
+});
+
+
+describe ('Redir#buildMatchPattern', function () {
+  it ('returns RegExp source string for //match=', function () {
+    var getter = new Redir ();
+
+    var sites = [
+      { re: /^http:\/\/example\.com\/[^?&#]/ },
+      { re: /^https:\/\/example\.net\/[^?&#]/ },
+      { re: /^https?:\/\/example\.jp\/[^?&#]/ }
+    ];
+    var p = '^https?://(example\.com|example\.net|example\.jp)/';
+
+    expect (getter.buildMatchPattern (sites)).toBe (p);
+  });
+});
+
+
+// EOF

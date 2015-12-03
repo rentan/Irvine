@@ -1,0 +1,815 @@
+//Dorothy2
+//caption=Redir
+//version=20151204.0
+//hint=
+//match=
+//author=rentan
+//path=common\getter
+//end
+
+/*
+Copyright (C) 2015 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+common_load ('getter\getterasync', 'htmlform', 'http', 'jinput', 'utf8');
+
+
+//------------------------------- RedirAdfly -------------------------------
+
+// コンストラクタ
+Getter (function RedirAdfly () {
+}, GetterAsync, { quiet: true });
+
+
+RedirAdfly.prototype._ysmm = function (s) {
+  var a = '', T = '';
+
+  for (var i = 0; i < s.length; ++i) {
+    if (i % 2 === 0) {
+      a += s [i];
+    }
+    else {
+      T = s [i] + T;
+    }
+  }
+
+  return Base64.decode (a + T).slice (2);
+};
+
+
+RedirAdfly.prototype._getAsync = function (url) {
+  var http = this.http = new Http ();
+
+  if (!http.get (url)) {
+    return this._httpError ();
+  }
+
+  if (/var\s+ysmm\s*=\s*'([^']+)';/.test (http.data)) {
+    var u = this._ysmm (RegExp.$1);
+    if (/^https:\/\/adf\.ly\/go\.php\?u=.+/.test (u)) {
+      if (!http.get (u)) {
+        return this._httpError ();
+      }
+      if (!/<META\s[^>]+CONTENT="\d+;\s*URL=([^"]+)"/.test (http.data)) {
+        return this._unknown ('adf.ly: 転送先URLが見つかりません(<META>)。');
+      }
+      u = RegExp.$1;
+    }
+
+    return this._add ({ Url: u });
+  }
+
+  if (/var\s+zzz\s*=\s*'([^']+)';/.test (http.data)) {
+    var s = RegExp.$1;
+    if (s === 'http://adf.ly/skip.php') {
+      return this._unknown ('adf.ly: 対応していない形式です。');
+    }
+    return this._add ({ Url: s });
+  }
+
+  if (/var\s+url\s*=\s*'\/(go\/[^']+)';/.test (http.data)) {
+    var u = http.expandUrl (RegExp.$1);
+
+    http = this.http = new Http ();
+    if (!http.getLocation (u)) {
+      return this._httpError ();
+    }
+    return this._add ({ Url: http.location });
+  }
+
+  return this._unknown ('adf.ly: 転送先URLが見つかりません。');
+};
+
+
+//----------------------------- RedirLinkbucks -----------------------------
+
+
+// コンストラクタ
+Getter (function RedirLinkbucks () {
+}, GetterAsync, { quiet: true });
+
+
+// public: 対応URL
+RedirLinkbucks.prototype.supportedUrl = (function () {
+  var domains = [
+    'allanalpass.com',
+    'amy.gs',
+    'any.gs',
+    'cash4files.com',
+    'deb.gs',
+    'drstickyfingers.com',
+    'dyo.gs',
+    'eafyfsuh.net',
+    'fapoff.com',
+    'filesonthe.net',
+    'freean.us',
+    'freegaysitepass.com',
+    'galleries.bz',
+    'goneviral.com',
+    'hornywood.tv',
+    'linkbabes.com',
+    'linkbucks.com',
+    'linkgalleries.net',
+    'linkseer.net',
+    'megaline.co',
+    'miniurls.co',
+    'picbucks.com',
+    'picturesetc.net',
+    'poontown.net',
+    'qqc.co',
+    'qvvo.com',
+    'realfiles.net',
+    'rqq.co',
+    'seriousdeals.net',
+    'seriousfiles.com',
+    'seriousurls.com',
+    'sexpalace.gs',
+    'theseblogs.com',
+    'thesefiles.com',
+    'theseforums.com',
+    'thosegalleries.com',
+    'tinybucks.net',
+    'tinylinks.co',
+    'tnabucks.com',
+    'tubeviral.com',
+    'uberpicz.com',
+    'ubervidz.com',
+    'ubucks.net',
+    'ugalleries.net',
+    'ultrafiles.net',
+    'urlbeat.net',
+    'urlpulse.net',
+    'whackyvidz.com',
+    'youfap.me',
+    'yyv.co',
+    'zff.co',
+    'zxxo.net'
+  ].join ('|').replace (/\./g, '\\.');
+
+  return new RegExp ('^http://[0-9a-zA-Z]+\.(' + domains + ')/');
+}) ();
+
+
+RedirLinkbucks.prototype._baseUrl = 'http://www.eafyfsuh.net/';
+
+
+// URL を http://www.eafyfsuh.net/*** 形式に変換
+RedirLinkbucks.prototype._toCanonicalUrl = function (url) {
+  if (/^http:\/\/www\.eafyfsuh\.net\/scripts\//.test (url)) {
+    return null;
+  }
+
+  if (/^https?:\/\/www\.[^\/]+\/([^?&#]+)(#|$)/.test (url)) {
+    return this._baseUrl + RegExp.$1;
+  }
+
+  if (/^https?:\/\/([^.\/]+)\.[^\/]+\/(#|$)/.test (url)) {
+    return this._baseUrl + RegExp.$1;
+  }
+
+  return null;
+};
+
+
+RedirLinkbucks.prototype._RETRY = 2;
+
+RedirLinkbucks.prototype._getAsync = function (url) {
+  var u = this._toCanonicalUrl (url);
+  if (!u) {
+    return this._mis (null);
+  }
+
+  return this._get2 (u, this._RETRY);
+};
+
+
+// 認証画面へのリダイレクトか調べる
+//
+// GET http://www.eafyfsuh.net/***
+// ↓
+// HTTP/1.1 302 Found
+// Location: http://www.megaline.co/***/verify/url/
+// のように元のドメイン名に飛ばされる
+//
+RedirLinkbucks.prototype._isVerifyRedirect = function (http) {
+  if (http.code == 302) {
+    var verify = (new URL (http.previousUrl)).path + '/verify/url/';
+
+    if ((new URL (http.location)).path == verify) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+
+// 待機画面ではなく直接302で転送されたか調べる
+RedirLinkbucks.prototype._is302Redirect = function (http) {
+  if (http.code == 302 && http.location) {
+    if (http.location.slice (0, this._baseUrl.length) != this._baseUrl) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+
+RedirLinkbucks.prototype._get2 = function (url, retryCount) {
+  var http = this.http = new Http ();
+  if (http.get (url)) {
+    return this._scan1 ();
+  }
+
+  if (this._isVerifyRedirect (http)) {
+    if (retryCount <= 0) {
+      // 規定回数 get しても毎回認証画面に飛ばされてた
+      return this._ng ('認証画面が解除されませんでした。');
+    }
+
+    // 3秒後に再試行する
+    return { callback: this._get2, args: [ url, retryCount - 1 ], sec: 3 };
+  }
+
+  if (this._is302Redirect (http)) {
+    return this._add ({ Url: http.location });
+  }
+
+  return this._httpError ();
+};
+
+
+RedirLinkbucks.prototype._scan1 = function () {
+  var http = this.http;
+
+  function isAuthKeyExpr (s) {
+    return s.replace (/^'|'\s*\+\s*'|'$/g, '') == 'AuthKey';
+  }
+  function isInitLbjsExpr (s) {
+    return s.replace (/^'|'\s*\+\s*'|'$/g, '') == 'initLbjs';
+  }
+
+  function findScript (http) {
+    var m = /<script[^>]*>.*?<\/script>/g.exec (http.data) || [ ];
+
+    for (var i = 0; i < m.length; ++i) {
+      var s = m [i];
+      if (/^\s*var f = window\[([^\]]+)\];/m.test (s) && isInitLbjsExpr (RegExp.$1)) {
+        return s.replace (/\sf\('.',.*$/, '');
+      }
+    }
+    return null;
+  }
+
+  var script = findScript (http);
+  if (!script) {
+    if (http.data.indexOf ('>Link Not Found<') >= 0) {
+      return this._ng ('Link Not Found');
+    }
+
+    return this._unknown ('未対応のスクリプトです。');
+  }
+
+  if (!/Token\s*:\s*'([^']+)'/.test (script)) {
+    return this._unknown ('Token がありません。');
+  }
+  var Token = RegExp.$1;
+
+  if (!/Countdown\s*:\s*(\d+)/.test (script)) {
+    return this._unknown ('Countdown がありません。');
+  }
+  var waitSec = parseInt (RegExp.$1);
+
+  var AuthKey = 0.0;
+  function calc (s, p1, p2, p3, p4) {
+    if (isAuthKeyExpr (p1)) {
+      if (p2 && isAuthKeyExpr (p3)) {
+        AuthKey += parseFloat (p4);
+      }
+      else {
+        AuthKey = parseFloat (p4);
+      }
+    }
+    return '';
+  }
+  script.replace (/^\s*params\[([^\]]+)\] = (params\[([^\]]+)\]\s*\+\s*)?(\d+);/gm, calc);
+
+  var loadTargetUrl = '/intermission/loadTargetUrl?t=' + Token + '&aK=' + AuthKey + '&a_b=false';
+
+  if (!/AdUrl\s*:\s*'([^']+)'/.test (script)) {
+    return this._unknown ('AdUrl がありません。');
+  }
+  var AdUrl = RegExp.$1;
+
+  var adHttp = new Http ();
+  if (!adHttp.get (AdUrl)) {
+    return this._httpError (adHttp);
+  }
+
+  return { callback: this._scan2, args: [ loadTargetUrl ], sec: waitSec };
+};
+
+
+RedirLinkbucks.prototype._scan2 = function (loadTargetUrl) {
+  var http = this.http;
+
+  if (!http.getXhr (loadTargetUrl)) {
+    return this._httpError ();
+  }
+
+  if (!/"Success":true/.test (http.data)) {
+    return this._ng ('loadTargetUrl 失敗。');
+  }
+  if (!/"Url":"([^"]+)"/.test (http.data)) {
+    return this._unknown ('Url がありません。');
+  }
+
+  return this._add ({ Url: RegExp.$1 });
+};
+
+
+//------------------------------- RedirLixin -------------------------------
+
+
+// コンストラクタ
+Getter (function RedirLixin () {
+}, GetterAsync, { quiet: true });
+
+
+// CAPTCHAフォームを探す
+RedirLixin.prototype._findCaptchaForm = function () {
+  var forms = new HtmlForms (this.http);
+  return forms.getFormByElementName ('capt');
+};
+
+
+RedirLixin.prototype._getAsync = function (url) {
+  var u = new URL (url);
+
+  var path = u.path.replace (/[?&#].*$/, '');
+  if (/^\/((abuse|ano|dl|more|webmaster)\.php)?$/.test (path)) {
+    return this._mis (null);
+  }
+
+  var http = this.http = new Http ();
+
+  // CAPTCHA 入力済みの Cookie があれば再入力不要なので読み込む
+  var cookie = IrvineCookieManager.getCookie (u.host);
+  http.setRequestHeader ('Cookie', cookie);
+
+  if (!http.get (url)) {
+    return this._httpError ();
+  }
+
+  var form = this._findCaptchaForm ();
+  if (form) {
+    return { callback: this._get2, args: [ form ], msec: 1 };
+  }
+
+  return { callback: this._get3, args: [ ] };
+};
+
+
+// CAPTCHA入力
+RedirLixin.prototype._inputCaptcha = function (http, form) {
+  var capt = form.getElementByName ('capt');
+  if (!capt) {
+    return this._unknown ('<input name="capt"> が見つかりません。');
+  }
+
+  if (!/<img[^>]*\ssrc="(captcha_img\.php[^"]+)"/.test (form.outerHTML)) {
+    return this._unknown ('CAPTCHA 画像が見つかりません。');
+  }
+  var imgUrl = RegExp.$1;
+
+  var imgHttp = http.clone ();
+  if (!imgHttp.get (imgUrl)) {
+    return this._httpError (imgHttp);
+  }
+
+  var htaOpt = {
+    title: Dorothy.matchFile + ' lix.in',
+    width: 360,
+    height: 210,
+    image: imgHttp.data
+  };
+
+  var t = (new JInput ()).inputText (htaOpt);
+  if (t == null) {
+    return this._exit ('CAPTCHAキャンセル。');
+  }
+
+  capt.value = t = t.trim ();
+  println ('code-->' + t);
+  return this._ok ();
+};
+
+
+// CAPTCHA入力あり
+RedirLixin.prototype._get2 = function (form) {
+  var http = this.http;
+
+  if (!this._inputCaptcha (http, form)) {
+    return false;
+  }
+
+  if (!http.exec (form.submit ())) {
+    return this._httpError ();
+  }
+
+  var form = this._findCaptchaForm ();
+  if (form) {
+    println ('CAPTCHA 不正解。');
+    return { callback: this._get2, args: [ form ], msec: 1 };
+  }
+
+  // 次回のCAPTCHA入力を省くためにCookieを保存
+  var host = (new URL (http.previousUrl)).host;
+  IrvineCookieManager.setCookie (host, http.getRequestHeader ('Cookie'));
+
+  return { callback: this._get3, args: [ ] };
+};
+
+
+// <iframe src="..."> を抽出
+RedirLixin.prototype._iframe = function (http) {
+  if (/<iframe[^>]*\ssrc="([^"]+)"/.test (http.data)) {
+    var s = RegExp.$1.trim ();
+    return this._add ({ Url: (new Utf8 (s)).decodeCharRef ().toUTF8 () });
+  }
+
+  http.capture ();
+  return this._unknown ('未対応のページ内容です。');
+};
+
+
+// CAPTCHA入力なし
+RedirLixin.prototype._get3 = function () {
+  var http = this.http;
+  var forms = new HtmlForms (http);
+
+  // Continueボタンをクリック
+  var form = forms.getFormByElementName ('tiny');
+  var submit = form && form.getElementByType ('submit');
+  if (submit && /^continue\s*$/.test (submit.value)) {
+    if (!http.exec (form.submit (submit))) {
+      return this._httpError ();
+    }
+    forms = new HtmlForms (http);
+  }
+
+  var multi = forms.getFormsByElementName ('in');
+  if (multi) {
+    // 複数リンク
+    for (var i = 0; i < multi.length; ++i) {
+      var f = multi [i];
+      submit = f.getElementByType ('submit');
+
+      var h = http.clone ();
+      if (!h.exec (f.submit (submit))) {
+        return this._httpError (h);
+      }
+
+      if (!this._iframe (h)) {
+        return false;
+      }
+    }
+
+    return this._ok ();
+  }
+
+  // 単独リンク
+  return this._iframe (http);
+};
+
+
+//------------------------------- RedirMisc --------------------------------
+
+
+// コンストラクタ
+Getter (function RedirMisc () {
+}, GetterAsync, { quiet: true });
+
+
+// Location: ヘッダによる転送
+RedirMisc.prototype._getLocation = function (url) {
+  var http = this.http = new Http ();
+  if (!http.getLocation (url)) {
+    return this._httpError ();
+  }
+
+  return this._add ({ Url: http.location });
+};
+
+
+// サイトごとの処理関数群
+RedirMisc.prototype._sites = [
+
+{
+  re: /^https?:\/\/t\.co\/[^?&#]/,
+  f: function (url, path) {
+    if (/^static([\/?&#]|$)/.test (path)) {
+      return this._mis (null);
+    }
+
+    var http = this.http = new Http ();
+    http.setRequestHeader ('Referer', 'http://t.co/');
+
+    if (!http.getLocation (url)) {
+      if (http.code === 200 && http.data.indexOf ('<title>警告</title>'.toUTF8 ()) != -1) {
+        return this._ng ('t.co: 転送先URLが安全ではない可能性があります。');
+      }
+      return this._httpError ();
+    }
+
+    return this._add ({ Url: this.http.location });
+  }
+},
+
+{
+  re: /^http:\/\/bit\.ly\/[^?&#]/,
+  f: function (url) {
+    return this._getLocation (url);
+  }
+},
+
+{
+  re: /^http:\/\/goo\.gl\/[^?&#]/,
+  f: function (url) {
+    return this._getLocation (url);
+  }
+},
+
+{
+  re: /^http:\/\/ime\.nu\/[^?&#]/,
+  f: function (url, path) {
+    return this._add ({ Url: 'http://' + path });
+  }
+},
+
+{
+  re: /^http:\/\/jump\.2ch\.net\/\?[^?&#]/,
+  f: function (url, path) {
+    return this._add ({ Url: 'http://' + path.slice (1) });
+  }
+},
+
+{
+  re: /^http:\/\/pinktower\.com\/\?[^?&#]/,
+  f: function (url, path) {
+    return this._add ({ Url: 'http://' + path.slice (1) });
+  }
+}
+
+];  // end of _sites
+
+
+// URLに対応した処理ルーチンを探す
+RedirMisc.prototype._selectRedirectMethod = function (url) {
+  var sites = this._sites;
+  var len = sites.length;
+
+  for (var i = 0; i < len; ++i) {
+    var site = sites [i];
+    if (site.re.test (url)) {
+      return site.f;
+    }
+  }
+
+  return null;
+};
+
+
+RedirMisc.prototype._getAsync = function (url) {
+  var u = new URL (url);
+
+  var f = this._selectRedirectMethod (u.url);
+
+  return f ? f.call (this, u.url, u.path.slice (1)) : this._mis (null);
+};
+
+
+// public: 対応URLの正規表現文字列を返す
+RedirMisc.prototype.buildMatchPattern = function (sitesArray) {
+  var sites = sitesArray || this._sites;
+
+  var hosts = [ ];
+  var re = /^\^http(s\??)?:\/\/([^\/]+)/;
+
+  var len = sites.length;
+  for (var i = 0; i < len; ++i) {
+    var s = sites [i].re.source;
+    hosts.push (re.test (s) ? re.$2 : '.*');
+  }
+
+  return '^https?://(' + hosts.join ('|') + ')/';
+};
+
+
+//--------------------------------- Redir ----------------------------------
+
+
+// コンストラクタ
+Getter (function Redir (opt) {
+  this._max = this._getArg (opt, 'Max', 32);
+  this._noMisMsg = this._getArg (opt, 'NoMisMsg', false);
+}, GetterAsync);
+
+
+// getter オブジェクトを使って転送先を得る
+Redir.prototype._getGetterResult = function (url, getter, chainCount) {
+  if (!getter.getResult ()) {
+    if (getter.status === getter.MIS) {
+      if (chainCount) {
+        // 転送後のURLが未対応URLなら処理を打ち切って成功を返す
+        return this._add ({ Url: url });
+      }
+      return this._noMisMsg ? this._mis (null) : this._mis ();
+    }
+
+    return this._raise (getter);
+  }
+
+  var items = getter.items;
+  getter = getter.items = null;
+
+  if (items.length === 0) {
+    return this._ng ('内部エラー: items.length == 0');
+  }
+
+  // 複数のURLに転送された
+  if (items.length > 1) {
+    var childMax = this._max - chainCount - 1;
+    return this._flatten (this._getParallel (items, childMax, true), items);
+  }
+
+  // 単独のURLに転送された
+  return this._invokeRedirector (items [0].Url, chainCount + 1);
+};
+
+
+// サイトごとの処理関数群
+Redir.prototype._sites = [
+
+{
+  re: RedirLinkbucks.prototype.supportedUrl,
+  f: function () {
+    return new RedirLinkbucks ();
+  }
+},
+
+{
+  re: /^http:\/\/(adf\.ly|j\.gs)\/[^?&#]/,
+  f: function () {
+    return new RedirAdfly ();
+  }
+},
+
+{
+  re: /^http:\/\/lix\.in\/[^?&#]/,
+  f: function () {
+    return new RedirLixin ();
+  }
+}
+
+];  // end of _sites
+
+
+// URLに対応した Getter を選択する
+Redir.prototype._selectGetter = function (url) {
+  var sites = this._sites;
+
+  for (var i = 0; i < sites.length; ++i) {
+    if (sites [i].re.test (url)) {
+      return sites [i].f ();
+    }
+  }
+
+  return new RedirMisc ();
+};
+
+
+// 転送先URLを取得する
+Redir.prototype._invokeRedirector = function (url, chainCount) {
+  if (this._max <= chainCount) {
+    return this._ng ('転送回数が超過したため処理を打ち切ります。');
+  }
+
+  var u = new URL (url);
+
+  var getter = this._selectGetter (u.url);
+
+  getter.getAsync (u.url);
+
+  return { callback: this._getGetterResult, args: [ url, getter, chainCount ] };
+};
+
+
+// ファイルURLの取得を開始する(非同期処理開始)
+Redir.prototype._getAsync = function (url) {
+  return this._invokeRedirector (url, 0);
+};
+
+
+// 複数のURLの転送先を取得する
+Redir.prototype._getParallel = function (urls, max, nomismsg) {
+  var getters = [ ];
+
+  var len = urls.length;
+  for (var i = 0; i < len; ++i) {
+    getters [i] = new Redir ({ Max: max, NoMisMsg: nomismsg });
+    getters [i].getAsync (urls [i].Url);
+  }
+  for (i = 0; i < len; ++i) {
+    getters [i].getResult ();
+  }
+
+  return getters;
+};
+
+
+// 指定した配列の各 .items を統合して this.items に上書きする
+Redir.prototype._flatten = function (getters, urls) {
+  var items = [ ];
+
+  var len = getters.length;
+  for (var i = 0; i < len; ++i) {
+    var getter = getters [i];
+
+    if (getter.status == getter.OK) {
+      items = items.concat (getter.items);
+    }
+    else if (getter.status == getter.MIS) {
+      items.push ({ Url: urls [i].Url });
+    }
+    else {
+      return this._raise (getter);
+    }
+  }
+
+  this.items = items;
+  return this._ok ();
+};
+
+
+// public: 複数のURLの転送先を取得する
+Redir.prototype.getAll = function (urls) {
+  return this._flatten (this._getParallel (urls, this._max, this._noMisMsg), urls);
+};
+
+
+// public: 複数のURLの転送先を取得し、Redir インスタンスの配列で返す
+Redir.prototype.getParallel = function (urls) {
+  return this._getParallel (urls, this._max, this._noMisMsg);
+};
+
+
+// public: コメントを設定する
+Redir.prototype.setComment = function (s) {
+  var items = this.items;
+  var len = items.length;
+
+  for (var i = 0; i < len; ++i) {
+    items [i].Comment = s;
+  }
+};
+
+
+// public: 対応URLの正規表現文字列を返す
+Redir.prototype.buildMatchPattern = function (sitesArray) {
+  var m = { re: { source: new RedirMisc ().buildMatchPattern () } };
+  var sites = sitesArray || [ m ].concat (this._sites);
+
+  var hosts = [ ];
+  var re = /^\^http(s\??)?:\/\/([^\/]+)/;
+
+  var len = sites.length;
+  for (var i = 0; i < len; ++i) {
+    var s = sites [i].re.source;
+    hosts.push (re.test (s) ? re.$2 : '.*');
+  }
+
+  return '^https?://(' + hosts.join ('|') + ')/';
+};
+
+
+}) ()
+
+
+// EOF
