@@ -1,0 +1,55 @@
+common\sleeptimer.dms
+
+
+指定時間経過後にコールバック関数を呼び出します。
+
+静的なオブジェクトとして定義されているため、直接 SleepTimer オブジェクトの
+メソッドを参照して下さい。
+
+
+使用方法
+========
+
+  common_load ('sleeptimer');
+
+  var thisArg = null;
+  function callback (a, b) {
+    println (a + ' ' + b);
+  }
+  var args = [ 'foo', 'bar' ];
+  var msec = 100;
+
+  var timer = SleepTimer.create (thisArg, callback, args, msec);
+
+  timer.wakeup ();
+
+
+SleepTimer オブジェクトのメソッド
+=================================
+
+SleepTimer.create (thisArg, callback, args, msec)
+
+
+タイマーインスタンスのメソッド
+==============================
+
+wakeup ()
+
+
+仕様・制限事項
+==============
+
+・コールバック関数の呼び出しは遅延することがあります。
+
+・システム時間において同じミリ秒内に作成されたタイマーが呼び出される
+  順番は不定です(作成順ではありません)。
+
+
+変更履歴
+========
+
+2015-12-04  version 20151204.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]

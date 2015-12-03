@@ -1,0 +1,188 @@
+//Dorothy2
+//caption=SleepTimer
+//version=20151204.0
+//hint=
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2015 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+
+// グローバルオブジェクト
+SleepTimer = {
+  debug: false,
+  _serial: 0,
+  _list: [ ]
+};
+
+
+// タイマー情報を表示する
+SleepTimer._printDebugInfo = function (method, timer) {
+  function hl () {
+    println ('--------');
+  }
+  function p (s) {
+    println ('SleepTimer.' + method + ': ' + s);
+  }
+
+  hl ();
+
+  var s = [ ];
+  var list = this._list;
+  for (var i = 0; i < list.length; ++i) {
+    s.push (list [i]._serial);
+  }
+  println ('SleepTimer._list=' + s.join (','));
+
+  // 起動済みのタイマーが wakeup された場合は _this は削除されているので注意
+  try {
+    p ([
+      'serial=' + (timer.hasKey ('_serial') ? timer._serial : 'N/A'),
+      'thisArg=' + (timer.hasKey ('_this') ? nameOf (timer._this) : 'N/A'),
+      'timer=' + timer
+    ].join (', '));
+  }
+  catch (e) {
+    p (e + ': timer=' + nameOf (timer));
+  }
+
+  hl ();
+};
+
+
+// public: タイマーを作成する
+SleepTimer.create = function (thisArg, callback, args, msec) {
+  var timer = new Number ((new Date ()).getTime () + msec);
+
+  timer._this = thisArg;
+  timer._callback = callback;
+  timer._args = args || [ ];
+
+  timer._serial = this._serial++;
+
+  timer._done = false;
+
+  timer.wakeup = function () {
+    return SleepTimer._wakeup (this);
+  };
+
+  var list = this._list;
+  list.push (timer);
+  list.sort ();
+
+  if (this.debug) {
+    this._printDebugInfo ('create', timer);
+  }
+
+  return timer;
+};
+
+
+// スリープ秒数を表示
+SleepTimer._printSchedule = function (time, msec) {
+  // 終了時刻
+  var endTime = new Date (time);
+  endTime.format = 'hh:mm:ss';
+
+  // スリープする時、分、秒を求める
+  var s = Math.floor (msec / 1000);
+
+  var hour = Math.floor (s / 3600);
+  var min = Math.floor (s / 60) % 60;
+  var sec = s % 60;
+
+  println ([
+    'SleepTimer: ',
+    endTime.toString (),
+    ' まで、',
+    hour ? hour.toString () + '時間' : '',
+    min ? min.toString () + (hour ? '分' : '分間') : '',
+    sec ? sec.toString () + ((hour || min) ? '秒' : '秒間') : '',
+    '待機します。'
+  ].join (''));
+};
+
+
+// スリープする
+SleepTimer._sleepTo = function (time) {
+  var interval = 5 * 1000;
+
+  var rest = time - (new Date ()).getTime ();
+
+  if (this.debug || rest >= interval) {
+    this._printSchedule (time, rest);
+  }
+
+  while (rest > 0) {
+    Win32.sleep (Math.min (rest, interval));
+
+    rest = time - (new Date ()).getTime ();
+  }
+};
+
+
+// 指定したタイマーを起動する
+SleepTimer._wakeup = function (timer) {
+  if (this.debug) {
+    this._printDebugInfo ('_wakeup', timer);
+  }
+
+  if (timer._done) {
+    // 起動済みのタイマーなので、すぐに結果を返す
+    return timer._result;
+  }
+
+  var list = this._list;
+  while (list.length) {
+    if ((new Date ()).getTime () < list [0]) {
+      // 直近のタイマー起動時間まで待機する
+      this._sleepTo (list [0]);
+    }
+
+    // 先頭のタイマーを取り出す
+    var t = list.splice (0, 1) [0];
+
+    // コールバック関数を apply モードに変更しない回避策
+    var c = (function (t) { return t._callback; }) (t);
+
+    t._done = true;
+    t._result = c.apply (t._this, t._args);
+
+    t.removeKey ('_this');
+    t.removeKey ('_callback');
+    t.removeKey ('_args');
+
+    if (timer._done) {
+      // 今処理したタイマーが目的のものだった、または
+      // コールバック内から目的のタイマーが wakeup された
+      return timer._result;
+    }
+  }
+
+  throw 'SleepTimer: 不正なタイマーが指定されました。';
+};
+
+
+}) ()
+
+
+// EOF
