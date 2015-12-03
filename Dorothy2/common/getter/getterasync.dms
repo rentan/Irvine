@@ -1,0 +1,108 @@
+//Dorothy2
+//caption=GetterAsync
+//version=20151204.0
+//hint=Getterモジュール
+//match=
+//author=rentan
+//path=common\getter
+//end
+
+/*
+Copyright (C) 2015 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+common_load ('getter', 'sleeptimer');
+
+
+// Getterモジュール
+void function GetterAsync () {
+};
+
+
+// コールバック関数を登録する
+GetterAsync.prototype._setTimer = function (o) {
+  var msec = o.hasKey ('msec') ? o.msec : o.hasKey ('sec') ? o.sec * 1000 : 0;
+
+  this._timer = SleepTimer.create (this, o.callback, o.args, msec);
+};
+
+
+// コールバック関数が登録されていれば実行し、結果を返す
+GetterAsync.prototype._wait = function () {
+  if (this.hasKey ('_result')) {
+    var r = this._result;
+    this.removeKey ('_result');
+    return r;
+  }
+
+  var timer = this._timer;
+  this.removeKey ('_timer');
+  return timer.wakeup ();
+};
+
+
+// 非同期処理中か調べる
+GetterAsync.prototype._isBusy = function () {
+  return this.hasKey ('_result') || this.hasKey ('_timer');
+};
+
+
+// public: ファイルURLの取得を開始する(非同期処理開始)
+GetterAsync.prototype.getAsync = function (url) {
+  if (this._isBusy ()) {
+    this._throw ('非同期処理中です。');
+  }
+
+  this.items = [ ];
+
+  var r = this._getAsync (url);
+
+  if (typeof r === 'boolean') {
+    this._result = r;
+  }
+  else {
+    this._setTimer (r);
+  }
+};
+
+
+// public: ファイルURLを取得する(非同期処理完了)
+GetterAsync.prototype.getResult = function () {
+  if (!this._isBusy ()) {
+    this._throw ('非同期処理を開始していません。');
+  }
+
+  for (var r = this._wait (); typeof r != 'boolean'; r = this._wait ()) {
+    this._setTimer (r);
+  }
+
+  return r;
+};
+
+
+// public: ファイルURLを取得する
+GetterAsync.prototype.get = function (url) {
+  this.getAsync (url);
+  return this.getResult ();
+};
+
+
+}) ()
+
+
+// EOF
