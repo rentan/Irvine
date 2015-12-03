@@ -1,0 +1,29 @@
+common\getter\getterasync.dms
+
+
+非同期処理のための機能を追加する Getter 用モジュールです。
+
+
+サンプル
+========
+
+  common_load ('getter\getterasync');
+
+  void function MyGetter () {
+  };
+
+  MyGetter.prototype._getAsync = function (url) {
+    // ...
+  };
+
+  Getter (MyGetter, GetterAsync);
+
+
+変更履歴
+========
+
+2015-12-04  version 20151204.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]

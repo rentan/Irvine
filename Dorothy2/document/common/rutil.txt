@@ -69,6 +69,9 @@ Dorothy.setFilename (filename)
 変更履歴
 ========
 
+2015-12-04  version 20151204.0  rentan at rentan.org
+  各種 common の最低バージョンを更新。
+
 2015-11-27  version 20151127.0  rentan at rentan.org
   各種 common の最低バージョンを更新。
 

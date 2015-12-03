@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20151127.0
+//version=20151204.0
 //hint=utility
 //match=
 //author=rentan
@@ -259,7 +259,8 @@ common_xload = (function (common_xload) {
     'esx\json': 20151125.0,
 
     'getter\chklistbox': 20150721.0,
-    'getter\redir': 20151022.0,
+    'getter\getterasync': 20151204.0,
+    'getter\redir': 20151204.0,
 
     actibook: 20140331.0,
     additem: 20150103.0,
@@ -272,7 +273,7 @@ common_xload = (function (common_xload) {
     jinput: 20140908.0,
     namebuilder: 20150531.0,
     rutil_dorothy2r: 20141018.0,
-    sleeptimer: 20151022.0,
+    sleeptimer: 20151204.0,
     threadstorage: 20140913.0,
     utf8: 20140811.0,
     utf8_charref: 20140811.0,

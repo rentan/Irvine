@@ -1,0 +1,94 @@
+//Dorothy2
+//caption=SleepTimer spec
+//version=20151204.0
+//hint=http://yasmine.dorothy.test/common/spec/sleeptimer_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2015 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+common_load ('sleeptimer');
+
+
+describe ('SleepTimer.create()', function () {
+  it ('returns timer object', function () {
+    function f () { }
+    var timer = SleepTimer.create (null, f, [ ], 0);
+
+    expect (timer).toEqual (jasmine.any (Object));
+    expect (typeof timer.wakeup).toBe ('function');
+
+    timer.wakeup ();
+  });
+});
+
+
+describe ('<timer object>.wakeup()', function () {
+  it ('callbacks with arguments specified by array at Sleeptimer.create()', function () {
+    function f (a, b, c) { return a + b + c; }
+    var timer = SleepTimer.create (null, f, [ 'abc', 123, 'xyz' ], 0);
+
+    expect (timer.wakeup ()).toBe ('abc123xyz');
+  });
+
+  it ('returns return value of callback function', function () {
+    function f () { return 'foo'; }
+    var timer = SleepTimer.create (null, f, [ ], 0);
+
+    expect (timer.wakeup ()).toBe ('foo');
+  });
+
+  it ('does not change callback function to call/apply mode', function () {
+    function f (a) { return a; }
+    var timer = SleepTimer.create (null, f, [ 'foo' ], 0);
+
+    expect (timer.wakeup ()).toBe ('foo');
+
+    // f が apply モードに変更されていると、戻り値は 'second' になる
+    expect (f ('first', [ 'second' ])).toBe ('first');
+  });
+
+  it ('callbacks all timers before target timer', function () {
+    var obj = { s: '' };
+
+    function f (obj, t) {
+      obj.s += t;
+      return obj.s;
+    }
+
+    var timerD = SleepTimer.create (null, f, [ obj, 'd' ], 300);
+    var timerA = SleepTimer.create (null, f, [ obj, 'a' ], 0);
+    var timerC = SleepTimer.create (null, f, [ obj, 'c' ], 200);
+    var timerB = SleepTimer.create (null, f, [ obj, 'b' ], 100);
+
+    expect (timerC.wakeup ()).toBe ('abc');
+    expect (obj.s).toBe ('abc');
+
+    expect (timerD.wakeup ()).toBe ('abcd');
+    expect (obj.s).toBe ('abcd');
+  });
+});
+
+
+// EOF

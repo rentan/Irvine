@@ -1,0 +1,15 @@
+common\getter\redir.dms
+
+
+URL 転送サイトの転送先を取得するためのオブジェクトです。
+DOA からは使用できません。
+
+
+変更履歴
+========
+
+2015-12-04  version 20151204.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]
