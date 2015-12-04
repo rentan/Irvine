@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=redir spec
-//version=20151204.0
+//version=20151205.0
 //hint=http://yasmine.dorothy.test/common/spec/getter/redir_spec.dms
 //match=
 //author=rentan
@@ -47,7 +47,12 @@ describe ('Redir#get', function () {
     [ 'http://bit.ly/1Huy8Xw', 'http://example.com/bitly' ],
     [ 'http://goo.gl/S8qTmW', 'http://example.com/googl' ],
     [ 'http://ime.nu/example.com/imenu', 'http://example.com/imenu' ],
+
     [ 'http://jump.2ch.net/?example.com/jump2chnet', 'http://example.com/jump2chnet' ],
+    [ 'http://jump.2ch.net/?http://example.com/jump2chnet', 'http://example.com/jump2chnet' ],
+    [ 'http://jump.2ch.net/?https://example.com/jump2chnet', 'https://example.com/jump2chnet' ],
+    [ 'http://jump.2ch.net/?ftp://example.com/jump2chnet', 'ftp://example.com/jump2chnet' ],
+
     [ 'http://pinktower.com/?example.com/pinktowercom', 'http://example.com/pinktowercom' ]
 
   ])

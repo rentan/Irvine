@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Redir
-//version=20151204.0
+//version=20151205.0
 //hint=
 //match=
 //author=rentan
@@ -566,7 +566,10 @@ RedirMisc.prototype._sites = [
 {
   re: /^http:\/\/jump\.2ch\.net\/\?[^?&#]/,
   f: function (url, path) {
-    return this._add ({ Url: 'http://' + path.slice (1) });
+    var p = path.slice (1);
+    var u = /^(https?|ftp):\/\//.test (p) ? p : 'http://' + p;
+
+    return this._add ({ Url: u });
   }
 },
 

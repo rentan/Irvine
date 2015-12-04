@@ -8,6 +8,9 @@ DOA からは使用できません。
 変更履歴
 ========
 
+2015-12-05  version 20151205.0  rentan at rentan.org
+  http://jump\.2ch\.net/\?(https?|ftp)://.* に対応。
+
 2015-12-04  version 20151204.0  rentan at rentan.org
   新規作成。
 

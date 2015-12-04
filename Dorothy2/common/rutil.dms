@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20151204.0
+//version=20151205.0
 //hint=utility
 //match=
 //author=rentan
@@ -260,7 +260,7 @@ common_xload = (function (common_xload) {
 
     'getter\chklistbox': 20150721.0,
     'getter\getterasync': 20151204.0,
-    'getter\redir': 20151204.0,
+    'getter\redir': 20151205.0,
 
     actibook: 20140331.0,
     additem: 20150103.0,
