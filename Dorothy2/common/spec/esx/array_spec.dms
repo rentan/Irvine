@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=esx/array spec
-//version=20140622.0
+//version=20151206.0
 //hint=http://yasmine.dorothy.test/common/spec/esx/array_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -201,6 +201,13 @@ describe ('Array#forEach', function () {
 
     expect (sentThis).toBe (thisObj);
   });
+
+  it ('does not change callback function to apply/call mode', function () {
+    function f (a) { return a; }
+    [ true ].forEach (f);
+
+    expect (f ('genuine', 'call mode')).toBe ('genuine');
+  });
 });
 
 
@@ -248,6 +255,13 @@ describe ('Array#every', function () {
 
   it ('NaN ‚Í‹U‚ÆŒ©‚È‚·(DMonkey bug workaround)', function () {
     expect ([ 1 ].every (function () { return NaN; })).toBe (false);
+  });
+
+  it ('does not change callback function to apply/call mode', function () {
+    function f (a) { return a; }
+    [ true ].every (f);
+
+    expect (f ('genuine', 'call mode')).toBe ('genuine');
   });
 });
 
@@ -297,6 +311,13 @@ describe ('Array#some', function () {
   it ('NaN ‚Í‹U‚ÆŒ©‚È‚·(DMonkey bug workaround)', function () {
     expect ([ 1 ].some (function () { return NaN; })).toBe (false);
   });
+
+  it ('does not change callback function to apply/call mode', function () {
+    function f (a) { return a; }
+    [ true ].some (f);
+
+    expect (f ('genuine', 'call mode')).toBe ('genuine');
+  });
 });
 
 
@@ -330,6 +351,13 @@ describe ('Array#filter', function () {
 
   it ('NaN ‚Í‹U‚ÆŒ©‚È‚·(DMonkey bug workaround)', function () {
     expect ([ 1 ].filter (function () { return NaN; })).toEqual ([ ]);
+  });
+
+  it ('does not change callback function to apply/call mode', function () {
+    function f (a) { return a; }
+    [ true ].filter (f);
+
+    expect (f ('genuine', 'call mode')).toBe ('genuine');
   });
 });
 
@@ -365,6 +393,13 @@ describe ('Array#map', function () {
     }
 
     expect ([ '1', '2', '3' ].map (returnInt)).toEqual ([ 1, 2, 3 ]);
+  });
+
+  it ('does not change callback function to apply/call mode', function () {
+    function f (a) { return a; }
+    [ true ].map (f);
+
+    expect (f ('genuine', 'call mode')).toBe ('genuine');
   });
 });
 

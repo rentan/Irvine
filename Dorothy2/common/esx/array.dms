@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=esx/array
-//version=20140714.0
+//version=20151206.0
 //hint=
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -137,24 +137,26 @@ Array.prototype.lastIndexOf = function (searchElement, fromIndex) {
 
 
 Array.prototype.forEach = function (callback, thisArg) {
+  var caller = (function (f) { return f; }) (callback).call;
   var len = Array.prototype._getLength (this);
 
   for (var i = 0; i < len; ++i) {
     var v = this [i];
     if (!isUndefined (v)) {
-      callback.call (thisArg, v, i, this);
+      caller (thisArg, v, i, this);
     }
   }
 };
 
 
 Array.prototype.every = function (callback, thisArg) {
+  var caller = (function (f) { return f; }) (callback).call;
   var len = Array.prototype._getLength (this);
 
   for (var i = 0; i < len; ++i) {
     var v = this [i];
     if (!isUndefined (v)) {
-      v = callback.call (thisArg, v, i, this);
+      v = caller (thisArg, v, i, this);
       if (!v || isNaN (v)) {
         return false;
       }
@@ -166,12 +168,13 @@ Array.prototype.every = function (callback, thisArg) {
 
 
 Array.prototype.some = function (callback, thisArg) {
+  var caller = (function (f) { return f; }) (callback).call;
   var len = Array.prototype._getLength (this);
 
   for (var i = 0; i < len; ++i) {
     var v = this [i];
     if (!isUndefined (v)) {
-      v = callback.call (thisArg, v, i, this);
+      v = caller (thisArg, v, i, this);
       if (v && !isNaN (v)) {
         return true;
       }
@@ -183,13 +186,14 @@ Array.prototype.some = function (callback, thisArg) {
 
 
 Array.prototype.filter = function (callback, thisArg) {
+  var caller = (function (f) { return f; }) (callback).call;
   var len = Array.prototype._getLength (this);
   var res = [ ];
 
   for (var i = 0; i < len; ++i) {
     var v = this [i];
     if (!isUndefined (v)) {
-      var b = callback.call (thisArg, v, i, this);
+      var b = caller (thisArg, v, i, this);
       if (b && !isNaN (b)) {
         res.push (v);
       }
@@ -201,13 +205,14 @@ Array.prototype.filter = function (callback, thisArg) {
 
 
 Array.prototype.map = function (callback, thisArg) {
+  var caller = (function (f) { return f; }) (callback).call;
   var len = Array.prototype._getLength (this);
   var res = new Array (len);
 
   for (var i = 0; i < len; ++i) {
     var v = this [i];
     if (!isUndefined (v)) {
-      res [i] = callback.call (thisArg, v, i, this);
+      res [i] = caller (thisArg, v, i, this);
     }
   }
 

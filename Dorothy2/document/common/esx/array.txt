@@ -35,6 +35,10 @@ reduceRight (callback, initialValue)
 変更履歴
 ========
 
+2015-12-06  version 20151206.0  rentan at rentan.org
+  下記メソッドでコールバック関数が apply モードに変更されないようにした。
+    forEach  every  some  filter  map
+
 2014-07-14  version 20140714.0  rentan at rentan.org
   新規作成。
 
