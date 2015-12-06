@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util spec
-//version=20150930.0
+//version=20151206.0
 //hint=http://yasmine.dorothy.test/common/spec/rutil_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -114,6 +114,13 @@ describe ('Util.bind()', function () {
     var b2 = Util.bind (f2, null, 'foo');
 
     expect (b2 ('bar')).toBe ('foo-bar');
+  });
+
+  it ('does not change called function to apply/call mode', function () {
+    function f (a) { return a; }
+    Util.bind (f, null) ('foo');
+
+    expect (f ('genuine', [ 'apply mode' ])).toBe ('genuine');
   });
 });
 

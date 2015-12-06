@@ -69,6 +69,10 @@ Dorothy.setFilename (filename)
 変更履歴
 ========
 
+2015-12-06  version 20151206.0  rentan at rentan.org
+  Util.bind() で生成された関数を呼び出しても、元の関数が apply モードに
+  変更されないようにした。
+
 2015-12-05  version 20151205.0  rentan at rentan.org
   各種 common の最低バージョンを更新。
 

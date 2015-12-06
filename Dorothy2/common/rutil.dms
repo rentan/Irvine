@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20151205.0
+//version=20151206.0
 //hint=utility
 //match=
 //author=rentan
@@ -238,11 +238,13 @@ Util.min_version = function (reqVer) {
 
 // ŠÖ”‚Ì this ‚Æˆø”‚ğ‘©”›‚·‚é
 Util.bind = function (f, self) {
-  return (function (f, self, args) {
+  var applier = (function (f) { return f; }) (f).apply;
+
+  return (function (applier, self, args) {
     return function () {
-      return f.apply (self, args.concat (arguments));
+      return applier (self, args.concat (arguments));
     };
-  }) (f, self, arguments.slice (2));
+  }) (applier, self, arguments.slice (2));
 };
 
 
@@ -254,7 +256,7 @@ common_xload = (function (common_xload) {
     'domparser\pseudo_xml': 20140816.0,
     'domparser\xml': 20140816.0,
 
-    'esx\array': 20140714.0,
+    'esx\array': 20151206.0,
     'esx\date': 20141005.0,
     'esx\json': 20151125.0,
 
