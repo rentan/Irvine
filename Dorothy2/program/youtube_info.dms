@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/“®‰æî•ñ
-//version=20151123.0
+//version=20151222.0
 //hint=
 //match=^https?://www\.youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'http', 'namebuilder', 'utf8');
-  Util.min_version (20150930.0);
+  Util.min_version (20151206.0);
 
   // İ’èƒtƒ@ƒCƒ‹‚Ì“Ç‚İ‚İ
   var default_ini = {
@@ -102,8 +102,7 @@ YouTubeSig.prototype._findDecryptFuncBody = function (js) {
     return re.test (t) ? re.$1 : null;
   }
 
-  var body = findBody ('var ' + funcName + '=', 'var\s+' + escaped + '=function')
-          || findBody ('function ' + funcName + '(', 'function\s*' + escaped);
+  var body = findBody (',' + funcName + '=function(', ',' + escaped + '=function');
 
   if (body) {
     return body.trim ();

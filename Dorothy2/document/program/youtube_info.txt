@@ -30,6 +30,9 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
 変更履歴
 ========
 
+2015-12-22  version 20151222.0  rentan at rentan.org
+  signature スクリプトの変更に対応。
+
 2015-11-23  version 20151123.0  rentan at rentan.org
   adaptive_fmts を _decodeVideoInfo() で抽出するようにした。
   ライブ動画の検出に対応。
