@@ -1,15 +1,15 @@
 //Dorothy2
 //caption=rentan 詰め合わせ
-//version=20140729.0
+//version=20151225.0
 //hint=
-//match=^http://(www\.enterbrain\.co\.jp/fb/pc/(14gallery/14images|20omake/wallpaper)|websunday\.net/download/wallpaper|sundaygx\.com/members/[^/]+/download/wall_p|supersonico\.jp/mobile/dl|img\.toranoana\.jp/popup_img18|(ftp|download)\.vector\.co\.jp|www\.chuable\.net)/
+//match=^http://(fbonline\.jp/20omake/wallpaper|websunday\.net/download/wallpaper|sundaygx\.com/members/[^/]+/download/wall_p|supersonico\.jp/mobile/dl|img\.toranoana\.jp/popup_img18|(ftp|download)\.vector\.co\.jp|www\.chuable\.net)/
 //author=rentan
 //path=program
 //priority=500
 //end
 
 /*
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -139,7 +139,7 @@ function html_to_jpg (url) {
 
 
 // ファミ通文庫 FB Online 壁紙
-set_site (/^http:\/\/www\.enterbrain\.co\.jp\/fb\/pc\/(14gallery\/14images|20omake\/wallpaper)\//, html_to_jpg);
+set_site (/^http:\/\/fbonline\.jp\/20omake\/wallpaper\//, html_to_jpg);
 
 // WEBサンデー ダウンロード・スタジオ
 set_site (/^http:\/\/websunday\.net\/download\/wallpaper\//, html_to_jpg);

@@ -15,10 +15,10 @@ rentan_pack.dms
 ========
 
 http://(ftp|download).vector.co.jp/
+http://fbonline.jp/20omake/wallpaper/
 http://img.toranoana.jp/popup_img18/
 http://sundaygx.com/members/[^/]+/download/wall_p/
 http://websunday.net/download/wallpaper/
-http://www.enterbrain.co.jp/fb/pc/(14gallery/14images|20omake/wallpaper)/
 http://www.chuable.net/
 
 以下はコメントアウトしてあります。
@@ -34,6 +34,9 @@ http://my.vector.co.jp/servlet/System.FileDownload/download/
 
 変更履歴
 ========
+
+2015-12-25  version 20151225.0  rentan at rentan.org
+  ファミ通文庫の URL 変更に対応。
 
 2014-07-29  version 20140729.0  rentan at rentan.org
   script Mode 引数で動作モードを切り替えるようにした。
