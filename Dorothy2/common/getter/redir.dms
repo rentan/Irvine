@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Redir
-//version=20151205.0
+//version=20160111.0
 //hint=
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2015 rentan at rentan.org
+Copyright (C) 2015,2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -135,6 +135,7 @@ RedirLinkbucks.prototype.supportedUrl = (function () {
     'qvvo.com',
     'realfiles.net',
     'rqq.co',
+    'sasontnwc.net',
     'seriousdeals.net',
     'seriousfiles.com',
     'seriousurls.com',
@@ -165,12 +166,12 @@ RedirLinkbucks.prototype.supportedUrl = (function () {
 }) ();
 
 
-RedirLinkbucks.prototype._baseUrl = 'http://www.eafyfsuh.net/';
+RedirLinkbucks.prototype._baseUrl = 'http://www.sasontnwc.net/';
 
 
-// URL を http://www.eafyfsuh.net/*** 形式に変換
+// URL を http://www.***.net/*** 形式に変換
 RedirLinkbucks.prototype._toCanonicalUrl = function (url) {
-  if (/^http:\/\/www\.eafyfsuh\.net\/scripts\//.test (url)) {
+  if (/^http:\/\/www\.(sasontnwc|eafyfsuh)\.net\/scripts\//.test (url)) {
     return null;
   }
 
@@ -200,7 +201,7 @@ RedirLinkbucks.prototype._getAsync = function (url) {
 
 // 認証画面へのリダイレクトか調べる
 //
-// GET http://www.eafyfsuh.net/***
+// GET http://www.sasontnwc.net/***
 // ↓
 // HTTP/1.1 302 Found
 // Location: http://www.megaline.co/***/verify/url/
