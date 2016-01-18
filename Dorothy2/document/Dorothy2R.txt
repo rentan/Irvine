@@ -119,6 +119,7 @@ Dorothy.getThreadStorage ()
 
   Ini ファイルは %Dorothy.temp%\thread_storage.ini を使用する。
 
+Dorothy.setMatchName ()
 Dorothy.createProgramMatcher ()
 Dorothy.validateProgram ()
 Dorothy.loadProgram ()
@@ -130,6 +131,16 @@ Dorothy.loadDorothyIni ();
 
 変更履歴
 ========
+
+2016-01-18  version 20160118.0  rentan at rentan.org
+
+scripts\Dorothy2R_a.dms
+  Dorothy2A.dms version 0.32 ベースに更新。
+  Dorothy.setMatchName() を追加。
+
+Dorothy2R\system\menu\set\usersetting.dms
+  Dorothy2set.dms version 0.20 ベースに更新。
+
 
 2015-09-30  version 20150930.0  rentan at rentan.org
 

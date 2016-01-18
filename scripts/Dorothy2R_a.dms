@@ -10,7 +10,7 @@ author=xor, rentan
 synchronize=0
 */
 
-// based on Dorothy2A.dms version 0.31 by xor
+// based on Dorothy2A.dms version 0.32 by xor
 
 /*
 Copyright (C) 2014,2015,2016 rentan at rentan.org
@@ -508,7 +508,7 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
   // Dorothy オブジェクト初期化
   function ev () { eval (arguments [0]); }
   Dorothy.loadDorothyIni ();
-  Dorothy.init ({ version: '0.31', eval: ev });
+  Dorothy.init ({ version: '0.32', eval: ev });
 
 
   // Dorothy2\program\*.dms から使える機能を定義

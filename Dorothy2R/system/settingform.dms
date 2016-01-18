@@ -1,16 +1,16 @@
 //Dorothy2
 //caption=SettingForm
-//version=20150316.0
+//version=20160118.0
 //hint=
 //match=
 //author=rentan
 //path=system
 //end
 
-// based on Dorothy2set.dms version 0.19 by xor
+// based on Dorothy2set.dms version 0.20 by xor
 
 /*
-Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2014,2015,2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ SettingForm.initDorothy = function (ev) {
 
   // Dorothy オブジェクト初期化
   Dorothy.init ({ version: 'xxxx', eval: ev });
-  Dorothy.rVersion = 20150316;
+  Dorothy.rVersion = 20160118;
 
   debug = false;
   mode = { };
@@ -215,6 +215,8 @@ SettingForm.bindCallback = function () {
     'newProject',
     'editProject',
     'outputProject',
+
+    'settingScript',
 
     'documentViewer',
     'showVersion',
@@ -1198,16 +1200,24 @@ SettingForm.outputProject = function () {
 SettingForm.initSettingMenu = function () {
   var menu = this.createMenu ();
 
-  menu.add (this.USER_SETTING_2R);
+  var opt = { onclick: this.settingScript };
+
+  menu.add (this.USER_SETTING_2R, opt);
 
   // Dorothy2R 側で実装されているスクリプトは無視する
-  var ignore = [ 'window.dms' ];
+  opt.ignore = [ 'window.dms' ];
   if (menu.hasItem (this.USER_SETTING_2R + 'usersetting.dms')) {
-    ignore = ignore.concat ([ 'common.dms', 'user_name.dms', 'usersetting.dms' ]);
+    opt.ignore = opt.ignore.concat ([ 'common.dms', 'user_name.dms', 'usersetting.dms' ]);
   }
-  menu.add (this.USER_SETTING, { ignore: ignore });
+  menu.add (this.USER_SETTING, opt);
 
   menu.register (this.menuSetting);
+};
+
+
+SettingForm.settingScript = function (menuItem) {
+  Dorothy.setMatchName (menuItem.filename, 'url');
+  this.execScriptFile (menuItem.path);
 };
 
 
@@ -1286,9 +1296,8 @@ SettingForm.programSetting = function () {
     return;
   }
 
-  var f = Dorothy.matchFile = item.filename;
-  Dorothy.userPath = this.USER + f + '\';
-  Dorothy.userIniPath = Dorothy.userPath + f + '.ini';
+  var f = item.filename;
+  Dorothy.setMatchName (f, '');
 
   this.execScriptFile (this.SETTING + f + '.set');
 };
@@ -1534,6 +1543,7 @@ SettingForm._createMenu_add = function (path, opt) {
 
     var item = new VCLMenuItem ();
     item.path = f.path;
+    item.filename = File.changeExt (filename, '');
     item.onClick = onclick;
 
     // .dms ファイルならヘッダを読み込んでメニュー項目として表示させる
