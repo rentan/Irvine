@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=201500316
+version=20160118
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -13,7 +13,7 @@ synchronize=0
 // based on Dorothy2A.dms version 0.31 by xor
 
 /*
-Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2014,2015,2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -57,20 +57,20 @@ void function irvinePath () { };
 Dorothy = { version: 'uninitialized' };
 
 
+// Dorothy.matchFile 等を設定する
+Dorothy.setMatchName = function (name, type) {
+  Dorothy.matchFile = name;
+  Dorothy.matchType = type;
+
+  var n = name || null;
+  Dorothy.userPath = n && Dorothy.path + 'user\' + name + '\';
+  Dorothy.userIniPath = n && Dorothy.userPath + name + '.ini';
+};
+
+
 // ProgramMatcher を作成して返す
 Dorothy.createProgramMatcher = function (ignoreDot) {
   function find (url, item) {
-
-    function match (m, type) {
-      Dorothy.matchFile = m.f;
-      Dorothy.matchType = type;
-
-      Dorothy.userPath = Dorothy.path + 'user\' + m.f + '\';
-      Dorothy.userIniPath = Dorothy.userPath + m.f + '.ini';
-
-      return m;
-    }
-
     var ignore = this._ignore;
     var comment = (item && item.comment) ? 'comment:' + item.comment : null;
 
@@ -89,23 +89,20 @@ Dorothy.createProgramMatcher = function (ignoreDot) {
       // //match=comment:～
       if (/^comment:/.test (re.source)) {
         if (comment && re.test (comment)) {
-          return match (m, 'comment');
+          Dorothy.setMatchName (m.f, 'comment');
+          return m;
         }
       }
 
       // //match=～
       else if (re.test (url)) {
-        return match (m, 'url');
+        Dorothy.setMatchName (m.f, 'url');
+        return m;
       }
     }
 
     // 一致するファイルがなかった
-    Dorothy.matchFile = '';
-    Dorothy.matchType = '';
-
-    Dorothy.userPath = null;
-    Dorothy.userIniPath = null;
-
+    Dorothy.setMatchName ('', '');
     return null;
   }
 
