@@ -1,0 +1,41 @@
+//Dorothy2
+//caption=matchFile•\Ž¦
+//version=20160118.0
+//hint=
+//match=
+//author=rentan
+//path=system\menu\set
+//end
+
+/*
+Copyright (C) 2016 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+function () {
+  var keys = [ 'matchFile', 'matchType', 'userPath', 'userIniPath' ];
+
+  var s = [ ];
+  for (var i = 0; i < keys.length; ++i) {
+    var key = keys [i];
+    s.push (Dorothy.hasKey (key) ? key + ' = ' + Dorothy [key] : key + ' c –¢’è‹`');
+  }
+
+  alert (s.join ("\n"));
+}
+
+
+// EOF
