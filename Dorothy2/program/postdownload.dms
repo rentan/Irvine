@@ -1,0 +1,157 @@
+//Dorothy2
+//caption=postdownload
+//version=20160202.0
+//hint=
+//match=^http://postdownload\.dorothy\.test/.
+//author=rentan
+//path=program
+//priority=500
+//end
+
+function (scriptMode) {
+
+
+//------------------------------ PostDownload ------------------------------
+
+common_load ('getter', 'http');
+
+
+// コンストラクタ
+Getter (function PostDownload (opt) {
+  this._autoLoadIni = this._getArg (opt, 'AutoLoadIni', true);
+
+  this._requestData = null;
+});
+
+
+// public: ini データを設定する
+PostDownload.prototype.setIni = function (ini) {
+  this._requestData = ini;
+  return this._ok ();
+};
+
+
+// ini ファイルを読み込む
+PostDownload.prototype._loadIni = function (url) {
+  if (!/^http:\/\/postdownload\.dorothy\.test\/([^\/?#]+)\?/.test (url)) {
+    return this._miss ();
+  }
+  var iniName = RegExp.$1;
+
+  var iniPath = Dorothy.userPath + iniName + '.ini';
+  var ini = Util.ini_load ({ Request: { Url: '', Body: '' } }, iniPath);
+
+  return this.setIni (ini.Request);
+};
+
+
+// URL のクエリー文字列を分割する
+PostDownload.prototype._splitQueryString = function (s) {
+  var q = s.split (/&/);
+
+  var params = { };
+  for (var i = 0; i < q.length; ++i) {
+    if (/^([^=]+)=(.*)$/.test (q [i])) {
+      params [RegExp.$1] = RegExp.$2;
+    }
+  }
+
+  return params;
+};
+
+
+// Http オブジェクトを初期化する
+PostDownload.prototype._setupHttp = function (req, params) {
+  var http = this.http = new Http ();
+
+  var keys = {
+    ContentType: 'Content-Type',
+    UserAgent: 'User-Agent'
+  };
+
+  for (var key in keys) {
+    if (req.hasKey (key)) {
+      http.setRequestHeader (keys [key], req [key]);
+    }
+  }
+
+  return http;
+};
+
+
+// 送信するリクエストボディを作る
+PostDownload.prototype._buildRequestBody = function (req, params) {
+  return req.Body.replace (/\$\{([^}]*)\}/g, function (s, key) {
+    return key ? params.hasKey (key) ? params [key] : '' : '$';
+  });
+};
+
+
+// public: ファイル URL を取得する
+PostDownload.prototype.get = function (url) {
+  this.items = [ ];
+
+
+  if (this._autoLoadIni && !this._loadIni (url)) {
+    return false;
+  }
+
+  var req = this._requestData;
+  if (!req || !req.Url) {
+    return this._ng ('[Request]Url= がありません。');
+  }
+
+
+  if (!/\?([^#]*)/.test (url)) {
+    return this._miss ();
+  }
+  var params = this._splitQueryString (RegExp.$1);
+
+  if (!params.hasKey ('filename')) {
+    return this._ng ('URL に ?filename= がありません。');
+  }
+  this._filename = params.filename;
+
+
+  var http = this._setupHttp (req, params);
+  var postData = this._buildRequestBody (req, params);
+
+  this._p ('ファイルをダウンロードします。');
+  if (!http.post (req.Url, postData)) {
+    return this._httpError ();
+  }
+
+  return this._ok ();
+};
+
+
+// public: ダウンロード情報を登録する
+PostDownload.prototype.download = function (args) {
+  var r = this.http.capture (this._filename);
+  if (r.error) {
+    return this._ng (r.error);
+  }
+
+  Util.remove_this ();
+  return this._ok ();
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
+  }
+
+  var getter = new PostDownload ();
+
+  if (getter.get (urlinfo.url)) {
+    getter.download ();
+  }
+
+  getter.end ();
+}
+
+
+// EOF

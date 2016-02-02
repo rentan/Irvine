@@ -1,0 +1,58 @@
+postdownload.dms
+
+
+POST でデータがダウンロードできるサイト用のスクリプトです。
+
+
+使用方法
+========
+
+設定機能はありません。
+
+サーバに対応した設定をテキストエディタ等で記述し、下記ファイルに
+保存します。
+  Dorothy2\user\postdownload\サイト名.ini
+
+下記 URL を Irvine に追加します。
+  http://postdownload.dorothy.test/サイト名?filename=保存ファイル名
+
+詳しくはスクリプトを読んで下さい。
+
+
+Ini ファイル仕様
+================
+
+[Request] セクション
+
+Url= POST する URL
+
+リクエストヘッダ(省略可)
+UserAgent=
+ContentType=
+
+Body= 送信するリクエストボディ
+  URL のクエリー文字列で指定した変数を、${変数名} で展開します。
+  例:
+    http://postdownload.dorothy.test/foo?filename=test.zip&bar=123
+    Body=fn=${filename}&key=${bar}
+    → fn=test.zip&key=123 が送信されます。
+
+
+対応 URL
+========
+
+http://postdownload.dorothy.test/サイト名?filename=
+
+
+仕様・制限事項
+==============
+
+
+変更履歴
+========
+
+2016-02-02  version 20160202.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]
