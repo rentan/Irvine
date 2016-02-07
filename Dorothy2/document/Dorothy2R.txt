@@ -140,6 +140,11 @@ scripts\Dorothy2R_a.dms
   eval() した結果を Global に登録する方法をやめ、直接 Global に追加する
   ようにした(内部での eval() は代わりに Dorothy._eval() を使う)。
 
+scripts\Dorothy2R_resp.dms
+  ThreadStorage の headers.Last-Modified キーを小文字の
+  headers.last-modified に修正(大文字だと、サーバから last-modified ヘッダ
+  を受信していた場合に上書きができない不具合があった)。
+
 
 2016-01-18  version 20160118.0  rentan at rentan.org
 
