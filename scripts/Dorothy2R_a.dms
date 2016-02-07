@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20160118
+version=20160208
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -13,7 +13,7 @@ synchronize=0
 // based on Dorothy2A.dms version 0.32 by xor
 
 /*
-Copyright (C) 2014,2015,2016 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -51,10 +51,159 @@ void function irvinePath () { };
 }) (irvinePath.prototype);
 
 
+//---------------------- Global オブジェクトへの追加 -----------------------
+
+
+// ファイルを読み込んで返す
+Global.file_load = function (path) {
+  var fullpath = /^[a-z]:/i.test (path) ? path : Dorothy.path + path;
+  var file = new File (fullpath);
+
+  var mutex = new Mutex ('file_load');
+  try {
+    mutex.lock ();
+    file.open ('r');
+    return file.read ();
+  }
+  catch (e) {
+    println ('error>' + e + ' ' + path + ' の読み込みに失敗しました。');
+  }
+  finally {
+    file.close ();
+    mutex.unlock ();
+  }
+
+  exit ();
+};
+
+
+// Dorothy2\common\*.dms を読み込んで実行する
+Global.common_xload = function (name) {
+  // println (name + ' {');
+  // var tc = Win32.getTickCount ();
+
+  var n = name.replace (/\//g, '\');
+
+  // common_name 定義時はそのフォルダから優先検索
+  // common_sp == true 時は common(special) フォルダから優先検索
+  function f (dir, show) {
+    var file = new File (Dorothy.path + dir + '\' + n + '.dms');
+    if (file.exists ()) {
+      if (show) {
+        println ('common_xload: ' + file.path);
+      }
+      return file.path;
+    }
+    return null;
+  }
+
+  var show = Dorothy.common_show;
+  var file = (Dorothy.common_name && f (Dorothy.common_name, show))
+          || (Dorothy.common_sp && f ('common(special)', show))
+          || f ('common', false);
+
+  if (!file) {
+    println ('common_xload: ファイルがありません: ' + n);
+    exit ();
+  }
+
+  try {
+    var src = file_load (file);
+
+    var s = Dorothy.validateCommon (n, src);
+    if (s) {
+      throw s;
+    }
+
+    Dorothy._eval (src);
+  }
+  catch (e) {
+    println ('common_xload: ' + e + ': ' + file);
+    exit ();
+  }
+
+  // println ('} ' + name + ' ' + (Win32.getTickCount () - tc) + 'ms');
+};
+
+
+// Dorothy2\common\<引数>.dms を読み込んで実行する
+Global.common_load = function () {
+  for (var i = 0; i < arguments.length; i++) {
+    if (Dorothy.common.hasKey (arguments [i])) {
+      // 既にロード済みのファイルは無視
+      continue;
+    }
+
+    common_xload (arguments [i]);
+  }
+};
+
+
+// Dorothy2\program\<name>.dms を読み込んで返す
+Global.program_load = function (name) {
+  return file_load (Dorothy.programDir + name + '.dms');
+};
+
+
+// Dorothy2\user\<プログラム名>\<name> を読み込んで返す
+Global.user_load = function (name) {
+  return file_load ('user\' + Dorothy.matchFile + '\' + name);
+};
+
+
+// Dorothy2\user\<プログラム名>\<引数>.dms を読み込んで実行する
+Global.user_program_load = function () {
+  for (var i = 0; i < arguments.length; i++) {
+    try {
+      Dorothy._eval (user_load (arguments [i] + '.dms'));
+    }
+    catch (e) {
+      println (e + ' ' + Dorothy.matchFile + '\' + arguments [i] + '.dms');
+      exit ();
+    }
+  }
+};
+
+
+// debug 時のみログ表示
+Global.print_debug = function (s) {
+  if (debug) {
+    println (s);
+  }
+};
+
+
+// (非推奨) ファイル名に使用できない記号や実体参照を変換する
+Global.changeFileName = function (filename) {
+  return filename;
+};
+
+
+// xor.dms joint()
+Global.joint = function (separator) {
+  var jointed = '';
+
+  var len = arguments.length;
+  for (var i = 1; i < len; ++i) {
+    var s = arguments [i];
+    jointed += (jointed == '' || s == '') ? s : separator + s;
+  }
+
+  return jointed;
+};
+
+
 //-------------------------- Dorothy オブジェクト --------------------------
 
 // Dorothy オブジェクトをグローバル定義
-Dorothy = { version: 'uninitialized' };
+Dorothy = {
+  version: 'uninitialized',
+
+  // DOA からの実行かどうか
+  isDOA: false,
+
+  common: { }
+};
 
 
 // Dorothy.matchFile 等を設定する
@@ -200,7 +349,7 @@ Dorothy.getThreadStorage = function () {
 
 
 // Dorothy.init で Dorothy オブジェクトに定義する関数群
-//   クロージャが必要なら string で定義する(\ のエスケープに注意)。
+//   string で定義する(\ のエスケープに注意)。
 Dorothy._d = [ ];
 
 
@@ -285,166 +434,17 @@ Dorothy._d.push ({ n: 'setFilename', f: "function (filename) {
 }" });
 
 
-// Dorothy.init で Global オブジェクトに定義する関数群
-Dorothy._g = [ ];
-
-
-// ファイルを読み込んで返す
-Dorothy._g.push ({ n: 'file_load', f: "function (path) {
-  var fullpath = /^[a-z]:/i.test (path) ? path : Dorothy.path + path;
-  var file = new File (fullpath);
-
-  var mutex = new Mutex ('file_load');
-  try {
-    mutex.lock ();
-    file.open ('r');
-    return file.read ();
-  }
-  catch (e) {
-    println ('error>' + e + ' ' + path + ' の読み込みに失敗しました。');
-  }
-  finally {
-    file.close ();
-    mutex.unlock ();
-  }
-
-  exit ();
-}" });
-
-
-// Dorothy2\common\*.dms を読み込んで実行する
-Dorothy._g.push ({ n: 'common_xload', f: "function (name) {
-  // println (name + ' {');
-  // var tc = Win32.getTickCount ();
-
-  var n = name.replace (/\\//g, '\\');
-
-  // common_name 定義時はそのフォルダから優先検索
-  // common_sp == true 時は common(special) フォルダから優先検索
-  function f (dir, show) {
-    var file = new File (Dorothy.path + dir + '\\' + n + '.dms');
-    if (file.exists ()) {
-      if (show) {
-        println ('common_xload: ' + file.path);
-      }
-      return file.path;
-    }
-    return null;
-  }
-
-  var show = Dorothy.common_show;
-  var file = (Dorothy.common_name && f (Dorothy.common_name, show))
-          || (Dorothy.common_sp && f ('common(special)', show))
-          || f ('common', false);
-
-  if (!file) {
-    println ('common_xload: ファイルがありません: ' + n);
-    exit ();
-  }
-
-  try {
-    var src = file_load (file);
-
-    var s = Dorothy.validateCommon (n, src);
-    if (s) {
-      throw s;
-    }
-
-    eval (src);
-  }
-  catch (e) {
-    println ('common_xload: ' + e + ': ' + file);
-    exit ();
-  }
-
-  // println ('} ' + name + ' ' + (Win32.getTickCount () - tc) + 'ms');
-}" });
-
-
-// Dorothy2\common\<引数>.dms を読み込んで実行する
-Dorothy._g.push ({ n: 'common_load', f: "function () {
-  for (var i = 0; i < arguments.length; i++) {
-    if (Dorothy.common.hasKey (arguments [i])) {
-      // 既にロード済みのファイルは無視
-      continue;
-    }
-
-    common_xload (arguments [i]);
-  }
-}" });
-
-
-// Dorothy2\program\<name>.dms を読み込んで返す
-Dorothy._g.push ({ n: 'program_load', f: function (name) {
-  return file_load (Dorothy.programDir + name + '.dms');
-} });
-
-
-// Dorothy2\user\<プログラム名>\<name> を読み込んで返す
-Dorothy._g.push ({ n: 'user_load', f: function (name) {
-  return file_load ('user\' + Dorothy.matchFile + '\' + name);
-} });
-
-
-// Dorothy2\user\<プログラム名>\<引数>.dms を読み込んで実行する
-Dorothy._g.push ({ n: 'user_program_load', f: function () {
-  for (var i = 0; i < arguments.length; i++) {
-    try {
-      eval (file_load ('user\' + Dorothy.matchFile + '\' + arguments [i] + '.dms'));
-    }
-    catch (e) {
-      println (e + ' ' + Dorothy.matchFile + '\' + arguments [i] + '.dms');
-      exit ();
-    }
-  }
-} });
-
-
-// debug 時のみログ表示
-Dorothy._g.push ({ n: 'print_debug', f: function (s) {
-  if (debug) {
-    println (s);
-  }
-} });
-
-
-// (非推奨) ファイル名に使用できない記号や実体参照を変換する
-Dorothy._g.push ({ n: 'changeFileName', f: function (filename) {
-  return filename;
-} });
-
-
-// xor.dms joint()
-Dorothy._g.push ({ n: 'joint', f: function (separator) {
-  var jointed = '';
-
-  var len = arguments.length;
-  for (var i = 1; i < len; ++i) {
-    var s = arguments [i];
-    jointed += (jointed == '' || s == '') ? s : separator + s;
-  }
-
-  return jointed;
-} });
-
-
 // Dorothy 初期化
 Dorothy.init = function (o) {
   // Dorothy2 本体のバージョン番号
   Dorothy.version = o.version;
 
-  // DOA からの実行かどうか
-  Dorothy.isDOA = false;
-
-  Dorothy.common = { };
-
+  var ev = Dorothy._eval = o.eval;
 
   // 関数を定義
   function define (key, target, targetDot) {
     var funcs = Dorothy [key];
     Dorothy.removeKey (key);
-
-    var ev = o.eval;
 
     for (var i = 0; i < funcs.length; ++i) {
       var nf = funcs [i];
@@ -462,8 +462,6 @@ Dorothy.init = function (o) {
     }
   }
   define ('_d', Dorothy, 'Dorothy.');
-  define ('_g', Global, 'Global.');
-
 
   // 不要になったプロパティを削除
   Dorothy.removeKey ('init');
