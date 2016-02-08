@@ -93,6 +93,11 @@ http://u[^/.]+.getuploader.com/[^/]+/download/\d+
 変更履歴
 ========
 
+2016-02-08  version 20160208.0  rentan at rentan.org
+  LastModified モジュールに対応。
+  ※ Dorothy2R (Dorothy2R_resp.dms) 専用。
+  設定ファイルの [General] Timestamp=getter で有効になります。
+
 2015-03-16  version 20150316.0  rentan at rentan.org
   年齢確認、閲覧パスワードに対応。
   パスワードファイルに対応。

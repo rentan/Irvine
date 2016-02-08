@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=getuploader_r
-//version=20150316.0
+//version=20160208.0
 //hint=getuploader.com (uploader.jp)
 //match=^http://u[^/.]+\.getuploader\.com/[^/]+/download/\d+
 //author=rentan
@@ -10,7 +10,7 @@
 //end
 
 /*
-Copyright (C) 2013,2014,2015 rentan at rentan.org
+Copyright (C) 2013-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,14 +29,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20150316.0);
+  Util.min_version (20160208.0);
 
   // 設定ファイルの読み込み
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
     General: {
       Zen2Han: false,
-      Timestamp: 'ThreadStorage',    // or '' or 'Touch'
+      Timestamp: 'getter',    // 'true', 'ThreadStorage', 'Touch' or 'false'
       Touch: 'C:\gnupack\app\cygwin\cygwin\bin\touch.exe'
     }
   };
@@ -159,14 +159,14 @@ GetUpPassword.prototype.inputDownloadPassword = function (filename) {
 
 //------------------------------ GetUploader -------------------------------
 
-common_load ('getter', 'http', 'htmlform', 'utf8');
+common_load ('getter', 'getter\lastmodified', 'http', 'htmlform', 'utf8');
 
 
 // コンストラクタ
 Getter (function GetUploader () {
   this.timestampMode = this.TS_NOCHANGE;
   this.touchCommand = null;
-});
+}, LastModified);
 
 
 // 閲覧パスワードを入力してフォームに設定する
@@ -233,11 +233,13 @@ GetUploader.prototype._findTimestamp = function () {
   if (!/^(\d{4})\/(\d\d)\/(\d\d)\s+(\d\d):(\d\d):(\d\d)$/.test (s)) {
     return this._unknown ('対応していないアップロード日時の形式です。');
   }
-  this._jst = RegExp.lastMatch;
+  var jst = RegExp.lastMatch;
   this._jstNumber = [
     RegExp.$1, RegExp.$2, RegExp.$3,
     RegExp.$4, RegExp.$5, '.', RegExp.$6
   ].join ('');
+
+  this._utc = this._parseJstDate (jst);
 
   return this._ok ();
 };
@@ -391,7 +393,7 @@ GetUploader.prototype.get = function (url) {
   this.items = [ ];
 
   this._filename = null;
-  this._jst = null;
+  this._utc = null;
   this._jstNumber = null;
 
   var http = this.http = new Http ();
@@ -410,7 +412,12 @@ GetUploader.prototype.get = function (url) {
 
   var f = this._filename.toSJIS ();
 
-  return this._add ({ Url: fileUrl, Referer: http.baseUrl, Filename: f });
+  var itemData = { Url: fileUrl, Referer: http.baseUrl, Filename: f };
+  if (this.timestampMode == this.TS_GETTER) {
+    this._setLastModified (itemData, this._dateToLastModified (this._utc));
+  }
+
+  return this._add (itemData);
 };
 
 
@@ -422,6 +429,7 @@ GetUploader.prototype.buildFilename = function (args) {
 
 // public: タイムスタンプ変更モード
 GetUploader.prototype.TS_NOCHANGE = '';
+GetUploader.prototype.TS_GETTER = 'getter';
 GetUploader.prototype.TS_THREADSTORAGE = 'threadstorage';
 GetUploader.prototype.TS_TOUCH = 'touch';
 
@@ -429,6 +437,14 @@ GetUploader.prototype.TS_TOUCH = 'touch';
 // public: タイムスタンプ変更モードを設定する
 GetUploader.prototype.setTimestampMode = function (t) {
   t = t.trim ();
+
+  if (/^getter$/i.test (t)) {
+    if (!this._isLastModifiedEnabled ()) {
+      return this._ng ('Timestamp=true の設定は使用できません。');
+    }
+    this.timestampMode = this.TS_GETTER;
+    return this._ok ();
+  }
 
   if (/^threadstorage$/i.test (t)) {
     if (!Dorothy.hasKey ('getThreadStorage')) {
@@ -494,28 +510,6 @@ GetUploader.prototype._saveAndTouch = function () {
 };
 
 
-GetUploader.prototype._days = [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ];
-GetUploader.prototype._months =
-  [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
-
-// Last-Modified 形式のタイムスタンプ
-GetUploader.prototype._getLastModified = function () {
-  var d = new Date (this._jst);
-
-  // new Date() で GMT としてパースされるので補正する
-  var offset = 9 * 60 * 60 * 1000;
-  d.setTime (d.getTime () - offset);
-
-  var day = this._days [ d.getUTCDay() ];
-  var month = this._months [ d.getUTCMonth () ];
-
-  d.format = 'yyyy hh:mm:ss';
-  var y_hms = d.toUTCString ();
-
-  return format ('%s, %.2d %s %s GMT', day, d.getUTCDate (), month, y_hms);
-};
-
-
 // public: ダウンロード情報を登録する
 GetUploader.prototype.download = function (args) {
   if (!this._downloadFiles (args)) {
@@ -523,11 +517,12 @@ GetUploader.prototype.download = function (args) {
   }
 
   // タイムスタンプ変更のための処理
-  if (this.timestampMode == this.TS_THREADSTORAGE) {
+  var ts = this.timestampMode;
+  if (ts == this.TS_THREADSTORAGE) {
     var stor = Dorothy.getThreadStorage ();
-    stor.setItem ('headers.Last-Modified', this._getLastModified ());
+    stor.setItem ('headers.last-modified', this._dateToLastModified (this._utc));
   }
-  else if (this.timestampMode == this.TS_TOUCH) {
+  else if (ts == this.TS_TOUCH) {
     if (!this._saveAndTouch ()) {
       return false;
     }
