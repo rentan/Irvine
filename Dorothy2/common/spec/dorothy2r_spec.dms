@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R spec
-//version=20160118.0
+//version=20160208.0
 //hint=http://yasmine.dorothy.test/common/spec/dorothy2r_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014,2016 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -252,6 +252,90 @@ describe ('Dorothy.setMatchName', function () {
     expect (Dorothy.matchType).toBe ('');
     expect (Dorothy.userPath).toBeNull ();
     expect (Dorothy.userIniPath).toBeNull ();
+  });
+});
+
+
+describe ('Dorothy.addOption', function () {
+  var backup = { };
+
+  beforeEach (function () {
+    backup.i = item.comment;
+  });
+
+  afterEach (function () {
+    item.comment = backup.i;
+  });
+
+  cases ([
+    // [ item.comment, s, result ]
+    [ '', 'foo=123', 'foo=123' ],
+    [ 'bar=abc', 'foo=123', 'foo=123;bar=abc' ],
+
+    [ 'foo=xyz', 'foo=123', 'foo=123;foo=xyz' ],  // ìØñºÇ™Ç†Ç¡ÇƒÇ‡è„èëÇ´Ç≈ÇÕÇ»Ç≠í«â¡
+
+    [ '', 'foo=123;bar=abc', 'foo=123;bar=abc' ],
+    [ 'baz=xyz', 'foo=123;bar=abc', 'foo=123;bar=abc;baz=xyz' ],
+
+    [ '', '', '' ],
+    [ '', null, '' ],
+    [ 'foo=123', '', 'foo=123' ],
+    [ 'foo=123', null, 'foo=123' ]
+  ])
+  .it ('inserts string into left of item.comment [ i, s, result ]', function (i, s, result) {
+    item.comment = i;
+    Dorothy.addOption (s);
+
+    expect (item.comment).toBe (result);
+  });
+});
+
+
+describe ('Dorothy.getOption', function () {
+  var backup = { };
+
+  beforeEach (function () {
+    backup.f = folderdata.Post;
+    backup.i = item.comment;
+  });
+
+  afterEach (function () {
+    folderdata.Post = backup.f;
+    item.comment = backup.i;
+  });
+
+  cases ([
+    // [ folderdata.Post, item.comment, key, result ]
+    [ '', 'foo=123', 'foo', '123' ],
+    [ 'foo=123', '', 'foo', '123' ],
+
+    [ '', 'foo=123;bar=abc', 'foo', '123' ],
+    [ '', 'foo=123;bar=abc', 'bar', 'abc' ],
+
+    [ 'foo=123;bar=abc', '', 'foo', '123' ],
+    [ 'foo=123;bar=abc', '', 'bar', 'abc' ],
+
+    [ 'foo=123', 'foo=456', 'foo', '456' ],  // item.comment óDêÊ
+    [ 'foo=123', 'bar=abc', 'foo', '123' ],
+    [ 'foo=123', 'bar=abc', 'bar', 'abc' ],
+
+    [ '', '', 'foo', null ],
+    [ '', 'foo=123', 'bar', null ],
+    [ 'foo=123', '', 'bar', null ],
+    [ 'foo=123', 'foo=456', 'bar', null ]
+  ])
+  .it ('return option value string or null [ f, i, key, result ]', function (f, i, key, result) {
+    folderdata.Post = f;
+    item.comment = i;
+
+    expect (Dorothy.getOption (key)).toBe (result);
+  });
+});
+
+
+describe ('Dorothy.getLastModifiedOptionName()', function () {
+  it ('returns "lastmodified"', function () {
+    expect (Dorothy.getLastModifiedOptionName ()).toBe ('lastmodified');
   });
 });
 

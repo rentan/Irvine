@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=SettingForm
-//version=20160118.0
+//version=20160208.0
 //hint=
 //match=
 //author=rentan
@@ -10,7 +10,7 @@
 // based on Dorothy2set.dms version 0.20 by xor
 
 /*
-Copyright (C) 2014,2015,2016 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ SettingForm.initDorothy = function (ev) {
 
   // Dorothy オブジェクト初期化
   Dorothy.init ({ version: 'xxxx', eval: ev });
-  Dorothy.rVersion = 20160118;
+  Dorothy.rVersion = 20160208;
 
   debug = false;
   mode = { };

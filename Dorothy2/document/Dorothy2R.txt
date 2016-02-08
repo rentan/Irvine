@@ -127,7 +127,12 @@ Dorothy.getOption (key)
   key ... string: オプション名
   戻り値 ... string: オプションの値、または null
 
-  key で指定したオプションの値を取得する。
+  key で指定したオプションの値を返す。存在しない場合は null を返す。
+
+Dorothy.getLastModifiedOptionName ()
+  戻り値 ... string: オプション名。
+
+  Last-Modified 変更機能のオプション名を返す(現時点では 'lastmodified')。
 
 Dorothy.setMatchName ()
 Dorothy.createProgramMatcher ()
@@ -142,8 +147,10 @@ Dorothy.loadDorothyIni ();
 変更履歴
 ========
 
-
 2016-02-08  version 20160208.0  rentan at rentan.org
+
+Dorothy2R\system\settingform.dms
+  rVersion を 20160208 に更新。「Dorothy2R 設定」で上書き保存して下さい。
 
 scripts\Dorothy2R_a.dms
   file_load() 等の Global に追加するメソッドは、文字列化しておいたものを
@@ -152,11 +159,14 @@ scripts\Dorothy2R_a.dms
 
   Dorothy.addOption()、Dorothy.getOption() を追加。
 
+  Dorothy.getLastModifiedOptionName() を追加。
+
 scripts\Dorothy2R_resp.dms
   ThreadStorage の headers.Last-Modified キーを小文字の
   headers.last-modified に修正(大文字だと、サーバから last-modified ヘッダ
   を受信していた場合に上書きができない不具合があった)。
 
+  オプション指定によるダウンロードファイルのタイムスタンプ変更機能を追加。
 
 2016-01-18  version 20160118.0  rentan at rentan.org
 

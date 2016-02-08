@@ -202,6 +202,9 @@ Dorothy = {
   // DOA からの実行かどうか
   isDOA: false,
 
+  // Last-Modified 変更のオプション名
+  getLastModifiedOptionName: function () { return 'lastmodified'; },
+
   common: { }
 };
 

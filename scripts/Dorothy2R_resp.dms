@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={F984DA71-6062-4DA1-9A75-C326B24B1647}
 caption=Dorothy2R OnHttpResponse
-version=20160208.0
+version=20160208
 hint=Dorothy2R OnHttpResponse
 event=OnHttpResponse
 match=
@@ -31,17 +31,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //--------------------------- ThreadStorageResp ----------------------------
 // スレッドストレージ関係の処理
 
+
 // コンストラクタ
-function ThreadStorageResp (headers) {
-  this._headers = headers;
+function ThreadStorageResp (util) {
+  this._util = util;
   this._storage = Dorothy.getThreadStorage ();
 }
-
-
-// メッセージ表示
-ThreadStorageResp.prototype._p = function (s) {
-  println (s);
-};
 
 
 // スレッドストレージからデータを読み込む
@@ -60,31 +55,16 @@ ThreadStorageResp.prototype.getAndRemoveItem = function (key) {
 };
 
 
-// レスポンスヘッダの値を取得する
-ThreadStorageResp.prototype.getHeader = function (name) {
-  return this._headers.hasKey (name) ? this._headers [name] : null;
-};
-
-
-// レスポンスヘッダを設定する
-ThreadStorageResp.prototype.setHeader = function (name, value) {
-  this._p ('headers>' + name + ': ' + value);
-  this._headers [name] = value;
-
-  return true;
-};
-
-
 // header.HHH=VVV データがあればヘッダに設定する
 ThreadStorageResp.prototype._writeHeader = function (name) {
   var key = 'headers.' + name;
 
-  var value = this.getAndRemoveItem (key);
-  if (value == null) {
+  var v = this.getAndRemoveItem (key);
+  if (v == null) {
     return false;
   }
 
-  return this.setHeader (name, value);
+  return this._util.setHeader (name, v);
 };
 
 
@@ -118,7 +98,7 @@ ThreadStorageResp.prototype._filenameToSJIS = function () {
     return false;
   }
 
-  return this.setHeader (name, sj);
+  return this._util.setHeader (name, sj);
 };
 
 
@@ -130,6 +110,33 @@ ThreadStorageResp.prototype.process = function () {
   r = this._filenameToSJIS () || r;
 
   return r;
+};
+
+
+//------------------------------- OptionResp -------------------------------
+// オプション関係の処理
+
+
+// コンストラクタ
+function OptionResp (util) {
+  this._util = util;
+}
+
+
+// lastmodified
+OptionResp.prototype._lastModified = function () {
+  var lm = Dorothy.getOption (Dorothy.getLastModifiedOptionName ());
+  if (lm == null) {
+    return false;
+  }
+
+  return this._util.setHeader ('last-modified', lm);
+};
+
+
+// メイン処理
+OptionResp.prototype.process = function () {
+  return this._lastModified ();
 };
 
 
@@ -167,8 +174,22 @@ function OnHttpResponse (urlinfo, headers, item, folderdata, optiondata) {
   // メイン処理
   println ('Dorothy2R version ' + Dorothy.rVersion + ' OnHttpResponse');
 
-  var tsr = new ThreadStorageResp (headers);
-  return tsr.process ();
+  var util = {
+    getHeader: function (name) {
+      return headers.hasKey (name) ? headers [name] : null;
+    },
+
+    setHeader: function (name, value) {
+      println ('headers>' + name + ': ' + value);
+      headers [name] = value;
+      return true;
+    }
+  };
+
+  var tsr = new ThreadStorageResp (util).process ();
+  var cmt = new OptionResp (util).process ();
+
+  return tsr || cmt;
 }
 
 
