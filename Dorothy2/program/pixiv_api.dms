@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_api
-//version=20150519.0
+//version=20160208.0
 //hint=pixiv (public API)
 //match=^http://www\.pixiv\.net/member(_illust)?\.php
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2015 rentan at rentan.org
+Copyright (C) 2015-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,13 +28,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20150316.0);
+  Util.min_version (20160208.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
     General: {
       Zen2Han: false,
       PageOrigin: 0,
+      Timestamp: false,
       NoTitle: 'no-title'
     },
     Filename: {
@@ -126,7 +127,7 @@ PixivAuth.prototype.readIdPassword = function () {
 //-------------------------------- PixivApi --------------------------------
 
 
-common_load ('getter', 'esx/json', 'http', 'utf8');
+common_load ('getter', 'getter\lastmodified', 'esx\json', 'http', 'utf8');
 
 
 // コンストラクタ
@@ -158,7 +159,7 @@ PixivApi.prototype._newHttp = function (setAuth) {
 PixivApi.prototype._postOauth = function (http, queries) {
   var url = 'https://oauth.secure.pixiv.net/auth/token';
 
-  var query = [ ].concat (queries).concat ([
+  var query = queries.concat ([
     'client_id=' + Base64.decode ('YllHS3VHVnc5MWUwTk1mUEdwNDRldXZHdDU5cw=='),
     'client_secret=' + Base64.decode ('SFAzUm1rZ0FtRUdybzBnbjF4OWlvYXdRRThXTWZ2TFhEejNacXhwSw==')
   ]).join ('&');
@@ -390,10 +391,12 @@ PixivApi.prototype.users_works = function (user_id, page) {
 
 
 // コンストラクタ
-Getter (function Pixiv () {
+Getter (function Pixiv (opt) {
+  this._timestamp = this._getArg (opt, 'Timestamp', false);
+
   this._api = new PixivApi ();
   this._api.quiet = true;
-});
+}, LastModified);
 
 
 Pixiv.prototype._referer = 'http://www.pixiv.net/';
@@ -423,6 +426,26 @@ Pixiv.prototype._getImageUrls = function (result, page_count) {
 };
 
 
+// ダウンロード対象の URL を追加する
+Pixiv.prototype._addUrls = function (type, urls) {
+  var lm = this._timestamp && this._dateToLastModified (this._parseJstDate (this.reuploaded_time));
+  var ref = this._referer;
+
+  var len = urls.length;
+  for (var i = 0; i < len; ++i) {
+    var itemData = { Url: urls [i], Referer: ref };
+    if (lm) {
+      this._setLastModified (itemData, lm);
+    }
+
+    this._add (itemData);
+  }
+
+  this.type = type;
+  return this._ok ();
+};
+
+
 // 複数画像を取得する
 Pixiv.prototype._getIllustMulti = function (page_count) {
   var urls = [ ];
@@ -430,15 +453,7 @@ Pixiv.prototype._getIllustMulti = function (page_count) {
     return false;
   }
 
-  var ref = this._referer;
-
-  var len = urls.length;
-  for (var i = 0; i < len; ++i) {
-    this._add ({ Url: urls [i], Referer: ref });
-  }
-
-  this.type = 'Manga';
-  return this._ok ();
+  return this._addUrls ('Manga', urls);
 };
 
 
@@ -452,8 +467,7 @@ Pixiv.prototype._getIllustSingle = function () {
     return this._ng ('未対応のJSONデータ構造です(image_urls)。');
   }
 
-  this.type = 'Illust';
-  return this._add ({ Url: imageUrl, Referer: this._referer });
+  return this._addUrls ('Illust', [ imageUrl ]);
 };
 
 
@@ -478,8 +492,7 @@ Pixiv.prototype._getUgoira = function () {
     return this._ng ('未対応のうごイラZIP URLです。');
   }
 
-  this.type = 'Ugoira';
-  return this._add ({ Url: zipUrl, Referer: this._referer });
+  return this._addUrls ('Ugoira', [ zipUrl ]);
 };
 
 
@@ -487,12 +500,17 @@ Pixiv.prototype._getUgoira = function () {
 Pixiv.prototype._getDataFromJson = function () {
   var json = this._api.json;
   try {
-    this.title = json.response [0].title;
+    var res0 = json.response [0];
 
-    var user = json.response [0].user;
+    this.title = res0.title;
+
+    var user = res0.user;
     this.user_id = user.id;
     this.pixiv_id = user.account;
     this.user_name = user.name;
+
+    this.created_time = res0.created_time;
+    this.reuploaded_time = res0.reuploaded_time;
   }
   catch (e) {
     return this._ng ('未対応のJSONデータ構造です(title/user.*)。');
@@ -616,6 +634,13 @@ Pixiv.prototype.get = function (url) {
   this.user_name = null;
   this.title = null;
 
+  this.created_time = null;
+  this.reuploaded_time = null;
+
+  if (this._timestamp && !this._isLastModifiedEnabled ()) {
+    return false;
+  }
+
   var path = /^(http:\/\/www\.pixiv\.net\/)([^#]+)/.test (url) ? RegExp.$2 : '';
 
   this.user_id = /[?&]id=([^&]+)/.test (path) ? RegExp.$1 : null;
@@ -676,7 +701,7 @@ Pixiv.prototype.download = function (args) {
 
   var ini = Util.ini_load (defaultIni);
 
-  var getter = new Pixiv ();
+  var getter = new Pixiv ({ Timestamp: ini.General.Timestamp });
 
   if (getter.get (urlinfo.url)) {
     var type = getter.type;

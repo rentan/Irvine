@@ -80,6 +80,11 @@ http://www.pixiv.net/member_illust.php?mode=manga&illust_id=\d+
 変更履歴
 ========
 
+2016-02-08  version 20160208.0  rentan at rentan.org
+  LastModified モジュールに対応。
+  ※ Dorothy2R (Dorothy2R_resp.dms) 専用。
+  設定ファイルの [General] Timestamp=true で有効になります。
+
 2015-05-19  version 20150519.0  rentan at rentan.org
   新規作成。
 
