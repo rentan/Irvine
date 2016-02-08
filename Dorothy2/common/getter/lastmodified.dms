@@ -1,0 +1,92 @@
+//Dorothy2
+//caption=LastModified
+//version=20160208.0
+//hint=Getterモジュール
+//match=
+//author=rentan
+//path=common\getter
+//end
+
+/*
+Copyright (C) 2016 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+common_load ('getter');
+
+
+// Getterモジュール
+void function LastModified () {
+};
+
+
+// Last-Modified が使用可能でなければエラーを返す
+LastModified.prototype._isLastModifiedEnabled = function () {
+  if (Dorothy.hasKey ('getLastModifiedOptionName')) {
+    return this._ok ();
+  }
+
+  return this._ng ('タイムスタンプ変更機能は使用できません。');
+};
+
+
+// JST で表記された日時を Date に変換する
+LastModified.prototype._parseJstDate = function (s) {
+  var d = new Date (s.replace (/-/g, '/'));
+
+  // new Date() で GMT としてパースされるので補正する
+  var offset = 9 * 60 * 60 * 1000;
+  d.setTime (d.getTime () - offset);
+
+  return d;
+};
+
+
+LastModified.prototype._days = [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ];
+LastModified.prototype._months =
+  [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
+
+
+// Date を Last-Modified 文字列に変換する
+LastModified.prototype._dateToLastModified = function (date) {
+  var d = new Date (date.getTime ());
+
+  var day = this._days [ d.getUTCDay() ];
+  var month = this._months [ d.getUTCMonth () ];
+
+  d.format = 'yyyy hh:mm:ss';
+  var y_hms = d.toUTCString ();
+
+  return format ('%s, %.2d %s %s GMT', day, d.getUTCDate (), month, y_hms);
+};
+
+
+// Last-Modified を指定する
+LastModified.prototype._setLastModified = function (itemData, lm) {
+  var s = Dorothy.getLastModifiedOptionName () + '=' + lm;
+
+  var c = itemData.hasKey ('Comment') && itemData.Comment;
+  itemData.Comment = c ? s + ';' + c : s;
+
+  return this;
+};
+
+
+}) ()
+
+
+// EOF

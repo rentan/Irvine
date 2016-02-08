@@ -1,0 +1,45 @@
+common\getter\lastmodified.dms
+
+
+ダウンロードしたファイルのタイムスタンプを変更するための機能を追加する
+Getter 用モジュールです。
+
+※ Dorothy2R (Dorothy2R_resp.dms) 専用です。
+
+
+サンプル
+========
+
+  common_load ('getter\lastmodified');
+
+  void function MyGetter () {
+  };
+
+  Getter (MyGetter, LastModified);
+
+  MyGetter.prototype.get = function (url) {
+    if (!this._isLastModifiedEnabled ()) {
+      return false;
+    }
+
+    var jst = '2016/01/27 01:19:09';
+    var date = this._parseJstDate (jst);  // UTC なら new Date()
+
+    var lm = this._dateToLastModified (date);
+
+    var itemData = { Url: 'http://example.com/index.html' };
+
+    this._setLastModified (itemData, lm);
+
+    return this._add (itemData);
+  };
+
+
+変更履歴
+========
+
+2016-02-08  version 20160208.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]

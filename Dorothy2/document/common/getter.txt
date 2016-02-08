@@ -22,6 +22,9 @@ getterobject.dms がイマイチ使いづらかったので作りなおしまし
 変更履歴
 ========
 
+2016-02-08  version 20160208.0  rentan at rentan.org
+  Comment に対応。
+
 2015-11-13  version 20151113.0  rentan at rentan.org
   モジュールに対応。
 
