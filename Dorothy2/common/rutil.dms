@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20160118.0
+//version=20160208.0
 //hint=utility
 //match=
 //author=rentan
@@ -262,6 +262,7 @@ common_xload = (function (common_xload) {
 
     'getter\chklistbox': 20150721.0,
     'getter\getterasync': 20151204.0,
+    'getter\lastmodified': 20160208.0,
     'getter\redir': 20160111.0,
 
     actibook: 20140331.0,
@@ -269,7 +270,7 @@ common_xload = (function (common_xload) {
     browsercookie: 20150523.0,
     dmon: 20151127.0,
     exec: 20140331.0,
-    getter: 20151113.0,
+    getter: 20160208.0,
     htmlform: 20150119.0,
     http: 20150425.0,
     jinput: 20140908.0,
@@ -300,7 +301,7 @@ common_xload = (function (common_xload) {
 
 
 if (Dorothy.hasKey ('rVersion')) {
-  if (Dorothy.rVersion < 20160118) {
+  if (Dorothy.rVersion < 20160208) {
     Util.fatal ("Dorothy2R のバージョンが古すぎます。\n最新版を使用して下さい。");
   }
 }

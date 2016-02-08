@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R 互換拡張
-//version=20160118.0
+//version=20160208.0
 //hint=part of rutil.dms
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2014,2016 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -109,6 +109,21 @@ Dorothy.setUrl = function (url, referer) {
 Dorothy.setFilename = function (filename) {
   println ('new filename>' + filename);
   item.filename = filename;
+};
+
+
+// (Dorothy2R 拡張) オプションを追加する
+Dorothy.addOption = function (s) {
+  if (s) {
+    item.comment = item.comment ? s + ';' + item.comment : s;
+  }
+};
+
+
+// (Dorothy2R 拡張) オプションを取得する
+Dorothy.getOption = function (key) {
+  var re = new RegExp ('(^|;)' + key + '=([^;]*)');
+  return (re.test (item.comment) || re.test (folderdata.Post)) ? re.$2 : null;
 };
 
 

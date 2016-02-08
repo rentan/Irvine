@@ -43,6 +43,8 @@ Dorothy.createSaveFolder (path)
 Dorothy.getItemFilename ()
 Dorothy.setUrl (url)
 Dorothy.setFilename (filename)
+Dorothy.addOption (s)
+Dorothy.getOption (key)
 
 詳細は省略。
 
@@ -68,6 +70,11 @@ Dorothy.setFilename (filename)
 
 変更履歴
 ========
+
+2016-02-08  version 20160208.0  rentan at rentan.org
+  rutil.dms: Dorothy2R、各種 common の最低バージョンを更新。
+
+  rutil_dorothy2r.dms: Dorothy.addOption, .getOption() を追加。
 
 2016-01-18  version 20160118.0  rentan at rentan.org
   Dorothy2、Dorothy2R、各種 common の最低バージョンを更新。
