@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=HtmlForm
-//version=20150119.0
+//version=20160213.0
 //hint=new HtmlForms ()
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
+Copyright (C) 2012-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -228,8 +228,7 @@ void function HtmlForm (src, opt_url) {
     }
     else {
       // input textarea button
-      var e = self._createElement (self._parseAttributes (atr));
-      e.tagName = tagname;
+      var e = self._createElement ({ tagName: tagname }, self._parseAttributes (atr));
       if (tagname == 'textarea') {
         e.value = inner_html;
       }
@@ -258,7 +257,7 @@ HtmlForm.prototype.target = '';
 
 // 内部で使用: 要素オブジェクトを作成する
 //  <select> <option> には未対応
-HtmlForm.prototype._createElement = function (atr) {
+HtmlForm.prototype._createElement = function (/* atr, ... */) {
   var e = {
     'class': '',
     id: '',
@@ -269,11 +268,16 @@ HtmlForm.prototype._createElement = function (atr) {
     tagName: ''
   };
 
-  for (var key in atr) {
-    if (/^(class|id|name|style|alt|src|type|value|disabled|checked)$/.test (key)) {
-      e [key] = atr [key];
+  var re = /^(tagName|class|id|name|style|alt|src|type|value|disabled|checked)$/;
+  for (var i = 0; i < arguments.length; ++i) {
+    var atr = arguments [i];
+    for (var key in atr) {
+      if (re.test (key)) {
+        e [key] = atr [key];
+      }
     }
   }
+
   e.disabled = e.hasKey ('disabled');
 
   // <input type="checkbox">

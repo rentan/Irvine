@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=HtmlForm spec
-//version=20150119.0
+//version=20160213.0
 //hint=http://yasmine.dorothy.test/common/spec/htmlform_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -263,7 +263,7 @@ describe ('HtmlForm', function () {
   it ('.add()', function () {
     var form = new HtmlForm ('<form></form>');
 
-    var e = form.add ({ name: 'nam1', value: 'val1' });
+    var e = form.add ({ tagName: 'input', name: 'nam1', value: 'val1' });
     expect (e).toBe (form.elements [0]);
 
     var atr = {
@@ -272,7 +272,7 @@ describe ('HtmlForm', function () {
       name: 'nam1',
       type: '',
       value: 'val1',
-      tagName: ''
+      tagName: 'input'
     };
     expect (e).toEqual (jasmine.objectContaining (atr));
   });

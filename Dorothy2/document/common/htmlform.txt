@@ -337,6 +337,9 @@ select (option, b)
 変更履歴
 ========
 
+2016-02-13  version 20160213.0  rentan at rentan.org
+  HtmlForm#add() で tagName が設定されない不具合を修正。
+
 2015-01-19  version 20150119.0  rentan at rentan.org
   --!> をコメント末尾として扱うようにした。
 
