@@ -37,6 +37,9 @@ stringify (value, serializer, space)
 変更履歴
 ========
 
+2016-02-16  version 20160216.0  wan at thewanwan111@gmail.com
+  IrvineFolderDataに対応させました。
+
 2015-11-27  version 20151127.0  rentan at rentan.org
   common\esx\json.dms version 20151125.0 を元にして新規作成。
 
