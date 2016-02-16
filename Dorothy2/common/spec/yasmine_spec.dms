@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine spec
-//version=20151127.0
+//version=20160216.0
 //hint=http://yasmine.dorothy.test/common/spec/yasmine_spec.dms
 //match=
 //author=rentan
@@ -12,6 +12,7 @@
 
 /*
 Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2016 wan at thewanwan111@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -62,11 +63,59 @@ describe ('jasmine.any()', function () {
 
 
 describe ('jasmine.objectContaining()', function () {
+  function ContainTest(){this.a = 1;}
+  ContainTest.prototype.b = 2;
+  
+  function ContainTest2(){this.a = 1;}
+  ContainTest2.prototype.b = 2;
+
   it ('compares object properties', function () {
     expect ({ a: 1 }).toEqual (jasmine.objectContaining ({ a: 1 }));
     expect ({ a: 1, b: 2 }).toEqual (jasmine.objectContaining ({ a: 1, b: 2 }));
 
     expect ({ }).not.toEqual (jasmine.objectContaining ({ x: 0 }));
+
+    var o = new ContainTest();
+    var o2 = new ContainTest2();
+    expect(o).toEqual(jasmine.objectContaining({a: 1, b: 2}));
+    expect({a:1, b:2}).toEqual(jasmine.objectContaining(o));
+    expect({a:1, b:0}).not.toEqual(jasmine.objectContaining(o));
+    expect(o).toEqual(jasmine.objectContaining(o2));
+  });
+
+  it('compares prototype', function(){
+    expect(ContainTest.prototype).toEqual(jasmine.objectContaining(ContainTest2.prototype));
+  });
+
+  it('compares Array', function(){
+    var arr = ['a', true, false, null, 123];
+    var arr2 = ['a', true, false, null, 123];
+    expect(arr).toEqual(arr2);
+    expect(arr).toEqual(jasmine.objectContaining(arr2));
+    
+    arr2.abc = 'abc';
+    expect(arr).not.toEqual(arr2);
+    expect(arr).not.toEqual(jasmine.objectContaining(arr2));
+    expect(arr2).toEqual(jasmine.objectContaining(arr));
+    
+    arr.abc = 'abc';
+    expect(arr).toEqual(arr2);
+    expect(arr).toEqual(jasmine.objectContaining(arr2));
+    
+    arr = [1, 2, 3];
+    arr2 = [3, 2, 1];
+    expect(arr).not.toEqual(arr2);
+    expect(arr).not.toEqual(jasmine.objectContaining(arr2));
+  });
+
+  it('compares IrvineFolderData', function(){
+    var folderdata2 = new IrvineFolderData;
+    expect(folderdata).not.toEqual(folderdata2);
+    for(var i in folderdata){
+      if(typeof folderdata[i] != 'undefined') folderdata2[i] = folderdata[i];
+    }
+    expect(folderdata).toEqual(jasmine.objectContaining(folderdata2));
+    expect(folderdata).toEqual(folderdata2);
   });
 });
 

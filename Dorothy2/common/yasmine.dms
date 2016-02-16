@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20151127.0
+//version=20160216.0
 //hint=
 //match=
 //author=rentan
@@ -9,7 +9,7 @@
 
 /*
 Copyright (C) 2014,2015 rentan at rentan.org
-Copyright (C) 2015 wan at thewawan111@gmail.com
+Copyright (C) 2015,2016 wan at thewanwan111@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -506,6 +506,35 @@ Yasmine.prototype._util._strictEqual = function (a, b) {
 };
 
 
+Yasmine.prototype._util._getKeys = function (o) {
+  var r = [];
+  if(nameOf(o) == 'IrvineFolderData'){
+    for(var key in o){
+      if(typeof o[key] != 'undefined') r.push(key);
+    }
+  } else if (typeof o.getKeys == 'function') {
+    r = o.getKeys();
+  } else {
+    for(var key in o) r.push (key);
+  }
+  return r;
+};
+
+
+Yasmine.prototype._util._hasKey = function (o, key) {
+  try {
+    if((o == String || o == StringBuffer) && !/^\d+$/.test(key)) {
+      eval('o.' + key);
+    } else {
+      o[key];
+    }
+    return true;
+  } catch(e) {
+    return false;
+  }
+};
+
+
 // 同じ内容のオブジェクトまたはプリミティブ値か調べる
 Yasmine.prototype._util._eq = function (a, b, aStack, bStack, customTesters) {
   if (nameOf (b) === 'YasmineCompare') {
@@ -584,15 +613,15 @@ Yasmine.prototype._util._eq = function (a, b, aStack, bStack, customTesters) {
   aStack.push (a);
   bStack.push (b);
   try {
-    var aKeys = a.getKeys ();
+    var aKeys = this._getKeys (a);
     idx = aKeys.length;
-    if (idx != b.getKeys ().length) {
+    if (idx != this._getKeys (b).length) {
       return false;
     }
 
     while (idx--) {
       var key = aKeys [idx];
-      if (!b.hasKey (key)) {
+      if (!this._hasKey (b, key)) {
         return false;
       }
 
@@ -718,11 +747,32 @@ YasmineCompare.prototype._objectContaining = function (actual) {
   }
 
   var expected = this._expected;
-  var keys = expected.getKeys ();
+
+  var keys = yasmine._util._getKeys (expected);
+  //ユーザー定義オブジェクト
+  var hasConstructor = false;
+  //Built-in Object
+  var isBuiltInObj = false;
+
+  if(typeof expected == 'object' && nameOf(expected) != 'Object'){
+    hasConstructor = typeof expected.constructor == 'function';
+    isBuiltInObj = !hasConstructor;
+  }
+
+  if(typeof expected.prototype != 'undefined'){
+    keys = keys.concat(yasmine._util._getKeys(expected.prototype));
+  }
+
+  if(typeof expected.length == 'number'){
+    for(var i in expected){
+      if(typeof i != 'number') break;
+      keys.push(i);
+    }
+  }
 
   for (var i = 0; i < keys.length; ++i) {
     var key = keys [i];
-    if (this._defaultMethods.test (key)) {
+    if (this._defaultMethods.test (key) || (hasConstructor && key == 'constructor')) {
       continue;
     }
 
@@ -734,7 +784,13 @@ YasmineCompare.prototype._objectContaining = function (actual) {
       return false;
     }
 
-    if (!yasmine._util._strictEqual (aValue, expected [key])) {
+    var bValue = expected [key];
+    //組込みオブジェクトのメソッドを除外
+    if(isBuiltInObj && typeof aValue == 'function' && typeof bValue == 'function'){
+      continue;
+    }
+
+    if (!yasmine._util._strictEqual (aValue, bValue)) {
       return false;
     }
   }
