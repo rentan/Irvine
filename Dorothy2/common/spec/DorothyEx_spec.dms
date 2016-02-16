@@ -1,0 +1,298 @@
+//Dorothy2
+//caption=DorothyEx
+//version=0.44
+//hint=http://yasmine.dorothy.test/common/spec/DorothyEx_spec.dms
+//match=
+//author=wan
+//path=common\spec
+//end
+
+/*
+Copyright (C) 2015,2016 wan <thewanwan111@gmail.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
+common_load('DorothyEx');
+var isRentan = Dorothy.hasKey('rVersion');
+var is2A = false, is2Set = false, isDOA = false;
+if(typeof OnHttpRequest == 'function'){
+	is2A = true;
+}else if(typeof frmDOA == 'object'){
+	isDOA = true;
+}else{
+	is2Set = true;
+}
+describe('dorothy', function(){
+	it('platform', function(){
+		expect(DorothyEx.isDorothy2A).toBe(is2A);
+		expect(DorothyEx.isDorothy2set).toBe(is2Set);
+		expect(DorothyEx.isDOA).toBe(isDOA);
+	});
+	it('getVersion', function(){
+		if(isRentan){
+			expect(DorothyEx.getVersionDorothy2A()).toBe(Dorothy.rVersion);
+			expect(DorothyEx.getVersionDorothy2set()).toBe(Dorothy.rVersion);
+			expect(DorothyEx.getVersionDorothy2ListMenu()).toBe(Dorothy.rVersion);
+			expect(DorothyEx.getVersionDOA()).toBe(Dorothy.rVersion);
+		}else{
+			expect(DorothyEx.getVersionDorothy2A()).toBe('0.33');
+			expect(DorothyEx.getVersionDorothy2set()).toBe('0.21');
+			expect(DorothyEx.getVersionDorothy2ListMenu()).toBe('0.45');
+			expect(DorothyEx.getVersionDOA()).toBe('0.27');
+		}
+	});
+	it('getUserPath, getUserIniPath', function(){
+		expect(DorothyEx.getUserPath()).toBe(Dorothy.path + 'user\yasmine\');
+		expect(DorothyEx.getUserIniPath()).toBe(Dorothy.path + 'user\yasmine\yasmine.ini');
+	});
+	var names;
+	if(is2A){
+		names = [
+			'debug',
+			'Dorothy',
+			'Dorothy.matchList',
+			'Dorothy.programDir',
+			'Dorothy.path',
+			'Dorothy.temp',
+			'Dorothy.userName',
+			'Dorothy.version',
+			'Dorothy.common',
+			'Dorothy.fileNameKey',
+			'Dorothy.fileName',
+			'Dorothy.oldUrl',
+			'Dorothy.continueCount',
+			'Dorothy.cancel',
+			//'Dorothy.i',
+			//'Dorothy.tempStr',
+			'Dorothy.end',
+			'Dorothy.continue',
+			//'Dorothy.matchFlg',
+			'Dorothy.matchFile',
+			'Dorothy.matchType',
+			'Dorothy.program',
+			'Dorothy.programHead',
+			'Dorothy.author',
+			'Dorothy.programName',
+			'Dorothy.programVersion',
+			'Dorothy.stealth',
+			'Dorothy.userPath',
+			'Dorothy.userIniPath',
+			'Dorothy.common_show',
+			'Dorothy.common_sp',
+			'Dorothy.common_name',
+			'file_load',
+			'print_debug',
+			'common_xload',
+			'common_load',
+			'common_reload',
+			'program_load',
+			'user_load',
+			'user_program_load',
+			'retry',
+			'reset',
+			//'DorothyFileSavePath',
+			//'DorothyItemFilenameWrite',
+			'dorothy2_path',
+			'dorothy2_temp',
+			'dorothy2_document',
+			'dorothy2_common',
+			'dorothy2_program',
+			'dorothy2_setting',
+			'dorothy2_system',
+			'dorothy2_project',
+			'dorothy2_projectdata',
+			'dorothy2_bin',
+			'dorothy2_user',
+			'dorothy2_system_menu',
+			'dorothy2_system_menu_new',
+			'dorothy2_system_menu_setting',
+			'dorothy2_system_menu_edit',
+			'dorothy2_system_menu_project',
+			'dorothy2_system_menu_tool',
+			'dorothy2_system_menu_set',
+			'dorothy2_system_menu_package',
+			'dorothy2_system_menu_help',
+			'dorothy2_system_ini',
+			'irvine_script_path',
+			'Dorothy.url',
+			'irvinePath'
+		];
+	}else if(isDOA){
+		names = [
+			'debug',
+			'Dorothy',
+			'Dorothy.programDir',
+			'Dorothy.path',
+			'Dorothy.temp',
+			'Dorothy.userName',
+			'Dorothy.version',
+			'Dorothy.common',
+			'Dorothy.userPath',
+			'Dorothy.userIniPath',
+			'Dorothy.common_show',
+			'Dorothy.common_sp',
+			'Dorothy.common_name',
+			'file_load',
+			'print_debug',
+			'common_xload',
+			'common_load',
+			'common_reload',
+			'program_load',
+			'user_load',
+			'user_program_load',
+			'Irvine',
+			'dorothy2_path',
+			'dorothy2_temp',
+			'dorothy2_document',
+			'dorothy2_common',
+			'dorothy2_program',
+			'dorothy2_setting',
+			'dorothy2_system',
+			'dorothy2_project',
+			'dorothy2_projectdata',
+			'dorothy2_bin',
+			'dorothy2_user',
+			'dorothy2_system_menu',
+			'dorothy2_system_menu_new',
+			'dorothy2_system_menu_setting',
+			'dorothy2_system_menu_edit',
+			'dorothy2_system_menu_project',
+			'dorothy2_system_menu_tool',
+			'dorothy2_system_menu_set',
+			'dorothy2_system_menu_package',
+			'dorothy2_system_menu_help',
+			'dorothy2_system_ini',
+			'irvine_script_path',
+			'irvinePath'
+		];
+	}else{
+		names = [
+			'debug',
+			'Dorothy',
+			'Dorothy.programDir',
+			'Dorothy.path',
+			'Dorothy.temp',
+			'Dorothy.userName',
+			'Dorothy.version',
+			'Dorothy.common',
+			'Dorothy.matchFile',
+			'Dorothy.userPath',
+			'Dorothy.userIniPath',
+			'Dorothy.common_show',
+			'Dorothy.common_sp',
+			'Dorothy.common_name',
+			'file_load',
+			'print_debug',
+			'common_xload',
+			'common_load',
+			'common_reload',
+			'program_load',
+			'user_load',
+			'user_program_load',
+			'Irvine',
+			'dorothy2_path',
+			'dorothy2_temp',
+			'dorothy2_document',
+			'dorothy2_common',
+			'dorothy2_program',
+			'dorothy2_setting',
+			'dorothy2_system',
+			'dorothy2_project',
+			'dorothy2_projectdata',
+			'dorothy2_bin',
+			'dorothy2_user',
+			'dorothy2_system_menu',
+			'dorothy2_system_menu_new',
+			'dorothy2_system_menu_setting',
+			'dorothy2_system_menu_edit',
+			'dorothy2_system_menu_project',
+			'dorothy2_system_menu_tool',
+			'dorothy2_system_menu_set',
+			'dorothy2_system_menu_package',
+			'dorothy2_system_menu_help',
+			'dorothy2_system_ini',
+			'irvine_script_path',
+			'Dorothy.url',
+			'irvinePath'
+		];
+	}
+	cases(names).it('define', function(name){
+		expect(function(){eval(name);}).not.toThrow();
+	});
+});
+/*
+folderdata.Post queueÉIÉvÉVÉáÉìê›íËçœÇ›
+Root (C:\)
+Ñ§ÑüDefault (default)
+		Ñ§ÑüDorothy2 (dorothy2)
+				Ñ§Ñütest (test)
+						Ñ§Ñüyasmine (yasmine)
+								Ñ§DorothyEx_spec.dms (DorothyEx)
+
+describe('queue folder', function(){
+	it('Path', function(){
+		var path = '/Default/Dorothy2/test/yasmine';
+		expect(DorothyEx.queueFolder).toBe(path);
+	});
+});
+describe('getSaveFolder', function(){
+	var fpath, ipath;
+	beforeEach(function(){
+		fpath = folderdata.Folder;
+		ipath = item.folder;
+	});
+	afterEach(function(){
+		folderdata.Folder = fpath;
+		item.folder = ipath;
+	});
+	it('Dorothy2Set path', function(){
+		if(!is2Set) pending();
+		expect(item.folder).toBe('DorothyEx');
+		expect(DorothyEx.getSaveFolder()).toBe(Dorothy.userPath);
+	});
+	it('DOA path', function(){
+		if(!isDOA) pending();
+		expect(item.folder).toBe('DorothyEx');
+		expect(DorothyEx.getSaveFolder()).toBe('C:\default\dorothy2\test\yasmine\DorothyEx\');
+	});
+	it('Dorothy2A relative path', function(){
+		if(!is2A) pending();
+		expect(item.folder).toBe('DorothyEx');
+		expect(DorothyEx.getSaveFolder()).toBe('C:\default\dorothy2\test\yasmine\DorothyEx\');
+		folderdata.Folder = 'test\';
+		expect(DorothyEx.getSaveFolder()).toBe('C:\default\dorothy2\test\test\DorothyEx\');
+		folderdata.Folder = 'D:\test';
+		expect(DorothyEx.getSaveFolder()).toBe('D:\test\DorothyEx\');
+	});
+	it('Dorothy2A absolute path', function(){
+		if(!is2A) pending();
+		expect(item.folder).toBe('DorothyEx');
+		item.folder = 'E:\' + item.folder;
+		expect(DorothyEx.getSaveFolder()).toBe('E:\DorothyEx\');
+		item.folder = '';
+		folderdata.Folder = 'C:';
+		expect(DorothyEx.getSaveFolder()).toBe('C:\');
+	});
+});
+yasmine.saveLog = function () {
+	var file = 'C:\default\dorothy2\test\yasmine\DorothyEx\yasmine_log.txt';
+
+	this.log ('save log file: ' + file);
+	this._log.saveToFile (file);
+
+	return file;
+};
+*/
