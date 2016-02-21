@@ -1,4 +1,4 @@
-make_object_info.dms  by rentan
+make_object_info.dms
 
 
 Irvine/DMonkey の組み込みオブジェクトの情報を作成します。
@@ -7,8 +7,12 @@ Irvine/DMonkey の組み込みオブジェクトの情報を作成します。
 変更履歴
 ========
 
+2016-02-22  version 20160222  rentan at rentan.org
+  プロパティの型名が nameOf() で得られる場合はそれを出力する。
+  VCL オブジェクトのプロパティの型名を出力する。
+
 2014-03-09  version 20140309
-	初期バージョン。
+  初期バージョン。
 
 
 [EOF]

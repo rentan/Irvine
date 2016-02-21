@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={C20B6AE2-AC5B-4D7E-A24A-CE98BCB95F7A}
 caption=オブジェクト情報を作成
-version=20140309
+version=20160222
 hint=Irvine/DMonkey の組み込みオブジェクトの情報を作成します
 event=OnMainMenuClick
 match=
@@ -11,7 +11,7 @@ synchronize=0
 */
 
 /*
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2012-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,6 +32,11 @@ function ObjectInfo (name, opt) {
   opt = opt || { };
 
   function get_object (name) {
+    if (/^VCL/.test (name) && name != 'VCLForm') {
+      var form = this.vclform = new VCLForm ();
+      return eval ('new ' + name + ' (form)');
+    }
+
     // グローバルオブジェクトが存在するならそれを使う
     try {
       var gl = eval (name);
@@ -120,14 +125,28 @@ ObjectInfo.prototype.makeHtml = function () {
     return obj.hasKey (key) ? "" : " [hasKey=false]";
   }
 
-  // VCL オブジェクトは参照するとエラーになるプロパティがあるので調査しない
-  var is_vcl = /^VCL/.test (this.name);
+  // 参照するとエラーになるプロパティ
+  var inaccessible = /^VCLPageControl:(DisplayRect|tabs)$/;
 
   // プロパティを HTML 化
   function prop (key) {
-    var t = "  <li><span class='prop'>%key%</span> : %type%%haskey%</li>\n";
-    var esc_key = key.split (/\$/).join ('\$');  // RegExp.$1 対策
-    var type = is_vcl ? '' : eval ('typeof obj.' + key);
+    var t = "  <li><span class='p'>%key%</span> : %type%%haskey%</li>\n";
+    var esc_key = key.replace (/\$/g, '\$');
+
+    var n = nameOf (obj) + ':' + key;
+
+    var type = null;
+    if (inaccessible.test (n)) {
+      type = '(unknown)';
+    }
+    else {
+      try {
+        type = eval ('nameOf (obj.' + key + ')');
+      }
+      catch (e) {
+      }
+      type = type || eval ('typeof obj.' + key);
+    }
 
     return t.replace (/%key%/, esc_key)
             .replace (/%type%/, type)
@@ -150,8 +169,8 @@ ObjectInfo.prototype.makeHtml = function () {
 
   // メソッドを HTML 化
   function meth (key) {
-    var t = "  <li%class%><span class='method'>%key%()</span>%haskey%</li>\n";
-    var cls = default_method.test (key) ? " class='def_method'" : "";
+    var t = "  <li%class%><span class='m'>%key%()</span>%haskey%</li>\n";
+    var cls = default_method.test (key) ? " class='dm'" : "";
 
     return t.replace (/%class%/, cls)
             .replace (/%key%/, key)
@@ -222,7 +241,7 @@ function MyObject () { }
 myobj_caption = "<p><code>function MyObject(){} var obj = new MyObject();</code></p>\n";
 
 
-//メインメニューのクリックイベント
+// メインメニューのクリックイベント
 function OnMainMenuClick (irvine, action) {
 
   var config = {
@@ -384,9 +403,9 @@ function OnMainMenuClick (irvine, action) {
 "ul { margin-top: 0px; }\n" +
 ".version { text-align: right; }\n" +
 ".contents li { color: #444; }\n" +
-".prop { color: #000; }\n" +
-".method { color: #000; }\n" +
-"li.def_method, li.def_method .method { color: #888; }\n" +
+".p { color: #000; }\n" +
+".m { color: #000; }\n" +
+"li.dm, li.dm .m { color: #888; }\n" +
     "";
 
     // シンプル配置
@@ -562,7 +581,7 @@ css +
 }
 
 
-//メニューの更新イベント
+// メニューの更新イベント
 function OnMenuUpdate (irvine, action) {
 }
 
