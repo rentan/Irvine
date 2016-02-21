@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DMON spec
-//version=20151127.0
+//version=20160216.0
 //hint=http://yasmine.dorothy.test/common/spec/dmon_spec.dms
 //match=
 //author=rentan
@@ -12,6 +12,7 @@
 
 /*
 Copyright (C) 2015 rentan at rentan.org
+Copyright (C) 2016 wan at thewanwan111@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -466,6 +467,12 @@ describe ('DMON.stringify', function () {
     expect (DMON.stringify (v, null, indent)).toBe (s);
   });
 
+  it('IrvineFolderData', function(){
+    var value = new IrvineFolderData;
+    var text;
+    expect(function(){text = DMON.stringify(value);}).not.toThrow();
+    expect(text.slice(0, 21)).toBe('{/*IrvineFolderData*/');
+  });
 });
 
 
