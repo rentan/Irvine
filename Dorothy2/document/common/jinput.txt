@@ -33,15 +33,35 @@ new JInput ()
 
   例: var jinput = new JInput ();
 
-inputText (hta_opt)
-  hta_opt ... array または object: ダイアログの指定
-  戻り値 ... string または null。
+makeCmdline (hta_path, hta_opt)
+  hta_path ... string: HTA ファイルのフルパス
+  args ... object またはその配列: ダイアログの指定
+  戻り値 ... object
+
+  HTA ファイル実行用のコマンドライン文字列等を作成して返す。
+
+  戻り値は以下のとおり。
+  {
+    cmdline: 'コマンドライン文字列',
+    result: 結果が書き込まれるファイル(File インスタンス),
+
+    // 以下は args 内で image: を指定した場合のみ
+    image: 画像ファイル(File インスタンス),
+    image_data: 画像データ
+  }
+
+  画像データは保存されない(保存するためのテンポラリのファイル名が決定される
+  だけ)なので、HTA ファイル実行前に保存し、実行後に削除する必要がある。
+
+inputText (args)
+  args ... object またはその配列: ダイアログの指定
+  戻り値 ... string または null
 
   ダイアログを表示しユーザの入力を待つ。入力された文字列を UTF-8 形式で返す。
   キャンセル及びエラー時は null を返す。
 
-  hta_opt は以下の形式のオブジェクト、またはオブジェクトの配列として指定
-  する。不要な項目は省略できる。
+  args は以下の hta_opt 形式のオブジェクト、またはその配列として指定する。
+  不要な項目は省略できる。
 
   hta_opt = {
     title: 'ダイアログのタイトル',
@@ -61,11 +81,13 @@ inputText (hta_opt)
   };
 
   img、image、p などを複数指定する場合は
-    hta_opt = [ { image: '...' }, { p: 'abc' } ];
+    hta_opt1 = { image: '...' };
+    hta_opt2 = { p: 'abc' };
+    args = [ hta_opt1, hta_opt2 ];
   のように配列を使い別々のオブジェクトに分けること。
 
   表示する文字列は
-    hta_opt = { p: [ 'abc', 'xyz' ] };
+    args = { p: [ 'abc', 'xyz' ] };
   のように p の値を配列にすることで複数指定できる。
 
 synchronize (func)
@@ -103,6 +125,9 @@ synchronize (func)
 
 変更履歴
 ========
+
+2016-02-21  version 20160221.0  rentan at rentan.org
+  .makeCmdline(): _makeCmdline() からリネームして外部へ公開。
 
 2014-09-08  version 20140908.0  rentan at rentan.org
   .inputText() に img: '画像URL' オプションを追加。

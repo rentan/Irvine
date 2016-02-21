@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JInput
-//version=20140908.0
+//version=20160221.0
 //hint=new JInput ()
 //match=
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2013,2014 rentan at rentan.org
+Copyright (C) 2013-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ JInput.prototype._err = function (func, msg) {
 };
 
 
-// 内部で使用: コマンドライン作成
+// public: コマンドライン作成
 // 戻り値: {
 //  cmdline: コマンドライン文字列,
 //  result: File オブジェクト(jinput.txt),
@@ -56,7 +56,7 @@ JInput.prototype._err = function (func, msg) {
 //  // 以下は省略あり
 //  image_data: 画像データ文字列
 // }
-JInput.prototype._makeCmdline = function (tmpdir, args) {
+JInput.prototype.makeCmdline = function (hta_path, args) {
   var files = { image: null };
 
   function make_arg (key, value) {
@@ -74,8 +74,9 @@ JInput.prototype._makeCmdline = function (tmpdir, args) {
     return files.image.path;
   }
 
-  // HTA ファイルはフルパスで指定すること
-  var hta_path = Dorothy.path + 'common\jinput.hta';
+  var tmpdir = new Directory (Dorothy.temp);
+  tmpdir.exists () || tmpdir.make ();
+
   files.cmdline = '"' + hta_path + '"';
 
   files.result = new File (tmpdir.path + 'jinput.txt');
@@ -119,16 +120,17 @@ JInput.prototype.synchronize = function (f) {
 };
 
 
+// HTA ファイルはフルパスで指定すること
+JInput.prototype._jinputHta = Dorothy.path + 'common\jinput.hta';
+
+
 // ダイアログを表示してテキスト入力を行う
 JInput.prototype.inputText = function (args) {
   common_load ('exec');
 
   this.text = null;
 
-  var tmpdir = new Directory (Dorothy.temp);
-  tmpdir.exists () || tmpdir.make ();
-
-  var files = this._makeCmdline (tmpdir, args);
+  var files = this.makeCmdline (this._jinputHta, args);
   var result = files.result;
   var image = files.image;
 

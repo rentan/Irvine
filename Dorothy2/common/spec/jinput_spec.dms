@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JInput spec
-//version=20140808.0
+//version=20160221.0
 //hint=http://yasmine.dorothy.test/common/spec/jinput_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -87,6 +87,58 @@ describe ('.synchronize()', function () {
     (new JInput ()).synchronize (f);
     expect (called).toBe (true);
   });
+});
+
+
+describe ('.makeCmdline()', function () {
+  function q (s) {
+    var dq = /\s/.test (s) ? '"' : '';
+    return dq + s + dq;
+  }
+
+  var htaPath = Dorothy.path + 'common\dummy.hta';
+  var txtPath = Dorothy.temp + 'jinput.txt';
+  var imgPath = Dorothy.temp + 'jinput';
+  var head = '"' + htaPath + '" ' + q ('/o:' + txtPath);
+
+  var jinput = null;
+
+  beforeEach (function () {
+    jinput = new JInput ();
+  });
+
+  afterEach (function () {
+    jinput = null;
+  });
+
+  it ('creates command line string and output file path', function () {
+    var files = jinput.makeCmdline (htaPath, { });
+
+    expect (files.cmdline).toBe (head);
+    expect (files.result.path).toBe (txtPath);
+  });
+
+  it ('appends option in "/key:value" format', function () {
+    var files = jinput.makeCmdline (htaPath, { foo: 123 });
+
+    expect (files.cmdline).toBe (head + ' /foo:123');
+  });
+
+  it ('quotes option string that containing space', function () {
+    var files = jinput.makeCmdline (htaPath, { foo: 'bar baz' });
+
+    expect (files.cmdline).toBe (head + ' "/foo:bar baz"');
+  });
+
+  it ('accepts image data', function () {
+    var files = jinput.makeCmdline (htaPath, { image: 'test' });
+
+    expect (files.cmdline).toBe (head + ' ' + q ('/image:' + imgPath));
+
+    expect (files.image.path).toBe (imgPath);
+    expect (files.image_data).toBe ('test');  // âÊëúÉfÅ[É^
+  });
+
 });
 
 
