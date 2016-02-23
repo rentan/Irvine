@@ -50,6 +50,11 @@ http://yasmine.dorothy.test/arguments
 変更履歴
 ========
 
+2016-02-24  rentan at rentan.org
+Dorothy2\common\yasmine.dms version 20160224.0
+Dorothy2\common\spec\yasmine.dms version 20160224.0
+  ソースコードのスタイルを統一。
+
 2016-02-16  wan at thewanwan111@gmail.com
 Dorothy2\setting\yasmine.set version 20160216.0
   設定ファイルに対応させました。
@@ -61,8 +66,10 @@ Dorothy2\DOA\yasmine.dms version 20160216.0
 
 Dorothy2\common\yasmine.dms version 20160216.0
   設定ファイルに対応させました。
-  Yasmine.prototype._util._eq: .getKeys()や.hasKey()が使用できないオブジェクトに対応させました。
-  YasmineCompare.prototype._objectContaining: Object以外を渡した場合にエラーになる事がある問題を修正しました。
+  Yasmine.prototype._util._eq: .getKeys()や.hasKey()が使用できないオブジェクトに
+  対応させました。
+  YasmineCompare.prototype._objectContaining: Object以外を渡した場合にエラーになる
+  事がある問題を修正しました。
 
 2015-11-27  rentan at rentan.org
 Dorothy2\common\yasmine.dms version 20151127.0

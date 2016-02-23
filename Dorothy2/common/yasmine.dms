@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20160216.0
+//version=20160224.0
 //hint=
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 Copyright (C) 2015,2016 wan at thewanwan111@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -507,29 +507,39 @@ Yasmine.prototype._util._strictEqual = function (a, b) {
 
 
 Yasmine.prototype._util._getKeys = function (o) {
-  var r = [];
-  if(nameOf(o) == 'IrvineFolderData'){
-    for(var key in o){
-      if(typeof o[key] != 'undefined') r.push(key);
+  var r = [ ];
+
+  if (nameOf (o) == 'IrvineFolderData') {
+    for (var key in o) {
+      if (typeof o [key] != 'undefined') {
+        r.push (key);
+      }
     }
-  } else if (typeof o.getKeys == 'function') {
-    r = o.getKeys();
-  } else {
-    for(var key in o) r.push (key);
   }
+  else if (typeof o.getKeys == 'function') {
+    r = o.getKeys ();
+  }
+  else {
+    for (var key in o) {
+      r.push (key);
+    }
+  }
+
   return r;
 };
 
 
 Yasmine.prototype._util._hasKey = function (o, key) {
   try {
-    if((o == String || o == StringBuffer) && !/^\d+$/.test(key)) {
-      eval('o.' + key);
-    } else {
-      o[key];
+    if ((o == String || o == StringBuffer) && !/^\d+$/.test (key)) {
+      eval ('o.' + key);
+    }
+    else {
+      o [key];
     }
     return true;
-  } catch(e) {
+  }
+  catch (e) {
     return false;
   }
 };
@@ -749,24 +759,28 @@ YasmineCompare.prototype._objectContaining = function (actual) {
   var expected = this._expected;
 
   var keys = yasmine._util._getKeys (expected);
-  //ユーザー定義オブジェクト
+
+  // ユーザー定義オブジェクト
   var hasConstructor = false;
-  //Built-in Object
+
+  // Built-in Object
   var isBuiltInObj = false;
 
-  if(typeof expected == 'object' && nameOf(expected) != 'Object'){
+  if (typeof expected == 'object' && nameOf (expected) != 'Object') {
     hasConstructor = typeof expected.constructor == 'function';
     isBuiltInObj = !hasConstructor;
   }
 
-  if(typeof expected.prototype != 'undefined'){
-    keys = keys.concat(yasmine._util._getKeys(expected.prototype));
+  if (typeof expected.prototype != 'undefined') {
+    keys = keys.concat (yasmine._util._getKeys (expected.prototype));
   }
 
-  if(typeof expected.length == 'number'){
-    for(var i in expected){
-      if(typeof i != 'number') break;
-      keys.push(i);
+  if (typeof expected.length == 'number') {
+    for (var i in expected) {
+      if (typeof i != 'number') {
+        break;
+      }
+      keys.push (i);
     }
   }
 
@@ -786,7 +800,7 @@ YasmineCompare.prototype._objectContaining = function (actual) {
 
     var bValue = expected [key];
     //組込みオブジェクトのメソッドを除外
-    if(isBuiltInObj && typeof aValue == 'function' && typeof bValue == 'function'){
+    if (isBuiltInObj && typeof aValue == 'function' && typeof bValue == 'function') {
       continue;
     }
 
