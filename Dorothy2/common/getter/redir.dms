@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Redir
-//version=20160111.0
+//version=20160223.0
 //hint=
 //match=
 //author=rentan
@@ -158,6 +158,7 @@ RedirLinkbucks.prototype.supportedUrl = (function () {
     'whackyvidz.com',
     'youfap.me',
     'yyv.co',
+    'zatnawqy.net',
     'zff.co',
     'zxxo.net'
   ].join ('|').replace (/\./g, '\\.');
@@ -166,12 +167,12 @@ RedirLinkbucks.prototype.supportedUrl = (function () {
 }) ();
 
 
-RedirLinkbucks.prototype._baseUrl = 'http://www.sasontnwc.net/';
+RedirLinkbucks.prototype._baseUrl = 'http://www.zatnawqy.net/';
 
 
 // URL ‚ð http://www.***.net/*** Œ`Ž®‚É•ÏŠ·
 RedirLinkbucks.prototype._toCanonicalUrl = function (url) {
-  if (/^http:\/\/www\.(sasontnwc|eafyfsuh)\.net\/scripts\//.test (url)) {
+  if (/^https?:\/\/[^\/]+\/(advertising|referral|scripts|tmpl)\//.test (url)) {
     return null;
   }
 
