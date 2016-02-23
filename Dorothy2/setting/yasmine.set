@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine Dorothy2Set
-//version=0.1
+//version=20160216.0
 //hint=URLを選択して「Dorothy2サイト設定」または「動画ダウンロード２設定」から起動する
 //match=
 //author=wan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2015 wan at thewanwan111@gmail.com
+Copyright (C) 2015,2016 wan at thewanwan111@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,9 +28,95 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function () {
   common_load ('rutil', 'yasmine');
   common_load ('DorothyEx');//folderdataとitemをセット
-  
+
   if (!DorothyEx.isDorothy2set) {
     alert ('「Dorothy2サイト設定」または「動画ダウンロード２設定」から起動して下さい');
+    return;
+  }
+
+  var defaultIni = {
+    Config: {
+      Indent: false,
+      IndentText: '',
+      Error: 'line %LINE%: %MESSAGE%'
+    }
+  };
+  var ini = Util.ini_load (defaultIni);
+
+  //「動画ダウンロード２設定」
+  if(typeof OnMainMenuClick == 'function'){
+    var frm = new VCLForm(true);
+    frm.Position = 'poScreenCenter';
+    frm.width = 300;
+    frm.height = 260;
+    frm.caption = 'yasmine設定';
+
+    var okBtn = new VCLButton(frm);
+    okBtn.top = frm.ClientHeight - 30;
+    okBtn.left = frm.ClientWidth / 2 - okBtn.width - 20;
+    okBtn.caption = 'OK';
+    okBtn.Anchors = 'akBottom';
+    okBtn.ModalResult = 1;
+
+    var cancelBtn = new VCLButton(frm);
+    cancelBtn.top = okBtn.top;
+    cancelBtn.left = okBtn.left + okBtn.width + 20;
+    cancelBtn.caption = 'Cancel';
+    cancelBtn.Anchors = 'akBottom';
+    cancelBtn.ModalResult = 2;
+
+    var indent = new VCLCheckBox(frm);
+    indent.top = 10;
+    indent.left = 10;
+    indent.width = 150;
+    indent.checked = ini.Config.Indent;
+    indent.caption = 'インデントを行う';
+
+    var label1 = new VCLLabel(frm);
+    label1.top = indent.top + indent.height + 10;
+    label1.left = 10;
+    label1.caption = "インデント文字列";
+
+    var indentText = new VCLEdit(frm);
+    indentText.top = label1.top + label1.height + 5;
+    indentText.left = 10;
+    indentText.width = frm.ClientWidth - 20;
+    indentText.Anchors = '[akLeft, akTop, akRight]';
+    indentText.text = ini.Config.IndentText.replace(/["'](.+)["']/, '$1');
+    indentText.onKeyDown = function(Sender, Key, Shift){
+      if(Shift == 'ssCtrl' && Key == 9){
+        Sender.SelText = "\t";
+      }
+    };
+
+    var label2 = new VCLLabel(frm);
+    label2.top = indentText.top + indentText.height + 10;
+    label2.left = 10;
+    label2.caption = 'エラー出力';
+
+    var label3 = new VCLLabel(frm);
+    label3.top = label2.top + label2.height + 5;
+    label3.left = 10;
+    label3.caption = '  %LINE% ----- 行番号';
+
+    var label5 = new VCLLabel(frm);
+    label5.top = label3.top + label3.height + 5;
+    label5.left = 10;
+    label5.caption = '  %MESSAGE% -- エラー内容';
+
+    var error = new VCLEdit(frm);
+    error.top = label5.top + label5.height + 5;
+    error.left = 10;
+    error.width = frm.ClientWidth - 20;
+    error.Anchors = '[akLeft, akTop, akRight]';
+    error.text = ini.Config.Error;
+
+    if(frm.showModal() == 1){
+      ini.Config.Indent = indent.checked;
+      ini.Config.IndentText = "'" + indentText.text + "'";
+      ini.Config.Error = error.text;
+      Util.ini_save(ini);
+    }
     return;
   }
 
@@ -39,7 +125,7 @@ function () {
   frmTest.width = 600;
   frmTest.height = 500;
   frmTest.KeyPreview = true;
-  
+
   frmTest.logPath = '';
   if (!/^http:\/\/yasmine\.dorothy\.test\/((common|program)\/spec\/.+)$/.test(item.url)) {
     alert ('未対応の URL です。');
@@ -55,7 +141,7 @@ function () {
   ListBox1.Anchors = '[akLeft, akTop, akRight, akBottom]';
   ListBox1.TabOrder = 2;
   ListBox1.MultiSelect = true;
-  
+
   var PopUp1 = new VCLPopupMenu (ListBox1);
   var PoPMenu1 = new VCLMenuItem (PopUp1);
   PoPMenu1.Caption = 'コピー(&C)';
@@ -64,9 +150,9 @@ function () {
   PoPMenu2.Caption = 'すべてコピー(&A)';
   PopUp1.Items.add (PoPMenu1);
   PopUp1.Items.add (PoPMenu2);
-  
+
   ListBox1.PopupMenu = PopUp1;
-  
+
   var LogBtn = new VCLButton (frmTest);
   LogBtn.top = ListBox1.height + 10;
   LogBtn.left = 20;
@@ -74,12 +160,12 @@ function () {
   LogBtn.Caption = 'ログを開く(&O)';
   LogBtn.TabOrder = 3;
   LogBtn.Enabled = false;
-  
+
   var ScriptBtn = new VCLButton (frmTest);
   ScriptBtn.top = ListBox1.height + 10;
   ScriptBtn.left = LogBtn.left + LogBtn.width + 20;;
   ScriptBtn.Anchors = 'akBottom';
-  ScriptBtn.Caption = 'スクリプトを開く(&S)';
+  ScriptBtn.Caption = 'スクリプトを開く(&E)';
   ScriptBtn.Width = 100;
   ScriptBtn.TabOrder = 4;
 
@@ -87,11 +173,11 @@ function () {
   RunBtn.top = ListBox1.height + 10;
   RunBtn.left = frmTest.width / 2 + 20;
   RunBtn.Anchors = 'akBottom';
-  RunBtn.Caption = 'テスト開始(&R)';
+  RunBtn.Caption = 'テスト開始(&S)';
   RunBtn.Width = 80;
   RunBtn.TabOrder = 0;
   RunBtn.Default = true;
-  
+
   var CancelBtn = new VCLButton (frmTest);
   CancelBtn.left = RunBtn.left + RunBtn.width + 20;
   CancelBtn.top = RunBtn.top;
@@ -100,7 +186,7 @@ function () {
   CancelBtn.TabOrder = 1;
   CancelBtn.ModalResult = 2;
   CancelBtn.Cancel = true;
-  
+
   PoPMenu1.onClick = function () {
     if (ListBox1.SelCount > 0) {
       var s = [];
@@ -141,8 +227,8 @@ function () {
   RunBtn.onClick = function () {
     RunBtn.Enabled = false;
     ListBox1.clear ();
-    
-    var ya = new Yasmine ();
+
+    var ya = new Yasmine (ini.Config);
     ya.test (frmTest.scriptPath);
     frmTest.logPath = ya.saveLog ();
     LogBtn.Enabled = true;
@@ -153,16 +239,16 @@ function () {
 
     RunBtn.Enabled = true;
   };
-  
+
   println = function () {
     var Items = ListBox1.Items;
     for (var i = 0; i < arguments.length; i++) {
       Items.add (arguments[i]);
       if (Items.Count > 300) Items.delete (0);
     }
-    
+
     ListBox1.ItemIndex = Items.Count - 1;
   };
-  
+
   frmTest.showModal ();
 }

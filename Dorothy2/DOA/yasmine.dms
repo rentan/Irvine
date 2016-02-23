@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine DOA
-//version=0.1
+//version=20160216.0
 //hint=
 //match=^http://yasmine\.dorothy\.test/
 //author=wan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2015 wan at thewanwan111@gmail.com
+Copyright (C) 2015,2016 wan at thewanwan111@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -26,25 +26,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 function(){
-  item = itemData;
-
   //rutil_dorothy2RのDOAバージョンチェック無効化
-  var _frmDOA = frmDOA;
-  var _println = println;
-  frmDOA = null;
-  println = function () { frmDOA.StatusBar1.SimpleText = arguments.join (""); };
-  common_load ('DorothyEx');//folderdataとDorothy.versionのセット
-  common_load ('rutil');
-  Dorothy.isDOA = true;
-  frmDOA = _frmDOA;
-  println = _println;
-  _frmDOA = _println = null;
+  common_load('DorothyEx');
+  Util = {fatal: function(){}};
+  common_load('rutil_dorothy2r', 'rutil');
 
 this.main = function (url, itemIndex, itemData) {
+  DorothyEx.setDOA(itemData);
+
+  var defaultIni = {
+    Config: {
+      Indent: false,
+      IndentText: '',
+      Error: 'line %LINE%: %MESSAGE%'
+    }
+  };
+  var ini = Util.ini_load (defaultIni);
+
   item = itemData;
   function testSpec (file) {
     common_load ('yasmine');
-    var ya = new Yasmine ();
+    var ya = new Yasmine (ini.Config);
     ya.test (file);
     var logFile = ya.saveLog ();
     if (ya.count.fail) {
@@ -55,20 +57,19 @@ this.main = function (url, itemIndex, itemData) {
     }else{
       DOA.status = DOA_OK;
     }
-    mutex.unlock();
     return;
   };
   var path = (new URL (urlinfo.url)).path.slice (1);
-  
+
   if (/^((common|program)\/spec\/.+)$/.test (path)) {
     return testSpec (Dorothy.path + RegExp.$1.replace (/\//g, '\\'));
   }
-  
+
   alert ('未対応の URL です。');
 };
 
 
 this._ = function(){
-  
+
 };
 }
