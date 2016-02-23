@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DMON
-//version=20151127.0
+//version=20160223.0
 //hint=
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -703,16 +703,16 @@ DMONstringify.prototype._regexp = function (v) {
 // 配列 Array
 DMONstringify.prototype._array = function (stack, indent, v) {
   var s = [ ];
-  stack.push (v);
   var indent2 = indent + this.indentDelta;
 
   var len = v.length;
 
+  stack.push (v);
   for (var i = 0; i < len; ++i) {
     s.push (this._value (stack, indent2, v [i]));
   }
-
   stack.pop ();
+
   return '[' + indent2 + s.join (',' + indent2) + indent + ']';
 };
 
@@ -740,7 +740,7 @@ DMONstringify.prototype._propertyName = function (key) {
 
 
 // オブジェクト Object
-DMONstringify.prototype._object = function (stack, indent, v) {
+DMONstringify.prototype._object = function (stack, indent, v, comment) {
   var n = nameOf (v);
 
   // fromObjectName が用意されていればそれを使って変換する
@@ -751,18 +751,17 @@ DMONstringify.prototype._object = function (stack, indent, v) {
   }
 
   var s = [ ];
-  stack.push (v);
   var indent2 = indent + this.indentDelta;
 
+  stack.push (v);
   for (var key in v) {
     var x = this._value (stack, indent2, v [key]);
     s.push (this._propertyName (key) + this.colon + x);
   }
-
   stack.pop ();
 
-  // ユーザー定義オブジェクト(と prototype)は型名コメントをつける
-  var head = (n === 'Object') ? '{' : '{/*' + n + '*/';
+  // 型名コメント
+  var head = comment ? '{/*' + comment + '*/' : '{';
 
   return head + indent2 + s.join (',' + indent2) + indent + '}';
 };
@@ -800,7 +799,7 @@ DMONstringify.prototype._types = {
 
 
 DMONstringify.prototype._objects = {
-  String: function (v) {
+  'String': function (v) {
     return 'String(' + this._string (v) + ')';
   },
 
@@ -827,6 +826,16 @@ DMONstringify.prototype._objects = {
 
   'StringList': function (v, stack, indent) {
     return 'Strings(' + this._array (stack, indent, v) + ')';
+  },
+
+  'IrvineFolderData': function (v, stack, indent) {
+    var o = { };
+    for (var key in v) {
+      if (typeof v [key] != 'undefined') {
+        o [key] = v [key];
+      }
+    }
+    return this._object (stack, indent, o, 'IrvineFolderData');
   }
 };
 
@@ -847,7 +856,7 @@ DMONstringify.prototype._value = function (stack, indent, v) {
   var len = stack.length;
   for (var i = 0; i < len; ++i) {
     if (stack [i] === v) {
-      return '{/*recursive(' + i + ')*/}';
+      return this._object (stack, indent, { }, 'recursive(' + i + ')');
     }
   }
 
@@ -855,7 +864,7 @@ DMONstringify.prototype._value = function (stack, indent, v) {
     return this._array (stack, indent, v);
   }
 
-  return this._object (stack, indent, v);
+  return this._object (stack, indent, v, (n === 'Object') ? null : n);
 };
 
 

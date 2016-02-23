@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DMON spec
-//version=20151127.0
+//version=20160223.0
 //hint=http://yasmine.dorothy.test/common/spec/dmon_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2015 rentan at rentan.org
+Copyright (C) 2015-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -464,6 +464,22 @@ describe ('DMON.stringify', function () {
     var s = dmon.join (String.fromCharCode (10)).replace (/_/g, sp);
 
     expect (DMON.stringify (v, null, indent)).toBe (s);
+  });
+
+  cases ([
+    // [ object, head ]
+    [ new IrvineFolderData (), '{/*IrvineFolderData*/' ],
+
+    // 将来、列挙の方法を .getKeys() に変更する場合は .DisplayRect .tabs
+    // にアクセスして Invalid class typecast. を発生させないように注意すること。
+    // (今は for in で何も列挙されないので特に対処していない)
+    [ new VCLPageControl (new VCLForm ()), '{/*VCLPageControl*/' ]
+  ])
+  .it ('ignores inaccessible property [ object, head ]', function (obj, head) {
+    var s = null;
+
+    expect (function () { s = DMON.stringify (obj); }).not.toThrow ();
+    expect (s.slice (0, head.length)).toBe (head);
   });
 
 });

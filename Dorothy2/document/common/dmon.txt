@@ -37,6 +37,11 @@ stringify (value, serializer, space)
 変更履歴
 ========
 
+2016-02-23  version 20160223.0  rentan at rentan.org
+  DMON.stringify(): IrvineFolderData インスタンスの文字列化で
+  ENameError が発生する不具合を修正。
+    thanks to https://github.com/rentan/Irvine/pull/8
+
 2015-11-27  version 20151127.0  rentan at rentan.org
   common\esx\json.dms version 20151125.0 を元にして新規作成。
 
