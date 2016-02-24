@@ -26,9 +26,15 @@ https?://(www.)?youtube.com/(watch?v=|v/|embed/).
   RTMP
   ライブ動画
 
+・年齢制限のある動画を取得する場合は、Internet Explorer でログインして
+  おく必要があります。
+
 
 変更履歴
 ========
+
+2016-02-24  version 20160224.0  rentan at rentan.org
+  Cookie に対応。
 
 2015-12-22  version 20151222.0  rentan at rentan.org
   signature スクリプトの変更に対応。
