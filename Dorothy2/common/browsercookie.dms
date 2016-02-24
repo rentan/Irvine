@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=BrowserCookie
-//version=20150523.0
+//version=20160224.0
 //hint=new BrowserCookie ()
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
+Copyright (C) 2012-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -680,6 +680,22 @@ BrowserCookie.prototype.getFirefoxCookiePath = function () {
 
 
 // Firefox から Cookie を読み込む
+BrowserCookie.prototype._readFirefoxCookie = function (file, host, path, name) {
+  var columnTypes = [ 'text' ];
+  var sql =
+"SELECT value FROM moz_cookies" +
+" WHERE host = '" + host +
+"' and name = '" + name +
+"' and path = '" + path +
+"';";
+
+  var c = this._sql (file, sql, columnTypes);
+
+  return c && (name + '=' + c);
+};
+
+
+// Firefox から Cookie を読み込む
 BrowserCookie.prototype.importFirefox = function (obj) {
   this._p ('Firefox');
 
@@ -694,24 +710,17 @@ BrowserCookie.prototype.importFirefox = function (obj) {
     return null;
   }
 
-  if (obj.name.length > 1) {
-    this._fatal ('複数キーは未対応です。');
+  var cookies = [ ];
+
+  for (var i = 0; i < obj.name.length; ++i) {
+    var c = this._readFirefoxCookie (cookie_file, obj.host, obj.path, obj.name [i]);
+    if (!c) {
+      return this._noCookie ();
+    }
+    cookies.push (c);
   }
 
-  var columnTypes = [ 'text' ];
-  var sql =
-"SELECT value FROM moz_cookies" +
-" WHERE host = '" + obj.host +
-"' and name = '" + obj.name [0] +
-"' and path = '" + obj.path +
-"';";
-
-  var cookie = this._sql (cookie_file, sql, columnTypes);
-  if (!cookie) {
-    return this._noCookie ();
-  }
-
-  return this._printCookie (obj.name [0] + '=' + cookie [0]);
+  return this._printCookie (cookies.join (';'));
 };
 
 
@@ -769,6 +778,37 @@ BrowserCookie.prototype._cryptUnprotectData = function (bin) {
 };
 
 
+// Chrome から Cookie を読み込む
+BrowserCookie.prototype._readChromeCookie = function (file, host, path, name) {
+  var columnTypes = [ 'text', 'blob' ];
+  var sql =
+"SELECT value, encrypted_value FROM cookies" +
+" WHERE host_key = '" + host +
+"' and name = '" + name +
+"' and path = '" + path +
+"';";
+
+  var cookies = this._sql (file, sql, columnTypes);
+  if (!cookies) {
+    return null;
+  }
+
+  var c = cookies [0];
+
+  var encrypted = cookies [1];
+  if (encrypted) {
+    try {
+      c = this._cryptUnprotectData (encrypted).text;
+    }
+    catch (e) {
+      return this._null (e);
+    }
+  }
+
+  return c && (name + '=' + c);
+};
+
+
 // 内部で使用: Chrome から Cookie を読み込む
 BrowserCookie.prototype._importChrome = function (cookie_file, obj) {
   obj = this._validateTarget (obj);
@@ -776,36 +816,17 @@ BrowserCookie.prototype._importChrome = function (cookie_file, obj) {
     return null;
   }
 
-  if (obj.name.length > 1) {
-    this._fatal ('複数キーは未対応です。');
-  }
+  var cookies = [ ];
 
-  var columnTypes = [ 'text', 'blob' ];
-  var sql =
-"SELECT value, encrypted_value FROM cookies" +
-" WHERE host_key = '" + obj.host +
-"' and name = '" + obj.name [0] +
-"' and path = '" + obj.path +
-"';";
-
-  var cookies = this._sql (cookie_file, sql, columnTypes);
-  if (!cookies) {
-    return this._noCookie ();
-  }
-
-  var cookie = cookies [0];
-  var encrypted = cookies [1];
-
-  if (encrypted) {
-    try {
-      cookie = this._cryptUnprotectData (encrypted).text;
+  for (var i = 0; i < obj.name.length; ++i) {
+    var c = this._readChromeCookie (cookie_file, obj.host, obj.path, obj.name [i]);
+    if (!c) {
+      return this._noCookie ();
     }
-    catch (e) {
-      return this._null (e);
-    }
+    cookies.push (c);
   }
 
-  return this._printCookie (obj.name [0] + '=' + cookie);
+  return this._printCookie (cookies.join (';'));
 };
 
 
