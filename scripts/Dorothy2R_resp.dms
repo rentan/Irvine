@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={F984DA71-6062-4DA1-9A75-C326B24B1647}
 caption=Dorothy2R OnHttpResponse
-version=20160208
+version=20160228
 hint=Dorothy2R OnHttpResponse
 event=OnHttpResponse
 match=
@@ -12,6 +12,7 @@ synchronize=0
 
 /*
 Copyright (C) 2014-2016 rentan at rentan.org
+Copyright (C) 2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -151,15 +152,14 @@ function OnHttpResponse (urlinfo, headers, item, folderdata, optiondata) {
 
   // Dorothy2R_a.dms 実行
   (function () {
-    var f = new File (WScript.Path + 'scripts\Dorothy2R_a.dms');
+    var path = WScript.Path + 'scripts\Dorothy2R_a.dms';
+    var sl = new Strings();
     try {
-      f.open ('r');
-      eval ('(function(){' + f.read () + '})()');
-      f.close ();
+      sl.loadFromFile (path);
+      eval ('(function(){' + sl.text + '})()');
     }
     catch (e) {
-      f.close ();
-      alert (e + "\n" + f.path);
+      alert (e + "\n" + path);
       exit ();
     }
   }) ();

@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20160208
+version=20160228
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -14,6 +14,7 @@ synchronize=0
 
 /*
 Copyright (C) 2014-2016 rentan at rentan.org
+Copyright (C) 2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -501,13 +502,12 @@ Dorothy.loadDorothyIni = function () {
     err ('が空です。');
   }
 
+  var sl = new Strings ();
   try {
-    f.open ('r');
-    eval ('(function(){' + f.read () + '})()');
-    f.close ();
+    sl.loadFromFile (f.path);
+    eval ('(function(){' + sl.text + '})()');
   }
   catch (e) {
-    f.close ();
     err (e);
   }
 };
