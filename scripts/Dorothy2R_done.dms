@@ -67,6 +67,23 @@ function OnDoneThread (success, filename, urlinfo, item, folderdata, optiondata)
     }
   }
 
+  // finalName_[charset] が設定されているならそのファイル名に変更する
+  var newFileName = Dorothy.getFinalName();
+  if (newFileName.b64) {
+    var jsPath = (new irvinePath).scripts + 'changeFileName.js';
+    var queue = '';
+    var url = '';
+    var date = '';
+    // item.filenameが指定されていないならIrvineのアイテムの名前(item.DownloadedFilename)も変更する
+    if (!item.filename) {
+      queue = Dorothy.getOption ('queue') || '';
+      url = item.url;
+      date = item.SuccessDate + '';
+    }
+    var cmd = format ('wscript //E:JScript "%s" "%s" %s %s "%s" "%s" "%s"', jsPath, filename, newFileName.b64, newFileName.charset, queue, url, date);
+    Win32.winExec (cmd);
+  }
+
   // OnDoneThread で最後なので全てクリアしてよい
   st.clear ();
 }
