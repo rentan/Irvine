@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R ŒÝŠ·Šg’£
-//version=20160228.0
+//version=20160311.0
 //hint=part of rutil.dms
 //match=
 //author=rentan
@@ -117,20 +117,16 @@ Dorothy.setFilename = function (filename) {
 Dorothy.setFinalName = function (finalName, filename, charset, itemData) {
   charset = charset || 'utf-8';
   itemData = itemData || item;
-  if (!itemData.hasKey ('Comment')) {
-    itemData.Comment = '';
-  }
+
   if (filename) {
     Dorothy.setFilename (filename);
   }
-  var comment = 'finalName_' + charset + '=' + Base64.encode (finalName) + ';';
-  var reg = new RegExp ('(^|;)\s*finalName_' + charset + '\s*=[^;]*;?');
-  if (reg.test (itemData.Comment)) {
-    itemData.Comment = itemData.Comment.replace (reg, comment);
-  }
-  else {
-    itemData.Comment = comment + itemData.Comment;
-  }
+
+  var oldComment = itemData.hasKey ('Comment') ? itemData.Comment : '';
+
+  var fn = 'finalName=' + charset + ':' + Base64.encode (finalName) + ';';
+  var re = /(^|;)\s*finalName\s*=\s*[^;]*;?/;
+  itemData.Comment = fn + oldComment.replace (re, '$1');
 };
 
 
@@ -138,7 +134,7 @@ Dorothy.setFinalName = function (finalName, filename, charset, itemData) {
 Dorothy.getFinalName = function (itemData) {
   itemData = itemData || item;
   var r = {charset: '', name: '', b64: ''};
-  if (itemData.hasKey('Comment') && /(^|;)\s*finalName_([^=]+)\s*=\s*([^;]*)/.test (itemData.Comment)) {
+  if (itemData.hasKey('Comment') && /(^|;)\s*finalName\s*=\s*([^:]+?):([^;]+)/.test (itemData.Comment)) {
     r.charset = RegExp.$2;
     r.b64 = RegExp.$3;
     r.name = Base64.decode (RegExp.$3);

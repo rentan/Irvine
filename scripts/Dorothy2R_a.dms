@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20160310
+version=20160311
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -449,8 +449,8 @@ Dorothy._d.push ({ n: 'setFinalName', f: "function (finalName, filename, charset
 
   var oldComment = itemData.hasKey ('Comment') ? itemData.Comment : '';
 
-  var fn = 'finalName_' + charset + '=' + Base64.encode (finalName) + ';';
-  var re = new RegExp ('(^|;)\\s*finalName_' + charset + '\\s*=[^;]*;?');
+  var fn = 'finalName=' + charset + ':' + Base64.encode (finalName) + ';';
+  var re = /(^|;)\\s*finalName\\s*=\\s*[^;]*;?/;
   itemData.Comment = fn + oldComment.replace (re, '$1');
 }" });
 
@@ -459,7 +459,7 @@ Dorothy._d.push ({ n: 'setFinalName', f: "function (finalName, filename, charset
 Dorothy._d.push ({ n: 'getFinalName', f: "function (itemData) {
   itemData = itemData || item;
   var r = {charset: '', name: '', b64: ''};
-  if (itemData.hasKey('Comment') && /(^|;)\\s*finalName_([^=]+)\\s*=\\s*([^;]*)/.test (itemData.Comment)) {
+  if (itemData.hasKey('Comment') && /(^|;)\\s*finalName\\s*=\\s*([^:]+?):([^;]+)/.test (itemData.Comment)) {
     r.charset = RegExp.$2;
     r.b64 = RegExp.$3;
     r.name = Base64.decode (RegExp.$3);
