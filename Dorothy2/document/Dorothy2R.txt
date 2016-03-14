@@ -111,6 +111,26 @@ Dorothy.setFilename (filename)
   ファイル名にユーザーが指定したファイル名コマンドが含まれない場合に、
   Dorothy.fileName への書き込みの代わりに呼び出す。
 
+Dorothy.getFinalNameOptionName ()
+  戻り値 ... string: オプション名
+
+  FinalName 変更機能のオプション名を返す(現時点では 'finalName')。
+
+Dorothy.setFinalName (finalName, filename, charset, itemData)
+  finalName ... string: 最終的なファイル名
+  filename ... string: item.filename に設定するファイル名(省略可)
+  charset ... string: 文字コード(省略時 'utf-8')
+  itemData ... object: Comment プロパティを変更するオブジェクト
+                       (省略した場合は item を使用する)
+
+  OnDoneThread で変更するファイル名を設定する。
+
+Dorothy.getFinalName (itemData)
+  itemData ... object: Comment プロパティを解析するオブジェクト
+                       (省略した場合は item を使用する)
+
+  OnDoneThread で変更するファイル名を取得する。
+
 Dorothy.getThreadStorage ()
   戻り値 ... object: ThreadStorage
 
@@ -130,7 +150,7 @@ Dorothy.getOption (key)
   key で指定したオプションの値を返す。存在しない場合は null を返す。
 
 Dorothy.getLastModifiedOptionName ()
-  戻り値 ... string: オプション名。
+  戻り値 ... string: オプション名
 
   Last-Modified 変更機能のオプション名を返す(現時点では 'lastmodified')。
 
@@ -146,6 +166,26 @@ Dorothy.loadDorothyIni ();
 
 変更履歴
 ========
+
+
+2016-03-14  version 20160314.0  rentan at rentan.org
+
+scripts\Dorothy2R_a.dms
+  Dorothy.getFinalNameOptionName () を追加。
+
+
+2016-03-11  version 20160311.0  wan <thewanwan111@gmail.com>
+
+scripts\changeFileName.js
+  新規作成。
+
+scripts\Dorothy2R_a.dms
+  複数のアイテムを同時に実行した際に稀にEFileErrorとなる問題を修正しました。
+  Dorothy.setFinalName(), Dorothy.getFinalName() を追加。
+
+scripts\Dorothy2R_done.dms
+  sjis以外の文字コードのファイル名変更に対応させました。
+
 
 2016-02-08  version 20160208.0  rentan at rentan.org
 

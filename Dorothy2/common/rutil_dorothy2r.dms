@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R 互換拡張
-//version=20160208.0
+//version=20160314.0
 //hint=part of rutil.dms
 //match=
 //author=rentan
@@ -9,6 +9,7 @@
 
 /*
 Copyright (C) 2014-2016 rentan at rentan.org
+Copyright (C) 2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -109,6 +110,36 @@ Dorothy.setUrl = function (url, referer) {
 Dorothy.setFilename = function (filename) {
   println ('new filename>' + filename);
   item.filename = filename;
+};
+
+
+// (Dorothy2R 拡張) OnDoneThread で変更するファイル名を設定する
+Dorothy.setFinalName = function (finalName, filename, charset, itemData) {
+  charset = charset || 'utf-8';
+  itemData = itemData || item;
+
+  if (filename) {
+    Dorothy.setFilename (filename);
+  }
+
+  var oldComment = itemData.hasKey ('Comment') ? itemData.Comment : '';
+
+  var fn = 'finalName=' + charset + ':' + Base64.encode (finalName) + ';';
+  var re = /(^|;)\s*finalName\s*=\s*[^;]*;?/;
+  itemData.Comment = fn + oldComment.replace (re, '$1');
+};
+
+
+// (Dorothy2R 拡張) OnDoneThread で変更するファイル名を取得する
+Dorothy.getFinalName = function (itemData) {
+  itemData = itemData || item;
+  var r = { charset: '', name: '', b64: '' };
+  if (itemData.hasKey ('Comment') && /(^|;)\s*finalName\s*=\s*([^:]+):([^;]+)/.test (itemData.Comment)) {
+    r.charset = RegExp.$2;
+    r.b64 = RegExp.$3;
+    r.name = Base64.decode (RegExp.$3);
+  }
+  return r;
 };
 
 

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=SettingForm
-//version=20160208.0
+//version=20160314.0
 //hint=
 //match=
 //author=rentan
@@ -71,7 +71,7 @@ SettingForm.initDorothy = function (ev) {
 
   // Dorothy オブジェクト初期化
   Dorothy.init ({ version: 'xxxx', eval: ev });
-  Dorothy.rVersion = 20160208;
+  Dorothy.rVersion = 20160314;
 
   debug = false;
   mode = { };

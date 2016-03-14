@@ -1,0 +1,112 @@
+//Dorothy2
+//caption=Dorothy2R finalName spec
+//version=20160314.0
+//hint=http://yasmine.dorothy.test/common/spec/dorothy2r_finalname_spec.dms
+//match=
+//author=rentan
+//path=common\spec
+//end
+
+//†xyzzy文字化け回避
+
+
+/*
+Copyright (C) 2016 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+describe ('Dorothy.getFinalNameOptionName()', function () {
+  if (Dorothy.hasKey ('rVersion')) {
+    it ('returns "finalName" on Dorothy2R', function () {
+      // 値が変更された場合は下のテストの Comment の内容も調整すること
+      expect (Dorothy.getFinalNameOptionName ()).toBe ('finalName');
+    });
+  }
+  else {
+    it ('is not defined on Dorothy2', function () {
+      expect (Dorothy.hasKey ('getFinalNameOptionName')).toBe (false);
+    });
+  }
+});
+
+
+describe ('Dorothy.setFinalName() and .getFinalName', function () {
+  var backup = { };
+  beforeEach (function () {
+    backup.Comment = item.Comment;
+  });
+  afterEach (function () {
+    item.Comment = backup.Comment;
+  });
+
+  cases ([
+    // finalname, charset, itemData, b64, charset2
+    [ 'foo', null, null, 'Zm9v', 'utf-8' ],
+    [ 'foo', 'utf-8', null, 'Zm9v', 'utf-8' ],
+
+    [ 'foo', null, { }, 'Zm9v', 'utf-8' ],
+    [ 'foo', null, { Comment: '' }, 'Zm9v', 'utf-8' ],
+    [ 'foo', null, { Comment: 'test=123' }, 'Zm9v', 'utf-8' ],
+    [ 'foo', null, { Comment: 'finalName=utf-8:YmFy' }, 'Zm9v', 'utf-8' ],
+    [ 'foo', null, { Comment: 'finalName=utf-8:YmFy;test=123' }, 'Zm9v', 'utf-8' ],
+    [ 'foo', null, { Comment: 'test=123;finalName=utf-8:YmFy' }, 'Zm9v', 'utf-8' ],
+
+    [ 'foo', null, { Comment: 'finalName_shift_jis=YmFy' }, 'Zm9v', 'utf-8' ],
+
+    [ 'テスト', 'shift_jis', { }, 'g2WDWINn', 'shift_jis' ],
+    [ 'test'.toEUC (), 'euc-jp', { }, 'dGVzdA==', 'euc-jp' ]
+  ])
+  .it ('[ finalname, charset, itemData, b64, charset2 ]', function (finalname, charset, itemData, b64, charset2) {
+    var filename = null;
+
+    Dorothy.setFinalName (finalname, filename, charset, itemData);
+
+    var r = Dorothy.getFinalName (itemData);
+    expect (r.charset).toBe (charset2);
+    expect (r.name).toBe (finalname);
+    expect (r.b64).toBe (b64);
+  });
+
+  cases ([
+    [ { } ],
+    [ { Comment: '' } ],
+    [ { Comment: 'foo=123' } ],
+    [ { Comment: 'dummy_finalName=utf-8:YmFy' } ]
+  ])
+  .it ('returns empty strings if FinalName has not been set', function (itemData) {
+    var r = Dorothy.getFinalName (itemData);
+
+    expect (r.charset).toBe ('');
+    expect (r.b64).toBe ('');
+    expect (r.name).toBe ('');
+  });
+
+  it ('does not break other options', function () {
+    function getOpt (key, itemData) {
+      var re = new RegExp ('(^|;)(' + key + '=[^;]*)(;|$)');
+      return re.test (itemData.Comment) ? RegExp.$2 : null;
+    }
+
+    var itemData = { Comment: 'foo=123;finalName_utf-8=YmFy;bar=xyz' };
+    Dorothy.setFinalName ('foo', null, 'utf-8', itemData);
+
+    expect (getOpt ('foo', itemData)).toBe ('foo=123');
+    expect (getOpt ('bar', itemData)).toBe ('bar=xyz');
+  });
+});
+
+
+// EOF
