@@ -46,6 +46,10 @@ Dorothy.setFilename (filename)
 Dorothy.addOption (s)
 Dorothy.getOption (key)
 
+Dorothy.setFinalName (finalName, filename, charset, itemData)
+Dorothy.getFinalName (itemData)
+※Dorothy.getFinalNameOptionName() は定義されません。
+
 詳細は省略。
 
 
@@ -70,6 +74,9 @@ Dorothy.getOption (key)
 
 変更履歴
 ========
+
+2016-03-14  verison 20160314.0  rentan at rentan.org
+  rutil.dms: Dorothy2R、各種 common の最低バージョンを更新。
 
 2016-02-08  version 20160208.0  rentan at rentan.org
   rutil.dms: Dorothy2R、各種 common の最低バージョンを更新。
