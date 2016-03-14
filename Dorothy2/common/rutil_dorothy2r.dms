@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R 互換拡張
-//version=20160311.0
+//version=20160314.0
 //hint=part of rutil.dms
 //match=
 //author=rentan
@@ -113,7 +113,7 @@ Dorothy.setFilename = function (filename) {
 };
 
 
-// (Dorothy2R 拡張) OnDoneThreadで変更するファイル名を設定する
+// (Dorothy2R 拡張) OnDoneThread で変更するファイル名を設定する
 Dorothy.setFinalName = function (finalName, filename, charset, itemData) {
   charset = charset || 'utf-8';
   itemData = itemData || item;
@@ -130,11 +130,11 @@ Dorothy.setFinalName = function (finalName, filename, charset, itemData) {
 };
 
 
-// (Dorothy2R 拡張) OnDoneThreadで変更するファイル名を取得する
+// (Dorothy2R 拡張) OnDoneThread で変更するファイル名を取得する
 Dorothy.getFinalName = function (itemData) {
   itemData = itemData || item;
-  var r = {charset: '', name: '', b64: ''};
-  if (itemData.hasKey('Comment') && /(^|;)\s*finalName\s*=\s*([^:]+?):([^;]+)/.test (itemData.Comment)) {
+  var r = { charset: '', name: '', b64: '' };
+  if (itemData.hasKey ('Comment') && /(^|;)\s*finalName\s*=\s*([^:]+):([^;]+)/.test (itemData.Comment)) {
     r.charset = RegExp.$2;
     r.b64 = RegExp.$3;
     r.name = Base64.decode (RegExp.$3);

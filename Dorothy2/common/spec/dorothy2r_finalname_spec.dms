@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R finalName spec
-//version=20160310.0
+//version=20160314.0
 //hint=http://yasmine.dorothy.test/common/spec/dorothy2r_finalname_spec.dms
 //match=
 //author=rentan
@@ -28,7 +28,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-describe ('Dorothy2R.setFinalName() and .getFinalName', function () {
+describe ('Dorothy.getFinalNameOptionName()', function () {
+  if (Dorothy.hasKey ('rVersion')) {
+    it ('returns "finalName" on Dorothy2R', function () {
+      // 値が変更された場合は下のテストの Comment の内容も調整すること
+      expect (Dorothy.getFinalNameOptionName ()).toBe ('finalName');
+    });
+  }
+  else {
+    it ('is not defined on Dorothy2', function () {
+      expect (Dorothy.hasKey ('getFinalNameOptionName')).toBe (false);
+    });
+  }
+});
+
+
+describe ('Dorothy.setFinalName() and .getFinalName', function () {
   var backup = { };
   beforeEach (function () {
     backup.Comment = item.Comment;
@@ -45,9 +60,9 @@ describe ('Dorothy2R.setFinalName() and .getFinalName', function () {
     [ 'foo', null, { }, 'Zm9v', 'utf-8' ],
     [ 'foo', null, { Comment: '' }, 'Zm9v', 'utf-8' ],
     [ 'foo', null, { Comment: 'test=123' }, 'Zm9v', 'utf-8' ],
-    [ 'foo', null, { Comment: 'finalName_utf-8=YmFy' }, 'Zm9v', 'utf-8' ],
-    [ 'foo', null, { Comment: 'finalName_utf-8=YmFy;test=123' }, 'Zm9v', 'utf-8' ],
-    [ 'foo', null, { Comment: 'test=123;finalName_utf-8=YmFy' }, 'Zm9v', 'utf-8' ],
+    [ 'foo', null, { Comment: 'finalName=utf-8:YmFy' }, 'Zm9v', 'utf-8' ],
+    [ 'foo', null, { Comment: 'finalName=utf-8:YmFy;test=123' }, 'Zm9v', 'utf-8' ],
+    [ 'foo', null, { Comment: 'test=123;finalName=utf-8:YmFy' }, 'Zm9v', 'utf-8' ],
 
     [ 'foo', null, { Comment: 'finalName_shift_jis=YmFy' }, 'Zm9v', 'utf-8' ],
 
@@ -69,7 +84,7 @@ describe ('Dorothy2R.setFinalName() and .getFinalName', function () {
     [ { } ],
     [ { Comment: '' } ],
     [ { Comment: 'foo=123' } ],
-    [ { Comment: 'dummy_finalName_utf-8=YmFy' } ]
+    [ { Comment: 'dummy_finalName=utf-8:YmFy' } ]
   ])
   .it ('returns empty strings if FinalName has not been set', function (itemData) {
     var r = Dorothy.getFinalName (itemData);
