@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20151022.0
+//version=20160317.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
+Copyright (C) 2012-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
-  Util.min_version (20150930.0);
+  Util.min_version (20160314.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -64,38 +64,26 @@ Getter (function Twitter (opt) {
 });
 
 
-// /i/cards/tfw/v1/\d+?native=true&cardname=__entity_video 内の動画を抽出する
-Twitter.prototype._analyzeVideoCards = function (cardsUrl) {
-  if (!http.get (cardsUrl)) {
+// /i/videos/\d+\?embed_source=facebook 内の動画を抽出する
+Twitter.prototype._analyzeVideos = function (url) {
+  var http = this.http;
+
+  if (!http.get (url)) {
     return this._httpError ();
   }
 
-  if (!/<div\s+id="ExternalIframeContainer"([^>]*)>/.test (http.data)) {
-    return this._unknown ('<div id="ExternalIframeContainer"> が見つかりません。');
+  if (!/<div\s+id="playerContainer"[^>]*data-config="([^"]*)"/.test (http.data)) {
+    return this._unknown ('<div id="playerContainer"> が見つかりません。');
   }
-  var eic = RegExp.$1;
+  var conf = RegExp.$1;
 
-  if (!/&quot;playlist&quot;:\[([^\]]+)\]/.test (eic)) {
-    return this._unknown ('playlist が見つかりません。');
+  if (!/&quot;video_url&quot;:&quot;(https?:.*?)&quot;/.test (http.data)) {
+    return this._unknown ('video_url が見つかりません。');
   }
-  var pl = RegExp.$1;
+  var video_url = RegExp.$1.replace (/\\/g, '');
 
-  var sources = [ ];
-  pl.replace (/&quot;source&quot;:&quot;(.*?)&quot;/g, function (s, p1) {
-    sources.push (p1);
-  });
-
-  if (sources.length === 0) {
-    return this._unknown ('動画URLが見つかりません。');
-  }
-
-  for (var i = 0; i < sources.length; ++i) {
-    this._add ({ Url: sources [i].replace (/\\/g, '') });
-  }
-
-  this.type = (this.items.length > 1) ? 'Video2' : 'Video';
-
-  return this._ok ();
+  this.type = 'Video';
+  return this._add ({ Url: video_url });
 };
 
 
@@ -156,16 +144,8 @@ Twitter.prototype._analyzeTweetImage = function () {
   }
 
   // 動画
-  if (testRegExp (/<source video-src="(https:\/\/pbs\.twimg\.com\/tweet_video\/[^"]+)"/, html)) {
-    this._add ({ Url: RegExp.$1 });
-    this.type = 'Video';
-    return this._ok ();
-  }
-
-  // アプリで撮影した動画
-  if (testRegExp (/<div class="js-macaw-cards-iframe-container"[^>]*data-src="(\/i\/cards\/tfw\/v1\/[^"]*cardname=__entity_video[^"]*)"/, html)) {
-    var cardsUrl = RegExp.$1.replace (/&amp;/g, '&');
-    return this._analyzeVideoCards (cardsUrl);
+  if (testRegExp (/<meta\s+property="og:video:secure_url"\s+content="(https:\/\/twitter\.com\/i\/videos\/[^"]+)"/, http.data)) {
+    return this._analyzeVideos (RegExp.$1);
   }
 
   http.capture ();
