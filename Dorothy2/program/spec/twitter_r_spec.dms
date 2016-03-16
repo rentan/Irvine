@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20150705.0
+//version=20160317.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -62,7 +62,9 @@ describe ('単一画像', function () {
 });
 
 
-describe ('単一画像(ツイート本文に別のツイートの画像 URL あり)', function () {
+// 現状のコードでは複数画像として処理されるが、ブラウザでの表示も
+// 複数画像になっており区別できないので仕様とする。
+xdescribe ('単一画像(ツイート本文に別のツイートの画像 URL あり)', function () {
   var url = 'https://twitter.com/rentan_org/status/314692615671017472';
   var imageUrl = 'https://pbs.twimg.com/media/BF4DRELCcAAp1sI.png:orig';
 

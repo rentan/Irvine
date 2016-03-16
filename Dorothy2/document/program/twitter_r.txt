@@ -33,6 +33,10 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2016-03-17  version 20160317.0  rentan at rentan.org
+  HTML の仕様変更(動画)に対応。
+    http://echo.2ch.net/test/read.cgi/win/1437882775/732,749
+
 2015-10-22  version 20151022.0  rentan at rentan.org
   MSIE 9.* の User-Agent を使用不可にした。
 
