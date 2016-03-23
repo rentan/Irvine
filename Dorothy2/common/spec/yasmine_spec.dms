@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine spec
-//version=20160223.0
+//version=20160324.0
 //hint=http://yasmine.dorothy.test/common/spec/yasmine_spec.dms
 //match=
 //author=rentan
@@ -140,29 +140,6 @@ describe ('NaN', function () {
 });
 
 
-describe ('Number', function () {
-  it ('int and double is same type', function () {
-    expect (1).toBe (1.0);
-    expect (parseInt ('1')).toBe (parseFloat ('1'));
-
-    expect (1).not.toBe (2.0);
-    expect (parseInt ('1')).not.toBe (parseFloat ('2'));
-  });
-});
-
-
-describe ('object', function () {
-  it ('equals to other object', function () {
-    expect ({ x: 1 }).toEqual ({ x: 1 });
-    expect ({ x: 1, y: 'foo' }).toEqual ({ x: 1, y: 'foo' });
-
-    expect ({ x: 1 }).not.toEqual ({ x: 9 });
-    expect ({ x: 1, y: 'foo' }).not.toEqual ({ x: 1, y: 'bar' });
-    expect ({ x: 1 }).not.toEqual ({ x: 1, y: 'foo' });
-  });
-});
-
-
 describe ('parameterized test', function () {
   it ('can execute it before cases', function () {
     expect ('false').toBeTruthy ();
@@ -223,6 +200,131 @@ describe ('Yasmine#_stringify', function () {
   ])
   .it ('returns stringified value [ value, string ]', function (value, s) {
     expect (ya._stringify (value)).toBe (s);
+  });
+});
+
+
+describe ('expect().toBe()', function () {
+  var object_o = { };
+  var String_foo = new String ('foo');
+  var StringBuffer_foo = new StringBuffer ('foo');
+
+  cases ([
+    // expect, actual
+
+    // object
+    [ object_o, object_o ],
+
+    // number
+    [ 1, 1.0 ],
+    [ parseInt ('1'), parseFloat ('1') ],
+
+    // string
+    [ 'foo', 'foo' ],
+
+    // String
+    [ String_foo, String_foo ],
+
+    // StringBuffer
+    [ StringBuffer_foo, StringBuffer_foo ]
+
+  ])
+  .it ('expect().toBe() [ expect, actual ]', function (ex, ac) {
+    expect (ex).toBe (ac);
+  });
+
+  cases ([
+    // expect, actual
+
+    // object
+    [ { }, { } ],
+
+    // number
+    [ 1, 2.0 ],
+    [ parseInt ('1'), parseFloat ('2') ],
+
+    // Number
+    [ new Number (1), 1 ],
+    [ new Number (1), new Number (1) ],
+
+    // string
+    [ 'foo', 'bar' ],
+
+    // String
+    [ String, 'foo' ],
+    [ String, new String ('foo') ],
+    [ String, new StringBuffer ('foo') ],
+    [ String, StringBuffer ],
+
+    [ new String ('foo'), 'foo' ],
+    [ new String ('foo'), new String ('foo') ],
+    [ new String ('foo'), new String ('bar') ],
+    [ new String ('foo'), new StringBuffer ('foo') ],
+
+    // StringBuffer
+    [ StringBuffer, 'foo' ],
+    [ StringBuffer, new String ('foo') ],
+    [ StringBuffer, new StringBuffer ('foo') ],
+
+    [ new StringBuffer ('foo'), 'foo' ],
+    [ new StringBuffer ('foo'), new String ('foo') ],
+    [ new StringBuffer ('foo'), new StringBuffer ('foo') ],
+    [ new StringBuffer ('foo'), new StringBuffer ('bar') ]
+
+  ])
+  .it ('expect().not.toBe() [ expect, not_actual ]', function (ex, ac) {
+    expect (ex).not.toBe (ac);
+  });
+});
+
+
+describe ('expect().toEqaul()', function () {
+  cases ([
+    // expect, actual
+
+    // object
+    [ { x: 1 }, { x: 1 } ],
+    [ { x: 1, y: 'foo' }, { x: 1, y: 'foo' } ],
+
+    // string
+    [ 'foo', 'foo' ],
+
+    // String
+    [ new String ('foo'), 'foo' ],
+    [ new String ('foo'), new String ('foo') ],
+
+    // StringBuffer
+    [ new StringBuffer ('foo'), new StringBuffer ('foo') ]
+
+  ])
+  .it ('expect().toEqual() [ expect, actual ]', function (ex, ac) {
+    expect (ex).toEqual (ac);
+  });
+
+  cases ([
+    // expect, actual
+
+    // object
+    [ { x: 1 }, { x: 9 } ],
+    [ { x: 1, y: 'foo' }, { x: 1, y: 'bar' } ],
+    [ { x: 1 }, { x: 1, y: 'foo' } ],
+
+    // string
+    [ 'foo', 'bar' ],
+
+    // String
+    [ new String ('foo'), 'bar' ],
+    [ new String ('foo'), new String ('bar') ],
+    [ new String ('foo'), new StringBuffer ('foo') ],
+
+    // StringBuffer
+    [ new StringBuffer ('foo'), 'foo' ],
+    [ new StringBuffer ('foo'), new String ('foo') ],
+    [ new StringBuffer ('foo'), new StringBuffer ('bar') ]
+
+  ])
+  .it ('expect().not.toEqual() [ expect, not_actual ]', function (ex, ac) {
+    expect (ex).not.toEqual (ac);
   });
 });
 

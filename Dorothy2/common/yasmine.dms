@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20160224.0
+//version=20160324.0
 //hint=
 //match=
 //author=rentan
@@ -491,10 +491,40 @@ Yasmine.prototype.test = function (file) {
 Yasmine.prototype._util = { };
 
 
+// String/StringBuffer オブジェクトを比較
+Yasmine.prototype._util._strictEqualObject = function (a, b) {
+  if (nameOf (a) != nameOf (b) || a.text != b.text) {
+    return false;
+  }
+
+  var key = '__marker__';
+
+  var aHasMarker = a.hasKey (key);
+  if (aHasMarker != b.hasKey (key)) {
+    return false;
+  }
+
+  if (aHasMarker) {
+    // 双方同名プロパティが存在する
+    var backup = a.__marker__;
+    a.__marker__ = { };
+    var eq = a.__marker__ === b.__marker__;
+    a.__marker__ = backup;
+    return eq;
+  }
+
+  // 双方同名プロパティが存在しない
+  a.__marker__ = null;
+  var eq = b.hasKey (key);
+  a.removeKey (key);
+  return eq;
+};
+
+
 // 同一のオブジェクトまたはプリミティブ値か調べる
 Yasmine.prototype._util._strictEqual = function (a, b) {
   if (a === b) {
-    return true;
+    return (a === String) ? this._strictEqualObject (a, b) : true;
   }
 
   // 0 === 0.0 が false になる DMonkey の不具合対処 とNaN
@@ -585,7 +615,7 @@ Yasmine.prototype._util._eq = function (a, b, aStack, bStack, customTesters) {
     return false;
   }
 
-  if (className === 'String') {
+  if (className === 'String' || className === 'StringBuffer') {
     return a.text === b.text;
   }
   if (className === 'Number') {
