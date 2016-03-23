@@ -1,0 +1,210 @@
+//Dorothy2
+//caption=redir 用設定
+//version=20160324.0
+//hint=
+//match=
+//author=rentan
+//path=setting
+//priority=
+//end
+
+/*
+Copyright (C) 2016 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'getter\redir');
+  Util.min_version (20160314.0);
+
+
+//-------------------------- ProgramScriptEditor ---------------------------
+
+
+// コンストラクタ
+function ProgramScriptEditor () {
+  var m = Dorothy.matchFile;
+
+  this._dms = new File (Dorothy.programDir + m + '.dms');
+  this.text = file_load (this._dms.path);
+
+  this._bakDir = new Directory (Dorothy.programDir + 'backup');
+  this._bak = new File (this._bakDir.path + '\' + m + '.bak');
+}
+
+
+// ファイルをバックアップに移動する
+ProgramScriptEditor.prototype.moveToBackup = function () {
+
+  // バックアップフォルダを作成する
+  try {
+    var d = this._bakDir;
+    if (!d.exists ()) {
+      d.make ();
+    }
+  }
+  catch (e) {
+    throw 'バックアップフォルダの作成に失敗しました: ' + e + "\n\n" + d.path;
+  }
+
+  // 以前作られたバックアップファイルを削除する
+  try {
+    var b = this._bak;
+    if (b.exists ()) {
+      b.remove ();
+    }
+  }
+  catch (e) {
+    throw 'バックアップファイルの削除に失敗しました: ' + e + "\n\n" + b.path;
+  }
+
+  // 現在の .dms を .bak にリネーム
+  try {
+    var fb = new File (this._dms.path);
+    fb.renameTo (b.path);
+  }
+  catch (e) {
+    throw 'ファイルのリネームに失敗しました: ' + e + "\n\n" + fb.path + "\n↓\n" + b.path;
+  }
+};
+
+
+// スクリプトの //match= 行を書き換える
+ProgramScriptEditor.prototype.replaceMatch = function (s) {
+
+  if (!this.text.match (/^\/\/match=[^\r\n]*/m)) {
+    throw '//match= が見つかりません。';
+  }
+  this.text = RegExp.leftContext + '//match=' + s + RegExp.rightContext;
+};
+
+
+// スクリプトを書きだす
+ProgramScriptEditor.prototype.write = function () {
+  var f = this._dms;
+
+  try {
+    f.open ('w');
+    f.write (this.text);
+  }
+  catch (e) {
+    throw 'ファイルの書き込みに失敗しました: ' + e + "\n\n" + f.path;
+  }
+  finally {
+    f.close ();
+  }
+};
+
+
+//----------------------------- IniMatchDialog -----------------------------
+
+
+// コンストラクタ
+function IniMatchDialog (matchBuilder) {
+  this._matchBuilder = matchBuilder;
+  this._createForm ();
+}
+
+
+IniMatchDialog.prototype._editIni = function () {
+  Util.ini_copy_edit ();
+  this._form.close ();
+};
+
+
+IniMatchDialog.prototype._updateMatch = function () {
+  try {
+    var m = this._matchBuilder ();
+    var pse = new ProgramScriptEditor ();
+
+    pse.moveToBackup ();
+    pse.replaceMatch (m);
+    pse.write ();
+
+    var s = Dorothy.hasKey ('rVersion') ? 'Dorothy2R 設定' : '動画ダウンロード２設定';
+    alert ('スクリプトを書き換えました。' + s + 'でデータを再読込みして下さい。');
+  }
+  catch (e) {
+    alert (e);
+  }
+};
+
+
+IniMatchDialog.prototype._formDfm = "
+object Form1: TForm1
+  ClientWidth = 280
+  ClientHeight = 104
+  Position = poScreenCenter
+  BorderStyle = bsDialog
+  object IniButton: TButton
+    Left = 24
+    Top = 20
+    Width = 100
+    Caption = '設定編集'
+  end
+  object MatchButton: TButton
+    Left = 24
+    Top = 60
+    Width = 100
+    Caption = '//match= 更新'
+  end
+  object OKButton: TButton
+    Left = 180
+    Top = 60
+    Caption = 'OK'
+    Default = False
+    ModalResult = 1
+  end
+end";
+
+
+IniMatchDialog.prototype._createForm = function (title) {
+  var form = this._form = new VCLForm ();
+  form.loadFromText (this._formDfm);
+  form.caption = Dorothy.matchFile;
+
+  form.IniButton.onClick = Util.bind (this._editIni, this);
+  form.MatchButton.onClick = Util.bind (this._updateMatch, this);
+};
+
+
+IniMatchDialog.prototype.showModal = function () {
+  this._form.showModal ();
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+(function () {
+  function buildMatch () {
+    return new Redir ().buildMatchPattern ();
+  }
+
+  try {
+    var dlg = new IniMatchDialog (buildMatch);
+    dlg.showModal ();
+  }
+  catch (e) {
+    alert (e);
+  }
+}) ();
+
+
+}
+
+
+// EOF

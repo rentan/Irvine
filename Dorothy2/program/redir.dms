@@ -1,0 +1,62 @@
+//Dorothy2
+//caption=redir
+//version=20160324.0
+//hint=
+//match=^https?://((t\.co|bit\.ly|goo\.gl|ime\.nu|jump\.2ch\.net|pinktower\.com)|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|eafyfsuh\.net|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|sasontnwc\.net|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|youfap\.me|yyv\.co|zatnawqy\.net|zff\.co|zxxo\.net)|(adf\.ly|j\.gs)|lix\.in)/
+//author=rentan
+//path=program
+//priority=730
+//end
+
+/*
+Copyright (C) 2015-2016 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function () {
+
+  common_load ('rutil', 'additem', 'getter\redir');
+  Util.min_version (20160314.0);
+
+  var defaultIni = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      ReQueue: true,
+      Max: 32
+    }
+  };
+
+
+//------------------------------- ÉÅÉCÉìèàóù -------------------------------
+
+
+  var ini = Util.ini_load (defaultIni);
+  var getter = new Redir ({ Max: ini.General.Max });
+
+  var url = urlinfo.url;
+  if (getter.get (url)) {
+    getter.setComment (item.comment || url);
+
+    getter.download ({
+      AddItem: new AddItem (ini.AddItem),
+      ReQueue: ini.General.ReQueue
+    });
+  }
+
+  getter.end ();
+}
+
+
+// EOF
