@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine spec
-//version=20160324.0
+//version=20160325.0
 //hint=http://yasmine.dorothy.test/common/spec/yasmine_spec.dms
 //match=
 //author=rentan
@@ -27,6 +27,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+
+var UNDEFINED = { u }.u;
 
 
 /*
@@ -128,18 +131,6 @@ describe ('jasmine.objectContaining()', function () {
 });
 
 
-describe ('NaN', function () {
-  it ('is falsy', function () {
-    expect (NaN).toBeFalsy ();
-    expect (NaN).not.toBeTruthy ();
-  });
-
-  it ('is the same as NaN', function () {
-    expect (NaN).toBe (NaN);
-  });
-});
-
-
 describe ('parameterized test', function () {
   it ('can execute it before cases', function () {
     expect ('false').toBeTruthy ();
@@ -172,38 +163,6 @@ describe ('parameterized test', function () {
 });
 
 
-describe ('comparing arrays', function () {
-  it ('compares each elements', function () {
-    expect ([ 'aaa', 'bbb' ]).toEqual ([ 'aaa', 'bbb' ]);
-    expect ([ { a: 'aaa' }, { b: 'bbb' } ]).toEqual ([ { a: 'aaa' }, { b: 'bbb' } ]);
-
-    expect ([ 'aaa', 'bbb' ]).not.toEqual ([ 'aaa', 'zzz' ]);
-    expect ([ 'aaa', 'bbb' ]).not.toEqual ([ 'xxx', 'bbb' ]);
-    expect ([ { a: 'aaa' }, { b: 'bbb' } ]).not.toEqual ([ { a: 'xxx' }, { b: 'yyy' } ]);
-  });
-});
-
-
-describe ('Yasmine#_stringify', function () {
-  var ya = new Yasmine ();
-  var u = { u }.u;
-
-  cases ([
-    // [ value, string ]
-    [ u, 'undefined' ],
-    [ [ u ], '[undefined]' ],
-    [ { x: u }, '{x:undefined}' ],
-
-    [ Number.POSITIVE_INFINITY, 'Infinity' ],
-    [ Number.NEGATIVE_INFINITY, '-Infinity' ],
-    [ [ Number.POSITIVE_INFINITY ], '[Infinity]' ]
-  ])
-  .it ('returns stringified value [ value, string ]', function (value, s) {
-    expect (ya._stringify (value)).toBe (s);
-  });
-});
-
-
 describe ('expect().toBe()', function () {
   var object_o = { };
   var String_foo = new String ('foo');
@@ -211,6 +170,9 @@ describe ('expect().toBe()', function () {
 
   cases ([
     // expect, actual
+
+    [ null, null ],
+    [ UNDEFINED, UNDEFINED ],
 
     // object
     [ object_o, object_o ],
@@ -236,6 +198,9 @@ describe ('expect().toBe()', function () {
   cases ([
     // expect, actual
 
+    [ null, UNDEFINED ],
+    [ UNDEFINED, null ],
+
     // object
     [ { }, { } ],
 
@@ -246,6 +211,7 @@ describe ('expect().toBe()', function () {
     // Number
     [ new Number (1), 1 ],
     [ new Number (1), new Number (1) ],
+    [ NaN, NaN ],
 
     // string
     [ 'foo', 'bar' ],
@@ -282,9 +248,19 @@ describe ('expect().toEqaul()', function () {
   cases ([
     // expect, actual
 
+    [ null, null ],
+    [ UNDEFINED, UNDEFINED ],
+
     // object
     [ { x: 1 }, { x: 1 } ],
     [ { x: 1, y: 'foo' }, { x: 1, y: 'foo' } ],
+
+    // number
+    [ NaN, NaN ],
+
+    // array
+    [ [ 'aaa', 'bbb' ], [ 'aaa', 'bbb' ] ],
+    [ [ { a: 'aaa' }, { b: 'bbb' } ], [ { a: 'aaa' }, { b: 'bbb' } ] ],
 
     // string
     [ 'foo', 'foo' ],
@@ -304,10 +280,18 @@ describe ('expect().toEqaul()', function () {
   cases ([
     // expect, actual
 
+    [ null, UNDEFINED ],
+    [ UNDEFINED, null ],
+
     // object
     [ { x: 1 }, { x: 9 } ],
     [ { x: 1, y: 'foo' }, { x: 1, y: 'bar' } ],
     [ { x: 1 }, { x: 1, y: 'foo' } ],
+
+    // array
+    [ [ 'aaa', 'bbb' ], [ 'aaa', 'zzz' ] ],
+    [ [ 'aaa', 'bbb' ], [ 'xxx', 'bbb' ] ],
+    [ [ { a: 'aaa' }, { b: 'bbb' } ], [ { a: 'xxx' }, { b: 'yyy' } ] ],
 
     // string
     [ 'foo', 'bar' ],
@@ -325,6 +309,93 @@ describe ('expect().toEqaul()', function () {
   ])
   .it ('expect().not.toEqual() [ expect, not_actual ]', function (ex, ac) {
     expect (ex).not.toEqual (ac);
+  });
+});
+
+
+describe ('expect().toBeUndefined()', function () {
+  it ('expect().toBeUndefined()', function () {
+    expect (UNDEFINED).toBeUndefined ();
+  });
+});
+
+
+describe ('expect().toBeNaN()', function () {
+  it ('expect().toBeNaN()', function () {
+    expect (NaN).toBeNaN ();
+  });
+
+  cases ([
+    null,
+    true,
+    false,
+    { },
+    0,
+    new Number (0),
+    Number.POSITIVE_INFINITY,
+    '',
+    'NaN'
+  ])
+  .it ('expect().not.toBeNaN()', function (value) {
+    expect (value).not.toBeNaN ();
+  });
+});
+
+
+describe ('expect().toBeTruthy(), .toBeFalsy()', function () {
+  var trues = [
+    true,
+    { },
+    1,
+    'foo'
+  ];
+
+  var falses = [
+    UNDEFINED,
+    null,
+    false,
+    0,
+    '',
+    NaN
+  ];
+
+  cases (trues)
+  .it ('expect().toBeTruthy()', function (value) {
+    expect (value).toBeTruthy ();
+  });
+
+  cases (falses)
+  .it ('expect().not.toBeTruthy()', function (value) {
+    expect (value).not.toBeTruthy ();
+  });
+
+  cases (falses)
+  .it ('expect().toBeFalsy()', function (value) {
+    expect (value).toBeFalsy ();
+  });
+
+  cases (trues)
+  .it ('expect().not.toBeFalsy()', function (value) {
+    expect (value).not.toBeFalsy ();
+  });
+});
+
+
+describe ('Yasmine#_stringify', function () {
+  var ya = new Yasmine ();
+
+  cases ([
+    // [ value, string ]
+    [ UNDEFINED, 'undefined' ],
+    [ [ UNDEFINED ], '[undefined]' ],
+    [ { x: UNDEFINED }, '{x:undefined}' ],
+
+    [ Number.POSITIVE_INFINITY, 'Infinity' ],
+    [ Number.NEGATIVE_INFINITY, '-Infinity' ],
+    [ [ Number.POSITIVE_INFINITY ], '[Infinity]' ]
+  ])
+  .it ('returns stringified value [ value, string ]', function (value, s) {
+    expect (ya._stringify (value)).toBe (s);
   });
 });
 

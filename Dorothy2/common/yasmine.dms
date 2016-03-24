@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20160324.0
+//version=20160325.0
 //hint=
 //match=
 //author=rentan
@@ -527,9 +527,9 @@ Yasmine.prototype._util._strictEqual = function (a, b) {
     return (a === String) ? this._strictEqualObject (a, b) : true;
   }
 
-  // 0 === 0.0 ‚ª false ‚É‚È‚é DMonkey ‚Ì•s‹ï‡‘Îˆ ‚ÆNaN
-  if (typeof a === 'number' && typeof b === 'number' && (a == b || !(a === a) && !(b === b)) ) {
-    return true;
+  // 0 === 0.0 ‚ª false ‚É‚È‚é DMonkey ‚Ì•s‹ï‡‘Îˆ
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a == b;
   }
 
   return false;
@@ -997,6 +997,14 @@ YasmineExpect.prototype._addMatchers ([ {
     return {
       compare: function (actual) {
         return { pass: actual ? isNaN (actual) : true };
+      }
+    };
+  },
+
+  toBeNaN: function (util, customEqualityTesters) {
+    return {
+      compare: function (actual) {
+        return { pass: isNaN (actual) };
       }
     };
   },
