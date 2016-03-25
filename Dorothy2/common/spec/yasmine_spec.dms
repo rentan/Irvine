@@ -313,6 +313,42 @@ describe ('expect().toEqaul()', function () {
 });
 
 
+describe ('expect().toContain()', function () {
+  cases ([
+    // expect, actual
+
+    // array
+    [ [ 'foo', 'bar', 'baz' ], 'bar' ],
+    [ [ { x: true } ], { x: true } ],
+
+    // string
+    [ '', '' ],
+    [ 'foobarbaz', 'bar' ]
+
+  ])
+  .it ('expect().toContain() [ expect, actual ]', function (ex, ac) {
+    expect (ex).toContain (ac);
+  });
+
+  cases ([
+    // expect, actual
+
+    // array
+    [ [ ], UNDEFINED ],
+    [ [ 'foo', 'bar', 'baz' ], 'quux' ],
+    [ [ { x: true } ], { x: false } ],
+
+    // string
+    [ 'foobarbaz', 'quux' ],
+    [ '', 'a' ]
+
+  ])
+  .it ('expect().not.toContain() [ expect, not_actual ]', function (ex, ac) {
+    expect (ex).not.toContain (ac);
+  });
+});
+
+
 describe ('expect().toBeUndefined()', function () {
   it ('expect().toBeUndefined()', function () {
     expect (UNDEFINED).toBeUndefined ();

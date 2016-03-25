@@ -704,11 +704,23 @@ Yasmine.prototype._util.equals = function (a, b, customTesters) {
   return this._eq (a, b, [ ], [ ], customTesters || [ ]);
 };
 
-/*
+
 Yasmine.prototype._util.contains = function (haystack, needle, customTesters) {
-  //
+  if (nameOf (haystack) === 'Array') {
+    var len = haystack.length;
+    for (var i = 0; i < len; ++i) {
+      if (this._eq (haystack [i], needle, [ ], [ ], customTesters)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // string
+  return haystack.indexOf (needle) >= 0 || needle == '';
 };
-*/
+
 
 Yasmine.prototype._util.buildFailureMessage = function (matcherName, isNot, actual) {
   var expected = arguments.slice (3);
@@ -1012,15 +1024,9 @@ YasmineExpect.prototype._addMatchers ([ {
   toContain: function (util, customEqualityTesters) {
     return {
       compare: function (actual, expected) {
-        var util = this.util;
+        var util = this.util, customEqualityTesters = this.customEqualityTesters;
 
-        var pass = false;
-        for (var i = 0; i < actual.length; ++i) {
-          if (util._strictEqual (actual [i], expected)) {
-            return { pass: true };
-          }
-        }
-        return { pass: false };
+        return { pass: util.contains (actual, expected, customEqualityTesters || [ ]) };
       }
     };
   },
