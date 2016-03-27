@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine
-//version=20160325.0
+//version=20160327.0
 //hint=
 //match=
 //author=rentan
@@ -491,8 +491,8 @@ Yasmine.prototype.test = function (file) {
 Yasmine.prototype._util = { };
 
 
-// String/StringBuffer オブジェクトを比較
-Yasmine.prototype._util._strictEqualObject = function (a, b) {
+// 同一の String/StringBuffer オブジェクトか調べる
+Yasmine.prototype._util._isSameObject = function (a, b) {
   if (nameOf (a) != nameOf (b) || a.text != b.text) {
     return false;
   }
@@ -522,9 +522,9 @@ Yasmine.prototype._util._strictEqualObject = function (a, b) {
 
 
 // 同一のオブジェクトまたはプリミティブ値か調べる
-Yasmine.prototype._util._strictEqual = function (a, b) {
+Yasmine.prototype._util.strictEqual = function (a, b) {
   if (a === b) {
-    return (a === String) ? this._strictEqualObject (a, b) : true;
+    return (a === String) ? this._isSameObject (a, b) : true;
   }
 
   // 0 === 0.0 が false になる DMonkey の不具合対処
@@ -536,7 +536,7 @@ Yasmine.prototype._util._strictEqual = function (a, b) {
 };
 
 
-Yasmine.prototype._util._getKeys = function (o) {
+Yasmine.prototype._util.getKeys = function (o) {
   var r = [ ];
 
   if (nameOf (o) == 'IrvineFolderData') {
@@ -581,7 +581,7 @@ Yasmine.prototype._util._eq = function (a, b, aStack, bStack, customTesters) {
     return b.compare (a);
   }
 
-  if (this._strictEqual (a, b)) {
+  if (this.strictEqual (a, b)) {
     // 同一のプリミティブ値(null/undefined も含む)
     // または a も b も同じオブジェクトを参照している
     return true;
@@ -653,9 +653,9 @@ Yasmine.prototype._util._eq = function (a, b, aStack, bStack, customTesters) {
   aStack.push (a);
   bStack.push (b);
   try {
-    var aKeys = this._getKeys (a);
+    var aKeys = this.getKeys (a);
     idx = aKeys.length;
-    if (idx != this._getKeys (b).length) {
+    if (idx != this.getKeys (b).length) {
       return false;
     }
 
@@ -701,7 +701,7 @@ Yasmine.prototype._util._eq = function (a, b, aStack, bStack, customTesters) {
 
 
 Yasmine.prototype._util.equals = function (a, b, customTesters) {
-  return this._eq (a, b, [ ], [ ], customTesters || [ ]);
+  return this._eq (a, b, [ ], [ ], customTesters);
 };
 
 
@@ -800,7 +800,7 @@ YasmineCompare.prototype._objectContaining = function (actual) {
 
   var expected = this._expected;
 
-  var keys = yasmine._util._getKeys (expected);
+  var keys = yasmine._util.getKeys (expected);
 
   // ユーザー定義オブジェクト
   var hasConstructor = false;
@@ -814,7 +814,7 @@ YasmineCompare.prototype._objectContaining = function (actual) {
   }
 
   if (typeof expected.prototype != 'undefined') {
-    keys = keys.concat (yasmine._util._getKeys (expected.prototype));
+    keys = keys.concat (yasmine._util.getKeys (expected.prototype));
   }
 
   if (typeof expected.length == 'number') {
@@ -846,7 +846,7 @@ YasmineCompare.prototype._objectContaining = function (actual) {
       continue;
     }
 
-    if (!yasmine._util._strictEqual (aValue, bValue)) {
+    if (!yasmine._util.strictEqual (aValue, bValue)) {
       return false;
     }
   }
@@ -950,7 +950,7 @@ YasmineExpect.prototype._addMatchers ([ {
       compare: function (actual, expected) {
         var util = this.util;
 
-        return { pass: util._strictEqual (actual, expected) };
+        return { pass: util.strictEqual (actual, expected) };
       }
     };
   },
@@ -958,14 +958,15 @@ YasmineExpect.prototype._addMatchers ([ {
   toEqual: function (util, customEqualityTesters) {
     return {
       compare: function (actual, expected) {
-        var util = this.util, customEqualityTesters = this.customEqualityTesters;
+        var util = this.util;
+        var testers = this.customEqualityTesters || [ ];
 
-        return { pass: util.equals (actual, expected, customEqualityTesters || [ ]) };
+        return { pass: util.equals (actual, expected, testers) };
       }
     };
   },
 
-  toMatch: function (util, customEqualityTesters) {
+  toMatch: function () {
     return {
       compare: function (actual, expected) {
         return { pass: (new RegExp (expected)).test (actual) };
@@ -973,7 +974,7 @@ YasmineExpect.prototype._addMatchers ([ {
     };
   },
 
-  toBeNull: function (util, customEqualityTesters) {
+  toBeNull: function () {
     return {
       compare: function (actual) {
         return { pass: isNull (actual) };
@@ -981,7 +982,7 @@ YasmineExpect.prototype._addMatchers ([ {
     };
   },
 
-  toBeDefined: function (util, customEqualityTesters) {
+  toBeDefined: function () {
     return {
       compare: function (actual) {
         return { pass: !isUndefined (actual) };
@@ -989,7 +990,7 @@ YasmineExpect.prototype._addMatchers ([ {
     };
   },
 
-  toBeUndefined: function (util, customEqualityTesters) {
+  toBeUndefined: function () {
     return {
       compare: function (actual) {
         return { pass: isUndefined (actual) };
@@ -997,7 +998,7 @@ YasmineExpect.prototype._addMatchers ([ {
     };
   },
 
-  toBeTruthy: function (util, customEqualityTesters) {
+  toBeTruthy: function () {
     return {
       compare: function (actual) {
         return { pass: actual ? !isNaN (actual) : false };
@@ -1005,7 +1006,7 @@ YasmineExpect.prototype._addMatchers ([ {
     };
   },
 
-  toBeFalsy: function (util, customEqualityTesters) {
+  toBeFalsy: function () {
     return {
       compare: function (actual) {
         return { pass: actual ? isNaN (actual) : true };
@@ -1013,7 +1014,7 @@ YasmineExpect.prototype._addMatchers ([ {
     };
   },
 
-  toBeNaN: function (util, customEqualityTesters) {
+  toBeNaN: function () {
     return {
       compare: function (actual) {
         return { pass: isNaN (actual) };
@@ -1024,14 +1025,15 @@ YasmineExpect.prototype._addMatchers ([ {
   toContain: function (util, customEqualityTesters) {
     return {
       compare: function (actual, expected) {
-        var util = this.util, customEqualityTesters = this.customEqualityTesters;
+        var util = this.util;
+        var testers = this.customEqualityTesters || [ ];
 
-        return { pass: util.contains (actual, expected, customEqualityTesters || [ ]) };
+        return { pass: util.contains (actual, expected, testers) };
       }
     };
   },
 
-  toBeLessThan: function (util, customEqualityTesters) {
+  toBeLessThan: function () {
     return {
       compare: function (actual, expected) {
         return { pass: actual < expected };
@@ -1039,7 +1041,7 @@ YasmineExpect.prototype._addMatchers ([ {
     };
   },
 
-  toBeGreaterThan: function (util, customEqualityTesters) {
+  toBeGreaterThan: function () {
     return {
       compare: function (actual, expected) {
         return { pass: actual > expected };
@@ -1052,13 +1054,13 @@ YasmineExpect.prototype._addMatchers ([ {
       compare: function (actual, expected, precision) {
         var util = this.util;
 
-        var p = util._strictEqual (precision, 0) ? 0 : (precision || 2);
+        var p = util.strictEqual (precision, 0) ? 0 : (precision || 2);
         return { pass: Math.abs (expected - actual) < (Math.pow (10, -p) / 2) };
       }
     };
   },
 
-  toThrow: function (util, customEqualityTesters) {
+  toThrow: function () {
     return {
       compare: function (actual, expected) {
         var threw = false;

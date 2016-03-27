@@ -50,6 +50,13 @@ http://yasmine.dorothy.test/arguments
 変更履歴
 ========
 
+2016-03-27  rentan at rentan.org
+Dorothy2\common\yasmine.dms version 20160327.0
+  expect().toBe()、.toEqual() で String (と string)、StringBuffer の同一性判定
+  を改善。
+  expect().toContain() を文字列に対応。
+  expect().toBeNaN() を追加。
+
 2016-02-24  rentan at rentan.org
 Dorothy2\common\yasmine.dms version 20160224.0
 Dorothy2\common\spec\yasmine.dms version 20160224.0
