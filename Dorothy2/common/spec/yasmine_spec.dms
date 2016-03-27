@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=yasmine spec
-//version=20160223.0
+//version=20160325.0
 //hint=http://yasmine.dorothy.test/common/spec/yasmine_spec.dms
 //match=
 //author=rentan
@@ -27,6 +27,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+
+var UNDEFINED = { u }.u;
 
 
 /*
@@ -128,41 +131,6 @@ describe ('jasmine.objectContaining()', function () {
 });
 
 
-describe ('NaN', function () {
-  it ('is falsy', function () {
-    expect (NaN).toBeFalsy ();
-    expect (NaN).not.toBeTruthy ();
-  });
-
-  it ('is the same as NaN', function () {
-    expect (NaN).toBe (NaN);
-  });
-});
-
-
-describe ('Number', function () {
-  it ('int and double is same type', function () {
-    expect (1).toBe (1.0);
-    expect (parseInt ('1')).toBe (parseFloat ('1'));
-
-    expect (1).not.toBe (2.0);
-    expect (parseInt ('1')).not.toBe (parseFloat ('2'));
-  });
-});
-
-
-describe ('object', function () {
-  it ('equals to other object', function () {
-    expect ({ x: 1 }).toEqual ({ x: 1 });
-    expect ({ x: 1, y: 'foo' }).toEqual ({ x: 1, y: 'foo' });
-
-    expect ({ x: 1 }).not.toEqual ({ x: 9 });
-    expect ({ x: 1, y: 'foo' }).not.toEqual ({ x: 1, y: 'bar' });
-    expect ({ x: 1 }).not.toEqual ({ x: 1, y: 'foo' });
-  });
-});
-
-
 describe ('parameterized test', function () {
   it ('can execute it before cases', function () {
     expect ('false').toBeTruthy ();
@@ -195,27 +163,268 @@ describe ('parameterized test', function () {
 });
 
 
-describe ('comparing arrays', function () {
-  it ('compares each elements', function () {
-    expect ([ 'aaa', 'bbb' ]).toEqual ([ 'aaa', 'bbb' ]);
-    expect ([ { a: 'aaa' }, { b: 'bbb' } ]).toEqual ([ { a: 'aaa' }, { b: 'bbb' } ]);
+describe ('expect().toBe()', function () {
+  var object_o = { };
+  var String_foo = new String ('foo');
+  var StringBuffer_foo = new StringBuffer ('foo');
 
-    expect ([ 'aaa', 'bbb' ]).not.toEqual ([ 'aaa', 'zzz' ]);
-    expect ([ 'aaa', 'bbb' ]).not.toEqual ([ 'xxx', 'bbb' ]);
-    expect ([ { a: 'aaa' }, { b: 'bbb' } ]).not.toEqual ([ { a: 'xxx' }, { b: 'yyy' } ]);
+  cases ([
+    // expect, actual
+
+    [ null, null ],
+    [ UNDEFINED, UNDEFINED ],
+
+    // object
+    [ object_o, object_o ],
+
+    // number
+    [ 1, 1.0 ],
+    [ parseInt ('1'), parseFloat ('1') ],
+
+    // string
+    [ 'foo', 'foo' ],
+
+    // String
+    [ String_foo, String_foo ],
+
+    // StringBuffer
+    [ StringBuffer_foo, StringBuffer_foo ]
+
+  ])
+  .it ('expect().toBe() [ expect, actual ]', function (ex, ac) {
+    expect (ex).toBe (ac);
+  });
+
+  cases ([
+    // expect, actual
+
+    [ null, UNDEFINED ],
+    [ UNDEFINED, null ],
+
+    // object
+    [ { }, { } ],
+
+    // number
+    [ 1, 2.0 ],
+    [ parseInt ('1'), parseFloat ('2') ],
+
+    // Number
+    [ new Number (1), 1 ],
+    [ new Number (1), new Number (1) ],
+    [ NaN, NaN ],
+
+    // string
+    [ 'foo', 'bar' ],
+
+    // String
+    [ String, 'foo' ],
+    [ String, new String ('foo') ],
+    [ String, new StringBuffer ('foo') ],
+    [ String, StringBuffer ],
+
+    [ new String ('foo'), 'foo' ],
+    [ new String ('foo'), new String ('foo') ],
+    [ new String ('foo'), new String ('bar') ],
+    [ new String ('foo'), new StringBuffer ('foo') ],
+
+    // StringBuffer
+    [ StringBuffer, 'foo' ],
+    [ StringBuffer, new String ('foo') ],
+    [ StringBuffer, new StringBuffer ('foo') ],
+
+    [ new StringBuffer ('foo'), 'foo' ],
+    [ new StringBuffer ('foo'), new String ('foo') ],
+    [ new StringBuffer ('foo'), new StringBuffer ('foo') ],
+    [ new StringBuffer ('foo'), new StringBuffer ('bar') ]
+
+  ])
+  .it ('expect().not.toBe() [ expect, not_actual ]', function (ex, ac) {
+    expect (ex).not.toBe (ac);
+  });
+});
+
+
+describe ('expect().toEqaul()', function () {
+  cases ([
+    // expect, actual
+
+    [ null, null ],
+    [ UNDEFINED, UNDEFINED ],
+
+    // object
+    [ { x: 1 }, { x: 1 } ],
+    [ { x: 1, y: 'foo' }, { x: 1, y: 'foo' } ],
+
+    // number
+    [ NaN, NaN ],
+
+    // array
+    [ [ 'aaa', 'bbb' ], [ 'aaa', 'bbb' ] ],
+    [ [ { a: 'aaa' }, { b: 'bbb' } ], [ { a: 'aaa' }, { b: 'bbb' } ] ],
+
+    // string
+    [ 'foo', 'foo' ],
+
+    // String
+    [ new String ('foo'), 'foo' ],
+    [ new String ('foo'), new String ('foo') ],
+
+    // StringBuffer
+    [ new StringBuffer ('foo'), new StringBuffer ('foo') ]
+
+  ])
+  .it ('expect().toEqual() [ expect, actual ]', function (ex, ac) {
+    expect (ex).toEqual (ac);
+  });
+
+  cases ([
+    // expect, actual
+
+    [ null, UNDEFINED ],
+    [ UNDEFINED, null ],
+
+    // object
+    [ { x: 1 }, { x: 9 } ],
+    [ { x: 1, y: 'foo' }, { x: 1, y: 'bar' } ],
+    [ { x: 1 }, { x: 1, y: 'foo' } ],
+
+    // array
+    [ [ 'aaa', 'bbb' ], [ 'aaa', 'zzz' ] ],
+    [ [ 'aaa', 'bbb' ], [ 'xxx', 'bbb' ] ],
+    [ [ { a: 'aaa' }, { b: 'bbb' } ], [ { a: 'xxx' }, { b: 'yyy' } ] ],
+
+    // string
+    [ 'foo', 'bar' ],
+
+    // String
+    [ new String ('foo'), 'bar' ],
+    [ new String ('foo'), new String ('bar') ],
+    [ new String ('foo'), new StringBuffer ('foo') ],
+
+    // StringBuffer
+    [ new StringBuffer ('foo'), 'foo' ],
+    [ new StringBuffer ('foo'), new String ('foo') ],
+    [ new StringBuffer ('foo'), new StringBuffer ('bar') ]
+
+  ])
+  .it ('expect().not.toEqual() [ expect, not_actual ]', function (ex, ac) {
+    expect (ex).not.toEqual (ac);
+  });
+});
+
+
+describe ('expect().toContain()', function () {
+  cases ([
+    // expect, actual
+
+    // array
+    [ [ 'foo', 'bar', 'baz' ], 'bar' ],
+    [ [ { x: true } ], { x: true } ],
+
+    // string
+    [ '', '' ],
+    [ 'foobarbaz', 'bar' ]
+
+  ])
+  .it ('expect().toContain() [ expect, actual ]', function (ex, ac) {
+    expect (ex).toContain (ac);
+  });
+
+  cases ([
+    // expect, actual
+
+    // array
+    [ [ ], UNDEFINED ],
+    [ [ 'foo', 'bar', 'baz' ], 'quux' ],
+    [ [ { x: true } ], { x: false } ],
+
+    // string
+    [ 'foobarbaz', 'quux' ],
+    [ '', 'a' ]
+
+  ])
+  .it ('expect().not.toContain() [ expect, not_actual ]', function (ex, ac) {
+    expect (ex).not.toContain (ac);
+  });
+});
+
+
+describe ('expect().toBeUndefined()', function () {
+  it ('expect().toBeUndefined()', function () {
+    expect (UNDEFINED).toBeUndefined ();
+  });
+});
+
+
+describe ('expect().toBeNaN()', function () {
+  it ('expect().toBeNaN()', function () {
+    expect (NaN).toBeNaN ();
+  });
+
+  cases ([
+    null,
+    true,
+    false,
+    { },
+    0,
+    new Number (0),
+    Number.POSITIVE_INFINITY,
+    '',
+    'NaN'
+  ])
+  .it ('expect().not.toBeNaN()', function (value) {
+    expect (value).not.toBeNaN ();
+  });
+});
+
+
+describe ('expect().toBeTruthy(), .toBeFalsy()', function () {
+  var trues = [
+    true,
+    { },
+    1,
+    'foo'
+  ];
+
+  var falses = [
+    UNDEFINED,
+    null,
+    false,
+    0,
+    '',
+    NaN
+  ];
+
+  cases (trues)
+  .it ('expect().toBeTruthy()', function (value) {
+    expect (value).toBeTruthy ();
+  });
+
+  cases (falses)
+  .it ('expect().not.toBeTruthy()', function (value) {
+    expect (value).not.toBeTruthy ();
+  });
+
+  cases (falses)
+  .it ('expect().toBeFalsy()', function (value) {
+    expect (value).toBeFalsy ();
+  });
+
+  cases (trues)
+  .it ('expect().not.toBeFalsy()', function (value) {
+    expect (value).not.toBeFalsy ();
   });
 });
 
 
 describe ('Yasmine#_stringify', function () {
   var ya = new Yasmine ();
-  var u = { u }.u;
 
   cases ([
     // [ value, string ]
-    [ u, 'undefined' ],
-    [ [ u ], '[undefined]' ],
-    [ { x: u }, '{x:undefined}' ],
+    [ UNDEFINED, 'undefined' ],
+    [ [ UNDEFINED ], '[undefined]' ],
+    [ { x: UNDEFINED }, '{x:undefined}' ],
 
     [ Number.POSITIVE_INFINITY, 'Infinity' ],
     [ Number.NEGATIVE_INFINITY, '-Infinity' ],
