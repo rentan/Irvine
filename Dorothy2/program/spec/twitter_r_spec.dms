@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20160317.0
+//version=20160330.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -210,7 +210,7 @@ describe ('リプライツイートの画像', function () {
 });
 
 
-describe ('Twitterアプリから投稿された動画', function () {
+describe ('動画', function () {
   var getter = null;
 
   beforeEach (function () {
@@ -219,6 +219,12 @@ describe ('Twitterアプリから投稿された動画', function () {
 
   cases ([
     // [ url, video ]
+
+    // gif から変換された動画
+    [ 'https://twitter.com/Lynn_0601_/status/714070138224414724',
+      'https://pbs.twimg.com/tweet_video/Ceji2VtWQAA9Bae.mp4' ],
+
+    // Twitterアプリから投稿された動画
     [ 'https://twitter.com/twitter/status/560070183650213889',
       'https://video.twimg.com/ext_tw_video/560070131976392705/pu/vid/1280x720/c4E56sl91ZB7cpYi.mp4' ],
 
