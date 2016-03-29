@@ -168,6 +168,12 @@ Dorothy.loadDorothyIni ();
 ========
 
 
+2016-03-27  version 20160327  wan <thewanwan111@gmail.com>
+
+scripts\Dorothy2R_doa_list.dms
+  画面の再描画を行わせる為にループ内の eventLoop() を doEvents() に変更しました
+
+
 2016-03-14  version 20160314.0  rentan at rentan.org
 
 scripts\Dorothy2R_a.dms

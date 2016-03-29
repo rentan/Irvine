@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={BC220934-7214-48CA-9A7A-736A95B25C0F}
 caption=Dorothy2R DOA
-version=20141208
+version=20160327
 hint=
 event=OnListMenuClick
 match=
@@ -14,6 +14,7 @@ synchronize=0
 
 /*
 Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -653,7 +654,7 @@ function OnListMenuClick (irvine, action) {
     for(var i in frmDOA.ListView1.Items){
       var doaItem = frmDOA.ListView1.Items[i];
 
-      eventLoop();
+      doEvents();
       var sc = calcScrollCount (frmDOA.ListView1.TopItem.Index, frmDOA.ListView1.VisibleRowCount, i);
       frmDOA.ListView1.scroll (0, 9 * sc);
       frmDOA.ListView1.update();
