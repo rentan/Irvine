@@ -33,6 +33,10 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2016-03-30  version 20160330.0  rentan at rentan.org
+  gif から変換された動画に対応。
+    http://echo.2ch.net/test/read.cgi/win/1437882775/766
+
 2016-03-17  version 20160317.0  rentan at rentan.org
   HTML の仕様変更(動画)に対応。
     http://echo.2ch.net/test/read.cgi/win/1437882775/732,749

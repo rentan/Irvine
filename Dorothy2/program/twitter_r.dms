@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20160317.0
+//version=20160330.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -72,12 +72,15 @@ Twitter.prototype._analyzeVideos = function (url) {
     return this._httpError ();
   }
 
-  if (!/<div\s+id="playerContainer"[^>]*data-config="([^"]*)"/.test (http.data)) {
+  var n = http.data.indexOf ('<div id="playerContainer"');
+  var html = http.data.slice (n > 0 ? n : 0);
+
+  if (!/<div\s+id="playerContainer"[^>]*data-config="([^"]*)"/.test (html)) {
     return this._unknown ('<div id="playerContainer"> Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÅB');
   }
   var conf = RegExp.$1;
 
-  if (!/&quot;video_url&quot;:&quot;(https?:.*?)&quot;/.test (http.data)) {
+  if (!/&quot;video_url&quot;:&quot;(https?:.*?)&quot;/.test (conf)) {
     return this._unknown ('video_url Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÅB');
   }
   var video_url = RegExp.$1.replace (/\\/g, '');
@@ -146,6 +149,11 @@ Twitter.prototype._analyzeTweetImage = function () {
   // ìÆâÊ
   if (testRegExp (/<meta\s+property="og:video:secure_url"\s+content="(https:\/\/twitter\.com\/i\/videos\/[^"]+)"/, http.data)) {
     return this._analyzeVideos (RegExp.$1);
+  }
+
+  // gif Ç©ÇÁïœä∑Ç≥ÇÍÇΩìÆâÊ
+  if (html.indexOf ('<div class="PlayableMedia PlayableMedia--gif">') >= 0) {
+    return this._analyzeVideos ('/i/videos/tweet/' + this.id);
   }
 
   http.capture ();
