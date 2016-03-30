@@ -1,0 +1,42 @@
+/*
+スクリプト初期化データ
+guid={8DD7F3A7-A284-4CF3-BDAA-8FA919834244}
+caption=redir_file
+version=20160331
+hint=
+event=OnTreeMenuClick
+match=
+author=rentan
+synchronize=0
+*/
+
+
+// キューフォルダメニューのクリックイベント
+function OnTreeMenuClick (irvine, action) {
+  var REDIR_FILE_URL = 'http://redir_file.dorothy.test/redir_file?';
+
+  var queue = irvine.CurrentQueueFolder;
+
+  function getDesktopPath () {
+    var reg = new RegIni ('\Software\Microsoft\Windows\CurrentVersion\Explorer');
+    return reg.read ('Shell Folders', 'Desktop', 'C:');
+  }
+
+  var path = getDesktopPath () + '\*.txt';
+  var dlg = new Dialog ('テキストファイル (*.txt)|*.txt','すべてのファイル (*.*)|*.*');
+
+  var file = dlg.openFile ('URL リストファイル', path);
+  if (!file) {
+    return;
+  }
+
+  irvine.AddQueueItem (queue, REDIR_FILE_URL + encodeURIComponent (file));
+}
+
+
+// メニューの更新イベント
+function OnMenuUpdate (irvine, action) {
+}
+
+
+// EOF
