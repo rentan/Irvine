@@ -1,0 +1,172 @@
+//Dorothy2
+//caption=redir_file
+//version=20160331.0
+//hint=
+//match=^http://redir_file\.dorothy\.test/redir_file\?.
+//author=rentan
+//path=program
+//priority=400
+//end
+
+/*
+Copyright (C) 2016 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function (scriptMode) {
+
+  common_load ('rutil', 'getter\redir', 'http');
+  Util.min_version (20160314.0);
+
+
+//------------------------------- RedirFile --------------------------------
+
+
+// コンストラクタ
+Getter (function RedirFile () {
+});
+
+
+// ファイル先頭の UTF-8 BOM を削除する
+RedirFile.prototype._removeBOM = function (sl) {
+  if (sl.length == 0) {
+    return;
+  }
+
+  var sb = new StringBuffer (sl [0]);
+
+  if (sb.charCodeAt (0) == 0xef
+   && sb.charCodeAt (1) == 0xbb
+   && sb.charCodeAt (2) == 0xbf) {
+    sl [0] = sb.delete (0, 3).toString ();
+  }
+};
+
+
+// テキスト中からURLを探して配列で返す
+//  [ { Url: 'http://...', line: nnn }, ... ]
+RedirFile.prototype._findUrl = function (sl) {
+  var urls = [ ];
+
+  var re = /^https?:\/\/[^.\/]+\.[^\/]+\/\S*/;
+
+  var lines = sl.length;
+  for (line = 0; line < lines; ++line) {
+    var m = re.exec (sl [line]);
+    if (m) {
+      urls.push ({ Url: m [0], line: line });
+    }
+  }
+
+  return urls;
+};
+
+
+// .items の各 Url を改行で繋げて返す
+RedirFile.prototype._getItemUrls = function (getter) {
+  var urls = [ ];
+
+  var items = getter.items;
+  var len = items.length;
+  for (var i = 0; i < len; ++i) {
+    urls.push (items [i].Url);
+  }
+
+  return urls.join ("\n");
+};
+
+
+RedirFile.prototype._replaceUrl = function (sl, urls, getters) {
+  var len = getters.length;
+
+  for (var i = 0; i < len; ++i) {
+    var getter = getters [i];
+    var line = urls [i].line;
+
+    if (getter.status == getter.OK) {
+      this._sl [line] = this._getItemUrls (getter);
+    }
+    else if (getter.status != getter.MIS) {
+      this._sl [line] += "\n---> " + getter.comment.toUTF8 ();
+    }
+  }
+
+  return this._ok ();
+};
+
+
+// public: ファイルに記載されたURLの転送先を取得する
+RedirFile.prototype.get = function (url) {
+  this.items = [ ];
+
+  if (!/^http:\/\/redir_file\.dorothy\.test\/redir_file\?(.+)$/.test (url)) {
+    return this._mis ();
+  }
+  var f = this._file = decodeURIComponent (RegExp.$1);
+
+  var sl = this._sl = new Strings ();
+  try {
+    sl.loadFromFile (f);
+  }
+  catch (e) {
+    return this._ng (e + ': ' + f);
+  }
+
+  this._removeBOM (sl);
+
+  var urls = this._findUrl (sl);
+  if (urls.length == 0) {
+    return this._ng ('ファイル内にURLがありません。');
+  }
+
+  var redir = new Redir ({ NoMisMsg: true });
+  var getters = redir.getParallel (urls);
+
+  return this._replaceUrl (sl, urls, getters);
+};
+
+
+// public: 取得した転送先をファイルに保存する
+RedirFile.prototype.download = function (args) {
+  var http = new Http ();
+
+  var result = http.saveFile ({ filename: this._file, data: this._sl.text });
+  if (result.error) {
+    return this._ng (result.error);
+  }
+
+  Util.remove_this ();
+  return this._ok ();
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
+  }
+
+  var getter = new RedirFile ();
+
+  if (getter.get (urlinfo.url)) {
+    getter.download ();
+  }
+
+  getter.end ();
+}
+
+
+// EOF
