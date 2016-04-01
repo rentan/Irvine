@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ネットインストール
-//version=20160331.0
+//version=20160402.0
 //hint=
 //match=
 //author=rentan
@@ -33,7 +33,7 @@ function () {
 
 // コンストラクタ
 function NetInstall () {
-  this.initForm ('version 20160331.0');
+  this.initForm ('version 20160402.0');
 };
 
 
@@ -53,6 +53,7 @@ NetInstall.prototype.archiveFilename = null;
 NetInstall.prototype.extractedDir = null;
 NetInstall.prototype.dorothyFiles = null;
 NetInstall.prototype.logFile = null;
+NetInstall.prototype.diffCommand = null;
 
 
 // コールバック関数用のバインド
@@ -377,7 +378,7 @@ NetInstall.prototype.updateContext = function () {
   var extractedDoc = false;
   var currentProg = false;
   var currentDoc = false;
-  var diff = this.settings.General.diffCommand != '';
+  var diff = this.diffCommand != '';
 
   var item = this.getSelectedItem ();
   if (item) {
@@ -421,7 +422,7 @@ NetInstall.prototype.openDiff = function (left, right) {
     return;
   }
 
-  var cmd = Global.format (this.settings.General.diffCommand, left, right);
+  var cmd = Global.format (this.diffCommand, left, right);
   var windowStyle = 4;
   this.run (cmd, windowStyle, true);
 };
@@ -794,9 +795,8 @@ NetInstall.prototype.loadIni = function () {
   var n = parseInt (ini.read (section, 'ExtractWindowStyle', '0'));
   g.extractWindowStyle = isNaN (n) ? 0 : n;
 
-  var hasDiffKey = ini.readSection (section).indexOf ('Diff') != -1;
-  var diff = hasDiffKey ? '' : this.getDiffCommand ();
-  g.diffCommand = ini.read (section, 'Diff', diff);
+  g.diffCommand = ini.read (section, 'Diff', '');
+  this.diffCommand = g.diffCommand || this.getDiffCommand ();
 
 
   // ダウンロードURL
@@ -850,19 +850,29 @@ NetInstall.prototype.loadIni = function () {
 // ユーザー設定を保存する
 NetInstall.prototype.saveIni = function () {
   var ini = new Ini (this.iniPath);
-  ini.newFile = !File.exists (this.iniPath);
+
+  ini.setSection = function (sec) {
+    this.section = sec;
+    this.sections = this.readSection (sec);
+  };
+
+  // キーがない、または値が違えば書き込みが必要
+  ini.needToWrite = function (key, value, oldValue) {
+    return this.sections.indexOf (key) == -1
+        || (!isUndefined (oldValue) && value != oldValue);
+  };
 
   ini.rewrite = function (key, value, oldValue) {
     value = value + '';
 
-    if (this.newFile || (arguments.length >= 3 && value != oldValue)) {
-      ini.write (this.section, key, value).dirty = true;
+    if (this.needToWrite (key, value, oldValue)) {
+      this.write (this.section, key, value).dirty = true;
     }
   };
 
 
-  // 設定一般(新規作成時のみ)
-  ini.section = 'General';
+  // 設定一般
+  ini.setSection ('General');
   var g = this.settings.General;
 
   ini.rewrite ('DocumentUtf8', g.documentUtf8);
@@ -871,8 +881,8 @@ NetInstall.prototype.saveIni = function () {
   ini.rewrite ('Diff', g.diffCommand);
 
 
-  // ダウンロードURL(新規作成時のみ)
-  ini.section = 'Url';
+  // ダウンロードURL
+  ini.setSection ('Url');
   var u = this.settings.Url;
 
   for (var i = 0; i < u.length; ++i) {
@@ -881,7 +891,7 @@ NetInstall.prototype.saveIni = function () {
 
 
   // フォーム位置・サイズ
-  ini.section = 'FormDesign';
+  ini.setSection ('FormDesign');
   var fd = this.settings.FormDesign;
   var fdKeys = this.formDesignKeys;
 
