@@ -513,6 +513,7 @@ NetInstall.prototype.createNetFile = function (url) {
 
   return {
     _url: url,
+    _proxy: this.settings.General.proxy,
 
     extractName: function () {
       return (new URL (this._url)).filename;
@@ -521,6 +522,8 @@ NetInstall.prototype.createNetFile = function (url) {
     copyTo: function (saveAs) {
       var http = new HTTPS ();
       http.autoRedirect = true;
+      http.proxy = this._proxy;
+
       http.getFile (this._url, saveAs);
     }
   };
@@ -798,6 +801,8 @@ NetInstall.prototype.loadIni = function () {
   g.diffCommand = ini.read (section, 'Diff', '');
   this.diffCommand = g.diffCommand || this.getDiffCommand ();
 
+  g.proxy = ini.read (section, 'Proxy', '');
+
 
   // ダウンロードURL
   section = 'Url';
@@ -879,6 +884,7 @@ NetInstall.prototype.saveIni = function () {
   ini.rewrite ('NoCopy', g.noCopy);
   ini.rewrite ('ExtractWindowStyle', g.extractWindowStyle);
   ini.rewrite ('Diff', g.diffCommand);
+  ini.rewrite ('Proxy', g.proxy);
 
 
   // ダウンロードURL
