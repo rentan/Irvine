@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ネットインストール
-//version=20141218.0
+//version=20160403.0
 //hint=
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ function () {
 
 // コンストラクタ
 function NetInstall () {
-  this.initForm ('version 20141218.0');
+  this.initForm ('version 20160402.0');
 };
 
 
@@ -53,6 +53,7 @@ NetInstall.prototype.archiveFilename = null;
 NetInstall.prototype.extractedDir = null;
 NetInstall.prototype.dorothyFiles = null;
 NetInstall.prototype.logFile = null;
+NetInstall.prototype.diffCommand = null;
 
 
 // コールバック関数用のバインド
@@ -377,7 +378,7 @@ NetInstall.prototype.updateContext = function () {
   var extractedDoc = false;
   var currentProg = false;
   var currentDoc = false;
-  var diff = this.settings.General.diffCommand != '';
+  var diff = this.diffCommand != '';
 
   var item = this.getSelectedItem ();
   if (item) {
@@ -421,7 +422,7 @@ NetInstall.prototype.openDiff = function (left, right) {
     return;
   }
 
-  var cmd = Global.format (this.settings.General.diffCommand, left, right);
+  var cmd = Global.format (this.diffCommand, left, right);
   var windowStyle = 4;
   this.run (cmd, windowStyle, true);
 };
@@ -512,6 +513,7 @@ NetInstall.prototype.createNetFile = function (url) {
 
   return {
     _url: url,
+    _proxy: this.settings.General.proxy,
 
     extractName: function () {
       return (new URL (this._url)).filename;
@@ -520,6 +522,8 @@ NetInstall.prototype.createNetFile = function (url) {
     copyTo: function (saveAs) {
       var http = new HTTPS ();
       http.autoRedirect = true;
+      http.proxy = this._proxy;
+
       http.getFile (this._url, saveAs);
     }
   };
@@ -676,7 +680,7 @@ NetInstall.prototype.createInstallList = function () {
 
   var g = this.settings.General;
   dfList.documentUtf8 = g.documentUtf8;
-  dfList.noCpy = g.noCopy;
+  dfList.noCopy = g.noCopy;
 
   var items = this.form.ProgramList.Items;
   var len = items.Count;
@@ -794,9 +798,10 @@ NetInstall.prototype.loadIni = function () {
   var n = parseInt (ini.read (section, 'ExtractWindowStyle', '0'));
   g.extractWindowStyle = isNaN (n) ? 0 : n;
 
-  var hasDiffKey = ini.readSection (section).indexOf ('Diff') != -1;
-  var diff = hasDiffKey ? '' : this.getDiffCommand ();
-  g.diffCommand = ini.read (section, 'Diff', diff);
+  g.diffCommand = ini.read (section, 'Diff', '');
+  this.diffCommand = g.diffCommand || this.getDiffCommand ();
+
+  g.proxy = ini.read (section, 'Proxy', '');
 
 
   // ダウンロードURL
@@ -821,7 +826,7 @@ NetInstall.prototype.loadIni = function () {
   var fdKeys = this.formDesignKeys;
 
   var form = this.form;
-  for (var i = 0; i < fdKeys.length; ++i) {
+  for (i = 0; i < fdKeys.length; ++i) {
     var key = fdKeys [i];
     var value = fd [key] = ini.read (section, key, '');
 
@@ -850,29 +855,40 @@ NetInstall.prototype.loadIni = function () {
 // ユーザー設定を保存する
 NetInstall.prototype.saveIni = function () {
   var ini = new Ini (this.iniPath);
-  ini.newFile = !File.exists (this.iniPath);
+
+  ini.setSection = function (sec) {
+    this.section = sec;
+    this.sections = this.readSection (sec);
+  };
+
+  // キーがない、または値が違えば書き込みが必要
+  ini.needToWrite = function (key, value, oldValue) {
+    return this.sections.indexOf (key) == -1
+        || (!isUndefined (oldValue) && value != oldValue);
+  };
 
   ini.rewrite = function (key, value, oldValue) {
     value = value + '';
 
-    if (this.newFile || (arguments.length >= 3 && value != oldValue)) {
-      ini.write (this.section, key, value).dirty = true;
+    if (this.needToWrite (key, value, oldValue)) {
+      this.write (this.section, key, value).dirty = true;
     }
   };
 
 
-  // 設定一般(新規作成時のみ)
-  ini.section = 'General';
+  // 設定一般
+  ini.setSection ('General');
   var g = this.settings.General;
 
   ini.rewrite ('DocumentUtf8', g.documentUtf8);
   ini.rewrite ('NoCopy', g.noCopy);
   ini.rewrite ('ExtractWindowStyle', g.extractWindowStyle);
   ini.rewrite ('Diff', g.diffCommand);
+  ini.rewrite ('Proxy', g.proxy);
 
 
-  // ダウンロードURL(新規作成時のみ)
-  ini.section = 'Url';
+  // ダウンロードURL
+  ini.setSection ('Url');
   var u = this.settings.Url;
 
   for (var i = 0; i < u.length; ++i) {
@@ -881,7 +897,7 @@ NetInstall.prototype.saveIni = function () {
 
 
   // フォーム位置・サイズ
-  ini.section = 'FormDesign';
+  ini.setSection ('FormDesign');
   var fd = this.settings.FormDesign;
   var fdKeys = this.formDesignKeys;
 
@@ -929,20 +945,21 @@ DorothyFiles.prototype.getProgramFile = function (program) {
 
 
 // ファイルを追加する
-DorothyFiles.prototype.addFile = function (file) {
-  if (this.getFile (file)) {
-    // 既に登録されている
-    return;
+DorothyFiles.prototype.addFile = function (file, parent) {
+  var dorothyFile = this.getFile (file);
+
+  if (!dorothyFile) {
+    // 新規登録
+    dorothyFile = this.files [file] = new DorothyFile (this.baseDir, file, true);
+
+    // このスクリプトから参照されているファイルを追加する
+    dorothyFile.eachChild (function (child) {
+      this.addFile (child, file);
+    }, this);
   }
 
-  var dorothyFile = new DorothyFile (this.baseDir, file, true);
-  this.files [file] = dorothyFile;
-
-  // このスクリプトから参照されているファイルを追加する
-  var req = dorothyFile.required;
-  var len = req.length;
-  for (var i = 0; i < len; ++i) {
-    this.addFile (req [i]);
+  if (parent) {
+    dorothyFile.addParent (parent);
   }
 };
 
@@ -969,18 +986,19 @@ DorothyFiles.prototype.addPrograms = function () {
 
 // 解析時にエラーが発生したファイル名の一覧を返す
 DorothyFiles.prototype.getErrorFileList = function () {
-  var list = new Strings ();
+  var err = new Strings ();
+  var files = new Strings ().assign (this.files.getProperties ()).sort ();
 
-  for (var file in this.files) {
-    var dorothyFile = this.files [file];
+  var len = files.length;
+  for (var i = 0; i < len; ++i) {
+    var dorothyFile = this.files [files [i]];
 
     if (!dorothyFile.exists) {
-      list.add (dorothyFile.file);
+      err.addStrings (dorothyFile.getFileWithParents ());
     }
   }
 
-  list.sort ();
-  return list;
+  return err;
 };
 
 
@@ -989,7 +1007,8 @@ DorothyFiles.prototype.getErrorFileList = function () {
 
 // コンストラクタ
 function DorothyFile (baseDir, file, fullScan) {
-  this.required = [ ];
+  this._parents = { };
+  this._children = { };
 
   this.baseDir = baseDir;
   this.file = file;
@@ -1020,22 +1039,22 @@ DorothyFile.prototype.author = '';
 DorothyFile.prototype.priority = '';
 
 
-// ファイルが存在する場合は関連ファイルに追加する
+// ファイルが存在する場合は子ファイルに追加する
 DorothyFile.prototype._addFileIfExists = function (file) {
   if (File.exists (this.baseDir + file)) {
-    this.required.push (file);
+    this._children [file] = null;
   }
 };
 
 
-// フォルダ内のファイルを関連ファイルに追加する
+// フォルダ内のファイルを子ファイルに追加する
 DorothyFile.prototype._addFiles = function (dir, wildcard) {
   var files = (new Directory (this.baseDir + dir)).findFiles (wildcard);
 
   var len = files.length;
   for (var i = 0; i < len; ++i) {
     var file = File.extractName (files [i]);
-    this.required.push (dir + file);
+    this._children [dir + file] = null;
   }
 };
 
@@ -1085,7 +1104,7 @@ DorothyFile.prototype._analyzeScript = function (fullScan) {
     return;
   }
 
-  var req = this.required;
+  var children = this._children;
 
   // ヘッダを読み取る
   while (sl.length) {
@@ -1107,7 +1126,7 @@ DorothyFile.prototype._analyzeScript = function (fullScan) {
       this [key] = value;
     }
     else if (key == 'addition') {
-      req.push (value);
+      children [value] = null;
     }
   }
 
@@ -1124,12 +1143,50 @@ DorothyFile.prototype._analyzeScript = function (fullScan) {
   dms.replace (re, function (s, args) {
     args.replace (re2, function (s, quotedName) {
       var name = 'common\' + quotedName.replace (/^['"]|['"]$/g, '') + '.dms';
-      req.push (name);
+      children [name] = null;
 
       return '';
     });
     return '';
   });
+};
+
+
+// 子・親ファイルごとにコールバック
+DorothyFile.prototype._each = function (callback, thisArg, obj) {
+  var caller = (function (f) { return f; }) (callback).call;
+
+  for (var key in obj) {
+    caller (thisArg, key);
+  }
+};
+
+DorothyFile.prototype.eachChild = function (callback, thisArg) {
+  this._each (callback, thisArg, this._children);
+};
+
+DorothyFile.prototype.eachParent = function (callback, thisArg) {
+  this._each (callback, thisArg, this._parents);
+};
+
+
+// 親ファイルを登録
+DorothyFile.prototype.addParent = function (file) {
+  this._parents [file] = null;
+};
+
+
+// ファイル名(相対パス名)を親ファイル付きで返す
+DorothyFile.prototype.getFileWithParents = function () {
+  var INDENT = '    at ';
+
+  var sl = new Strings ();
+
+  for (var p in this._parents) {
+    sl.add (INDENT + p);
+  }
+
+  return sl.sort ().insert (0, this.file);
 };
 
 
@@ -1167,11 +1224,9 @@ DorothyFileList.prototype.addFile = function (file) {
   }
 
   // このスクリプトから参照されているファイルを追加する
-  var req = dorothyFile.required;
-  var len = req.length;
-  for (var i = 0; i < len; ++i) {
-    this.addFile (req [i]);
-  }
+  dorothyFile.eachChild (function (file) {
+    this.addFile (file);
+  }, this);
 };
 
 
