@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={a03318ae-628b-486c-b4ce-3af86ab4698d}
 caption=Dorothy2R OnDoneThread
-version=20160228
+version=20160404
 hint=Dorothy2R OnDoneThread
 event=OnDoneThread
 match=
@@ -38,10 +38,8 @@ function OnDoneThread (success, filename, urlinfo, item, folderdata, optiondata)
   // Dorothy2R_a.dms 実行
   (function () {
     var path = WScript.Path + 'scripts\Dorothy2R_a.dms';
-    var sl = new Strings();
     try {
-      sl.loadFromFile (path);
-      eval ('(function(){' + sl.text + '})()');
+      eval ('(function(){' + new Strings ().loadFromFile (path).text + '})()');
     }
     catch (e) {
       alert (e + "\n" + path);

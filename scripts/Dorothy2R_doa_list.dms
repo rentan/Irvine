@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={BC220934-7214-48CA-9A7A-736A95B25C0F}
 caption=Dorothy2R DOA
-version=20160327
+version=20160404
 hint=
 event=OnListMenuClick
 match=
@@ -13,7 +13,7 @@ synchronize=0
 // based on DOA.dms version 0.26 by xor
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 Copyright (C) 2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -41,15 +41,12 @@ function OnListMenuClick (irvine, action) {
 
   // Dorothy2R_a.dms 実行
   (function () {
-    var f = new File (WScript.Path + 'scripts\Dorothy2R_a.dms');
+    var path = WScript.Path + 'scripts\Dorothy2R_a.dms';
     try {
-      f.open ('r');
-      eval ('(function(){' + f.read () + '})()');
-      f.close ();
+      eval ('(function(){' + new Strings ().loadFromFile (path).text + '})()');
     }
     catch (e) {
-      f.close ();
-      alert (e + "\n" + f.path);
+      alert (e + "\n" + path);
       exit ();
     }
   }) ();
