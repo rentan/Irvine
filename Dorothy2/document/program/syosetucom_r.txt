@@ -1,0 +1,32 @@
+syosetucom_r.dms
+
+
+小説を読もう！(小説家になろう)用のスクリプトです。
+
+
+使用方法
+========
+
+設定機能はありませんが、下記の設定ファイルが存在すれば読み込みます。
+  Dorothy2\user\syosetucom_r\syosetucom_r.ini
+
+
+対応 URL
+========
+
+http://ncode.syosetu.com/n[a-z0-9]+
+http://ncode.syosetu.com/novelview/infotop/ncode/n[a-z0-9]+
+
+
+仕様・制限事項
+==============
+
+
+変更履歴
+========
+
+2016-04-03  version 20160403.0
+  新規作成。
+
+
+[EOF]
