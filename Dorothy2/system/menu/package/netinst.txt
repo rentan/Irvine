@@ -89,6 +89,14 @@ error
 変更履歴
 ========
 
+2016-04-03  version 20160403.0  rentan at rentan.org
+  WinMerge のパスを netinst.dms 起動毎に毎回検索するようにした。
+
+  ダウンロード時のプロクシに対応。下記設定に書き込むと有効になる。
+    Dorothy2\user\netinst.ini [General] Proxy=
+
+  ファイル不足エラー時、読み込み元のファイル名を表示するようにした。
+
 2014-12-18  version 20141218.0  rentan at rentan.org
   UTF-8 のファイルを Shift_JIS に変換した時に末尾にゴミが付く不具合
   を修正。
