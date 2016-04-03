@@ -1,0 +1,185 @@
+//Dorothy2
+//caption=syosetucom_r
+//version=20160403.0
+//hint=小説を読もう！
+//match=^http://ncode\.syosetu\.com/(novelview/infotop/ncode/)?n[a-z0-9]+(/?$|#)
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2016 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function (scriptMode) {
+
+  common_load ('rutil', 'additem', 'namebuilder');
+  Util.min_version (20160314.0);
+
+  var defaultIni = {
+    AddItem: AddItem.prototype.iniTemplate,
+    General: {
+      PageOrigin: 1
+    },
+    Filename: {
+      Short: '%NCODE%.txt',
+      Serial: '%NCODE%_%PZ%.txt'
+    }
+  };
+
+
+//------------------------------- SyosetuCom -------------------------------
+
+common_load ('getter', 'htmlform', 'http');
+
+
+// コンストラクタ
+Getter (function SyosetuCom () {
+});
+
+
+SyosetuCom.prototype._extractNcode = function (url) {
+  var re = /^http:\/\/[^\/]+\/(novelview\/infotop\/ncode\/)?(n[a-z0-9]+)(\/?$|#)/;
+
+  this.ncode = (re.test (url) && RegExp.$2 != 'novelview') ? RegExp.$2 : null;
+
+  return this.ncode ? this._ok () : this._mis ();
+};
+
+
+SyosetuCom.prototype._getTxtdownloadUrl = function (url) {
+  var http = this.http = new Http ();
+
+  if (!http.get (http.expandUrl ('/' + this.ncode, url))) {
+    return this._httpError ();
+  }
+
+  if (!/<ul\s+class="undernavi">(.*?)<\/ul>/.test (http.data)) {
+    return this._unknown ('<ul class="undernavi"> が見つかりません。');
+  }
+  if (!/<a\s+href="([^"]+)"[^>]*>TXT/.test (RegExp.$1)) {
+    return this._unknown ('TXTダウンロードリンクが見つかりません。');
+  }
+
+  return RegExp.$1;
+};
+
+
+// 長編小説
+SyosetuCom.prototype._serial = function (http, form, selectNo) {
+  if (selectNo.tagName != 'select') {
+    return this._unknown ('name="no" が <select> タグではありません。');
+  }
+
+  var opts = selectNo.options;
+  var len = opts.length;
+  for (var i = 0; i < len; ++i) {
+    var opt = opts [i];
+
+    // selectNo.select (opt); だと遅そうなので直接書き換え
+    opt.selected = true;
+    this._add ({ Url: http.expandUrl (form.submit ().url) });
+    opt.selected = false;
+  }
+
+  this.type = 'Serial';
+  return this._ok ();
+};
+
+
+// public: ファイル URL を取得する
+SyosetuCom.prototype.get = function (url) {
+  this.items = [ ];
+  this.type = null;
+  this.ncode = null;
+
+  if (!this._extractNcode (url)) {
+    return false;
+  }
+
+  var txtdownload = this._getTxtdownloadUrl (url);
+  if (!txtdownload) {
+    return false;
+  }
+
+  var http = this.http = new Http ();
+
+  if (!http.get (txtdownload)) {
+    return this._httpError ();
+  }
+
+  var form = new HtmlForms (http).getFormByName ('dl');
+  if (!form) {
+    return this._unknown ('<form name="dl"> が見つかりません。');
+  }
+
+  var selectNo = form.getElementByName ('no');
+  if (selectNo) {
+    // 長編小説
+    return this._serial (http, form, selectNo);
+  }
+
+  // 短編小説
+  this.type = 'Short';
+  return this._add ({ Url: http.expandUrl (form.submit ().url) });
+};
+
+
+// public: ファイル名を生成する
+SyosetuCom.prototype.buildFilename = function (args) {
+  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
+  if (!nb) {
+    return this._ok ();
+  }
+
+  nb.ncode = this.ncode;
+
+  return this._buildFilename (args);
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
+  }
+
+  var ini = Util.ini_load (defaultIni);
+
+  var getter = new SyosetuCom ();
+
+  if (getter.get (urlinfo.url)) {
+    var nb = new NameBuilder ({
+      definePPZ: ini.General.PageOrigin
+    });
+
+    getter.buildFilename ({
+      NameBuilder: nb,
+      Format: ini.Filename [getter.type]
+    });
+
+    getter.download ({
+      AddItem: new AddItem (ini.AddItem)
+    });
+  }
+
+  getter.end ();
+}
+
+
+// EOF
