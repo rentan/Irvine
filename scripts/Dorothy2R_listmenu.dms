@@ -11,7 +11,7 @@ synchronize=0
 */
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -31,16 +31,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // キューリストメニューのクリックイベント
 function OnListMenuClick (irvine, action) {
   // Dorothy2R_a.dms 実行
-  (function () {
-    var path = WScript.Path + 'scripts\Dorothy2R_a.dms';
-    try {
-      eval ('(function(){' + new Strings ().loadFromFile (path).text + '})()');
-    }
-    catch (e) {
-      alert (e + "\n" + path);
-      exit ();
-    }
-  }) ();
+  var Dorothy2R_a_dms = WScript.Path + 'scripts\Dorothy2R_a.dms';
+  try {
+    eval ('(function(){' + new Strings ().loadFromFile (Dorothy2R_a_dms).text + '})()');
+  }
+  catch (e) {
+    return alert (e + "\n" + Dorothy2R_a_dms);
+  }
 
 
   // Dorothy オブジェクト初期化

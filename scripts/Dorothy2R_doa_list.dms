@@ -33,23 +33,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // キューリストメニューのクリックイベント
 function OnListMenuClick (irvine, action) {
-  // グローバル変数として参照できるようにする
-  Irvine = irvine;
-
-  var item = null;  // IrvineItem
-
-
   // Dorothy2R_a.dms 実行
-  (function () {
-    var path = WScript.Path + 'scripts\Dorothy2R_a.dms';
-    try {
-      eval ('(function(){' + new Strings ().loadFromFile (path).text + '})()');
-    }
-    catch (e) {
-      alert (e + "\n" + path);
-      exit ();
-    }
-  }) ();
+  var Dorothy2R_a_dms = WScript.Path + 'scripts\Dorothy2R_a.dms';
+  try {
+    eval ('(function(){' + new Strings ().loadFromFile (Dorothy2R_a_dms).text + '})()');
+  }
+  catch (e) {
+    return alert (e + "\n" + Dorothy2R_a_dms);
+  }
 
 
   // Dorothy オブジェクト初期化
@@ -59,6 +50,12 @@ function OnListMenuClick (irvine, action) {
 
   Dorothy.isDOA = true;
   Dorothy.doaVersion = 0.23;
+
+
+  // グローバル変数として参照できるようにする
+  Irvine = irvine;
+
+  var item = null;  // IrvineItem
 
 
   // パス名変数の定義
@@ -146,63 +143,31 @@ function OnListMenuClick (irvine, action) {
   // プログラムファイルのヘッダを取込む
   //=========================================================
   function script_file_read (filename) {
-    var ans = {
-      caption: '',
-      author: '',
-      version: '',
-      hint: '',
-      match: '',
-      priority: '',
-      editor: '',
-      path: '',
-      filename: ''
-    };
-
-    var path = filename;
-    var f = new File(path);
-    if(!f.exists()){
-      return ans;
-    }
-    ans.filename = f.extractName();
-    ans.filename = ans.filename.slice(0,ans.filename.lastIndexOf('.'));
+    var f = new File (filename);
 
     try{
-      f.open('r');
-      var data = f.read();
-      f.close();
+      f.open ('r');
+      var h = /^\/\/Dorothy2$(.+?)^\/\/end$/m.test (f.read ()) ? RegExp.$1 : '';
     }
     catch(e){
-      alert('file open error ' + path);
-      exit();
+      alert (e + '>' + filename);
+      return null;
+    }
+    finally {
+      f.close ();
     }
 
-    if(!data.match(/^\/\/Dorothy2$(.+?)^\/\/end$/m)){
-      return ans;
-    }
-    var programHead = RegExp.$1;
-    if(programHead.match(/^\/\/author=(.*?)$/m)){
-      ans.author = RegExp.$1;
-    }
-    if(programHead.match(/^\/\/caption=(.*?)$/m)){
-      ans.caption = RegExp.$1;
-    }
-    if(programHead.match(/^\/\/version=(.*?)$/m)){
-      ans.version = RegExp.$1;
-    }
-    if(programHead.match(/^\/\/hint=(.*?)$/m)){
-      ans.hint = RegExp.$1;
-    }
-    if(programHead.match(/^\/\/match=(.*?)$/m)){
-      ans.match = RegExp.$1;
-    }
-    if(programHead.match(/^\/\/priority=(.*?)$/m)){
-      ans.priority = RegExp.$1;
-    }
-    if(programHead.match(/^\/\/editor=(.*?)$/m)){
-      ans.editor = RegExp.$1;
-    }
-
-    return ans;
+    return {
+      caption: /^\/\/caption=(.*?)$/m.test (h) ? RegExp.$1 : '',
+      author: /^\/\/author=(.*?)$/m.test (h) ? RegExp.$1 : '',
+      version: /^\/\/version=(.*?)$/m.test (h) ? RegExp.$1 : '',
+      hint: /^\/\/hint=(.*?)$/m.test (h) ? RegExp.$1 : '',
+      match: /^\/\/match=(.*?)$/m.test (h) ? RegExp.$1 : '',
+      priority: /^\/\/priority=(.*?)$/m.test (h) ? RegExp.$1 : '',
+      editor: /^\/\/editor=(.*?)$/m.test (h) ? RegExp.$1 : '',
+      path: '',
+      filename: File.changeExt (f.extractName (), '')
+    };
   }
 
 
@@ -309,26 +274,34 @@ function OnListMenuClick (irvine, action) {
 
 
   // DOA.match_list[] 作成
-  (function () {
+  function createDoaMatchList () {
     var dir = new Directory (Dorothy.path + 'DOA');
     if (!dir.exists ()) {
-      alert ('DOAフォルダがありません');
-      exit ();
+      alert ('DOA フォルダがありません');
+      return false;
     }
+
+    var active = false;
 
     var files = dir.findFiles ('*.dms');
     for (var i = 0; i < files.length; ++i) {
       var filename = new File (files [i]).extractName ();
 
       var ret = script_file_read (files [i]);
-      ret.priority = ret.priority || 500;
-      var active = false;
-      DOA.match_list.add ([ ret.match, filename, ret.version, ret.priority, ret.caption, ret.author, ret.hint, active ]);
+      if (ret) {
+        ret.priority = ret.priority || 500;
+        DOA.match_list.add ([ ret.match, filename, ret.version, ret.priority, ret.caption, ret.author, ret.hint, active ]);
+      }
     }
 
     // priority でソート
     DOA.match_list.sort (function (a,b) { return (a[3] < b[3]); });
-  }) ();
+    return true;
+  }
+
+  if (!createDoaMatchList ()) {
+    return;
+  }
 
 
   frmDOA = new VCLForm (true);

@@ -11,7 +11,7 @@ synchronize=0
 */
 
 /*
-Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,20 +33,17 @@ function OnMainMenuClick (irvine, action) {
   Irvine = irvine;
   Action = action;
 
-  function ev () { eval (arguments [0]); }
 
   // settingform.dms é¿çs
-  var SettingForm = (function () {
-    var path = WScript.Path + 'Dorothy2R\system\settingform.dms';
-    try {
-      return eval (new Strings ().loadFromFile (path).text);
-    }
-    catch (e) {
-      alert (e + "\n" + path);
-      exit ();
-    }
-  }) ();
+  var settingform_dms = WScript.Path + 'Dorothy2R\system\settingform.dms';
+  try {
+    var SettingForm = eval (new Strings ().loadFromFile (settingform_dms).text);
+  }
+  catch (e) {
+    return alert (e + "\n" + settingform_dms);
+  }
 
+  function ev () { eval (arguments [0]); }
   SettingForm.showSettingForm (ev);
 }
 
