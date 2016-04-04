@@ -942,10 +942,8 @@ SettingForm.loadIni = function (menuItem) {
 };
 
 
-// 上書き保存 Dorothy.ini, Dorothy2R_ini.dms
-SettingForm.save = function () {
-  msg ('保存中');
-
+// 上書き保存 Dorothy.ini
+SettingForm._saveDorothyIni = function () {
   var ini = new Ini (this.DOROTHY_INI);
 
   var section = 'script';
@@ -957,14 +955,57 @@ SettingForm.save = function () {
     ini.write (section, item.filename + '.dms', item.checked ? '1' : '0');
   }
 
-  var section = 'mode';
+  section = 'mode';
   ini.eraseSection (section);
   for (i in mode) {
     ini.write (section, i, mode [i] ? '1' : '0');
   }
+
   ini.update ();
+};
 
 
+// Dorothy.matchList = [ ... ];
+SettingForm._createMatchListScript = function () {
+  var so = [ ];
+
+  var listview = this.ListView1;
+  for (i in listview.Items) {
+    var item = listview.Items [i];
+    if (!item.checked) {
+      continue;
+    }
+
+    var hd = this.loadScriptHeader (Dorothy.programDir + item.filename + '.dms');
+    hd = '/' + hd.match.replace (/\\(.)|(\/)/g, '\\$1$2') + '/';
+
+    so.add ([ item.priority, item.filename, hd ]);
+  }
+
+  // スクリプトの優先順にソート
+  so.sort (function (a, b) {
+    return (a [0] < b [0]);
+  });
+
+  var s = new Strings ();
+
+  s.add ('Dorothy.matchList = [');
+  var last_i = so.length - 1;
+  for (i = 0; i <= last_i; ++i) {
+    // var pri = 'p: ' + so [i] [0];
+    var file = 'f: "' + so [i] [1] + '"';
+    var re = 're: ' + so [i] [2];
+    var t = ('  { ' + file + ', ' + re + ' }') + ((i < last_i) ? ',' : '');
+    s.add (t);
+  }
+  s.add ('];');
+
+  return s;
+};
+
+
+// 上書き保存 Dorothy2R_ini.dms
+SettingForm._saveDorothy2rIniDms = function () {
   // Dorothy2R_ini.dms に書き込む文字列を用意する
   var s = new Strings ();
 
@@ -1003,52 +1044,32 @@ SettingForm.save = function () {
   add ('common_show', Dorothy.common_show);
   addq ('common_name', Dorothy.common_name);
 
-  // Dorothy.matchList = [ ... ];
-  var so = [ ];
-  for (i in listview.Items) {
-    var item = listview.Items [i];
-    if (!item.checked) {
-      continue;
-    }
-
-    var hd = this.loadScriptHeader (Dorothy.programDir + item.filename + '.dms');
-    hd = '/' + hd.match.replace (/\\(.)|(\/)/g, '\\$1$2') + '/';
-
-    so.add ([ item.priority, item.filename, hd ]);
-  }
-
-  // スクリプトの優先順にソート
-  so.sort (function (a, b) {
-    return (a [0] < b [0]);
-  });
-
-  s.add ('Dorothy.matchList = [');
-  var last_i = so.length - 1;
-  for (i = 0; i <= last_i; ++i) {
-    // var pri = 'p: ' + so [i] [0];
-    var file = 'f: "' + so [i] [1] + '"';
-    var re = 're: ' + so [i] [2];
-    var t = ('  { ' + file + ', ' + re + ' }') + ((i < last_i) ? ',' : '');
-    s.add (t);
-  }
-  s.add ('];');
+  s.addStrings (this._createMatchListScript ());
 
   // Dorothy2R_ini.dms に書き込む
-  var filename = 'Dorothy2R_ini.dms';
-  var file = new File ((new irvinePath ()).scripts + filename);
-  try{
-    if (file.exists ()) {
-      file.remove ();
-    }
-    file.open ('w');
-    file.write (s.text);
+  var fullpath = WScript.Path + 'scripts\Dorothy2R_ini.dms';
+
+  var m = new Mutex (fullpath);
+  try {
+    m.lock ();
+    s.saveToFile (fullpath);
   }
   catch (e) {
-    alert (filename + ' の保存に失敗しました: ' + e);
+    alert (e + '>' + fullpath + ' の保存に失敗しました');
   }
   finally {
-    file.close ();
+    m.unlock ();
   }
+};
+
+
+// 設定保存
+SettingForm.save = function () {
+  msg ('保存中');
+
+  this._saveDorothyIni ();
+  this._saveDorothy2rIniDms ();
+
   msg ('保存終了');
 };
 
