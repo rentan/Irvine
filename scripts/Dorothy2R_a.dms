@@ -60,21 +60,21 @@ Global.file_load = function (path) {
   var fullpath = /^[a-z]:/i.test (path) ? path : Dorothy.path + path;
   var f = new File (fullpath);
 
-  var m = new Mutex (fullpath);
   try {
-    m.lock ();
-    f.open ('r');
-    return f.read ();
+    var m = new Mutex (fullpath);
+    try {
+      m.lock ();
+      f.open ('r');
+      return f.read ();
+    }
+    finally {
+      f.close ();
+      m.unlock ();
+    }
   }
   catch (e) {
-    println ('error>' + e + '>' + path + ' の読み込みに失敗しました。');
+    Dorothy.error ('error>' + e + '>' + path + ' の読み込みに失敗しました。');
   }
-  finally {
-    f.close ();
-    m.unlock ();
-  }
-
-  exit ();
 };
 
 
@@ -104,8 +104,7 @@ Global.common_xload = function (name) {
           || f ('common', false);
 
   if (!file) {
-    println ('common_xload: ファイルがありません: ' + n);
-    exit ();
+    Dorothy.error ('common_xload: ファイルがありません: ' + n);
   }
 
   try {
@@ -119,8 +118,7 @@ Global.common_xload = function (name) {
     Dorothy._eval (src);
   }
   catch (e) {
-    println ('common_xload: ' + e + ': ' + file);
-    exit ();
+    Dorothy.error ('common_xload: ' + e + ': ' + file);
   }
 
   // println ('} ' + name + ' ' + (Win32.getTickCount () - tc) + 'ms');
@@ -155,12 +153,12 @@ Global.user_load = function (name) {
 // Dorothy2\user\<プログラム名>\<引数>.dms を読み込んで実行する
 Global.user_program_load = function () {
   for (var i = 0; i < arguments.length; i++) {
+    var file = arguments [i] + '.dms';
     try {
-      Dorothy._eval (user_load (arguments [i] + '.dms'));
+      Dorothy._eval (user_load (file));
     }
     catch (e) {
-      println (e + ' ' + Dorothy.matchFile + '\' + arguments [i] + '.dms');
-      exit ();
+      Dorothy.error (e + '>' + Dorothy.matchFile + '\' + file);
     }
   }
 };
@@ -210,6 +208,19 @@ Dorothy = {
   getFinalNameOptionName: function () { return 'finalName'; },
 
   common: { }
+};
+
+
+// エラー終了
+Dorothy.error = function (s) {
+  println (s);
+  exit ();
+};
+
+// エラー終了(ダイアログ表示)
+Dorothy.fatal = function (s) {
+  alert (s);
+  Dorothy.error (s.replace (/\n(\n)+/g, "\n"));
 };
 
 
@@ -310,13 +321,10 @@ Dorothy.validateProgram = function (src) {
 Dorothy.loadProgram = function (file) {
   Dorothy.program = file_load ('program\' + file + '.dms');
 
-  var s = Dorothy.validateProgram (Dorothy.program);
-  if (s) {
-    println (s);
-    return false;
+  var e = Dorothy.validateProgram (Dorothy.program);
+  if (e) {
+    Dorothy.error (e);
   }
-
-  return true;
 };
 
 
@@ -548,8 +556,7 @@ Dorothy.loadDorothyIni = function () {
     eval ('(function(){' + dms + '})()');
   }
   catch (e) {
-    alert (e + '>' + fullpath + "\n\n「Dorothy2R 設定」で設定を保存して下さい。");
-    exit ();
+    Dorothy.fatal (e + '>' + fullpath + "\n\n「Dorothy2R 設定」で設定を保存して下さい。");
   }
 };
 
@@ -708,9 +715,8 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
     }
 
     // .dms を読み込む
-    if (!Dorothy.loadProgram (Dorothy.matchFile)) {
-      exit ();
-    }
+    Dorothy.loadProgram (Dorothy.matchFile);
+
     if (Dorothy.stealth != 1) {
       println ('match>' + Dorothy.programName + ' (' + Dorothy.programVersion + ')' + ' by '+ Dorothy.author);
     }
@@ -720,8 +726,7 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
       Dorothy.return = eval (Dorothy.program) ();
     }
     catch (e) {
-      println ('error>' + e);
-      exit ();
+      Dorothy.error ('error>' + e);
     }
 
     // Dorothy.continue .end .cancel に応じて次の処理を振り分ける
