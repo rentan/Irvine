@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20160405
+version=20160406
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -107,14 +107,14 @@ Global.common_xload = function (name) {
     Dorothy.error ('common_xload: ファイルがありません: ' + n);
   }
 
+  var src = file_load (file);
+
+  var e = Dorothy.validateCommon (n, src);
+  if (e) {
+    Dorothy.fatal (e + "\n\n" + file);
+  }
+
   try {
-    var src = file_load (file);
-
-    var s = Dorothy.validateCommon (n, src);
-    if (s) {
-      throw s;
-    }
-
     Dorothy._eval (src);
   }
   catch (e) {
@@ -207,6 +207,7 @@ Dorothy = {
   // FinalName のオプション名
   getFinalNameOptionName: function () { return 'finalName'; },
 
+  _requiredCommonVersion: { },
   common: { }
 };
 
@@ -333,16 +334,19 @@ Dorothy.validateCommon = function (name, src) {
   var obj = Dorothy.common [name] = { };
 
   if (!/^\/\/version=(.*?)$/m.test (src)) {
-    return 'version が記載されていません';
+    return 'version が記載されていません。';
   }
   obj.version = RegExp.$1;
 
   if (!/^\/\/caption=(.*?)$/m.test (src)) {
-    return 'caption が記載されていません';
+    return 'caption が記載されていません。';
   }
   obj.caption = RegExp.$1;
 
-  return null;
+  var rcv = Dorothy._requiredCommonVersion;
+  var old = rcv.hasKey (name) && !(rcv [name] <= parseFloat (obj.version));
+
+  return old ? 'バージョンが古すぎます。最新版を使用して下さい。' : null;
 };
 
 
@@ -372,6 +376,18 @@ Dorothy.setLastModified = function (lm, itemData) {
 // (Dorothy2R 拡張) Last-Modified 変更の値を取得する
 Dorothy.getLastModified = function (itemData) {
   return this.getOption (Dorothy.getLastModifiedOptionName (), itemData);
+};
+
+
+// (Dorothy2R 拡張) common ファイルの必要バージョンを設定する
+Dorothy.setRequiredCommonVersion = function (obj) {
+  var rcv = Dorothy._requiredCommonVersion;
+
+  for (var key in obj) {
+    if (!rcv.hasKey (key) || (rcv [key] < obj [key])) {
+      rcv [key] = obj [key];
+    }
+  }
 };
 
 
