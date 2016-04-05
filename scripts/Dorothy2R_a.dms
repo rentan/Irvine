@@ -391,6 +391,12 @@ Dorothy.setRequiredCommonVersion = function (obj) {
 };
 
 
+// (Dorothy2R 拡張) 現在のアイテムをダウンロード後削除する
+Dorothy.removeThis = function () {
+  Dorothy.fileName = 'remove';
+};
+
+
 // Dorothy.init で Dorothy オブジェクトに定義する関数群
 //   string で定義する(\ のエスケープに注意)。
 Dorothy._d = [ ];
@@ -663,13 +669,10 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
 
     // Dorothy.fileName == 'remove' による自アイテム削除
     if (filename == 'remove') {
-      if (Dorothy.nulUrl) {
-        // nulUrl/nulProxy を使って自動削除
-        headers.Host = (new URL (Dorothy.nulUrl)).host;
-        urlinfo.url = Dorothy.nulUrl;
-        urlinfo.proxy = Dorothy.nulProxy;
-      }
-      else {
+      Dorothy.setUrl (Dorothy.dummyUrl);
+      urlinfo.proxy = Dorothy.dummyProxy;
+
+      if (Dorothy.dummyRemove) {
         // Dorothy2R_b.dms に削除させる
         Dorothy.getThreadStorage ().setItem ('Remove', 'true');
       }

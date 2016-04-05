@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=SettingForm
-//version=20160404.0
+//version=20160406.0
 //hint=
 //match=
 //author=rentan
@@ -32,6 +32,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Dorothy2R 設定用フォーム
 var SettingForm = new VCLForm ();
+
+SettingForm.R_VERSION = 20160406;
+SettingForm.DEFAULT_DUMMY_URL = 'http://www.google.com/favicon.ico';
+
 
 SettingForm.showSettingForm = function (ev) {
   this.initDorothy (ev);
@@ -68,7 +72,7 @@ SettingForm.initDorothy = function (ev) {
 
   // Dorothy オブジェクト初期化
   Dorothy.init ({ version: 'xxxx', eval: ev });
-  Dorothy.rVersion = 20160314;
+  Dorothy.rVersion = this.R_VERSION;
 
   debug = false;
   mode = { };
@@ -340,8 +344,9 @@ SettingForm.loadSettingIni = function () {
   USER_NAME = Dorothy.userName = usr ('name');
 
   // Dorothy2R 拡張
-  Dorothy.nulUrl = usr ('nulurl');
-  Dorothy.nulProxy = usr ('nulproxy');
+  Dorothy.dummyUrl = usr ('dummyurl') || this.DEFAULT_DUMMY_URL;
+  Dorothy.dummyProxy = usr ('dummyproxy');
+  Dorothy.dummyRemove = usr ('dummyremove') != 'false';
 
 
   // 圧縮・展開ツール
@@ -1037,8 +1042,9 @@ SettingForm._saveDorothy2rIniDms = function () {
 
   addq ('userName', Dorothy.userName);
 
-  addq ('nulUrl', Dorothy.nulUrl);
-  addq ('nulProxy', Dorothy.nulProxy);
+  addq ('dummyUrl', Dorothy.dummyUrl);
+  addq ('dummyProxy', Dorothy.dummyProxy);
+  addq ('dummyRemove', Dorothy.dummyRemove);
 
   add ('common_sp', Dorothy.common_sp);
   add ('common_show', Dorothy.common_show);
