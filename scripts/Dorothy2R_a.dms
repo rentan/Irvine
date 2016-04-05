@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20160404
+version=20160405
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -363,6 +363,18 @@ Dorothy.getThreadStorage = function () {
 };
 
 
+// (Dorothy2R 拡張) Last-Modified 変更を設定する
+Dorothy.setLastModified = function (lm, itemData) {
+  this.addOption (Dorothy.getLastModifiedOptionName () + '=' + lm, itemData);
+};
+
+
+// (Dorothy2R 拡張) Last-Modified 変更の値を取得する
+Dorothy.getLastModified = function (itemData) {
+  return this.getOption (Dorothy.getLastModifiedOptionName (), itemData);
+};
+
+
 // Dorothy.init で Dorothy オブジェクトに定義する関数群
 //   string で定義する(\ のエスケープに注意)。
 Dorothy._d = [ ];
@@ -480,17 +492,23 @@ Dorothy._d.push ({ n: 'getFinalName', f: "function (itemData) {
 
 
 // (Dorothy2R 拡張) オプションを追加する
-Dorothy._d.push ({ n: 'addOption', f: "function (s) {
+Dorothy._d.push ({ n: 'addOption', f: "function (s, itemData) {
+  var iid = itemData || item;
   if (s) {
-    item.comment = item.comment ? s + ';' + item.comment : s;
+    var c = iid.hasKey ('Comment') && iid.Comment;
+    iid.Comment = c ? s + ';' + c : s;
   }
 }" });
 
 
 // (Dorothy2R 拡張) オプションを取得する
-Dorothy._d.push ({ n: 'getOption', f: "function (key) {
+Dorothy._d.push ({ n: 'getOption', f: "function (key, itemData) {
   var re = new RegExp ('(^|;)' + key + '=([^;]*)');
-  return (re.test (item.comment) || re.test (folderdata.Post)) ? re.$2 : null;
+
+  if (itemData) {
+    return (itemData.hasKey ('Comment') && re.test (itemData.Comment)) ? re.$2 : null;
+  }
+  return (re.test (item.Comment) || re.test (folderdata.Post)) ? re.$2 : null;
 }" });
 
 
