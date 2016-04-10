@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={F984DA71-6062-4DA1-9A75-C326B24B1647}
 caption=Dorothy2R OnHttpResponse
-version=20160405
+version=20160411
 hint=Dorothy2R OnHttpResponse
 event=OnHttpResponse
 match=
@@ -69,46 +69,11 @@ ThreadStorageResp.prototype._writeHeader = function (name) {
 };
 
 
-// Content-Disposition のファイル名を Shift_JIS に変換する
-ThreadStorageResp.prototype._filenameToSJIS = function () {
-  var v = this.getAndRemoveItem ('tosjis.Content-Disposition');
-  if (!/^true(;|$)/.test (v)) {
-    return false;
-  }
-
-  var name = 'content-disposition';
-  var cd = this.getHeader (name);
-  if (!cd) {
-    return false;
-  }
-
-  var nbArgs = {
-    zen2han: /;Zen2Han=true(;|$)/.test (v)
-  };
-
-  var sj = cd.replace (/(filename=")([^"]+)(")/, function (s, p1, p2, p3) {
-    common_load ('namebuilder', 'utf8');
-
-    var f = (new Utf8 (p2)).toSJIS ();
-    f = (new NameBuilder (nbArgs)).normalize (f);
-
-    return p1 + f + p3;
-  });
-
-  if (sj == cd) {
-    return false;
-  }
-
-  return this._util.setHeader (name, sj);
-};
-
-
 // メイン処理
 ThreadStorageResp.prototype.process = function () {
   var r = false;
 
   r = this._writeHeader ('last-modified') || r;
-  r = this._filenameToSJIS () || r;
 
   return r;
 };
