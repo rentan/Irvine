@@ -56,7 +56,7 @@ ThreadStorageResp.prototype.getAndRemoveItem = function (key) {
 };
 
 
-// header.HHH=VVV データがあればヘッダに設定する
+// (非推奨) header.HHH=VVV データがあればヘッダに設定する
 ThreadStorageResp.prototype._writeHeader = function (name) {
   var key = 'headers.' + name;
 
@@ -71,11 +71,7 @@ ThreadStorageResp.prototype._writeHeader = function (name) {
 
 // メイン処理
 ThreadStorageResp.prototype.process = function () {
-  var r = false;
-
-  r = this._writeHeader ('last-modified') || r;
-
-  return r;
+  return this._writeHeader ('last-modified');
 };
 
 
@@ -148,7 +144,7 @@ function OnHttpResponse (urlinfo, headers, item, folderdata, optiondata) {
   var tsr = new ThreadStorageResp (util).process ();
   var cmt = new OptionResp (util).process ();
 
-  return tsr || cmt;
+  return (tsr + cmt) > 0;
 }
 
 
