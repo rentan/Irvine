@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ユーザー設定
-//version=20140930.0
+//version=20160411.0
 //hint=
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,8 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function () {
   common_load ('EZDialog');
 
-  if (!Dorothy.hasKey ('rVersion')) {
-    return alert ('このスクリプトは Dorothy2R 専用です。');
+  if (!Dorothy.hasKey ('rVersion') || Dorothy.rVersion < 20160411) {
+    return alert ('このスクリプトは Dorothy2R version 20160411 以降専用です。');
   }
 
 
@@ -38,7 +38,7 @@ function () {
     var d = this.dialog = new EZDialog ('ユーザー設定');
 
     // 基本(既存設定の統合)
-    var w1 = 70, w2 = 200;
+    var w1 = 80, w2 = 210;
     this.groupU = d.group ('基本');
     this.user_name = d.label_edit ('ユーザー名', Dorothy.userName, w1, w2);
     d.groupEnd (this.groupU);
@@ -47,8 +47,9 @@ function () {
     this.groupR = d.group ('Dorothy2R 拡張');
     var t = (Dorothy.temp == this._defaultTemp) ? '' : Dorothy.temp;
     this.user_temp = d.label_edit ('tempフォルダ', t, w1, w2);
-    this.user_nulurl = d.label_edit   ('NUL URL     ', Dorothy.nulUrl, w1, w2);
-    this.user_nulproxy = d.label_edit ('NUL プロキシ', Dorothy.nulProxy, w1, w2);
+    this.user_dummyurl = d.label_edit   ('ダミーURL     ', Dorothy.dummyUrl, w1, w2);
+    this.user_dummyproxy = d.label_edit ('ダミープロキシ', Dorothy.dummyProxy, w1, w2);
+    this.user_dummyremove = d.checkBox ('ダウンロード後にダミーファイル削除', Dorothy.dummyRemove);
     d.groupEnd (this.groupR);
 
     // common_sp
@@ -76,8 +77,9 @@ function () {
 
     var t = this.user_temp.edit.text;
     Dorothy.temp = t ? (new Directory (t)).path : this._defaultTemp;
-    Dorothy.nulUrl = this.user_nulurl.edit.text;
-    Dorothy.nulProxy = this.user_nulproxy.edit.text;
+    Dorothy.dummyUrl = this.user_dummyurl.edit.text || SettingForm.DEFAULT_DUMMY_URL;
+    Dorothy.dummyProxy = this.user_dummyproxy.edit.text;
+    Dorothy.dummyRemove = this.user_dummyremove.checked;
 
     Dorothy.common_sp = this.common_sp.checked;
     Dorothy.common_show = this.common_show.checked;
@@ -91,8 +93,9 @@ function () {
     ini.write ('user', 'name', Dorothy.userName);
 
     ini.write ('user', 'temp', Dorothy.temp);
-    ini.write ('user', 'nulurl', Dorothy.nulUrl);
-    ini.write ('user', 'nulproxy', Dorothy.nulProxy);
+    ini.write ('user', 'dummyurl', Dorothy.dummyUrl);
+    ini.write ('user', 'dummyproxy', Dorothy.dummyProxy);
+    ini.write ('user', 'dummyremove', Dorothy.dummyRemove);
 
     ini.write ('common', 'common_sp', +Dorothy.common_sp);
     ini.write ('common', 'common_show', +Dorothy.common_show);

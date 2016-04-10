@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20160314
+version=20160411
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -58,23 +58,23 @@ void function irvinePath () { };
 // ファイルを読み込んで返す
 Global.file_load = function (path) {
   var fullpath = /^[a-z]:/i.test (path) ? path : Dorothy.path + path;
-  var file = new File (fullpath);
+  var f = new File (fullpath);
 
-  var mutex = new Mutex ('file_load');
   try {
-    mutex.lock ();
-    file.open ('r');
-    return file.read ();
+    var m = new Mutex (fullpath);
+    try {
+      m.lock ();
+      f.open ('r');
+      return f.read ();
+    }
+    finally {
+      f.close ();
+      m.unlock ();
+    }
   }
   catch (e) {
-    println ('error>' + e + ' ' + path + ' の読み込みに失敗しました。');
+    Dorothy.error ('error>' + e + '>' + path + ' の読み込みに失敗しました。');
   }
-  finally {
-    file.close ();
-    mutex.unlock ();
-  }
-
-  exit ();
 };
 
 
@@ -104,23 +104,21 @@ Global.common_xload = function (name) {
           || f ('common', false);
 
   if (!file) {
-    println ('common_xload: ファイルがありません: ' + n);
-    exit ();
+    Dorothy.error ('common_xload: ファイルがありません: ' + n);
+  }
+
+  var src = file_load (file);
+
+  var e = Dorothy.validateCommon (n, src);
+  if (e) {
+    Dorothy.fatal (e + "\n\n" + file);
   }
 
   try {
-    var src = file_load (file);
-
-    var s = Dorothy.validateCommon (n, src);
-    if (s) {
-      throw s;
-    }
-
     Dorothy._eval (src);
   }
   catch (e) {
-    println ('common_xload: ' + e + ': ' + file);
-    exit ();
+    Dorothy.error ('common_xload: ' + e + ': ' + file);
   }
 
   // println ('} ' + name + ' ' + (Win32.getTickCount () - tc) + 'ms');
@@ -155,12 +153,12 @@ Global.user_load = function (name) {
 // Dorothy2\user\<プログラム名>\<引数>.dms を読み込んで実行する
 Global.user_program_load = function () {
   for (var i = 0; i < arguments.length; i++) {
+    var file = arguments [i] + '.dms';
     try {
-      Dorothy._eval (user_load (arguments [i] + '.dms'));
+      Dorothy._eval (user_load (file));
     }
     catch (e) {
-      println (e + ' ' + Dorothy.matchFile + '\' + arguments [i] + '.dms');
-      exit ();
+      Dorothy.error (e + '>' + Dorothy.matchFile + '\' + file);
     }
   }
 };
@@ -209,7 +207,21 @@ Dorothy = {
   // FinalName のオプション名
   getFinalNameOptionName: function () { return 'finalName'; },
 
+  _requiredCommonVersion: { },
   common: { }
+};
+
+
+// エラー終了
+Dorothy.error = function (s) {
+  println (s);
+  exit ();
+};
+
+// エラー終了(ダイアログ表示)
+Dorothy.fatal = function (s) {
+  alert (s);
+  Dorothy.error (s.replace (/\n(\n)+/g, "\n"));
 };
 
 
@@ -310,13 +322,10 @@ Dorothy.validateProgram = function (src) {
 Dorothy.loadProgram = function (file) {
   Dorothy.program = file_load ('program\' + file + '.dms');
 
-  var s = Dorothy.validateProgram (Dorothy.program);
-  if (s) {
-    println (s);
-    return false;
+  var e = Dorothy.validateProgram (Dorothy.program);
+  if (e) {
+    Dorothy.error (e);
   }
-
-  return true;
 };
 
 
@@ -325,16 +334,19 @@ Dorothy.validateCommon = function (name, src) {
   var obj = Dorothy.common [name] = { };
 
   if (!/^\/\/version=(.*?)$/m.test (src)) {
-    return 'version が記載されていません';
+    return 'version が記載されていません。';
   }
   obj.version = RegExp.$1;
 
   if (!/^\/\/caption=(.*?)$/m.test (src)) {
-    return 'caption が記載されていません';
+    return 'caption が記載されていません。';
   }
   obj.caption = RegExp.$1;
 
-  return null;
+  var rcv = Dorothy._requiredCommonVersion;
+  var old = rcv.hasKey (name) && !(rcv [name] <= parseFloat (obj.version));
+
+  return old ? 'バージョンが古すぎます。最新版を使用して下さい。' : null;
 };
 
 
@@ -352,6 +364,36 @@ Dorothy.getThreadStorage = function () {
   }
 
   return Dorothy._threadStorage;
+};
+
+
+// (Dorothy2R 拡張) Last-Modified 変更を設定する
+Dorothy.setLastModified = function (lm, itemData) {
+  this.addOption (Dorothy.getLastModifiedOptionName () + '=' + lm, itemData);
+};
+
+
+// (Dorothy2R 拡張) Last-Modified 変更の値を取得する
+Dorothy.getLastModified = function (itemData) {
+  return this.getOption (Dorothy.getLastModifiedOptionName (), itemData);
+};
+
+
+// (Dorothy2R 拡張) common ファイルの必要バージョンを設定する
+Dorothy.setRequiredCommonVersion = function (obj) {
+  var rcv = Dorothy._requiredCommonVersion;
+
+  for (var key in obj) {
+    if (!rcv.hasKey (key) || (rcv [key] < obj [key])) {
+      rcv [key] = obj [key];
+    }
+  }
+};
+
+
+// (Dorothy2R 拡張) 現在のアイテムをダウンロード後削除する
+Dorothy.removeThis = function () {
+  Dorothy.fileName = 'remove';
 };
 
 
@@ -472,17 +514,23 @@ Dorothy._d.push ({ n: 'getFinalName', f: "function (itemData) {
 
 
 // (Dorothy2R 拡張) オプションを追加する
-Dorothy._d.push ({ n: 'addOption', f: "function (s) {
+Dorothy._d.push ({ n: 'addOption', f: "function (s, itemData) {
+  var iid = itemData || item;
   if (s) {
-    item.comment = item.comment ? s + ';' + item.comment : s;
+    var c = iid.hasKey ('Comment') && iid.Comment;
+    iid.Comment = c ? s + ';' + c : s;
   }
 }" });
 
 
 // (Dorothy2R 拡張) オプションを取得する
-Dorothy._d.push ({ n: 'getOption', f: "function (key) {
+Dorothy._d.push ({ n: 'getOption', f: "function (key, itemData) {
   var re = new RegExp ('(^|;)' + key + '=([^;]*)');
-  return (re.test (item.comment) || re.test (folderdata.Post)) ? re.$2 : null;
+
+  if (itemData) {
+    return (itemData.hasKey ('Comment') && re.test (itemData.Comment)) ? re.$2 : null;
+  }
+  return (re.test (item.Comment) || re.test (folderdata.Post)) ? re.$2 : null;
 }" });
 
 
@@ -522,26 +570,33 @@ Dorothy.init = function (o) {
 
 // Dorothy2R_ini.dms を読み込んで実行する
 Dorothy.loadDorothyIni = function () {
-  var f = new File (WScript.Path + 'scripts\Dorothy2R_ini.dms');
+  var fullpath = WScript.Path + 'scripts\Dorothy2R_ini.dms';
+  var f = new File (fullpath);
 
-  function err (s) {
-    alert (f.path + ' ' + s + "\n\n「Dorothy2R 設定」で設定を保存して下さい。");
-    exit ();
-  }
-  if (!f.exists ()) {
-    err ('がありません。');
-  }
-  if (!f.length) {
-    err ('が空です。');
-  }
-
-  var sl = new Strings ();
   try {
-    sl.loadFromFile (f.path);
-    eval ('(function(){' + sl.text + '})()');
+    var dms = null;
+
+    var m = new Mutex (fullpath);
+    try {
+      m.lock ();
+
+      if (f.length) {
+        f.open ('r');
+        dms = f.read ();
+      }
+      else {
+        throw f.exists () ? 'ファイルが空です' : 'ファイルがありません';
+      }
+    }
+    finally {
+      f.close ();
+      m.unlock ();
+    }
+
+    eval ('(function(){' + dms + '})()');
   }
   catch (e) {
-    err (e);
+    Dorothy.fatal (e + '>' + fullpath + "\n\n「Dorothy2R 設定」で設定を保存して下さい。");
   }
 };
 
@@ -614,13 +669,10 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
 
     // Dorothy.fileName == 'remove' による自アイテム削除
     if (filename == 'remove') {
-      if (Dorothy.nulUrl) {
-        // nulUrl/nulProxy を使って自動削除
-        headers.Host = (new URL (Dorothy.nulUrl)).host;
-        urlinfo.url = Dorothy.nulUrl;
-        urlinfo.proxy = Dorothy.nulProxy;
-      }
-      else {
+      Dorothy.setUrl (Dorothy.dummyUrl);
+      urlinfo.proxy = Dorothy.dummyProxy;
+
+      if (Dorothy.dummyRemove) {
         // Dorothy2R_b.dms に削除させる
         Dorothy.getThreadStorage ().setItem ('Remove', 'true');
       }
@@ -700,9 +752,8 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
     }
 
     // .dms を読み込む
-    if (!Dorothy.loadProgram (Dorothy.matchFile)) {
-      exit ();
-    }
+    Dorothy.loadProgram (Dorothy.matchFile);
+
     if (Dorothy.stealth != 1) {
       println ('match>' + Dorothy.programName + ' (' + Dorothy.programVersion + ')' + ' by '+ Dorothy.author);
     }
@@ -712,8 +763,7 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
       Dorothy.return = eval (Dorothy.program) ();
     }
     catch (e) {
-      println ('error>' + e);
-      exit ();
+      Dorothy.error ('error>' + e);
     }
 
     // Dorothy.continue .end .cancel に応じて次の処理を振り分ける

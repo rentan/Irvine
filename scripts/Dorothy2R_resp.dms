@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={F984DA71-6062-4DA1-9A75-C326B24B1647}
 caption=Dorothy2R OnHttpResponse
-version=20160228
+version=20160411
 hint=Dorothy2R OnHttpResponse
 event=OnHttpResponse
 match=
@@ -56,7 +56,7 @@ ThreadStorageResp.prototype.getAndRemoveItem = function (key) {
 };
 
 
-// header.HHH=VVV データがあればヘッダに設定する
+// (非推奨) header.HHH=VVV データがあればヘッダに設定する
 ThreadStorageResp.prototype._writeHeader = function (name) {
   var key = 'headers.' + name;
 
@@ -69,48 +69,9 @@ ThreadStorageResp.prototype._writeHeader = function (name) {
 };
 
 
-// Content-Disposition のファイル名を Shift_JIS に変換する
-ThreadStorageResp.prototype._filenameToSJIS = function () {
-  var v = this.getAndRemoveItem ('tosjis.Content-Disposition');
-  if (!/^true(;|$)/.test (v)) {
-    return false;
-  }
-
-  var name = 'content-disposition';
-  var cd = this.getHeader (name);
-  if (!cd) {
-    return false;
-  }
-
-  var nbArgs = {
-    zen2han: /;Zen2Han=true(;|$)/.test (v)
-  };
-
-  var sj = cd.replace (/(filename=")([^"]+)(")/, function (s, p1, p2, p3) {
-    common_load ('namebuilder', 'utf8');
-
-    var f = (new Utf8 (p2)).toSJIS ();
-    f = (new NameBuilder (nbArgs)).normalize (f);
-
-    return p1 + f + p3;
-  });
-
-  if (sj == cd) {
-    return false;
-  }
-
-  return this._util.setHeader (name, sj);
-};
-
-
 // メイン処理
 ThreadStorageResp.prototype.process = function () {
-  var r = false;
-
-  r = this._writeHeader ('last-modified') || r;
-  r = this._filenameToSJIS () || r;
-
-  return r;
+  return this._writeHeader ('last-modified');
 };
 
 
@@ -126,12 +87,8 @@ function OptionResp (util) {
 
 // lastmodified
 OptionResp.prototype._lastModified = function () {
-  var lm = Dorothy.getOption (Dorothy.getLastModifiedOptionName ());
-  if (lm == null) {
-    return false;
-  }
-
-  return this._util.setHeader ('last-modified', lm);
+  var lm = Dorothy.getLastModified ();
+  return lm ? this._util.setHeader ('last-modified', lm) : false;
 };
 
 
@@ -153,10 +110,8 @@ function OnHttpResponse (urlinfo, headers, item, folderdata, optiondata) {
   // Dorothy2R_a.dms 実行
   (function () {
     var path = WScript.Path + 'scripts\Dorothy2R_a.dms';
-    var sl = new Strings();
     try {
-      sl.loadFromFile (path);
-      eval ('(function(){' + sl.text + '})()');
+      eval ('(function(){' + new Strings ().loadFromFile (path).text + '})()');
     }
     catch (e) {
       alert (e + "\n" + path);
@@ -189,7 +144,7 @@ function OnHttpResponse (urlinfo, headers, item, folderdata, optiondata) {
   var tsr = new ThreadStorageResp (util).process ();
   var cmt = new OptionResp (util).process ();
 
-  return tsr || cmt;
+  return (tsr + cmt) > 0;
 }
 
 

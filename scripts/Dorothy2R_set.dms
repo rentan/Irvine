@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={0D313B7E-9959-4F23-9AEC-64276F111EDB}
 caption=Dorothy2R 設定
-version=20150316
+version=20160411
 hint=Dorothy2R 設定
 event=OnMainMenuClick
 match=
@@ -11,7 +11,7 @@ synchronize=0
 */
 
 /*
-Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,27 +33,17 @@ function OnMainMenuClick (irvine, action) {
   Irvine = irvine;
   Action = action;
 
-  function ev () { eval (arguments [0]); }
 
   // settingform.dms 実行
-  var SettingForm = (function () {
-    var f = new File (WScript.Path + 'Dorothy2R\system\settingform.dms');
+  var settingform_dms = WScript.Path + 'Dorothy2R\system\settingform.dms';
+  try {
+    var SettingForm = eval (new Strings ().loadFromFile (settingform_dms).text);
+  }
+  catch (e) {
+    return alert (e + "\n" + settingform_dms);
+  }
 
-    var src = null;
-    try {
-      f.open ('r');
-      var sf = f.read ();
-      f.close ();
-    }
-    catch (e) {
-      f.close ();
-      alert (e + "\n" + f.path);
-      exit ();
-    }
-
-    return eval (sf);
-  }) ();
-
+  function ev () { eval (arguments [0]); }
   SettingForm.showSettingForm (ev);
 }
 

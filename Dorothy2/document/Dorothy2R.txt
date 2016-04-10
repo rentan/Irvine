@@ -138,13 +138,17 @@ Dorothy.getThreadStorage ()
 
   Ini ファイルは %Dorothy.temp%\thread_storage.ini を使用する。
 
-Dorothy.addOption (s)
+Dorothy.addOption (s, itemData)
   s ... string: オプション(key=value 形式、複数の場合は k1=v1;k2=v2)
+  itemData ... object: Comment プロパティを変更するオブジェクト
+                       (省略した場合は item を使用する)
 
-  item.comment に s で指定したオプション文字列を追加する。
+  s で指定したオプション文字列を追加する。
 
-Dorothy.getOption (key)
+Dorothy.getOption (key, itemData)
   key ... string: オプション名
+  itemData ... object: (省略した場合は item を使用する)
+
   戻り値 ... string: オプションの値、または null
 
   key で指定したオプションの値を返す。存在しない場合は null を返す。
@@ -154,6 +158,32 @@ Dorothy.getLastModifiedOptionName ()
 
   Last-Modified 変更機能のオプション名を返す(現時点では 'lastmodified')。
 
+Dorothy.setLastModified (lm, itemData)
+  lm ... string: 設定する日時
+  itemData ... object: (省略した場合は item を使用する)
+
+  Last-Modified 変更機能を設定する。
+
+Dorothy.getLastModified (itemData)
+  itemData ... object: (省略した場合は item を使用する)
+
+  Last-Modified 変更機能に設定されている値を返す。
+
+Dorothy.fatal (s)
+  s ... string: 表示する文字列
+
+  文字列をログ及びダイアログ表示してスクリプトを強制終了する。
+
+Dorothy.error (s)
+  s ... string: 表示する文字列
+
+  文字列をログ表示してスクリプトを強制終了する。
+
+Dorothy.removeThis ()
+  ダミー URL をダウンロードし、ダウンロードされたファイルを削除する。
+
+
+※以下はシステム側開発者向けのため省略。
 Dorothy.setMatchName ()
 Dorothy.createProgramMatcher ()
 Dorothy.validateProgram ()
@@ -161,11 +191,49 @@ Dorothy.loadProgram ()
 Dorothy.validateCommon ()
 Dorothy.init ()
 Dorothy.loadDorothyIni ();
-  システム側開発者向けのため省略。
 
 
 変更履歴
 ========
+
+2016-04-11  version 20160411.0  rentan at rentan.org
+
+※「Dorothy2R 設定」でユーザー設定を行った上で上書き保存して下さい。
+
+scripts\Dorothy2R_a.dms
+  ファイル読み書き時にフルパス名で排他制御するようにした。
+
+  下記メソッドを追加。
+    Dorothy.fatal()
+    Dorothy.error()
+    Dorothy.setLastModified()
+    Dorothy.getLastModified()
+    Dorothy.setRequiredCommonVersion()
+    Dorothy.removeThis()
+
+  common_xload() にバージョンチェック機能を追加。
+
+  Dorothy.addOption()、Dorothy.getOption() で itemData の指定に対応。
+
+  Dorothy.nulUrl、.nulProxy を廃止し、代わりに Dorothy.dummyUrl、
+  .dummyProxy、.DorothyRemove を新設。
+
+scripts\Dorothy2R_resp.dms
+  Dorothy.getLastModified() に対応。
+
+  tosjis.Content-Disposition を削除(不具合で動作していませんでした)。
+
+scripts\Dorothy2R_set.dms
+scripts\Dorothy2R_doa_list.dms
+scripts\Dorothy2R_listmenu.dms
+  エラー表示後にエラーが発生する不具合を修正。
+
+Dorothy2R\system\settingform.dms
+  ファイル読み書き時にフルパス名で排他制御するようにした。
+  Dorothy.dummyUrl に対応。
+
+Dorothy2R\system\menu\set\usersetting.dms
+  Dorothy.dummyUrl に対応。
 
 
 2016-03-27  version 20160327  wan <thewanwan111@gmail.com>
@@ -213,6 +281,7 @@ scripts\Dorothy2R_resp.dms
   を受信していた場合に上書きができない不具合があった)。
 
   オプション指定によるダウンロードファイルのタイムスタンプ変更機能を追加。
+
 
 2016-01-18  version 20160118.0  rentan at rentan.org
 
