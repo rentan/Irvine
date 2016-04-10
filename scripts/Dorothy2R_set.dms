@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={0D313B7E-9959-4F23-9AEC-64276F111EDB}
 caption=Dorothy2R 設定
-version=20160404
+version=20160411
 hint=Dorothy2R 設定
 event=OnMainMenuClick
 match=

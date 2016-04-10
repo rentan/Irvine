@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={52ad722b-b5ff-4362-8aba-278b6aaaf93e}
 caption=Dorothy2R サイト設定
-version=20160404
+version=20160411
 hint=Shiftでプログラム編集、Tabで全ファイル編集
 event=OnListMenuClick
 match=

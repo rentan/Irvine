@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=SettingForm
-//version=20160406.0
+//version=20160411.0
 //hint=
 //match=
 //author=rentan
@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Dorothy2R 設定用フォーム
 var SettingForm = new VCLForm ();
 
-SettingForm.R_VERSION = 20160406;
+SettingForm.R_VERSION = 20160411;
 SettingForm.DEFAULT_DUMMY_URL = 'http://www.google.com/favicon.ico';
 
 

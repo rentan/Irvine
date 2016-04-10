@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={a03318ae-628b-486c-b4ce-3af86ab4698d}
 caption=Dorothy2R OnDoneThread
-version=20160404
+version=20160411
 hint=Dorothy2R OnDoneThread
 event=OnDoneThread
 match=

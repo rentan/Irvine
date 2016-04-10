@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ユーザー設定
-//version=20160406.0
+//version=20160411.0
 //hint=
 //match=
 //author=rentan
@@ -28,8 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function () {
   common_load ('EZDialog');
 
-  if (!Dorothy.hasKey ('rVersion') || Dorothy.rVersion < 20160406) {
-    return alert ('このスクリプトは Dorothy2R version 20160406 以降専用です。');
+  if (!Dorothy.hasKey ('rVersion') || Dorothy.rVersion < 20160411) {
+    return alert ('このスクリプトは Dorothy2R version 20160411 以降専用です。');
   }
 
 
