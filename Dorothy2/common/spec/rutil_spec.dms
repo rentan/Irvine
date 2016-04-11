@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util spec
-//version=20151206.0
+//version=20160411.0
 //hint=http://yasmine.dorothy.test/common/spec/rutil_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -34,11 +34,6 @@ common_load ('rutil');
 describe ('Util.get_option()', function () {
   var backupItemComment = item.Comment;
   var backupFolderdataPost = folderdata.Post;
-
-  beforeEach (function () {
-    // –³—‚â‚è–¢‰Šú‰»ó‘Ô‚É–ß‚·
-    Util._options = null;
-  });
 
   afterEach (function () {
     item.Comment = backupItemComment;
