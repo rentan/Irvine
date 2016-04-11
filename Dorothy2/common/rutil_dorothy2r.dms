@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R 互換拡張
-//version=20160314.0
+//version=20160411.0
 //hint=part of rutil.dms
 //match=
 //author=rentan
@@ -144,17 +144,61 @@ Dorothy.getFinalName = function (itemData) {
 
 
 // (Dorothy2R 拡張) オプションを追加する
-Dorothy.addOption = function (s) {
+Dorothy.addOption = function (s, itemData) {
+  var iid = itemData || item;
   if (s) {
-    item.comment = item.comment ? s + ';' + item.comment : s;
+    var c = iid.hasKey ('Comment') && iid.Comment;
+    iid.Comment = c ? s + ';' + c : s;
   }
 };
 
 
 // (Dorothy2R 拡張) オプションを取得する
-Dorothy.getOption = function (key) {
+Dorothy.getOption = function (key, itemData) {
   var re = new RegExp ('(^|;)' + key + '=([^;]*)');
-  return (re.test (item.comment) || re.test (folderdata.Post)) ? re.$2 : null;
+
+  if (itemData) {
+    return (itemData.hasKey ('Comment') && re.test (itemData.Comment)) ? re.$2 : null;
+  }
+  return (re.test (item.Comment) || re.test (folderdata.Post)) ? re.$2 : null;
+};
+
+
+// (Dorothy2R 拡張) common ファイルの必要バージョンを設定する
+Dorothy._requiredCommonVersion = { };
+Dorothy.setRequiredCommonVersion = function (obj) {
+  var rcv = Dorothy._requiredCommonVersion;
+
+  for (var key in obj) {
+    if (!rcv.hasKey (key) || (rcv [key] < obj [key])) {
+      rcv [key] = obj [key];
+    }
+  }
+};
+
+
+// common_xload() にバージョンチェックを組み込む
+common_xload = (function (common_xload) {
+  return function (name) {
+    var n = name.replace (/\//g, '\');
+
+    common_xload (n);
+
+    var rcv = Dorothy._requiredCommonVersion;
+    var old = rcv.hasKey (n) && !(rcv [n] <= parseFloat (Dorothy.common [n].version));
+
+    if (old) {
+      Util.fatal ("バージョンが古すぎます。最新版を使用して下さい。\n\n"
+                + Dorothy.path + 'common\' + n + '.dms');
+    }
+  };
+}) (common_xload);
+
+
+// (Dorothy2R 拡張) 現在のアイテムをダウンロード後削除する
+Dorothy.removeThis = function () {
+  Dorothy.fileName = 'remove';
+  Dorothy.setUrl ('http://www.google.com/favicon.ico');
 };
 
 

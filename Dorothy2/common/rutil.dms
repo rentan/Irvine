@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20160314.0
+//version=20160411.0
 //hint=utility
 //match=
 //author=rentan
@@ -29,19 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // コンテナ
 Util = { };
-
-
-// 現在のアイテムをダウンロード後に削除させる
-Util.remove_this = function () {
-
-  // Dorothy2B.dms に削除してもらう
-  urlinfo.url = 'http://www.google.com/favicon.ico';
-  Dorothy.fileName = 'remove';
-
-  headers.Referer = '';
-  headers.Cookie = '';
-  headers.Host = (new URL (urlinfo.url)).host;
-};
 
 
 // .ini ファイルを読み込む
@@ -158,38 +145,6 @@ Util.ini_copy_edit = function () {
 };
 
 
-// オプションを取得する
-Util._options = null;
-Util.get_option = function (key) {
-  var o = Util._options;
-
-  // 初回ならオプションを読み込む
-  if (!o) {
-    o = Util._options = [ ];
-
-    function load (s) {
-      s = s.split (/;/);
-      for (var i = 0; i < s.length; ++i) {
-        if (/^([^=]+)\s*=\s*(.*)$/.test (s [i])) {
-          o.push ({ k: RegExp.$1, v: RegExp.$2 });
-        }
-      }
-    }
-
-    load (folderdata.Post);
-    load (item.Comment);
-  }
-
-  for (var i = o.length; --i >= 0;) {
-    if (o [i].k == key) {
-      return o [i].v;
-    }
-  }
-
-  return null;
-};
-
-
 // エラー終了
 Util.fatal = function (s) {
   println (s.replace (/\n(\n)+/g, "\n"));
@@ -248,53 +203,16 @@ Util.bind = function (f, self) {
 };
 
 
-// common_xload() にバージョンチェックを組み込む
-common_xload = (function (common_xload) {
-  var versions = {
-    'domparser\core': 20140816.0,
-    'domparser\json': 20140928.0,
-    'domparser\pseudo_xml': 20150821.0,
-    'domparser\xml': 20140816.0,
+// (非推奨) 現在のアイテムをダウンロード後に削除させる
+Util.remove_this = function () {
+  Dorothy.removeThis ();
+};
 
-    'esx\array': 20151206.0,
-    'esx\date': 20141005.0,
-    'esx\json': 20151125.0,
 
-    'getter\chklistbox': 20150721.0,
-    'getter\getterasync': 20151204.0,
-    'getter\lastmodified': 20160208.0,
-    'getter\redir': 20160223.0,
-
-    actibook: 20140331.0,
-    additem: 20150103.0,
-    browsercookie: 20160224.0,
-    dmon: 20160223.0,
-    exec: 20140331.0,
-    getter: 20160208.0,
-    htmlform: 20160213.0,
-    http: 20150425.0,
-    jinput: 20160221.0,
-    namebuilder: 20150531.0,
-    rutil_dorothy2r: 20160314.0,
-    sleeptimer: 20151204.0,
-    threadstorage: 20140913.0,
-    utf8: 20140811.0,
-    utf8_charref: 20140811.0,
-    yasmine: 20160224.0
-  };
-
-  return function (name) {
-    common_xload (name);
-
-    if (versions.hasKey (name)) {
-      var fileVer = parseFloat (Dorothy.common [name].version);
-
-      if (isNaN (fileVer) || fileVer < versions [name]) {
-        Util.fatal ("common\\" + name + ".dms のバージョンが古すぎます。\n最新版を使用して下さい。");
-      }
-    }
-  };
-}) (common_xload);
+// (非推奨) オプションを取得する
+Util.get_option = function (key) {
+  return Dorothy.getOption (key);
+};
 
 
 //----------------------- 実行環境が正しいか検証する -----------------------
@@ -307,6 +225,11 @@ if (Dorothy.hasKey ('rVersion')) {
 }
 else {
   common_load ('rutil_dorothy2r');
+
+  if (parseFloat (Dorothy.common.rutil_dorothy2r.version) < 20160406.0) {
+    Util.fatal ("バージョンが古すぎます。最新版を使用して下さい。\n\n"
+              + Dorothy.path + 'common\rutil_dorothy2r.dms');
+  }
 }
 
 
@@ -330,6 +253,42 @@ else {
       "適切な User-Agent に変更して下さい。");
   }
 }) ();
+
+
+//-------------------- rutil_dorothy2r 読み込み後の処理 --------------------
+
+// common ファイルの必要バージョンを設定する
+Dorothy.setRequiredCommonVersion ({
+  'domparser\core': 20140816.0,
+  'domparser\json': 20140928.0,
+  'domparser\pseudo_xml': 20150821.0,
+  'domparser\xml': 20140816.0,
+
+  'esx\array': 20151206.0,
+  'esx\date': 20141005.0,
+  'esx\json': 20151125.0,
+
+  'getter\chklistbox': 20150721.0,
+  'getter\getterasync': 20151204.0,
+  'getter\lastmodified': 20160411.0,
+  'getter\redir': 20160223.0,
+
+  actibook: 20140331.0,
+  additem: 20160411.0,
+  browsercookie: 20160224.0,
+  dmon: 20160223.0,
+  exec: 20140331.0,
+  getter: 20160208.0,
+  htmlform: 20160213.0,
+  http: 20150425.0,
+  jinput: 20160221.0,
+  namebuilder: 20150531.0,
+  sleeptimer: 20151204.0,
+  threadstorage: 20140913.0,
+  utf8: 20140811.0,
+  utf8_charref: 20140811.0,
+  yasmine: 20160327.0
+});
 
 
 }) ()
