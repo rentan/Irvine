@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=AddItem
-//version=20150103.0
+//version=20160411.0
 //hint=new AddItem ()
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
+Copyright (C) 2012-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -215,7 +215,7 @@ AddItem.prototype._isValidQueueName = function (queue, func) {
 
 // 内部で使用: AddQueueItem で Irvine に登録する(queue= で指定したキューフォルダ)
 AddItem.prototype._optionQueue = function (list) {
-  var q = Util.get_option ('queue');
+  var q = Dorothy.getOption ('queue');
 
   if (!q) {
     println ('AddItem._optionQueue: フォルダ設定またはアイテム設定でqueue=が指定されていません。');
@@ -348,7 +348,7 @@ AddItem.prototype.send = function (list) {
 AddItem.prototype.reQueue = function (list, force) {
   if (force || list.length > 1) {
     if (this.send (list)) {
-      Util.remove_this ();
+      Dorothy.removeThis ();
       return true;
     }
 
@@ -368,6 +368,10 @@ AddItem.prototype.reQueue = function (list, force) {
 
   if (itemData.hasKey ('Filename') && !item.filename) {
     Dorothy.setFilename (itemData.Filename);
+  }
+
+  if (itemData.hasKey ('Comment')) {
+    Dorothy.addOption (itemData.Comment);
   }
 
   return true;
