@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=LastModified
-//version=20160208.0
+//version=20160411.0
 //hint=Getterモジュール
 //match=
 //author=rentan
@@ -36,7 +36,7 @@ void function LastModified () {
 
 // Last-Modified が使用可能でなければエラーを返す
 LastModified.prototype._isLastModifiedEnabled = function () {
-  if (Dorothy.hasKey ('getLastModifiedOptionName')) {
+  if (Dorothy.hasKey ('setLastModified')) {
     return this._ok ();
   }
 
@@ -77,12 +77,7 @@ LastModified.prototype._dateToLastModified = function (date) {
 
 // Last-Modified を指定する
 LastModified.prototype._setLastModified = function (itemData, lm) {
-  var s = Dorothy.getLastModifiedOptionName () + '=' + lm;
-
-  var c = itemData.hasKey ('Comment') && itemData.Comment;
-  itemData.Comment = c ? s + ';' + c : s;
-
-  return this;
+  Dorothy.setLastModified (lm, itemData);
 };
 
 
