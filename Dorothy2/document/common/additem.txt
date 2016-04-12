@@ -161,6 +161,10 @@ reQueue (list, force)
 変更履歴
 ========
 
+2016-04-11  version 20160411.0  rentan at rentan.org
+  Dorothy.getOption()、Dorothy.removeThis() を使うようにした。
+  AddItem#reQueue(): 現在のアイテムに上書き時、Comment に対応。
+
 2015-01-03  version 20150103.0  rentan at rentan.org
   Workaround=true 指定時、AddQueueItem モードでアイテム追加前に
   カレントキューフォルダを変更するようにした。

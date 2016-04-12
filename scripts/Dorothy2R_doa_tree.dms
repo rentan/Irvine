@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={7791A246-BBAB-4C48-92C7-260C8C4BA24A}
 caption=Dorothy2R DOA
-version=20140507
+version=20160411
 hint=
 event=OnTreeMenuClick
 match=
