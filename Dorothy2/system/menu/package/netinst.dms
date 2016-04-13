@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ネットインストール
-//version=20160403.0
+//version=20160413.0
 //hint=
 //match=
 //author=rentan
@@ -33,7 +33,7 @@ function () {
 
 // コンストラクタ
 function NetInstall () {
-  this.initForm ('version 20160402.0');
+  this.initForm ('version 20160413.0');
 };
 
 
@@ -497,7 +497,7 @@ NetInstall.prototype.downloadAndAnalyze = function () {
   }
   this.setProgramList ();
 
-  form.PopupMenu = form.popupmenuProgram;
+  form.ProgramList.PopupMenu = form.popupmenuProgram;
 
   this.status ('完了');
 
