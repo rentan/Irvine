@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ChkListBox()
-//version=20150721.0
+//version=20160413.0
 //hint=
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2015 rentan at rentan.org
+Copyright (C) 2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -87,6 +87,25 @@ end
 ";
 
 
+// VCLCheckListBoxのダブルクリックイベント
+//  this === form.CheckListBox
+ChkListBox.prototype._onDblClick = function () {
+  if (this.ItemIndex < 0) {
+    return;
+  }
+  var url = this.Items [this.ItemIndex];
+
+  var file = Keyboard.shift ? 'iexplore.exe' : '';
+
+  if (file) {
+    Win32.shellExecute ('open', file, url);
+  }
+  else {
+    Win32.shellExecute ('open', url);
+  }
+};
+
+
 // VCLフォームを作成する
 ChkListBox.prototype._createForm = function () {
   var form = new VCLForm ();
@@ -99,6 +118,8 @@ ChkListBox.prototype._createForm = function () {
   form.isOK = function () {
     return this.showModal () == this.OKButton.ModalResult;
   };
+
+  form.CheckListBox.onDblClick = this._onDblClick;
 
   return form;
 };
