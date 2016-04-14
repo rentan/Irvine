@@ -1,0 +1,121 @@
+//Dorothy2
+//caption=mitemin_r
+//version=20160414.0
+//hint=みてみん for syosetucom_r
+//match=^http://\d+\.mitemin\.net\/i\d+/?(#|$)
+//author=rentan
+//path=program
+//priority=500
+//end
+
+/*
+Copyright (C) 2016 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+function (scriptMode) {
+
+  common_load ('rutil', 'additem', 'namebuilder');
+  Util.min_version (20160411.0);
+
+  var defaultIni = {
+    Filename: {
+      NoBasename: 'mitemin_%USERID%_i%ICODE%',
+      Basename: '%BASENAME%_%USERID%_i%ICODE%'
+    }
+  };
+
+
+//-------------------------------- Mitemin ---------------------------------
+
+common_load ('getter', 'http');
+
+
+// コンストラクタ
+Getter (function Mitemin () {
+});
+
+
+// public: ファイル URL を取得する
+Mitemin.prototype.get = function (url) {
+  this.items = [ ];
+
+  /^http:\/\/(\d+)\.mitemin\.net\/i(\d+)/.test (url);
+  this.userid = RegExp.$1;
+  this.icode = RegExp.$2;
+
+  var bn = Dorothy.getOption ('basename');
+  this.basename = bn ? Base64.decode (bn) : '';
+  this.type = this.basename ? 'Basename' : 'NoBasename';
+
+  var http = this.http = new Http ();
+
+  if (!http.get (url)) {
+    return this._httpError ();
+  }
+
+  if (!/<td\s+class="imageview">\s*<a\s+href="(http:\/\/[^"]+)"/.test (http.data)) {
+    return this._unknown ('画像URLが見つかりません。');
+  }
+  var img = RegExp.$1;
+
+  return this._add ({ Url: img });
+};
+
+
+// public: ファイル名を生成する
+Mitemin.prototype.buildFilename = function (args) {
+  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
+  if (!nb) {
+    return this._ok ();
+  }
+
+  nb.userid = this.userid;
+  nb.icode = this.icode;
+  nb.basename = this.basename;
+
+  return this._buildFilename (args);
+};
+
+
+//------------------------------- メイン処理 -------------------------------
+
+
+  if (scriptMode === 'DEFINE_ONLY') {
+    return;
+  }
+
+  var ini = Util.ini_load (defaultIni);
+
+  var getter = new Mitemin ();
+
+  if (getter.get (urlinfo.url)) {
+    if (getter.type) {
+      var nb = new NameBuilder ();
+
+      getter.buildFilename ({
+        NameBuilder: nb,
+        Format: ini.Filename [getter.type]
+      });
+    }
+
+    getter.download ();
+  }
+
+  getter.end ();
+}
+
+
+// EOF
