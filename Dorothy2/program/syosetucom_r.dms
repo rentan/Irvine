@@ -1,8 +1,8 @@
 //Dorothy2
 //caption=syosetucom_r
-//version=20160403.0
+//version=20160414.0
 //hint=小説を読もう！
-//match=^http://ncode\.syosetu\.com/(novelview/infotop/ncode/)?n[a-z0-9]+(/?$|#)
+//match=^http://(ncode\.syosetu\.com/(novelview/infotop/ncode/)?n[a-z0-9]+|n[a-z0-9]+/\d+|novelcom\.syosetu\.com/impression/list/ncode/\d+)
 //author=rentan
 //path=program
 //priority=500
@@ -28,16 +28,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20160314.0);
+  Util.min_version (20160411.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
     General: {
-      PageOrigin: 1
+      PageOrigin: 1,
+      TxtExt: '.txt'
     },
     Filename: {
-      Short: '%NCODE%.txt',
-      Serial: '%NCODE%_%PZ%.txt'
+      Short: '%NCODE%',
+      Serial: '%NCODE%_%PZ%',
+      Impression: '%NCODE%_感想_%PZ%'
     }
   };
 
@@ -52,16 +54,8 @@ Getter (function SyosetuCom () {
 });
 
 
-SyosetuCom.prototype._extractNcode = function (url) {
-  var re = /^http:\/\/[^\/]+\/(novelview\/infotop\/ncode\/)?(n[a-z0-9]+)(\/?$|#)/;
-
-  this.ncode = (re.test (url) && RegExp.$2 != 'novelview') ? RegExp.$2 : null;
-
-  return this.ncode ? this._ok () : this._mis ();
-};
-
-
-SyosetuCom.prototype._getTxtdownloadUrl = function (url) {
+// HTML をダウンロードしてTXTダウンロードリンクを抽出する
+SyosetuCom.prototype._fetchTxtdownloadUrl = function (url) {
   var http = this.http = new Http ();
 
   if (!http.get (http.expandUrl ('/' + this.ncode, url))) {
@@ -79,46 +73,14 @@ SyosetuCom.prototype._getTxtdownloadUrl = function (url) {
 };
 
 
-// 長編小説
-SyosetuCom.prototype._serial = function (http, form, selectNo) {
-  if (selectNo.tagName != 'select') {
-    return this._unknown ('name="no" が <select> タグではありません。');
-  }
-
-  var opts = selectNo.options;
-  var len = opts.length;
-  for (var i = 0; i < len; ++i) {
-    var opt = opts [i];
-
-    // selectNo.select (opt); だと遅そうなので直接書き換え
-    opt.selected = true;
-    this._add ({ Url: http.expandUrl (form.submit ().url) });
-    opt.selected = false;
-  }
-
-  this.type = 'Serial';
-  return this._ok ();
-};
-
-
-// public: ファイル URL を取得する
-SyosetuCom.prototype.get = function (url) {
-  this.items = [ ];
-  this.type = null;
-  this.ncode = null;
-
-  if (!this._extractNcode (url)) {
+// TXT ダウンロードのフォームを抽出する
+SyosetuCom.prototype._getTxtdownloadForm = function (url) {
+  var t = this._fetchTxtdownloadUrl (url);
+  if (!t) {
     return false;
   }
 
-  var txtdownload = this._getTxtdownloadUrl (url);
-  if (!txtdownload) {
-    return false;
-  }
-
-  var http = this.http = new Http ();
-
-  if (!http.get (txtdownload)) {
+  if (!http.get (t)) {
     return this._httpError ();
   }
 
@@ -127,28 +89,288 @@ SyosetuCom.prototype.get = function (url) {
     return this._unknown ('<form name="dl"> が見つかりません。');
   }
 
+  return form;
+};
+
+
+SyosetuCom.prototype._RETRY_INTERVAL = 5000;
+SyosetuCom.prototype._RETRY_MAX = 5;
+
+// リトライ機能付きの Http インスタンスを初期化する
+SyosetuCom.prototype._newHttp = function () {
+  var h = new Http ();
+
+  h._RETRY_INTERVAL = this._RETRY_INTERVAL;
+  h._RETRY_MAX = this._RETRY_MAX;
+
+  h.getWithRetry = function (url) {
+    for (var i = 0 ; i < this._RETRY_MAX; ++i) {
+      if (this.get (url)) {
+        return true;
+      }
+      if (this.code != 503) {
+        break;
+      }
+      Win32.sleep (this._RETRY_INTERVAL);
+    }
+    return false;
+  };
+
+  return h;
+};
+
+
+// TXTデータをダウンロードして挿絵タグを抽出する
+SyosetuCom.prototype._loadTxt = function (txtUrl) {
+  var http = this.http = this._newHttp ();
+
+  if (!http.getWithRetry (txtUrl)) {
+    return this._httpError ();
+  }
+
+  var tags = http.data.match (/&lt;(i\d+)\|(\d+)&gt;/g) || [ ];
+  for (var i = 0; i < tags.length; ++i) {
+    var u = tags [i].replace (/^&lt;i(\d+)\|(\d+)&gt;$/, 'http://$2.mitemin.net/i$1/');
+    this._add ({ Url: u });
+  }
+
+  // ダウンロード時に capture() するので保存しておく
+  this._txtHttp = http;
+
+  return this._ok ();
+};
+
+
+// 長編小説の TXT ファイルの URL を生成する
+SyosetuCom.prototype._buildTxtUrl = function (http, form, no) {
+
+  var selectNo = form.getElementByName ('no');
+  if (!selectNo) {
+    return this._unknown ('<SELECT name="no"> が見つかりません。');
+  }
+
+  function selectTarget (opts) {
+    var len = opts.length;
+    for (var i = 0; i < len; ++i) {
+      if (opts [i].value === no) {
+        selectNo.select (opts [i], true);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  if (!selectTarget (selectNo.options)) {
+    return this._unknown ('<option value="..."> が見つかりません。');
+  }
+
+  this._no = parseInt (no) - 1;
+  this._total = selectNo.options.length;
+
+  return http.expandUrl (form.submit ().url);
+};
+
+
+// 長編小説の特定話数
+SyosetuCom.prototype._getNovelNo = function (url, ncode, no) {
+  this.ncode = ncode;
+  this.type = 'Serial';
+
+  var form = this._getTxtdownloadForm (url);
+  if (!form) {
+    return false;
+  }
+
+  var txt = this._buildTxtUrl (this.http, form, no);
+  if (!txt) {
+    return false;
+  }
+
+  return this._loadTxt (txt);
+};
+
+
+// 短編小説
+SyosetuCom.prototype._short = function (http, form) {
+  this.type = 'Short';
+
+  this._no = 0;
+  this._total = 1;
+
+  return this._loadTxt (http.expandUrl (form.submit ().url));
+};
+
+
+// 長編小説
+SyosetuCom.prototype._serial = function (http, form, selectNo) {
+  if (selectNo.tagName != 'select') {
+    return this._unknown ('name="no" が <select> タグではありません。');
+  }
+
+  var baseUrl = http.expandUrl ('/' + this.ncode + '/');
+
+  var len = selectNo.options.length;
+  for (var i = 1; i <= len; ++i) {
+    this._add ({ Url: baseUrl + i + '/' });
+  }
+
+  return this._ok ();
+};
+
+
+// 小説
+SyosetuCom.prototype._getNovel = function (url, ncode) {
+  this.ncode = ncode;
+
+  var form = this._getTxtdownloadForm (url);
+  if (!form) {
+    return false;
+  }
+
   var selectNo = form.getElementByName ('no');
   if (selectNo) {
     // 長編小説
-    return this._serial (http, form, selectNo);
+    return this._serial (this.http, form, selectNo);
   }
 
   // 短編小説
-  this.type = 'Short';
-  return this._add ({ Url: http.expandUrl (form.submit ().url) });
+  return this._short (this.http, form);
+};
+
+
+// 感想のページ数を取得する
+SyosetuCom.prototype._getImpressionPages = function (url) {
+  var MAX_PAGES = 9999;
+
+  var http = this.http = new Http ();
+
+  if (!http.get (url + MAX_PAGES)) {
+    return this._httpError ();
+  }
+
+  if (!/<link\s+rel="alternate"\s+href="http:\/\/nk\.syosetu\.com\/(n[a-z0-9]+)\/"/.test (http.data)) {
+    return this._unknown ('<link rel="alternate"> が見つかりません。');
+  }
+  this.ncode = RegExp.$1;
+
+  if (!/<div\s+class="naviall">(.*?)<\/div>/.test (http.data)) {
+    if (/<div\s+class="nothing">/.test (http.data)) {
+      return this._ng ('感想が書かれていません。');
+    }
+    return this._unknown ('<div class="naviall"> が見つかりません。');
+  }
+  if (!/<\/a>&nbsp;(\d+)$/.test (RegExp.$1)) {
+    return this._unknown ('感想の最終ページ番号が見つかりません。');
+  }
+  var pages = parseInt (RegExp.$1);
+
+  if (1 <= pages && pages <= MAX_PAGES) {
+    return pages;
+  }
+  return this._ng ('感想のページ数が異常です: ' + pages);
+};
+
+
+// 感想
+SyosetuCom.prototype._getImpression = function (url) {
+  var baseUrl = url.replace (/\/?(#.*)?$/, '/index.php?p=');
+
+  var pages = this._getImpressionPages (baseUrl);
+  if (!pages) {
+    return false;
+  }
+
+  for (var i = 1; i <= pages; ++i) {
+    this._add ({ Url: baseUrl + i });
+  }
+
+  this.type = 'Impression';
+  return this._ok ();
+};
+
+
+// public: ファイル URL を取得する
+SyosetuCom.prototype.get = function (url) {
+  this.items = [ ];
+  this.type = null;
+
+  this._txtHttp = null;
+  this._txtFilename = null;
+
+  this.ncode = null;
+
+  if (/^http:\/\/[^\/]+\/(novelview\/infotop\/ncode\/)?(n[a-z0-9]+)(\/?$|#)/.test (url)) {
+    return this._getNovel (url, RegExp.$2);
+  }
+
+  if (/^http:\/\/[^\/]+\/(n[a-z0-9]+)\/(\d+)(\/?$|#)/.test (url)) {
+    return this._getNovelNo (url, RegExp.$1, RegExp.$2);
+  }
+
+  if (/^http:\/\/novelcom\.syosetu\.com\/impression\/list\/ncode\/\d+\/?(#|$)/.test (url)) {
+    return this._getImpression (url);
+  }
+
+  return this._mis ();
 };
 
 
 // public: ファイル名を生成する
 SyosetuCom.prototype.buildFilename = function (args) {
+
   var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
-  if (!nb) {
+  if (!this.type || !nb) {
     return this._ok ();
   }
 
   nb.ncode = this.ncode;
 
-  return this._buildFilename (args);
+  if (!this._txtHttp) {
+    // 感想
+    return this._buildFilename (args);
+  }
+
+  // 短編小説、長編小説の特定話数
+  // TXT の保存ファイル名を決定する
+  nb.p = this._no;
+  nb.pages = this._total;
+
+  var ext = (args.hasKey ('Ext') && args.Ext) || '';
+  this._txtFilename = nb.buildFilename (args.Format, ext);
+
+  // 挿絵のファイル名は対応サイトのスクリプトにまかせるが、
+  // 基本ファイル名をそのスクリプトに渡すためにオプションを設定しておく
+
+  var basename = File.changeExt (this._txtFilename.Filename, '');
+  var bn = 'basename=' + Base64.encode (basename);
+
+  var items = this.items;
+  var len = items.length;
+  for (var i = 0; i < len; ++i) {
+    Dorothy.addOption (bn, items [i]);
+  }
+};
+
+
+// public: ダウンロード情報を登録する
+SyosetuCom.prototype.download = function (args) {
+
+  if (this._txtHttp) {
+    // 長編小説の特定話数、短編小説はテキストをファイルに保存
+    var sf = this._txtHttp.capture (this._txtFilename);
+    if (!sf.success) {
+      return this._ng ('ファイルの書き込みに失敗しました。');
+    }
+
+    // 挿絵がなければ終了
+    if (this.items.length === 0) {
+      Dorothy.removeThis ();
+      return this._ok ();
+    }
+  }
+
+  // 挿絵または長編小説の各話または感想の各ページをアイテム追加
+  return this._downloadFiles (args);
 };
 
 
@@ -164,14 +386,17 @@ SyosetuCom.prototype.buildFilename = function (args) {
   var getter = new SyosetuCom ();
 
   if (getter.get (urlinfo.url)) {
-    var nb = new NameBuilder ({
-      definePPZ: ini.General.PageOrigin
-    });
+    if (getter.type) {
+      var nb = new NameBuilder ({
+        definePPZ: ini.General.PageOrigin
+      });
 
-    getter.buildFilename ({
-      NameBuilder: nb,
-      Format: ini.Filename [getter.type]
-    });
+      getter.buildFilename ({
+        NameBuilder: nb,
+        Format: ini.Filename [getter.type],
+        Ext: ini.General.TxtExt
+      });
+    }
 
     getter.download ({
       AddItem: new AddItem (ini.AddItem)
