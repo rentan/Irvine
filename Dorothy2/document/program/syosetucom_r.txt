@@ -16,6 +16,13 @@ syosetucom_r.dms
 
 http://ncode.syosetu.com/n[a-z0-9]+
 http://ncode.syosetu.com/novelview/infotop/ncode/n[a-z0-9]+
+  短編小説、もしくは長編の全話をダウンロード。
+
+http://ncode.syosetu.com/n[a-z0-9]+/\d+
+  長編小説の指定の話をダウンロード。
+
+http://novelcom.syosetu.com/impression/list/ncode/d+
+  感想の全ページをダウンロード。
 
 
 仕様・制限事項
@@ -24,6 +31,9 @@ http://ncode.syosetu.com/novelview/infotop/ncode/n[a-z0-9]+
 
 変更履歴
 ========
+
+2016-04-14  version 20160414.0
+  挿絵、感想に対応。
 
 2016-04-03  version 20160403.0
   新規作成。
