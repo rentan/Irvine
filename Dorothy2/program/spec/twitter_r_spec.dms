@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20160330.0
+//version=20160519.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -226,10 +226,14 @@ describe ('ìÆâÊ', function () {
 
     // TwitterÉAÉvÉäÇ©ÇÁìäçeÇ≥ÇÍÇΩìÆâÊ
     [ 'https://twitter.com/twitter/status/560070183650213889',
-      'https://video.twimg.com/ext_tw_video/560070131976392705/pu/vid/1280x720/c4E56sl91ZB7cpYi.mp4' ],
+   // 'https://video.twimg.com/ext_tw_video/560070131976392705/pu/vid/1280x720/c4E56sl91ZB7cpYi.mp4'
+      'https://video.twimg.com/ext_tw_video/560070131976392705/pu/pl/r1kgzh5PmLgium3-.m3u8'
+     ],
 
     [ 'https://twitter.com/ActuallyNPH/status/560049149836808192',
-      'https://video.twimg.com/ext_tw_video/560049056895209473/pu/vid/720x720/S7F4BF2wKR2txCpA.mp4' ]
+   // 'https://video.twimg.com/ext_tw_video/560049056895209473/pu/vid/720x720/S7F4BF2wKR2txCpA.mp4'
+      'https://video.twimg.com/ext_tw_video/560049056895209473/pu/pl/udxtIM8FytsAE4HQ.m3u8'
+     ]
   ])
   .it ('[ url, video ]', function (url, video) {
     expect (getter.get (url)).toBe (true);

@@ -33,6 +33,10 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2016-05-19  version 20160519.0  rentan at rentan.org
+  VMAP 形式の動画に対応。
+    http://echo.2ch.net/test/read.cgi/win/1437882775/801
+
 2016-03-30  version 20160330.0  rentan at rentan.org
   gif から変換された動画に対応。
     http://echo.2ch.net/test/read.cgi/win/1437882775/766
