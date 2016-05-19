@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20160411
+version=20160519
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -394,6 +394,7 @@ Dorothy.setRequiredCommonVersion = function (obj) {
 // (Dorothy2R 拡張) 現在のアイテムをダウンロード後削除する
 Dorothy.removeThis = function () {
   Dorothy.fileName = 'remove';
+  Dorothy.cancel = false;
 };
 
 
@@ -730,14 +731,15 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
 
   Dorothy.oldUrl = urlinfo.url;
   Dorothy.continueCount = 0;
+
   Dorothy.end = false;
+  Dorothy.cancel = true;
 
   _.matchCount = 0;
   _.matcher = Dorothy.createProgramMatcher ();
 
   for (;;) {
     Dorothy.continue = false;
-    Dorothy.cancel = true;
 
     if (!_.matcher.find (urlinfo.url, item)) {
       // 対応するプログラムが見つからない
@@ -775,12 +777,8 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
       continue;
     }
 
-    if (Dorothy.end) {
-      // .end = false → true に変更された場合: 終了
-      Dorothy.cancel = false;
-    }
-    if (!Dorothy.cancel) {
-      // .cancel = true → false に変更された場合: 終了
+    if (Dorothy.end || !Dorothy.cancel) {
+      // .end = false → true または .cancel = true → false に変更された場合: 終了
       break;
     }
 

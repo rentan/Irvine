@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20160411.0
+//version=20160519.0
 //hint=utility
 //match=
 //author=rentan
@@ -219,14 +219,14 @@ Util.get_option = function (key) {
 
 
 if (Dorothy.hasKey ('rVersion')) {
-  if (Dorothy.rVersion < 20160314) {
+  if (Dorothy.rVersion < 20160519) {
     Util.fatal ("Dorothy2R のバージョンが古すぎます。\n最新版を使用して下さい。");
   }
 }
 else {
   common_load ('rutil_dorothy2r');
 
-  if (parseFloat (Dorothy.common.rutil_dorothy2r.version) < 20160406.0) {
+  if (parseFloat (Dorothy.common.rutil_dorothy2r.version) < 20160519.0) {
     Util.fatal ("バージョンが古すぎます。最新版を使用して下さい。\n\n"
               + Dorothy.path + 'common\rutil_dorothy2r.dms');
   }
