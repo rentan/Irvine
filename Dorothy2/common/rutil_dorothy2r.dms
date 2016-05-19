@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dorothy2R 互換拡張
-//version=20160411.0
+//version=20160519.0
 //hint=part of rutil.dms
 //match=
 //author=rentan
@@ -197,8 +197,9 @@ common_xload = (function (common_xload) {
 
 // (Dorothy2R 拡張) 現在のアイテムをダウンロード後削除する
 Dorothy.removeThis = function () {
-  Dorothy.fileName = 'remove';
   Dorothy.setUrl ('http://www.google.com/favicon.ico');
+  Dorothy.fileName = 'remove';
+  Dorothy.cancel = false;
 };
 
 

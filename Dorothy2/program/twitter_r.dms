@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20160330.0
+//version=20160519.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
-  Util.min_version (20160314.0);
+  Util.min_version (20160519.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -64,6 +64,31 @@ Getter (function Twitter (opt) {
 });
 
 
+// VMAP を読み込んで動画 URL を抽出する
+Twitter.prototype._analyzeVmap = function (vmapUrl) {
+  var http = this.http = new Http ();
+
+  if (!http.get (vmapUrl)) {
+    return this._httpError ();
+  }
+
+  var list = [ ];
+
+  var mf = /<MediaFile>\s*<!\[CDATA\[(.*?)\]\]>\s*<\/MediaFile>/;
+  http.data.replace (mf, function (s, p1) {
+    list.push (p1);
+    return '';
+  });
+
+  for (var i = 0; i < list.length; ++i) {
+    this._add ({ Url: list [i] });
+  }
+
+  this.type = 'Video';
+  return this._ok ();
+};
+
+
 // /i/videos/\d+\?embed_source=facebook 内の動画を抽出する
 Twitter.prototype._analyzeVideos = function (url) {
   var http = this.http;
@@ -80,13 +105,27 @@ Twitter.prototype._analyzeVideos = function (url) {
   }
   var conf = RegExp.$1;
 
-  if (!/&quot;video_url&quot;:&quot;(https?:.*?)&quot;/.test (conf)) {
-    return this._unknown ('video_url が見つかりません。');
-  }
-  var video_url = RegExp.$1.replace (/\\/g, '');
 
-  this.type = 'Video';
-  return this._add ({ Url: video_url });
+  function findUrl (key) {
+    var head = '&quot;' + key + '&quot;:&quot;';
+    var re = new RegExp (head + '(https?:.*?)&quot;');
+
+    var t = conf.slice (conf.indexOf (head));
+    return re.test (t) ? re.$1.replace (/\\/g, '') : null;
+  }
+
+  var video_url = findUrl ('video_url');
+  if (video_url) {
+    this.type = 'Video';
+    return this._add ({ Url: video_url });
+  }
+
+  var vmap_url = findUrl ('vmap_url');
+  if (vmap_url) {
+    return this._analyzeVmap (vmap_url);
+  }
+
+  return this._unknown ('video_url/vmap_url が見つかりません。');
 };
 
 

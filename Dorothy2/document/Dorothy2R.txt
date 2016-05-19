@@ -196,9 +196,18 @@ Dorothy.loadDorothyIni ();
 変更履歴
 ========
 
-2016-04-11  version 20160411.0  rentan at rentan.org
+2016-05-19  version 20160519.0  rentan at rentan.org
 
 ※「Dorothy2R 設定」でユーザー設定を行った上で上書き保存して下さい。
+
+scripts\Dorothy2R_a.dms
+  Dorothy.removeThis() 実行後に下位優先度のスクリプトを実行しないようにした。
+
+Dorothy2R\system\settingform.dms
+  rVersion を 20160519 に更新。
+
+
+2016-04-11  version 20160411.0  rentan at rentan.org
 
 scripts\Dorothy2R_a.dms
   ファイル読み書き時にフルパス名で排他制御するようにした。
@@ -264,7 +273,7 @@ scripts\Dorothy2R_done.dms
 2016-02-08  version 20160208.0  rentan at rentan.org
 
 Dorothy2R\system\settingform.dms
-  rVersion を 20160208 に更新。「Dorothy2R 設定」で上書き保存して下さい。
+  rVersion を 20160208 に更新。
 
 scripts\Dorothy2R_a.dms
   file_load() 等の Global に追加するメソッドは、文字列化しておいたものを
@@ -305,7 +314,7 @@ scripts\Dorothy2R_a.dms
   //match=comment:～ 形式のスクリプトに対応。
 
 Dorothy2R\system\settingform.dms
-  rVersion を 20150316 に更新。「Dorothy2R 設定」で上書き保存して下さい。
+  rVersion を 20150316 に更新。
 
 
 2015-01-27  version 20150127.0  rentan at rentan.org
