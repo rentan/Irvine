@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=instagram_r
-//version=20151125.0
+//version=20160520.0
 //hint=Instagram 別バージョン
 //match=^https://(www\.)?instagram\.com/p/.
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2015 rentan at rentan.org
+Copyright (C) 2015-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20150930.0);
+  Util.min_version (20160519.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -77,14 +77,14 @@ Instagram.prototype.get = function (url) {
   }
 
   // Twitter ID
-  if (!/"owner":\{([^}]*,)?"username":"([^"]+)"/.test (http.data)) {
+  if (!/"owner"\s*:\s*\{([^}]*,)?\s*"username"\s*:\s*"([^"]+)"/.test (http.data)) {
     return this._unknown ('username が見つかりません。');
   }
   this.twitter_id = RegExp.$2;
 
   // 題名
   var title = 'no-title';
-  if (/"caption":"([^"]+)"/.test (http.data)) {
+  if (/"caption"\s*:\s*"([^"]+)"/.test (http.data)) {
     title = (new Utf8 (RegExp.$1)).unescape ().toUTF8 ();
   }
   this.title = title;
