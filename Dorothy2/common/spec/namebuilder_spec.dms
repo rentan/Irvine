@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=NameBuilder spec
-//version=20150531.0
+//version=20160521.0
 //hint=http://yasmine.dorothy.test/common/spec/namebuilder_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2014,2015 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -239,6 +239,7 @@ describe ('.buildFilename()', function () {
 
     nb.user = 'TEMP';
     nb.title = 'foo';
+    nb.a = 'a'.multiply (260);
   });
 
   it ('simple filename', function () {
@@ -262,6 +263,21 @@ describe ('.buildFilename()', function () {
     expect (itemData.hasKey ('Folder')).toBe (true);
     expect (itemData.Folder).toBe ('R:\TEMP\');
     expect (itemData.Filename).toBe ('foo');
+  });
+
+  it ('handles item.folder value X: as X:\ when truncate filename', function () {
+    var backupItemFolder = item.folder;
+    try {
+      item.folder = 'R:';
+      var itemData = nb.buildFilename ('%TITLE%%A%');
+    }
+    finally {
+      item.folder = backupItemFolder;
+    }
+
+    expect (itemData.hasKey ('Folder')).toBe (true);
+    expect (itemData.Folder).toBe ('R:\');
+    expect (itemData.Filename).toBe ('foo' + 'a'.multiply (260 - 3 - 3 - 2) + 'Åc');
   });
 });
 
