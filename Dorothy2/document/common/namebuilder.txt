@@ -149,6 +149,12 @@ contentToExt (data)
 変更履歴
 ========
 
+2016-05-21  version 20160521.0  rentan at rentan.org
+  buildFilename(): アイテム設定で保存フォルダに X: のようにドライブレター＋
+  コロンのみを指定すると、ファイル名の切り詰めに失敗してダウンロードした
+  ファイルが移動してしまう不具合を修正。
+    http://echo.2ch.net/test/read.cgi/win/1437882775/814
+
 2015-05-31  version 20150531.0  rentan at rentan.org
   buildFilename(): 長すぎる変数値を自動的に切り詰めるようにした。
 
