@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=NameBuilder
-//version=20150531.0
+//version=20160521.0
 //hint=new NameBuilder ()
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014,2015 rentan at rentan.org
+Copyright (C) 2012-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -371,8 +371,7 @@ NameBuilder.prototype.buildFilename = function (fmt, ext) {
     return '';
   });
 
-  var folder = Dorothy.getSaveFolder ();
-  var cmdFolder = item.folder;
+  var cmdFolder = null;
 
   // [[md=...]] 指定フォルダに保存
   function md (path) {
@@ -384,7 +383,7 @@ NameBuilder.prototype.buildFilename = function (fmt, ext) {
   // コマンドを実行する
   for (var i = 0; i < commands.length; ++i) {
     var command = commands [i];
-    var arg = this._assemble (command.arg, '', folder);
+    var arg = this._assemble (command.arg, '', Dorothy.getSaveFolder ());
 
     if (command.cmd == 'md' || command.cmd == 'cd') {
       md (arg);
@@ -394,10 +393,12 @@ NameBuilder.prototype.buildFilename = function (fmt, ext) {
     }
   }
 
-  var itemData = cmdFolder ? { Folder: cmdFolder } : { };
+  var folder = cmdFolder || (item.folder && (new Directory (item.folder)).path);
+
+  var itemData = folder ? { Folder: folder } : { };
 
   // ファイル名を作成
-  itemData.Filename = this._assemble (fmt, this._extractExt (ext), cmdFolder || folder);
+  itemData.Filename = this._assemble (fmt, this._extractExt (ext), folder || Dorothy.getSaveFolder ());
 
   return itemData;
 };
