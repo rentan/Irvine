@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Dキャラめ～る。
-//version=20150815.0
+//version=20160522.0
 //hint=購読者限定壁紙
 //match=^http://www\.dmm\.co\.jp/(dc|digital/nijigen)/mlmg_present/
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2015 rentan at rentan.org
+Copyright (C) 2015-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20150702.0);
+  Util.min_version (20160522.0);
 
   // 設定ファイルの読み込み
   var defaultIni = {
@@ -121,8 +121,8 @@ DcharaMlmg.prototype.get = function (url) {
   this.mm = ymd.substr (2, 2);
   this.dd = ymd.substr (4, 2);
 
-  this._add ({ Url: this._buildZipUrl (ymd, '') });
-  this._add ({ Url: this._buildZipUrl (ymd, '_mem') });
+  this._add ({ Url: this._buildZipUrl (ymd, ''), type: 'Wallpaper' });
+  this._add ({ Url: this._buildZipUrl (ymd, '_mem'), type: 'Wallpaper_mem' });
 
   return this._ok ();
 };
@@ -144,12 +144,6 @@ DcharaMlmg.prototype.buildFilename = function (args) {
 };
 
 
-// public: ダウンロード情報を登録する
-DcharaMlmg.prototype.download = function (args) {
-  return this._downloadFiles (args);
-};
-
-
 //------------------------------- メイン処理 -------------------------------
 
 
@@ -166,7 +160,7 @@ DcharaMlmg.prototype.download = function (args) {
 
     getter.buildFilename ({
       NameBuilder: nb,
-      Format: [ ini.Filename.Wallpaper, ini.Filename.Wallpaper_mem ]
+      Formats: ini.Filename
     });
 
     getter.download ({

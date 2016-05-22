@@ -32,6 +32,9 @@ http://www.dmm.co.jp/(dc|digital/nijigen)/mlmg_present/[^\/]+/page_[^\/]+[._]htm
 変更履歴
 ========
 
+2016-05-22  version 20160522.0  rentan at rentan.org
+  getter version 20160522.0 に対応。
+
 2015-08-15  version 20150815.0  rentan at rentan.org
   ～/mlmg_present/150731_2/～ という形式の URL に対応。
 
