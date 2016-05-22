@@ -22,6 +22,17 @@ getterobject.dms がイマイチ使いづらかったので作りなおしまし
 変更履歴
 ========
 
+2016-05-22  version 20160522.0  rentan at rentan.org
+  _downloadFiles(): ファイル名生成を行わないようにした。
+
+  _buildFilename(): 配列による Format 指定を廃止した。
+  getter がどのようなコンテンツをどの順序で追加するかを、呼び出し元
+  が知らないといけないのは柔軟性に欠けるため。
+  代わりに、Formats で複数のフォーマットをオブジェクトで渡し
+  items[*].type でフォーマット名を指定できるようにした。
+
+  各ファイル名を生成する前にコールバック関数を呼び出せるようにした。
+
 2016-02-08  version 20160208.0  rentan at rentan.org
   Comment に対応。
 

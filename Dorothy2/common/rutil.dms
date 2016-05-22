@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20160519.0
+//version=20160522.0
 //hint=utility
 //match=
 //author=rentan
@@ -278,7 +278,7 @@ Dorothy.setRequiredCommonVersion ({
   browsercookie: 20160224.0,
   dmon: 20160223.0,
   exec: 20140331.0,
-  getter: 20160208.0,
+  getter: 20160521.0,
   htmlform: 20160213.0,
   http: 20150425.0,
   jinput: 20160221.0,
