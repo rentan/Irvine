@@ -31,6 +31,9 @@ https?://(www.)?instagram.com/p/[^/]+
 変更履歴
 ========
 
+2016-05-22  version 20160522.0  rentan at rentan.org
+  getter version 20160522.0 に対応。
+
 2016-05-20  version 20160520.0  rentan at rentan.org
   username の形式変更に対応。
     http://echo.2ch.net/test/read.cgi/win/1437882775/813
