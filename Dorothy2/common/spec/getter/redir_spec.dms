@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=redir spec
-//version=20151205.0
+//version=20160610.0
 //hint=http://yasmine.dorothy.test/common/spec/getter/redir_spec.dms
 //match=
 //author=rentan
@@ -38,7 +38,8 @@ describe ('Redir#get', function () {
 
     [ 'http://adf.ly/1IViAF', 'http://example.com/adfly' ],
 
-    [ 'http://www.linkbucks.com/BfOXO', 'http://kaheel7.com/eng/' ],
+    [ 'http://www.linkbucks.com/1kxv', 'http://example.com/linkbucks-shortlink' ],
+    [ 'http://www.linkbucks.com/1ky9', 'http://example.com/linkbucks-intermission' ],
 
 //  [ 'http://lix.in/-de6c11', 'http://example.com/single_cap-on' ],
     [ 'http://lix.in/-dce570', 'http://example.com/single_cap-off' ],
@@ -46,6 +47,8 @@ describe ('Redir#get', function () {
     [ 'http://t.co/gZIiQGoMbp', 'http://example.com/tco' ],
     [ 'http://bit.ly/1Huy8Xw', 'http://example.com/bitly' ],
     [ 'http://goo.gl/S8qTmW', 'http://example.com/googl' ],
+    [ 'http://sh.st/SWE4e', 'http://example.com/shst' ],
+
     [ 'http://ime.nu/example.com/imenu', 'http://example.com/imenu' ],
 
     [ 'http://jump.2ch.net/?example.com/jump2chnet', 'http://example.com/jump2chnet' ],
