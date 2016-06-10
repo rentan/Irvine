@@ -129,17 +129,32 @@ Twitter.prototype._analyzeVideos = function (url) {
 };
 
 
-// ツイート内の画像URLを抽出する
-Twitter.prototype._analyzeTweetImage = function () {
+// ツイート内から抽出された画像を登録
+Twitter.prototype._addImages = function (urls) {
   function addImage (url) {
-    this._add ({ Url: url.replace (/(:[a-z]*)?$/, ':orig') });
+    var u = url.replace (/(:[a-z]*)?$/, '');
+    var ext = /(\.[^\/.?&#]+)$/.test (u) ? RegExp.$1 : '';
+
+    this._add ({ Url: u + ':orig', ext: ext });
   }
 
+  var len = urls.length;
+  for (var i = 0; i < len; ++i) {
+    addImage (urls [i]);
+  }
+
+  this.type = (len >= 2) ? 'Photo2' : 'Photo';
+  return this._ok ();
+};
+
+
+// ツイート内の画像URLを抽出する
+Twitter.prototype._analyzeTweetImage = function () {
   var http = this.http;
   var html = http.data;
 
-
   var head = html.slice (0, html.indexOf ('</head'));
+
 
   var ogimages = [ ];
   function add (s, p1) {
@@ -149,14 +164,8 @@ Twitter.prototype._analyzeTweetImage = function () {
   var meta = /<meta\s+property="og:image"\s+content="(https:\/\/pbs\.twimg\.com\/media\/[^"]+)"/g;
   head.replace (meta, add);
 
-  var len = ogimages.length;
-  if (len) {
-    for (var i = 0; i < len; ++i) {
-      addImage (ogimages [i]);
-    }
-
-    this.type = (len >= 2) ? 'Photo2' : 'Photo';
-    return this._ok ();
+  if (ogimages.length) {
+    return this._addImages (ogimages);
   }
 
 
@@ -457,31 +466,19 @@ Twitter.prototype._setNameBuilderVar = function (nb) {
 
 
 // public: ファイル名を生成する
-//   NameBuilder/Format 必須
 Twitter.prototype.buildFilename = function (args) {
-  var nb = args.NameBuilder;
-  var fmt = args.Format;
+  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
+  if (!nb) {
+    return this._ok ();
+  }
 
   this._setNameBuilderVar (nb);
 
-  var items = this.items;
-  var len = nb.pages = items.length;
-
-  for (var i = 0; i < len; ++i) {
-    nb.p = i;
-    var itemData = items [i];
-    var urlWithoutSize = itemData.Url.replace (/:[a-z]*$/, '');
-
-    nb.f = urlWithoutSize.replace (/^.*\/|\.[^.\/]*$/g, '');
-
-    var fnData = nb.buildFilename (fmt, urlWithoutSize);
-
-    for (var key in fnData) {
-      itemData [key] = fnData [key];
-    }
+  function callback (nb, itemData) {
+    nb.f = itemData.Url.replace (/^.*\/|\.[^.\/]*$/g, '');
   }
 
-  return this._ok ();
+  return this._buildFilename ({ BeforeBuildFilename: callback }, args);
 };
 
 

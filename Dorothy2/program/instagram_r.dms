@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=instagram_r
-//version=20160520.0
+//version=20160522.0
 //hint=Instagram 別バージョン
 //match=^https://(www\.)?instagram\.com/p/.
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20160519.0);
+  Util.min_version (20160522.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -56,7 +56,6 @@ Getter (function Instagram () {
 // public: ファイル URL を取得する
 Instagram.prototype.get = function (url) {
   this.items = [ ];
-  this.type = null;
 
   this.twitter_id = null;
   this.id = null;
@@ -93,13 +92,11 @@ Instagram.prototype.get = function (url) {
   if (!/<meta\s+property="og:image"\s+content="([^"]+)"/.test (http.data)) {
     return this._unknown ('画像URLが見つかりません。');
   }
-  this._add ({ Url: RegExp.$1 });
-  this.type = 'Photo';
+  this._add ({ Url: RegExp.$1, type: 'Photo' });
 
   // 動画URL (画像ファイルもダウンロードする)
   if (/<meta\s+property="og:video"\s+content="([^"]+)"/.test (http.data)) {
-    this._add ({ Url: RegExp.$1 });
-    this.type = 'Video';
+    this._add ({ Url: RegExp.$1, type: 'Video' });
   }
 
   return this._ok ();
@@ -138,7 +135,7 @@ Instagram.prototype.buildFilename = function (args) {
 
     getter.buildFilename ({
       NameBuilder: nb,
-      Format: [ ini.Filename.Photo, ini.Filename.Video ]
+      Formats: ini.Filename
     });
 
     getter.download ({

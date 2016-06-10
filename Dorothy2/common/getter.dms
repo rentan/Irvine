@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Getter()
-//version=20160208.0
+//version=20160522.0
 //hint=
 //match=
 //author=rentan
@@ -220,35 +220,6 @@ Getter.prototype._downloadSingleFile = function (itemData) {
 };
 
 
-// NameBuilderでファイル名を生成
-Getter.prototype._buildFilenames = function (args) {
-  var nb = args.get ('NameBuilder');
-  var fmt = args.get ('Format');
-
-  if (!nb || !fmt) {
-    return;
-  }
-
-  var fmtIsArray = nameOf (fmt) == 'Array';
-
-  var items = this.items;
-  var len = nb.pages = items.length;
-
-  for (var i = 0; i < len; ++i) {
-    nb.p = i;
-    var itemData = items [i];
-
-    var f = fmtIsArray ? fmt [i] : fmt;
-    var ext = itemData.hasKey ('ext') ? itemData.ext : itemData.Url;
-    var parsedData = nb.buildFilename (f, ext);
-
-    for (var key in parsedData) {
-      itemData [key] = parsedData [key];
-    }
-  }
-};
-
-
 // _downloadFiles() の引数取得用オブジェクト
 Getter.prototype._createArgsObject = function (argsArray) {
   var argsObj = [ ];
@@ -275,13 +246,48 @@ Getter.prototype._createArgsObject = function (argsArray) {
 };
 
 
-// NameBuilderで保存ファイル名を設定
-//   NameBuilder: NameBuilderインスタンス
+// NameBuilder で保存ファイル名を設定
+//   NameBuilder: NameBuilder インスタンス
 //   Format: string ... ファイル名フォーマット
+//   Formats: object ... items[*].type で指定された名称のフォーマットを使用
+//   BeforeBuildFilename: function ... コールバック関数
 Getter.prototype._buildFilename = function (/* args, ... */) {
   var args = this._createArgsObject (arguments);
 
-  this._buildFilenames (args);
+  var nb = args.get ('NameBuilder');
+  var fmt = args.get ('Format');
+  var fmts = args.get ('Formats');
+  var before = args.get ('BeforeBuildFilename');
+
+  if (!nb || !(fmt || fmts)) {
+    return;
+  }
+
+  if (nameOf (fmt) == 'Array') {
+    return this._ng ('_buildFilename: 配列によるFormat指定は廃止されました。');
+  }
+
+  var items = this.items;
+  var len = nb.pages = items.length;
+
+  for (var i = 0; i < len; ++i) {
+    nb.p = i;
+    var itemData = items [i];
+
+    var ext = itemData.hasKey ('ext') ? itemData.ext : itemData.Url;
+    var f = fmts ? fmts [itemData.type] : fmt;
+
+    // コールバック関数呼び出し
+    if (before) {
+      before (nb, itemData);
+    }
+
+    var parsedData = nb.buildFilename (f, ext);
+
+    for (var key in parsedData) {
+      itemData [key] = parsedData [key];
+    }
+  }
 
   return this._ok ();
 };
@@ -316,8 +322,6 @@ Getter.prototype._normalizeFilename = function (/* args, ... */) {
 //
 Getter.prototype._downloadFiles = function (/* args, ... */) {
   var args = this._createArgsObject (arguments);
-
-  this._buildFilenames (args);
 
   // 単一アイテム
   var items = this.items;
