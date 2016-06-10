@@ -8,6 +8,9 @@ DOA からは使用できません。
 変更履歴
 ========
 
+2016-06-10  version 20160610.0  rentan at rentan.org
+  sh.st に対応。
+
 2016-02-23  version 20160223.0  rentan at rentan.org
   zatnawqy.net に対応。
 

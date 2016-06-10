@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Redir
-//version=20160223.0
+//version=20160610.0
 //hint=
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2015,2016 rentan at rentan.org
+Copyright (C) 2015-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -555,6 +555,16 @@ RedirMisc.prototype._sites = [
   re: /^http:\/\/goo\.gl\/[^?&#]/,
   f: function (url) {
     return this._getLocation (url);
+  }
+},
+
+{
+  re: /^http:\/\/sh\.st\/[^?&#]/,
+  f: function (url) {
+    var http = this.http = new Http ();
+    http.removeRequestHeader ('User-Agent');
+
+    return http.getLocation (url) ? this._add ({ Url: http.location }) : this._httpError ();
   }
 },
 
