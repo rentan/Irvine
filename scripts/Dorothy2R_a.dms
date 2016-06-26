@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20160519
+version=20160626
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -61,7 +61,7 @@ Global.file_load = function (path) {
   var f = new File (fullpath);
 
   try {
-    var m = new Mutex (fullpath);
+    var m = new Mutex (fullpath.replace (/\\/g, '/'));
     try {
       m.lock ();
       f.open ('r');
@@ -571,13 +571,14 @@ Dorothy.init = function (o) {
 
 // Dorothy2R_ini.dms を読み込んで実行する
 Dorothy.loadDorothyIni = function () {
-  var fullpath = WScript.Path + 'scripts\Dorothy2R_ini.dms';
+  var name = 'Dorothy2R_ini.dms';
+  var fullpath = WScript.Path + 'scripts\' + name;
   var f = new File (fullpath);
 
   try {
     var dms = null;
 
-    var m = new Mutex (fullpath);
+    var m = new Mutex (name);
     try {
       m.lock ();
 

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=SettingForm
-//version=20160519.0
+//version=20160626.0
 //hint=
 //match=
 //author=rentan
@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Dorothy2R 設定用フォーム
 var SettingForm = new VCLForm ();
 
-SettingForm.R_VERSION = 20160519;
+SettingForm.R_VERSION = 20160626;
 SettingForm.DEFAULT_DUMMY_URL = 'http://www.google.com/favicon.ico';
 
 
@@ -1053,9 +1053,10 @@ SettingForm._saveDorothy2rIniDms = function () {
   s.addStrings (this._createMatchListScript ());
 
   // Dorothy2R_ini.dms に書き込む
-  var fullpath = WScript.Path + 'scripts\Dorothy2R_ini.dms';
+  var name = 'Dorothy2R_ini.dms';
+  var fullpath = WScript.Path + 'scripts\' + name;
 
-  var m = new Mutex (fullpath);
+  var m = new Mutex (name);
   try {
     m.lock ();
     s.saveToFile (fullpath);
