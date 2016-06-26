@@ -89,6 +89,9 @@ error
 変更履歴
 ========
 
+2016-06-26  version 20160626.0  rentan at rentan.org
+  Mutex による排他処理が動作しない不具合を修正。
+
 2016-04-13  version 20160413.0  rentan at rentan.org
   リストビュー外でポップアップメニューが表示されないようにした。
 
