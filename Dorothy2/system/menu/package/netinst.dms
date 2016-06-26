@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ネットインストール
-//version=20160413.0
+//version=20160626.0
 //hint=
 //match=
 //author=rentan
@@ -33,7 +33,7 @@ function () {
 
 // コンストラクタ
 function NetInstall () {
-  this.initForm ('version 20160413.0');
+  this.initForm ('version 20160626.0');
 };
 
 
@@ -321,7 +321,7 @@ NetInstall.prototype.createTempDir = function () {
   for (var i = 0; i < DIR_MAX; ++i) {
     var dir = new Directory (base + i);
 
-    var mutex = new Mutex (dir);
+    var mutex = new Mutex (dir.path.replace (/\\/g, '/'));
     try {
       mutex.lock ();
 
