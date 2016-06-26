@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20151022.0
+//version=20160626.0
 //hint=pixiv 別バージョン
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?|source.pixiv.net/)
 //author=rentan, wan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2010,2011,2012,2013,2014,2015 rentan at rentan.org
+Copyright (C) 2010-2016 rentan at rentan.org
 Copyright (C) 2015 wan at thewanwan111@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function () {
 
   common_load ('rutil', 'additem', 'browsercookie', 'http', 'namebuilder', 'utf8');
-  Util.min_version (20150702.0);
+  Util.min_version (20160522.0);
 
   // 設定ファイルの読み込み
   var default_ini = {
@@ -68,28 +68,39 @@ function () {
 //---------------------- 下請け ----------------------//
 
 
-function getLatestId(user_id, data){
-  data = data || {};
-  var m = new Mutex(Dorothy.userPath + 'latestIds.ini');
-  m.lock();
-  var ini_ids = new Ini(Dorothy.userPath + 'latestIds.ini');
-  data.Illust = ini_ids.read(user_id, 'Illust', 0);
-  data.Novel = ini_ids.read(user_id, 'Novel', 0);
-  data.Bg = ini_ids.read(user_id, 'Bg', 0);
-  data.Profile = ini_ids.read(user_id, 'Profile', 0);
-  m.unlock();
-  return data;
+function synchronizeLatestIds (callback) {
+  var ini = new Ini (Dorothy.userPath + 'latestIds.ini');
+
+  var m = new Mutex ('Dorothy2.pixiv_r');
+  try {
+    m.lock ();
+    callback (ini);
+  }
+  finally {
+    m.unlock ();
+  }
 }
 
-function updateLatestId(user_id, data){
-  var m = new Mutex(Dorothy.userPath + 'latestIds.ini');
-  m.lock();
-  var ini_ids = new Ini(Dorothy.userPath + 'latestIds.ini');
-  for(var key in data){
-    ini_ids.write(user_id, key, data[key]);
-  }
-  ini_ids.update();
-  m.unlock();
+function getLatestId (user_id, data) {
+  var d = data || { };
+
+  synchronizeLatestIds (function (ini) {
+    d.Illust = ini.read (user_id, 'Illust', 0);
+    d.Novel = ini.read (user_id, 'Novel', 0);
+    d.Bg = ini.read (user_id, 'Bg', 0);
+    d.Profile = ini.read (user_id, 'Profile', 0);
+  });
+
+  return d;
+}
+
+function updateLatestId (user_id, data) {
+  synchronizeLatestIds (function (ini) {
+    for (var key in data) {
+      ini.write (user_id, key, data [key]);
+    }
+    ini.update ();
+  });
 }
 
 
