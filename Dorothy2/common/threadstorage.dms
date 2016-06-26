@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ThreadStorage
-//version=20140913.0
+//version=20160626.0
 //hint=new ThreadStorage()
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2014 rentan at rentan.org
+Copyright (C) 2014-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ ThreadStorage.prototype._IniKeyExists = function (sec, key) {
 
 // 内部で使用: Mutex を用いてアトミックにコールバック関数を呼び出す
 ThreadStorage.prototype._sync = function (f) {
-  var mutex = new Mutex (this.iniPath);
+  var mutex = new Mutex ('Dorothy.ThreadStorage');
   try {
     mutex.lock ();
 
