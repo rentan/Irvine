@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20160519.0
+//version=20160626.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
-  Util.min_version (20160519.0);
+  Util.min_version (20160626.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -37,6 +37,11 @@ function (scriptMode) {
       Zen2Han: false,
       PageOrigin: 0,
       SaveHtml: false
+    },
+    M3u8: {
+      ExDownload: true,
+      Ext: '.mp4',
+      Command: '"%BIN%\ffmpeg" -i "%URL%" -c copy -bsf:a aac_adtstoasc "%OUTPUT%"'
     },
     Filename: {
       Photo: 'twitter_%ID%',
@@ -61,6 +66,7 @@ common_load ('getter', 'http', 'utf8');
 // コンストラクタ
 Getter (function Twitter (opt) {
   this._cookie = this._getArg (opt, 'Cookie', null);
+  this._m3u8 = this._getArg (opt, 'M3u8', { ExDownload: false });
 });
 
 
@@ -86,6 +92,20 @@ Twitter.prototype._analyzeVmap = function (vmapUrl) {
 
   this.type = 'Video';
   return this._ok ();
+};
+
+
+// 動画またはプレイリスト
+Twitter.prototype._analyzeVideo = function (url) {
+  var itemData = { Url: url };
+
+  if (/\.m3u8$/i.test (url) && this._m3u8.ExDownload) {
+    itemData.ext = this._m3u8.Ext;
+    itemData.command = this._m3u8.Command;
+  }
+
+  this.type = 'Video';
+  return this._add (itemData);
 };
 
 
@@ -116,8 +136,7 @@ Twitter.prototype._analyzeVideos = function (url) {
 
   var video_url = findUrl ('video_url');
   if (video_url) {
-    this.type = 'Video';
-    return this._add ({ Url: video_url });
+    return this._analyzeVideo (video_url);
   }
 
   var vmap_url = findUrl ('vmap_url');
@@ -482,6 +501,31 @@ Twitter.prototype.buildFilename = function (args) {
 };
 
 
+// public: ダウンロード情報を登録する
+Twitter.prototype.download = function (args) {
+  var item = this.items [0];
+
+  if (!item.hasKey ('command')) {
+    return this._downloadFiles (args);
+  }
+
+  if (this.items.length > 1) {
+    return this._ng ('内部エラー: 複数の外部ダウンロードには対応していません。');
+  }
+
+  // 外部ダウンロード
+  common_load ('exdownload');
+
+  var e = new ExDownload ().download (item, item.command, { URL: item.Url });
+  if (e) {
+    return this._ng (e);
+  }
+
+  Dorothy.removeThis ();
+  return this._ok ();
+};
+
+
 // public: HTML をファイルに保存する
 Twitter.prototype.saveHtml = function (args) {
   if (this._html == null) {
@@ -514,7 +558,7 @@ Twitter.prototype.saveHtml = function (args) {
     definePPZ: ini.General.PageOrigin
   });
 
-  var getter = new Twitter ({ Cookie: ini.Cookie });
+  var getter = new Twitter ({ Cookie: ini.Cookie, M3u8: ini.M3u8 });
 
   if (getter.get (urlinfo.url)) {
     var type = getter.type;
