@@ -49,6 +49,9 @@ exec (app, cmd, dir)
   プログラムを実行して終了コードを返します。実行に失敗した場合は
   例外が発生します。
 
+  app に実行ファイルを指定した場合はパスを検索しません。app に null を指定し、
+  cmd の先頭で実行ファイルを指定するとパスを検索します。
+
 簡易実行モード
 Exec (app, cmd, ...)
   app ... string: プログラムのパス
@@ -70,6 +73,10 @@ Exec (app, cmd, ...)
 
 変更履歴
 ========
+
+2016-06-26  version 20160626.0  rentan at rentan.org
+  CreateProcessA の呼び出し時、実行ファイル名を lpApplicationName で指定する
+  ようにした(従来は lpApplicationName に null を渡していた)。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
