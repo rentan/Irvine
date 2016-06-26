@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20160522.0
+//version=20160626.0
 //hint=utility
 //match=
 //author=rentan
@@ -219,7 +219,7 @@ Util.get_option = function (key) {
 
 
 if (Dorothy.hasKey ('rVersion')) {
-  if (Dorothy.rVersion < 20160519) {
+  if (Dorothy.rVersion < 20160626) {
     Util.fatal ("Dorothy2R のバージョンが古すぎます。\n最新版を使用して下さい。");
   }
 }
@@ -271,20 +271,21 @@ Dorothy.setRequiredCommonVersion ({
   'getter\chklistbox': 20150721.0,
   'getter\getterasync': 20151204.0,
   'getter\lastmodified': 20160411.0,
-  'getter\redir': 20160223.0,
+  'getter\redir': 20160610.0,
 
   actibook: 20140331.0,
   additem: 20160411.0,
   browsercookie: 20160224.0,
   dmon: 20160223.0,
-  exec: 20140331.0,
-  getter: 20160521.0,
+  exec: 20160626.0,
+  exdownload: 20160626.0,
+  getter: 20160522.0,
   htmlform: 20160213.0,
   http: 20150425.0,
   jinput: 20160221.0,
-  namebuilder: 20150531.0,
+  namebuilder: 20160521.0,
   sleeptimer: 20151204.0,
-  threadstorage: 20140913.0,
+  threadstorage: 20160626.0,
   utf8: 20140811.0,
   utf8_charref: 20140811.0,
   yasmine: 20160327.0

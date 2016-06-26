@@ -1,0 +1,137 @@
+//Dorothy2
+//caption=ExDownload
+//version=20160626.0
+//hint=
+//match=
+//author=rentan
+//path=common
+//end
+
+/*
+Copyright (C) 2016 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+common_load ('rutil', 'exec');
+
+
+// コンストラクタ
+void function ExDownload () {
+};
+
+
+// エラー文字列を返す
+ExDownload.prototype._e = function (s) {
+  return nameOf (this) + ': ' + s;
+};
+
+
+// public: 出力ファイル名を生成する
+ExDownload.prototype.makeOutputFilename = function (itemData) {
+  var ext = itemData.hasKey ('ext') ? itemData.ext : '';
+
+  var folder = itemData.hasKey ('Folder') ? new Directory (itemData.Folder).path
+                                          : Dorothy.getSaveFolder ();
+
+  return new File (folder + 'exdl_temp' + ext);
+};
+
+
+// public: コマンド文字列を生成する
+ExDownload.prototype.makeCommandline = function (cmd, vars, outpath) {
+  var vars2 = {
+    BIN: Dorothy.path + 'bin',
+    OUTPUT: outpath,
+    '': '%'
+  };
+
+  return cmd.replace (/%([^%]*)%/g, function (s, k) {
+    return vars.hasKey (k) ? vars [k] : vars2.hasKey (k) ? vars2 [k] : s;
+  });
+};
+
+
+// 出力ファイルを保存ファイル名にリネームする
+ExDownload.prototype._rename = function (itemData, output) {
+  if (!output.exists ()) {
+    throw '出力ファイルが存在しません: ' + output.path;
+  }
+
+  if (!itemData.hasKey ('Filename')) {
+    throw 'Filename が指定されていません。';
+  }
+
+  var f = new File (output.extractPath () + itemData.Filename);
+  try {
+    output.renameTo (f.path);
+    return;
+  }
+  catch (e) { }
+
+  // Filename は上限まで長い可能性があるので諦めて
+  // 出力ファイル名に [0]... をつけてごまかす。
+  for (var i = 0; i < 100; ++i) {
+    try {
+      output.renameTo (output.changeExt ('') + '[' + i + ']' + output.extractExt ());
+      return;
+    }
+    catch (e) { }
+  }
+
+  throw 'リネームに失敗しました: ' + output.path;
+};
+
+
+// public: ダウンロード実行
+ExDownload.prototype.download = function (itemData, cmd, vars) {
+  var exec = new Exec ();
+  exec.wShowWindow = exec.SW_SHOW;
+
+  var output = this.makeOutputFilename (itemData);
+
+  var mutex = new Mutex ('Dorothy2.ExDownload');
+  try {
+    var c = this.makeCommandline (cmd, vars, output.path);
+
+    mutex.lock ();
+
+    if (output.exists ()) {
+      throw '出力ファイルが既に存在しています: ' + output.path;
+    }
+
+    var r = exec.exec (null, c, Dorothy.temp);
+    if (r) {
+      throw '実行エラー: exitcode=' + r;
+    }
+
+    this._rename (itemData, output);
+  }
+  catch (e) {
+    return this._e (e);
+  }
+  finally {
+    mutex.unlock ();
+  }
+
+  return null;
+};
+
+
+}) ()
+
+
+// EOF

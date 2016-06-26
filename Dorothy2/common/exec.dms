@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Exec
-//version=20140331.0
+//version=20160626.0
 //hint=new Exec()
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2012-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -31,11 +31,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 void function Exec () {
   if (nameOf (this) != 'Exec') {
     // ä»à’é¿çsÉÇÅ[Éh
-    var ex = new Exec ();
-    var cmd = arguments.slice (1).join (' ');
+    var cmd = '"' + arguments [0] + '" ' + arguments.slice (1).join (' ');
 
     try {
-      return ex.exec (arguments [0], cmd, Dorothy.temp);
+      return new Exec ().exec (null, cmd, Dorothy.temp);
     }
     catch (e) {
       return -1;
@@ -140,10 +139,9 @@ Exec.prototype.exec = function (app, cmd, dir) {
   var exitcode = new Struct ('code:l');
   var e;
 
-  this._p (app + ' ' + cmd);
+  this._p ((app ? app + ' ' : '') + cmd);
 
-  var r = dll.CreateProcessA (null, '"' + app + '" ' + cmd,
-    null, null, false, this.dwCreationFlags, null, dir, si, pi);
+  var r = dll.CreateProcessA (app, cmd, null, null, false, this.dwCreationFlags, null, dir, si, pi);
   if (r == 0) {
     this._p (e = 'CreateProcessA error');
     throw e;
