@@ -16,8 +16,13 @@ Exec オブジェクトのメソッド
 ===========================
 
 コンストラクタ
-new ExDownload ()
+new ExDownload (opt)
+  opt ... object: オプション(省略可)
   戻り値 ... ExDownload インスタンス
+
+  opt オブジェクトで動作を指定することが出来る。
+    ShowWindow ... boolean
+      ウィンドウを表示する。
 
   ExDownload インスタンスを作成して返す。
 
@@ -30,6 +35,9 @@ new ExDownload ()
 
 変更履歴
 ========
+
+2016-06-27  version 20160627.0  rentan at rentan.org
+  ShowWindow 設定を追加。
 
 2016-06-26  version 20160626.0  rentan at rentan.org
   新規作成。
