@@ -33,6 +33,9 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2016-06-27  version 20160627.0  rentan at rentan.org
+  外部ダウンロードの ShowWindow 設定を追加。
+
 2016-06-26  version 20160626.0  rentan at rentan.org
   .m3u8 ファイルの外部ダウンロードに対応。
 
