@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ExDownload
-//version=20160626.0
+//version=20160627.0
 //hint=
 //match=
 //author=rentan
@@ -30,7 +30,8 @@ common_load ('rutil', 'exec');
 
 
 // コンストラクタ
-void function ExDownload () {
+void function ExDownload (opt) {
+  this._showWindow = (opt && opt.hasKey ('ShowWindow')) ? opt.ShowWindow : true;
 };
 
 
@@ -99,7 +100,7 @@ ExDownload.prototype._rename = function (itemData, output) {
 // public: ダウンロード実行
 ExDownload.prototype.download = function (itemData, cmd, vars) {
   var exec = new Exec ();
-  exec.wShowWindow = exec.SW_SHOW;
+  exec.wShowWindow = this._showWindow ? exec.SW_SHOW : exec.SW_HIDE;
 
   var output = this.makeOutputFilename (itemData);
 
