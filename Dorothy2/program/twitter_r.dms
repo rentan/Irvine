@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20160626.0
+//version=20160627.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -40,6 +40,7 @@ function (scriptMode) {
     },
     M3u8: {
       ExDownload: true,
+      ShowWindow: true,
       Ext: '.mp4',
       Command: '"%BIN%\ffmpeg" -i "%URL%" -c copy -bsf:a aac_adtstoasc "%OUTPUT%"'
     },
@@ -99,9 +100,12 @@ Twitter.prototype._analyzeVmap = function (vmapUrl) {
 Twitter.prototype._analyzeVideo = function (url) {
   var itemData = { Url: url };
 
-  if (/\.m3u8$/i.test (url) && this._m3u8.ExDownload) {
-    itemData.ext = this._m3u8.Ext;
-    itemData.command = this._m3u8.Command;
+  var conf = this._m3u8;
+
+  if (/\.m3u8$/i.test (url) && conf.ExDownload) {
+    itemData.ext = conf.Ext;
+    itemData.command = conf.Command;
+    itemData.showwindow = conf.ShowWindow;
   }
 
   this.type = 'Video';
@@ -516,7 +520,9 @@ Twitter.prototype.download = function (args) {
   // 外部ダウンロード
   common_load ('exdownload');
 
-  var e = new ExDownload ().download (item, item.command, { URL: item.Url });
+  var exdl = new ExDownload ({ ShowWindow: item.showwindow });
+
+  var e = exdl.download (item, item.command, { URL: item.Url });
   if (e) {
     return this._ng (e);
   }

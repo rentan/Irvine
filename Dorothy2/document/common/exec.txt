@@ -74,6 +74,9 @@ Exec (app, cmd, ...)
 変更履歴
 ========
 
+2016-06-27  version 20160627.0  rentan at rentan.org
+  CreateProcessA、GetExitCodeProcess のエラーコードを表示するようにした。
+
 2016-06-26  version 20160626.0  rentan at rentan.org
   CreateProcessA の呼び出し時、実行ファイル名を lpApplicationName で指定する
   ようにした(従来は lpApplicationName に null を渡していた)。

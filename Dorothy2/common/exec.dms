@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Exec
-//version=20160626.0
+//version=20160627.0
 //hint=new Exec()
 //match=
 //author=rentan
@@ -71,6 +71,7 @@ Exec.prototype._dll = (function () {
   d.register ('kernel32.dll', 'CloseHandle', 'f=s', 'i=h', 'r=l');
   d.register ('kernel32.dll', 'WaitForSingleObject', 'f=s', 'i=hl', 'r=l');
   d.register ('kernel32.dll', 'GetExitCodeProcess', 'f=s', 'i=hs', 'r=b');
+  d.register ('kernel32.dll', 'GetLastError', 'f=s', 'r=l');
 
   return d;
 }) ();
@@ -137,14 +138,17 @@ Exec.prototype.exec = function (app, cmd, dir) {
   var si = this._createStartupInfo ();
   var pi = this._createProcessInfo ();
   var exitcode = new Struct ('code:l');
-  var e;
+
+  function err (s) {
+    this._p (s);
+    throw s;
+  }
 
   this._p ((app ? app + ' ' : '') + cmd);
 
   var r = dll.CreateProcessA (app, cmd, null, null, false, this.dwCreationFlags, null, dir, si, pi);
   if (r == 0) {
-    this._p (e = 'CreateProcessA error');
-    throw e;
+    err ('CreateProcessA error: ' + dll.GetLastError ());
   }
 
   try {
@@ -152,13 +156,11 @@ Exec.prototype.exec = function (app, cmd, dir) {
 
     var WAIT_OBJECT_0 = 0;
     if (r != WAIT_OBJECT_0) {
-      this._p (e = this._waitToString (r));
-      throw e;
+      err (this._waitToString (r));
     }
 
     if (dll.GetExitCodeProcess (pi.hProcess, exitcode) == 0) {
-      this._p (e = 'GetExitCodeProcess error');
-      throw e;
+      err ('GetExitCodeProcess error: ' + dll.GetLastError ());
     }
   }
   finally {
