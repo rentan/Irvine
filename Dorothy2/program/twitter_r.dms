@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20160627.0
+//version=20160628.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -42,7 +42,7 @@ function (scriptMode) {
       ExDownload: true,
       ShowWindow: true,
       Ext: '.mp4',
-      Command: '"%BIN%\ffmpeg" -i "%URL%" -c copy -bsf:a aac_adtstoasc "%OUTPUT%"'
+      Command: '"%BIN%\ffmpeg" -i "%URL%" -c copy -map 0:4 -map 0:5 -bsf:a aac_adtstoasc "%OUTPUT%"'
     },
     Filename: {
       Photo: 'twitter_%ID%',
