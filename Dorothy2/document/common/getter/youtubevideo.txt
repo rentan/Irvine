@@ -1,0 +1,14 @@
+common\getter\youtubevideo.dms
+
+
+YouTube の動画情報を取得します。
+
+
+変更履歴
+========
+
+2016-07-04  version 20160704.0  rentan at rentan.org
+  新規作成。
+
+
+[EOF]
