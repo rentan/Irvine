@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20160626.0
+//version=20160704.0
 //hint=utility
 //match=
 //author=rentan
@@ -272,6 +272,7 @@ Dorothy.setRequiredCommonVersion ({
   'getter\getterasync': 20151204.0,
   'getter\lastmodified': 20160411.0,
   'getter\redir': 20160610.0,
+  'getter\youtubevideo': 20160704.0,
 
   actibook: 20140331.0,
   additem: 20160411.0,
