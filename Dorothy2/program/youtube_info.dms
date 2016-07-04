@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=YouTube/ìÆâÊèÓïÒ
-//version=20160224.0
+//version=20160704.0
 //hint=
 //match=^https?://www\.youtube\.com/(watch\?v=|v/|embed/).
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'browsercookie', 'http', 'namebuilder', 'utf8');
-  Util.min_version (20160208.0);
+  Util.min_version (20160626.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -94,15 +94,12 @@ YouTubeSig.prototype._findDecryptFuncBody = function (js) {
   var funcName = this._findDecryptFuncName (js);
   var escaped = funcName.replace (/\$/g, '\\$');
 
-  function findBody (head, src) {
-    var n = js.slice (js.indexOf (head));
-    var t = (n > 0) ? js.slice (n) : js;
+  var n = js.indexOf (funcName + '=function(');
+  var t = (n > 10) ? js.slice (n - 10) : js;
 
-    var re = new RegExp (src + '\s*\([^)]+\)\s*\{([^}]*)\}');
-    return re.test (t) ? re.$1 : null;
-  }
+  var re = new RegExp (';\s*' + escaped + '=function\([^)]+\)\s*\{([^}]*)\}');
 
-  var body = findBody (',' + funcName + '=function(', ',' + escaped + '=function');
+  var body = re.test (t) ? re.$1 : null;
 
   if (body) {
     return body.trim ();
@@ -1110,7 +1107,7 @@ YouTubeVideo.prototype.getFileSize = function (fmt, sep) {
 
 // public: ä˘ímÇÃ itag ÇÃàÍóó
 YouTubeVideo.prototype.knownItags = [
-  313,308,303,302,
+  315,313,308,303,302,
   299,298,278,272,271,266,264,251,250,249,248,247,246,245,244,243,242,
   172,171,160,141,140,139,138,137,136,135,134,133,102,101,100,
   85,84,83,82,78,59,46,45,44,43,38,37,36,35,34,22,18,17,13,5
