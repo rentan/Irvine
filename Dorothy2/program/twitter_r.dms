@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20160627.0
+//version=20160704.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -39,10 +39,11 @@ function (scriptMode) {
       SaveHtml: false
     },
     M3u8: {
+      Experiment: false,
       ExDownload: true,
       ShowWindow: true,
       Ext: '.mp4',
-      Command: '"%BIN%\ffmpeg" -i "%URL%" -c copy -bsf:a aac_adtstoasc "%OUTPUT%"'
+      Command: '"%BIN%\ffmpeg" -i "%URL%" -c copy -map 0:4 -map 0:5 -bsf:a aac_adtstoasc "%OUTPUT%"'
     },
     Filename: {
       Photo: 'twitter_%ID%',
@@ -55,6 +56,7 @@ function (scriptMode) {
 
   if (Dorothy.userName == 'rentan') {
     defaultIni.Cookie.Browser = 'Firefox';
+    defaultIni.M3u8.Experiment = true;
   }
 
 
@@ -68,6 +70,9 @@ common_load ('getter', 'http', 'utf8');
 Getter (function Twitter (opt) {
   this._cookie = this._getArg (opt, 'Cookie', null);
   this._m3u8 = this._getArg (opt, 'M3u8', { ExDownload: false });
+},
+{
+  _CHROME_UA: 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
 });
 
 
@@ -96,20 +101,77 @@ Twitter.prototype._analyzeVmap = function (vmapUrl) {
 };
 
 
+// プレイリストの代わりにモバイルページの動画をダウンロードする
+Twitter.prototype._analyzeMobileVideo = function (twitter_id, id) {
+  var url = 'https://mobile.twitter.com/' + this.twitter_id + '/status/' + this.id;
+
+  var http = this.http = new Http ({ gunzip: true });
+
+  http.setRequestHeader ('User-Agent', this._CHROME_UA);
+  http.setRequestHeader ('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8');
+  http.setRequestHeader ('Accept-Encoding', 'gzip, deflate');
+  http.setRequestHeader ('Accept-Language', 'ja,en-US;q=0.8,en;q=0.6');
+  http.setRequestHeader ('Upgrade-Insecure-Requests', '1');
+
+  if (!http.get (url)) {
+    if (http.code === 301 && http.location === ('/' + this.twitter_id)) {
+      return this._ng ('非公開設定アカウントには対応していません。');
+    }
+
+    return this._httpError ();
+  }
+
+  function extractInitData (html) {
+    var tag = '<script type="application/json" id="init-data">';
+
+    var a = html.indexOf (tag);
+    if (a == -1) {
+      return this._unknown ('init-data が見つかりません(非公開設定アカウントには対応していません)。');
+    }
+    var s = html.slice (a + tag.length);
+
+    return s.slice (0, s.indexOf ('<'));
+  }
+
+  var s = extractInitData (http.data);
+  if (!s) {
+    if (!http.get (url)) {
+      return this._httpError ();
+    }
+
+    s = extractInitData (http.data);
+    if (!s) {
+      return false;
+    }
+  }
+
+  if (!/"videoUrl":"([^"]+)"/.test (s)) {
+    return this._unknown ('videoUrl が見つかりません。');
+  }
+  var videoUrl = RegExp.$1.replace (/\\/g, '');
+
+  this.type = 'Video';
+  return this._add ({ Url: videoUrl });
+};
+
+
 // 動画またはプレイリスト
 Twitter.prototype._analyzeVideo = function (url) {
-  var itemData = { Url: url };
+  if (/\.m3u8$/i.test (url)) {
+    var m = this._m3u8;
 
-  var conf = this._m3u8;
+    if (m.Experiment) {
+      return this._analyzeMobileVideo (this.twitter_id, this.id);
+    }
 
-  if (/\.m3u8$/i.test (url) && conf.ExDownload) {
-    itemData.ext = conf.Ext;
-    itemData.command = conf.Command;
-    itemData.showwindow = conf.ShowWindow;
+    if (m.ExDownload) {
+      this.type = 'Video';
+      return this._add ({ Url: url, ext: m.Ext, command: m.Command, showwindow: m.ShowWindow });
+    }
   }
 
   this.type = 'Video';
-  return this._add (itemData);
+  return this._add ({ Url: url });
 };
 
 

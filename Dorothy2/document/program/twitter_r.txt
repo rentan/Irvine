@@ -33,6 +33,12 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2016-07-04  version 20160704.0  rentan at rentan.org
+  実験機能追加。
+
+2016-06-28  version 20160628.0  rentan at rentan.org
+  ffmpeg のオプションに -map 0:4 -map 0:5 を追加。
+
 2016-06-27  version 20160627.0  rentan at rentan.org
   外部ダウンロードの ShowWindow 設定を追加。
 
