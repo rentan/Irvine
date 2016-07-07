@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=SettingForm
-//version=20160626.0
+//version=20160708.0
 //hint=
 //match=
 //author=rentan
@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Dorothy2R 設定用フォーム
 var SettingForm = new VCLForm ();
 
-SettingForm.R_VERSION = 20160626;
+SettingForm.R_VERSION = 20160708;
 SettingForm.DEFAULT_DUMMY_URL = 'http://www.google.com/favicon.ico';
 
 
@@ -64,11 +64,6 @@ SettingForm.initDorothy = function (ev) {
       exit ();
     }
   }) ();
-
-  // 基本フォルダ設定
-  Dorothy.path = WScript.Path + 'Dorothy2\';
-  Dorothy.temp = Dorothy.path + 'temp\';
-  Dorothy.programDir = Dorothy.path + 'program\';
 
   // Dorothy オブジェクト初期化
   Dorothy.init ({ version: 'xxxx', eval: ev });
@@ -338,7 +333,8 @@ SettingForm.loadSettingIni = function () {
     return ini.read ('user', key, '');
   }
 
-  Dorothy.temp = usr ('temp') || Dorothy.temp;
+  var t = usr ('temp');
+  t && Dorothy.changeTempDir (t);
 
   // system\menu\～.dms で USER_NAME が使われている
   USER_NAME = Dorothy.userName = usr ('name');
@@ -1032,7 +1028,7 @@ SettingForm._saveDorothy2rIniDms = function () {
   add ('rVersion', Dorothy.rVersion);
 
   add ('path', "WScript.Path + 'Dorothy2\\'");
-  if (Dorothy.temp == Dorothy.path + 'temp\') {
+  if (Dorothy.temp === Dorothy.defaultTemp) {
     add ('temp', "Dorothy.path + 'temp\\'");
   }
   else {

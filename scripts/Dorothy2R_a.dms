@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={115F43E2-884F-4B64-A854-D91568694635}
 caption=Dorothy2R OnHttpRequest
-version=20160626
+version=20160708
 hint=Dorothy2R OnHttpRequest
 event=OnHttpRequest
 match=
@@ -211,6 +211,11 @@ Dorothy = {
   common: { }
 };
 
+// 標準パス
+Dorothy.path = WScript.Path + 'Dorothy2\';
+Dorothy.temp = Dorothy.defaultTemp = Dorothy.path + 'temp\';
+Dorothy.programDir = Dorothy.path + 'program\';
+
 
 // エラー終了
 Dorothy.error = function (s) {
@@ -350,17 +355,36 @@ Dorothy.validateCommon = function (name, src) {
 };
 
 
+// temp フォルダを作成する
+Dorothy._createTempDir = function (dir) {
+  try {
+    new Directory (dir).make ();
+  }
+  catch (e) {
+    return e + ">tempフォルダの作成に失敗しました。\n\n" + dir;
+  }
+  return null;
+};
+
+
+// Dorothy.tmep を変更する
+Dorothy.changeTempDir = function (dir) {
+  var e = Dorothy._createTempDir (dir);
+  if (e) {
+    alert (e);
+  }
+  else {
+    Dorothy.temp = dir;
+  }
+};
+
+
 // (Dorothy2R 拡張) スレッドごとのデータ保存
 Dorothy.getThreadStorage = function () {
   if (!Dorothy.hasKey ('_threadStorage')) {
     common_load ('threadstorage');
 
-    // テンポラリディレクトリを作成
-    var tmpdir = new Directory (Dorothy.temp);
-    tmpdir.exists () || tmpdir.make ();
-
-    var ini = Dorothy.temp + 'thread_storage.ini';
-    Dorothy._threadStorage = new ThreadStorage (ini);
+    Dorothy._threadStorage = new ThreadStorage (Dorothy.temp + 'thread_storage.ini');
   }
 
   return Dorothy._threadStorage;
@@ -566,6 +590,9 @@ Dorothy.init = function (o) {
 
   // 不要になったプロパティを削除
   Dorothy.removeKey ('init');
+
+  var e = Dorothy._createTempDir (Dorothy.temp);
+  e && Dorothy.fatal (e);
 };
 
 
@@ -748,11 +775,7 @@ function OnHttpRequest (urlinfo, headers, item, folderdata, optiondata) {
     }
 
     // URL に対応するプログラムが見つかった
-
-    // 初回のみ、temp フォルダをカスタマイズしている場合は表示する
-    if (_.matchCount++ == 0 && Dorothy.temp != (Dorothy.path + 'temp\')) {
-      println ('Dorothy.temp = ' + Dorothy.temp);
-    }
+    ++_.matchCount;
 
     // .dms を読み込む
     Dorothy.loadProgram (Dorothy.matchFile);
