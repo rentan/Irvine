@@ -8,6 +8,9 @@ DOA からは使用できません。
 変更履歴
 ========
 
+2016-07-08  version 20160708.0  rentan at rentan.org
+  erq.io yko.io に対応。
+
 2016-06-10  version 20160610.0  rentan at rentan.org
   sh.st に対応。
 

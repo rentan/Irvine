@@ -75,6 +75,9 @@ Dorothy.getFinalName (itemData)
 変更履歴
 ========
 
+2016-07-08  verison 20160708.0  rentan at rentan.org
+  rutil.dms: Dorothy2R、各種 common の最低バージョンを更新。
+
 2016-07-04  verison 20160704.0  rentan at rentan.org
   rutil.dms: 各種 common の最低バージョンを更新。
 
