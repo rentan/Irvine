@@ -16,7 +16,7 @@ Dorothy2R に関する問い合わせを、Dorothy2 の作者である xor さ�
 動作環境
 ========
 
-Windows Vista/7/8/8.1
+Windows Vista/7/8.1/10
 Irvine 1.3.1
 Dorothy2 最新版
 
@@ -191,14 +191,27 @@ Dorothy.loadProgram ()
 Dorothy.validateCommon ()
 Dorothy.init ()
 Dorothy.loadDorothyIni ();
+Dorothy.defaultTemp
+Dorothy.changeTempDir ()
 
 
 変更履歴
 ========
 
-2016-06-26  version 20160626.0  rentan at rentan.org
+2016-07-08  version 20160708.0  rentan at rentan.org
 
 ※「Dorothy2R 設定」で上書き保存して下さい。
+
+scripts\Dorothy2R_a.dms
+  Dorothy.defaultTemp, .changeTempDir() を追加。
+  起動時に Dorothy.temp フォルダを作成するようにした。
+
+Dorothy2R\system\settingform.dms
+Dorothy2R\system\menu\set\usersetting.dms
+  上記変更に対応。
+
+
+2016-06-26  version 20160626.0  rentan at rentan.org
 
 scripts\Dorothy2R_a.dms
 Dorothy2R\system\settingform.dms
