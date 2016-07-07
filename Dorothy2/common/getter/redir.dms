@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Redir
-//version=20160610.0
+//version=20160708.0
 //hint=
 //match=
 //author=rentan
@@ -115,6 +115,7 @@ RedirLinkbucks.prototype.supportedUrl = (function () {
     'drstickyfingers.com',
     'dyo.gs',
     'eafyfsuh.net',
+    'erq.io',
     'fapoff.com',
     'filesonthe.net',
     'freean.us',
@@ -156,6 +157,7 @@ RedirLinkbucks.prototype.supportedUrl = (function () {
     'urlbeat.net',
     'urlpulse.net',
     'whackyvidz.com',
+    'yko.io',
     'youfap.me',
     'yyv.co',
     'zatnawqy.net',
