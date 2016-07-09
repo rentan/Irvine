@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20160704.0
+//version=20160710.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
-  Util.min_version (20160626.0);
+  Util.min_version (20160708.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -42,8 +42,9 @@ function (scriptMode) {
       Experiment: false,
       ExDownload: true,
       ShowWindow: true,
+      FfmpegWorkAround: true,
       Ext: '.mp4',
-      Command: '"%BIN%\ffmpeg" -i "%URL%" -c copy -map 0:4 -map 0:5 -bsf:a aac_adtstoasc "%OUTPUT%"'
+      Command: '"%BIN%\ffmpeg" -i "%URL%" -c copy -bsf:a aac_adtstoasc "%OUTPUT%"'
     },
     Filename: {
       Photo: 'twitter_%ID%',
@@ -155,6 +156,27 @@ Twitter.prototype._analyzeMobileVideo = function (twitter_id, id) {
 };
 
 
+// プレイリストの最後のデータを返す
+Twitter.prototype._getLastPlayList = function (url) {
+  var http = this.http = new Http ();
+
+  if (!http.get (url)) {
+    return this._httpError ();
+  }
+
+  var sl = new Strings ();
+  sl.text = http.data;
+
+  var last = sl.length ? sl [sl.length - 1] : '';
+
+  if (/^\/ext_tw_video\/./.test (last)) {
+    return http.expandUrl (last);
+  }
+
+  return this._ng ('未対応のプレイリスト形式です。');
+};
+
+
 // 動画またはプレイリスト
 Twitter.prototype._analyzeVideo = function (url) {
   if (/\.m3u8$/i.test (url)) {
@@ -163,10 +185,14 @@ Twitter.prototype._analyzeVideo = function (url) {
     if (m.Experiment) {
       return this._analyzeMobileVideo (this.twitter_id, this.id);
     }
-
     if (m.ExDownload) {
+      var pl = m.FfmpegWorkAround ? this._getLastPlayList (url) : url;
+      if (!pl) {
+        return false;
+      }
+
       this.type = 'Video';
-      return this._add ({ Url: url, ext: m.Ext, command: m.Command, showwindow: m.ShowWindow });
+      return this._add ({ Url: pl, ext: m.Ext, command: m.Command, showwindow: m.ShowWindow });
     }
   }
 
