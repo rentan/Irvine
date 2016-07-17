@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ActiBook 汎用
-//version=20140507.0
+//version=20160718.0
 //hint=_SWF_Window.html
 //match=^https?://[^/]+/[^?#]+/_SWF_Window\.html
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2012,2013,2014 rentan at rentan.org
+Copyright (C) 2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,39 +28,47 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 function () {
 
-  common_load ('rutil', 'actibook', 'additem', 'namebuilder');
+  common_load ('rutil', 'additem', 'getter\actibook', 'namebuilder');
+  Util.min_version (20160708.0);
 
-  // 設定ファイルの読み込み
-  var default_ini = {
+  var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
     General: {
       Zen2Han: true,
       PageOrigin: 1
     },
     Filename: {
-      Book:  '%NAME% p%PZ%'
+      Book:  '[[md=%NAME%]]%P%'
     }
   };
-  var ini = Util.ini_load (default_ini);
 
 
 //------------------------------- メイン処理 -------------------------------
 
 
+  var ini = Util.ini_load (defaultIni);
+
   var url = urlinfo.url.replace (/\/_SWF_Window\.html.*$/, '/');
 
-  var book = new ActiBook ();
-  book.nameBuilder = new NameBuilder ({ zen2han: ini.General.Zen2Han });
-  book.nameFormat = ini.Filename ['Book'];
-  book.pageOrigin = ini.General.PageOrigin;
+  var getter = new ActiBook ({ BookImageOnly: true });
 
-  var r = book.get (url);
-  if (r != book.OK) {
-    return book.end (r);
+  if (getter.get (url)) {
+    var nb = new NameBuilder ({
+      zen2han: ini.General.Zen2Han,
+      definePPZ: ini.General.PageOrigin
+    });
+
+    getter.buildFilename ({
+      NameBuilder: nb,
+      Format: ini.Filename.Book
+    });
+
+    getter.download ({
+      AddItem: new AddItem (ini.AddItem)
+    });
   }
 
-  (new AddItem (ini.AddItem)).send (book.list) || exit ();
-  Util.remove_this ();
+  getter.end ();
 }
 
 
