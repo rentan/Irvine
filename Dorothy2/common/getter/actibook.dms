@@ -1,0 +1,558 @@
+//Dorothy2
+//caption=ActiBook
+//version=20160718.0
+//hint=
+//match=
+//author=rentan
+//path=common\getter
+//end
+
+/*
+Copyright (C) 2016 rentan at rentan.org
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+(function () {
+
+//-------------------------------- ActiBook --------------------------------
+
+common_load ('getter', 'http', 'utf8');
+
+
+// コンストラクタ
+Getter (function ActiBook (opt) {
+  this._bookImageOnly = this._getArg (opt, 'BookImageOnly', false);
+  this._cookieData = this._getArg (opt, 'CookieData', { host: '', value: '' });
+  this._urlSuffix = this._getArg (opt, 'UrlSuffix', '');
+});
+
+
+ActiBook.prototype._newHttp = function (url) {
+  var h = this.http = new Http ();
+
+  var c = this._cookieData;
+  if (c.host === new URL (url).hostname) {
+    h.setRequestHeader ('Cookie', c.value);
+  }
+
+  return h;
+};
+
+
+// XML 解析データを格納するオブジェクトを作る
+ActiBook.prototype._createBxObject = function (url, obj) {
+  var o = {
+    book: false,
+    iPhone: false,
+    iPad: false,
+    baseUrl: url
+  };
+
+  for (var key in obj) {
+    o [key] = obj [key];
+  }
+
+  return o;
+};
+
+
+// 最大 <PageSize> の zoom を返す
+ActiBook.prototype._getLargestZoom = function (bx) {
+  var sizes = [ ].concat (bx.sizes).sort (function (a, b) { return a.h - b.h; });
+
+  return sizes [sizes.length - 1].zoom;
+};
+
+
+// 画像のURL一覧を作成する
+ActiBook.prototype._makeImageList = function (bx, zoom) {
+  var path = bx.imagePath + '/' + zoom + '/';
+  var head = bx.baseUrl + path;
+  var ext = '.' + bx.type;
+  var tail = ext + this._urlSuffix;
+
+  var pages = bx.total;
+  var list = new Array (pages);
+
+  var c = this._cookieData.value;
+  if (c) {
+    for (var p = 0; p < pages; ++p) {
+      list [p] = { Url: head + (p + 1) + tail, path: path, ext: ext, Cookie: c };
+    }
+  }
+  else {
+    for (var p = 0; p < pages; ++p) {
+      list [p] = { Url: head + (p + 1) + tail, path: path, ext: ext };
+    }
+  }
+
+  return list;
+};
+
+
+// ズーム用画像の x1y1.jpg～x*y*.jpg の一覧を作成する
+ActiBook.prototype._makeZoomImageXY = function (bx, divCount) {
+  var list = [ ];
+
+  var yDiv = divCount.y;
+  var ext = '.' + bx.type;
+  var tail = ext + this._urlSuffix;
+
+  for (var x = 1; x <= divCount.x; ++x) {
+    var head = '/x' + x + 'y';
+
+    for (var y = 1; y <= yDiv; ++y) {
+      list.push (head + y + tail);
+    }
+  }
+
+  return list;
+};
+
+
+// ズーム用画像のURL一覧を作成する
+ActiBook.prototype._makeZoomImageList = function (bx, divCount) {
+  var path = bx.imagePath + '/' + divCount.zoom + '/g_';
+  var head = bx.baseUrl + path;
+  var ext = '.' + bx.type;
+
+  var xyList = this._makeZoomImageXY (bx, divCount);
+  var xyCount = xyList.length;
+
+  var pages = bx.total;
+  var list = new Array (pages * xyList.length);
+
+  var i = 0;
+  var c = this._cookieData.value;
+  if (c) {
+    for (var p = 1; p <= pages; ++p) {
+      var path2 = path + p;
+      var head2 = head + p;
+
+      for (var z = 0; z < xyCount; ++z) {
+        list [i++] = { Url: head + p + xyList [z], path: path2, ext: ext, Cookie: c };
+      }
+    }
+  }
+  else {
+    for (var p = 1; p <= pages; ++p) {
+      var path2 = path + p;
+      var head2 = head + p;
+
+      for (var z = 0; z < xyCount; ++z) {
+        list [i++] = { Url: head + p + xyList [z], path: path2, ext: ext };
+      }
+    }
+  }
+
+  return list;
+};
+
+
+// book/db/book.xml <book><pages><page><type>
+ActiBook.prototype._extractType = function (xml) {
+  if (!/<page>(.*?)<\/page>/.test (xml)) {
+    return this._ng ('<page> が見つかりません。');
+  }
+
+  if (!/<type>([^<]+)<\/type>/.test (RegExp.$1)) {
+    return this._ng ('<type> が見つかりません。');
+  }
+
+  return RegExp.$1;
+};
+
+
+// books/db/book.xml <book><PageSizes><PageSize>
+ActiBook.prototype._extractPageSizes = function (xml) {
+  if (!/<PageSizes>(.*?)<\/PageSizes>/.test (xml)) {
+    return this._ng ('<PageSizes> が見つかりません。');
+  }
+  var pagesizes = RegExp.$1;
+
+  var ps = [ ];
+
+  var re = /<PageSize\s+zoom="([\d.]+)"\s+w="([\d.]+)"\s+h="([\d.]+)"\s*\/>/g;
+  pagesizes.replace (re, function (s, zoom, w, h) {
+    ps.push ({ zoom: zoom, w: parseFloat (w), h: parseFloat (h) });
+    return '';
+  });
+
+  for (var i = 0; i < ps.length; ++i) {
+    var o = ps [i];
+    this._p ('zoom=' + o.zoom + ', w=' + o.w + ', h=' + o.h);
+  }
+
+  if (ps.length === 0) {
+    return this._ng ('<PageSize> が見つかりません。');
+  }
+
+  return ps;
+};
+
+
+// <name> と <total> を抽出する
+ActiBook.prototype._extractNameAndTotal = function (bx, xml) {
+  if (!/<name>\s*(.*?)\s*<\/name>/.test (xml)) {
+    return this._ng ('<name> が見つかりません。');
+  }
+  bx.name = (new Utf8 (RegExp.$1)).decodeCharRef ().toUTF8 ();
+
+  if (!/<total>(\d+)<\/total>/.test (xml)) {
+    return this._ng ('<total> が見つかりません。');
+  }
+  var total = bx.total = parseInt (RegExp.$1);
+  if (total < 1 || 999 < total) {
+    return this._ng ('<total> が対応範囲外の値です。');
+  }
+
+  return this._ok ();
+};
+
+
+// books/db/book.xml
+ActiBook.prototype._analyzeBookXml = function (url) {
+  var bx = this._createBxObject (url, {
+    book: true,
+    xmlPath: 'books/db',
+    xmlUrl: url + 'books/db/book.xml' + this._urlSuffix,
+    imagePath: 'books/images'
+  });
+
+  var http = this._newHttp (url);
+  if (!http.get (bx.xmlUrl)) {
+    return this._httpError ();
+  }
+  var xml = http.data;
+
+  if (!this._extractNameAndTotal (bx, xml)) {
+    return false;
+  }
+  this.name = bx.name;
+
+  bx.sizes = this._extractPageSizes (xml);
+  if (!bx.sizes) {
+    return false;
+  }
+
+  bx.type = this._extractType (xml);
+  if (!bx.type) {
+    return false;
+  }
+
+  return bx;
+};
+
+
+// XML ファイルを追加する
+ActiBook.prototype._addXml = function (bx) {
+  var item = { Url: bx.xmlUrl, path: bx.xmlPath };
+
+  var c = this._cookieData.value;
+  if (c) {
+    item.Cookie = c;
+  }
+
+  return this._add (item);
+};
+
+
+// books/db/book.xml とその全ての画像をダウンロードする
+ActiBook.prototype._getBookXml = function (url) {
+  var bx = this._analyzeBookXml (url);
+  if (!bx) {
+    return false;
+  }
+
+  // books/db/book.xml
+  this._addXml (bx);
+
+  // books/images/<zoom>/<page>.<type>
+  var found = false;
+
+  for (var i = 0; i < bx.sizes.length; ++i) {
+    var list = this._makeImageList (bx, bx.sizes [i].zoom);
+    var u = list [0].Url;
+
+    if (this._newHttp (u).head (u)) {
+      found = true;
+      this.items = this.items.concat (list);
+    }
+  }
+
+  if (!found) {
+    return this._ng ('画像が見つかりません。');
+  }
+
+  return this._ok ();
+};
+
+
+// ibook.xml <book><zoom_folder_**>
+ActiBook.prototype._extractZoomFolder = function (bx, xml) {
+  function extract (key) {
+    var re = new RegExp ('<' + key + '>(\d+)<\/' + key + '>');
+    return re.test (xml) ? RegExp.$1 : null;
+  }
+
+  bx.zoomFolderSd = extract ('zoom_folder_sd');
+  bx.zoomFolderHd = extract ('zoom_folder_hd');
+};
+
+
+// 分割画像枚数 旧仕様
+// ibook.xml <book><[wh]> <book><div><[wh]>
+ActiBook.prototype._extractDiv = function (bx, xml) {
+  var zoom = bx.zoomFolderSd;
+  if (!zoom) {
+    return this._ok ();
+  }
+
+  function extractWH (xml, err) {
+    var w = /<w>(\d+(\.\d*)?)<\/w>/.test (xml) && parseFloat (RegExp.$1);
+    var h = /<h>(\d+(\.\d*)?)<\/h>/.test (xml) && parseFloat (RegExp.$1);
+
+    return (w && h) ? { w: w, h: h } : this._unknown (err);
+  }
+
+  var noDiv = xml.replace (/<div>(.*?)<\/div>/, '');
+  var div = RegExp.$1;
+
+  var wh = extractWH (noDiv, '<[wh]> が見つかりません。');
+  if (!wh) {
+    return false;
+  }
+
+  var divWH = extractWH (div, '<div> <[wh]> が見つかりません。');
+  if (!divWH) {
+    return false;
+  }
+
+  var x = Math.ceil (wh.w * zoom / divWH.w);
+  var y = Math.ceil (wh.h * zoom / divWH.h);
+
+  bx.divCount [zoom] = { zoom: zoom, x: x, y: y };
+
+  return this._ok ();
+};
+
+
+// 分割画像枚数 新仕様
+// ibook.xml <book><div_count>
+ActiBook.prototype._extractDivCount = function (bx, xml) {
+  var dcs = xml.match (/<div_count\s[^>]+>/g) || [ ];
+
+  for (var i = 0; i < dcs.length; ++i) {
+    var dc = dcs [i];
+
+    var zoom = /\szoom="(\d+)"/.test (dc) && RegExp.$1;
+    var x = /\sx="(\d+)"/.test (dc) && parseInt (RegExp.$1);
+    var y = /\sy="(\d+)"/.test (dc) && parseInt (RegExp.$1);
+
+    if (!zoom || !x || !y) {
+      return this._unknown ('<div_count> が未対応の形式です。');
+    }
+    bx.divCount [zoom] = { zoom: zoom, x: x, y: y };
+  }
+
+  return this._ok ();
+};
+
+
+// 分割画像枚数
+ActiBook.prototype._extractDivAndDivCount = function (bx, xml) {
+  bx.divCount = { };
+
+  if (!this._extractDiv (bx, xml) || !this._extractDivCount (bx, xml)) {
+    return false;
+  }
+
+  for (var zoom in bx.divCount) {
+    var dc = bx.divCount [zoom];
+    this._p ('zoom=' + zoom + ', x=' + dc.x + ', y=' + dc.y);
+  }
+
+  return this._ok ();
+};
+
+
+// iPhone/ibook.xml, iPhone/ipad/ibook.xml
+ActiBook.prototype._analyzeIbookXml = function (url, bxArg) {
+  var bx = this._createBxObject (url, bxArg);
+
+  var http = this._newHttp (bx.xmlUrl);
+  if (!http.get (bx.xmlUrl)) {
+    return this._httpError ();
+  }
+  var xml = http.data;
+
+  if (!this._extractNameAndTotal (bx, xml)) {
+    return false;
+  }
+  this.name = bx.name;
+
+  bx.sizes = [ { zoom: '1', w: 0, h: 0 } ];
+
+  this._extractZoomFolder (bx, xml);
+
+  if (!this._extractDivAndDivCount (bx, xml)) {
+    return false;
+  }
+
+  bx.type = 'jpg';
+
+  return bx;
+};
+
+
+// ibook.xml とその全ての画像をダウンロードする
+ActiBook.prototype._getIbookXml = function (url, bxArg) {
+  var bx = this._analyzeIbookXml (url, bxArg);
+  if (!bx) {
+    return false;
+  }
+
+  // iPhone/(ipad)/ibook.xml
+  this._addXml (bx);
+
+  // iPhone/(ipad)/1/<page>.jpg
+  this.items = this.items.concat (this._makeImageList (bx, bx.sizes [0].zoom));
+
+  var reso = [
+    // iPhone/(ipad)/<zoom_folder_sd>/g_<page>/x<x>y<y>.jpg
+    { zoom: bx.zoomFolderSd, tag: 'zoom_folder_sd' },
+
+    // iPhone/(ipad)/<zoom_folder_hd>/g_<page>/x<x>y<y>.jpg
+    { zoom: bx.zoomFolderHd, tag: 'zoom_folder_hd' }
+  ];
+
+  for (var i = 0; i < reso.length; ++i) {
+    var zoom = reso [i].zoom;
+    if (!zoom) {
+      continue;
+    }
+
+    if (!bx.divCount.hasKey (zoom)) {
+      return this._ng ('対応する <div_count> がありません: ' + reso [i].tag + '=' + zoom);
+    }
+    var divCount = bx.divCount [zoom];
+
+    this.items = this.items.concat (this._makeZoomImageList (bx, divCount));
+  }
+
+  return this._ok ();
+};
+
+
+// iPhone/ibook.xml とその全ての画像をダウンロードする
+ActiBook.prototype._getIphoneXml = function (url) {
+  return this._getIbookXml (url, {
+    iPhone: true,
+    xmlPath: 'iPhone',
+    xmlUrl: url + 'iPhone/ibook.xml' + this._urlSuffix,
+    imagePath: 'iPhone'
+  });
+};
+
+
+// iPhone/ipad/ibook.xml とその全ての画像をダウンロードする
+ActiBook.prototype._getIpadXml = function (url) {
+  return this._getIbookXml(url, {
+    iPad: true,
+    xmlPath: 'iPhone/ipad',
+    xmlUrl: url + 'iPhone/ipad/ibook.xml' + this._urlSuffix,
+    imagePath: 'iPhone/ipad'
+  });
+};
+
+
+// books/db/book.xml の最大解像度画像をダウンロードする
+ActiBook.prototype._getBookImageOnly = function (url) {
+  var bx = this._analyzeBookXml (url);
+  if (!bx) {
+    return false;
+  }
+  this.name = bx.name;
+
+  var zoom = this._getLargestZoom (bx);
+  if (!zoom) {
+    return false;
+  }
+
+  this.items = this._makeImageList (bx, zoom);
+
+  return this._ok ();
+};
+
+
+// public: ファイル URL を取得する
+ActiBook.prototype.get = function (url) {
+  this.items = [ ];
+  this.name = null;
+
+  if (this._bookImageOnly) {
+    return this._getBookImageOnly (url);
+  }
+
+  return this._getBookXml (url)
+      && this._getIphoneXml (url)
+      && this._getIpadXml (url);
+};
+
+
+// public: ファイル名を生成する
+ActiBook.prototype.buildFilename = function (args) {
+  var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
+  if (!nb) {
+    return this._ok ();
+  }
+
+  nb.name = new Utf8 (this.name);
+
+  if (this._bookImageOnly) {
+    return this._buildFilename (args);
+  }
+
+  // 各アイテムの保存フォルダに <name>/<path> を設定する
+  var name = nb.normalize (nb.name.toSJIS ()) + '/';
+  var madePath = { };
+
+  var items = this.items;
+  var len = items.length;
+  var negSufLen = -this._urlSuffix.length;
+
+  for (var i = 0; i < len; ++i) {
+    var item = items [i];
+    var p = item.path;
+
+    if (!madePath.hasKey (p)) {
+      madePath [p] = Dorothy.createSaveFolder (name + p);
+    }
+    item.Folder = madePath [p];
+
+    if (negSufLen) {
+      var f = item.Url.slice (0, negSufLen);
+      item.Filename = f.slice (f.lastIndexOf ('/') + 1);
+    }
+  }
+
+  return this._ok ();
+};
+
+
+}) ()
+
+
+// EOF
