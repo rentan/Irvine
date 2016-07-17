@@ -33,6 +33,12 @@ https?://[^/]+/[^?#]+/_SWF_Window.html
 変更履歴
 ========
 
+2016-07-18  version 20160718.0  rentan at rentan.org
+  common\getter\actibook.dms を使うようにした。
+  設定の既定値を変更。
+    [Filename]
+    Book=[[md=%NAME%]]%P%
+
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
   このファイルを UTF-8 に変更。
