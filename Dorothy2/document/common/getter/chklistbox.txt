@@ -47,6 +47,9 @@ function () {
 変更履歴
 ========
 
+2016-08-19  version 20160819.0  rentan at rentan.org
+  BorderStyle = bsDialog に変更(最小化するとウィンドウが消えてしまっていた)。
+
 2016-04-13  version 20160413.0  rentan at rentan.org
   ダブルクリックで URL を開くようにした(Shift キー押し下げで IE で開く)。
 
