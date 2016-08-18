@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ChkListBox()
-//version=20160413.0
+//version=20160819.0
 //hint=
 //match=
 //author=rentan
@@ -47,6 +47,7 @@ object Form1: TForm1
   Width = 600
   Height = 250
   Position = poScreenCenter
+  BorderStyle = bsDialog
   object Label1: TLabel
     Top = 4
     Left = 4
