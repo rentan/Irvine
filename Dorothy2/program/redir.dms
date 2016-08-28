@@ -1,8 +1,8 @@
 //Dorothy2
 //caption=redir
-//version=20160708.0
+//version=20160828.0
 //hint=
-//match=^https?://((t\.co|bit\.ly|goo\.gl|sh\.st|ime\.nu|jump\.2ch\.net|pinktower\.com)|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|eafyfsuh\.net|erq\.io|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|sasontnwc\.net|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|yko\.io|youfap\.me|yyv\.co|zatnawqy\.net|zff\.co|zxxo\.net)|(adf\.ly|j\.gs)|lix\.in)/
+//match=^https?://((t\.co|bit\.ly|goo\.gl|sh\.st|ime\.nu|jump\.2ch\.net|pinktower\.com)|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|eafyfsuh\.net|erq\.io|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|sasontnwc\.net|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|yko\.io|youfap\.me|yyv\.co|zatnawqy\.net|zff\.co|zxxo\.net|zytpirwai\.net)|(adf\.ly|j\.gs)|lix\.in)/
 //author=rentan
 //path=program
 //priority=730
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function () {
 
   common_load ('rutil', 'additem', 'getter\redir');
-  Util.min_version (20160708.0);
+  Util.min_version (20160828.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
