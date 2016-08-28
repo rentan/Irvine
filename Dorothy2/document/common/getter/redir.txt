@@ -8,6 +8,9 @@ DOA からは使用できません。
 変更履歴
 ========
 
+2016-08-28  version 20160828.0  rentan at rentan.org
+  zytpirwai.net に対応。
+
 2016-07-08  version 20160708.0  rentan at rentan.org
   erq.io yko.io に対応。
 

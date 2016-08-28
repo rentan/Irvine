@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Util.*
-//version=20160708.0
+//version=20160828.0
 //hint=utility
 //match=
 //author=rentan
@@ -271,15 +271,15 @@ Dorothy.setRequiredCommonVersion ({
   'getter\chklistbox': 20150721.0,
   'getter\getterasync': 20151204.0,
   'getter\lastmodified': 20160411.0,
-  'getter\redir': 20160708.0,
+  'getter\redir': 20160828.0,
   'getter\youtubevideo': 20160704.0,
 
   actibook: 20140331.0,
   additem: 20160411.0,
   browsercookie: 20160224.0,
   dmon: 20160223.0,
-  exec: 20160626.0,
-  exdownload: 20160626.0,
+  exec: 20160627.0,
+  exdownload: 20160627.0,
   getter: 20160522.0,
   htmlform: 20160213.0,
   http: 20150425.0,
