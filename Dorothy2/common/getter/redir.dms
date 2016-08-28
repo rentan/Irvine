@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Redir
-//version=20160708.0
+//version=20160828.0
 //hint=
 //match=
 //author=rentan
@@ -162,14 +162,15 @@ RedirLinkbucks.prototype.supportedUrl = (function () {
     'yyv.co',
     'zatnawqy.net',
     'zff.co',
-    'zxxo.net'
+    'zxxo.net',
+    'zytpirwai.net'
   ].join ('|').replace (/\./g, '\\.');
 
   return new RegExp ('^http://[0-9a-zA-Z]+\.(' + domains + ')/');
 }) ();
 
 
-RedirLinkbucks.prototype._baseUrl = 'http://www.zatnawqy.net/';
+RedirLinkbucks.prototype._baseUrl = 'http://www.zytpirwai.net/';
 
 
 // URL ‚ð http://www.***.net/*** Œ`Ž®‚É•ÏŠ·
