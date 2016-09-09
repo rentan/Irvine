@@ -48,6 +48,9 @@ http://www.tinami.com/creator/profile/\d+
 変更履歴
 ========
 
+2016-09-09  version 20160909.0  rentan at rentan.org
+  漫画の HTML 変更に対応。
+
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
   このファイルを UTF-8 に変更。

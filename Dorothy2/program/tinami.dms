@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=TINAMI
-//version=20140331.0
+//version=20160909.0
 //hint=
 //match=^http://www\.tinami\.com/(view/\d+|creator/profile/\d+|search/list\?prof_id=)
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2011,2012,2013,2014 rentan at rentan.org
+Copyright (C) 2011-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function () {
 
   common_load ('rutil', 'additem', 'browsercookie', 'htmlform', 'http', 'namebuilder', 'utf8');
+  Util.min_version (20160828.0);
 
   // 設定ファイルの読み込み
   var default_ini = {
@@ -129,7 +130,7 @@ function dl_content_manga (url, http, content_type) {
   }
 
   // () の中だけが欲しいので match ではなく replace で処理、置換結果はいらない
-  http.data.replace (/class="nv_body"><img\ssrc="(http:\/\/img\.tinami\.com\/[^"]*)"/g, add_list);
+  http.data.replace (/class="nv_body">\s*<div[^>]*>\s*<img\ssrc="(http:\/\/img\.tinami\.com\/[^"]*)"/g, add_list);
 
   if (list.length == 0) {
     http.die ('漫画の画像 URL が見つかりません。');
