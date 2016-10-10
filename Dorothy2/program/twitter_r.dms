@@ -267,18 +267,26 @@ Twitter.prototype._analyzeTweetImage = function () {
   var head = html.slice (0, html.indexOf ('</head'));
 
 
-  var ogimages = [ ];
-  function add (s, p1) {
-    ogimages.push (p1);
+  // “®‰æ
+  var vsu = /<meta\s+property="og:video:secure_url"\s+content="(https:\/\/twitter\.com\/i\/videos\/[^"]+)"/;
+  if (head.indexOf ('property="og:video:secure_url"') >= 0 && vsu.test (head)) {
+    return this._analyzeVideos (RegExp.$1);
   }
 
-  var meta = /<meta\s+property="og:image"\s+content="(https:\/\/pbs\.twimg\.com\/media\/[^"]+)"/g;
-  head.replace (meta, add);
+  function getOgImages () {
+    var list = [ ];
+    var meta = /<meta\s+property="og:image"\s+content="(https:\/\/pbs\.twimg\.com\/media\/[^"]+)"/g;
+    head.replace (meta, function (s, u) {
+      list.push (u);
+    });
+    return list;
+  }
+  var ogimages = getOgImages ();
 
+  // ‰æ‘œ
   if (ogimages.length) {
     return this._addImages (ogimages);
   }
-
 
   if (!/<div class="[^"]*permalink-tweet-container[^"]*"[^>]*>/.test (html)) {
     return this._ng ('<div class="permalink-tweet-container"> ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB');
@@ -289,26 +297,6 @@ Twitter.prototype._analyzeTweetImage = function () {
     return this._ng ('<div class="js-machine-translated-tweet-container"> ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB');
   }
   html = RegExp.leftContext;
-
-  // RegExp.test ‚‘¬‰»
-  function testRegExp (re, text) {
-    var head = re.toString ().replace (/^\/([^.?*\\[(^$]+).*$/, '$1');
-
-    if (head) {
-      var pos = text.indexOf (head);
-      if (pos === -1) {
-        return false;
-      }
-      text = text.slice (pos);
-    }
-
-    return re.test (text);
-  }
-
-  // “®‰æ
-  if (testRegExp (/<meta\s+property="og:video:secure_url"\s+content="(https:\/\/twitter\.com\/i\/videos\/[^"]+)"/, http.data)) {
-    return this._analyzeVideos (RegExp.$1);
-  }
 
   // gif ‚©‚ç•ÏŠ·‚³‚ê‚½“®‰æ
   if (html.indexOf ('<div class="PlayableMedia PlayableMedia--gif">') >= 0) {
