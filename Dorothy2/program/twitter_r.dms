@@ -2,7 +2,7 @@
 //caption=Twitter_r
 //version=20161011.0
 //hint=
-//match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
+//match=^https://twitter\.com/([^/]+/(status(es)?/\d|media$)|i/web/status/\d)
 //author=rentan
 //path=program
 //priority=500
@@ -320,6 +320,17 @@ Twitter.prototype._analyzeTweetImage = function () {
 };
 
 
+// /i/web/status/... のページから Twitter ID を抽出する
+Twitter.prototype._extractTwitterId = function (html) {
+  if (/<link rel="canonical" href="https:\/\/twitter\.com\/([^\/]+)/.test (html)) {
+    this.twitter_id = RegExp.$1;
+    return this._ok ();
+  }
+
+  return this._unknown ('<link rel="canonical"> が見つかりません。');
+};
+
+
 // fullname を抽出する
 Twitter.prototype._extractFullname = function (html) {
   if (!/<strong\s+class="fullname[^>]*>(.*?)<\/strong/.test (html)) {
@@ -341,12 +352,21 @@ Twitter.prototype._analyzeTweet = function () {
   var http = this.http;
 
   var path = (new URL (http.baseUrl)).path.slice (1);
-  if (!/^([^\/]+)\/status(es)?\/(\d+)/.test (path)) {
+
+  if (/^([^\/]+)\/status(es)?\/(\d+)/.test (path)) {
+    this.twitter_id = RegExp.$1;  // ユーザー名
+    this.id = RegExp.$3;  // ツイートのパーマリンクID
+  }
+  else if (/^i\/web\/status\/(\d+)/.test (path)) {
+    this.id = RegExp.$1;
+    if (!this._extractTwitterId (http.data)) {
+      return false;
+    }
+  }
+  else {
     // エラー終了させるため mis ではなく unknown
     return this._unknown ('未対応のURLです。');
   }
-  this.twitter_id = RegExp.$1;  // ユーザー名
-  this.id = RegExp.$3;  // ツイートのパーマリンクID
 
   if (!/<div\s+[^>]*class="permalink-inner\s+permalink-tweet-container[^>]*>(.*?)<div\s+[^>]*class="permalink-footer/.test (http.data)) {
     return this._unknown ('<div class="permalink-inner permalink-tweet-container"> が見つかりません。');
@@ -571,6 +591,9 @@ Twitter.prototype.get = function (url) {
   var path = u.path.slice (1);
 
   if (/^([^\/]+\/status(es)?\/\d+)([\/?#]|$)/.test (path)) {
+    return this._getTweetImage (u.expand ('/' + RegExp.$1));
+  }
+  if (/^(i\/web\/status\/\d+)([\/?#]|$)/.test (path)) {
     return this._getTweetImage (u.expand ('/' + RegExp.$1));
   }
   if (/^([^\/]+)\/media$/.test (path)) {
