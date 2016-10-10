@@ -522,6 +522,11 @@ Twitter.prototype._getMediaImage = function (url) {
         this._p ('"max_id":"-1" が検出されました。古いツイートが取得できません。');
         break;
       }
+      if (/"min_position"\s*:\s*null/.test (http.data)) {
+        // {"min_position":null,"has_more_items":true,"items_html":"...","new_latent_count":0}
+        this._p ('"min_position":null が検出されました。古いツイートが取得できません。');
+        break;
+      }
 
       return this._unknown ('data-permalink-path が見つかりません。');
     }
