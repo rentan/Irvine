@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20160710.0
+//version=20161011.0
 //hint=
 //match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
 //author=rentan
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
-  Util.min_version (20160708.0);
+  Util.min_version (20160828.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -320,6 +320,22 @@ Twitter.prototype._analyzeTweetImage = function () {
 };
 
 
+// fullname を抽出する
+Twitter.prototype._extractFullname = function (html) {
+  if (!/<strong\s+class="fullname[^>]*>(.*?)<\/strong/.test (html)) {
+    return this._unknown ('fullname が見つかりません。');
+  }
+  var s = RegExp.$1.trim ();
+
+  // 絵文字用のタグを削除
+  var u = new Utf8 (s.replace (/&nbsp;/g, '')).removeTags ();
+
+  this.user_name = u.decodeCharRef ();
+
+  return this._ok ();
+};
+
+
 // ツイートの情報を取得する
 Twitter.prototype._analyzeTweet = function () {
   var http = this.http;
@@ -337,10 +353,9 @@ Twitter.prototype._analyzeTweet = function () {
   }
   var html = RegExp.$1;
 
-  if (!/<strong\s+class="fullname[^>]*>\s*([^<]+)\s*</.test (html)) {
-    return this._unknown ('<strong class="fullname ..."> が見つかりません。');
+  if (!this._extractFullname (html)) {
+    return false;
   }
-  this.user_name = (new Utf8 (RegExp.$1)).decodeCharRef ();
 
   var t = null;
   if (/<p\s+class="[^"]*js-tweet-text\s+tweet-text[^>]*>(.*?)<\/p>/.test (html)) {
