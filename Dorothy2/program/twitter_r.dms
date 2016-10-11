@@ -1,8 +1,8 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20160710.0
+//version=20161011.0
 //hint=
-//match=^https://twitter\.com/[^/]+/(status(es)?/\d|media$)
+//match=^https://twitter\.com/([^/]+/(status(es)?/\d|media$)|i/web/status/\d)
 //author=rentan
 //path=program
 //priority=500
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
-  Util.min_version (20160708.0);
+  Util.min_version (20160828.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -70,11 +70,31 @@ common_load ('getter', 'http', 'utf8');
 // コンストラクタ
 Getter (function Twitter (opt) {
   this._cookie = this._getArg (opt, 'Cookie', null);
-  this._m3u8 = this._getArg (opt, 'M3u8', { ExDownload: false });
+  this._m3u8 = this._getArg (opt, 'M3u8', { }, this._initM3u8);
 },
 {
   _CHROME_UA: 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
 });
+
+
+Twitter.prototype.m3u8Template = {
+  Experiment: false,
+  ExDownload: true,
+  ShowWindow: true,
+  FfmpegWorkAround: true,
+  Ext: '.mp4',
+  Command: '"%BIN%\ffmpeg" -i "%URL%" -c copy -bsf:a aac_adtstoasc "%OUTPUT%"'
+};
+
+Twitter.prototype._initM3u8 = function (m) {
+  var o = { };
+  var t = Twitter.prototype.m3u8Template;
+
+  for (var key in t) {
+    o [key] = m.hasKey (key) ? m [key] : t [key];
+  }
+  return o;
+};
 
 
 // VMAP を読み込んで動画 URL を抽出する
@@ -267,18 +287,26 @@ Twitter.prototype._analyzeTweetImage = function () {
   var head = html.slice (0, html.indexOf ('</head'));
 
 
-  var ogimages = [ ];
-  function add (s, p1) {
-    ogimages.push (p1);
+  // 動画
+  var vsu = /<meta\s+property="og:video:secure_url"\s+content="(https:\/\/twitter\.com\/i\/videos\/[^"]+)"/;
+  if (head.indexOf ('property="og:video:secure_url"') >= 0 && vsu.test (head)) {
+    return this._analyzeVideos (RegExp.$1);
   }
 
-  var meta = /<meta\s+property="og:image"\s+content="(https:\/\/pbs\.twimg\.com\/media\/[^"]+)"/g;
-  head.replace (meta, add);
+  function getOgImages () {
+    var list = [ ];
+    var meta = /<meta\s+property="og:image"\s+content="(https:\/\/pbs\.twimg\.com\/media\/[^"]+)"/g;
+    head.replace (meta, function (s, u) {
+      list.push (u);
+    });
+    return list;
+  }
+  var ogimages = getOgImages ();
 
+  // 画像
   if (ogimages.length) {
     return this._addImages (ogimages);
   }
-
 
   if (!/<div class="[^"]*permalink-tweet-container[^"]*"[^>]*>/.test (html)) {
     return this._ng ('<div class="permalink-tweet-container"> が見つかりません。');
@@ -290,26 +318,6 @@ Twitter.prototype._analyzeTweetImage = function () {
   }
   html = RegExp.leftContext;
 
-  // RegExp.test 高速化
-  function testRegExp (re, text) {
-    var head = re.toString ().replace (/^\/([^.?*\\[(^$]+).*$/, '$1');
-
-    if (head) {
-      var pos = text.indexOf (head);
-      if (pos === -1) {
-        return false;
-      }
-      text = text.slice (pos);
-    }
-
-    return re.test (text);
-  }
-
-  // 動画
-  if (testRegExp (/<meta\s+property="og:video:secure_url"\s+content="(https:\/\/twitter\.com\/i\/videos\/[^"]+)"/, http.data)) {
-    return this._analyzeVideos (RegExp.$1);
-  }
-
   // gif から変換された動画
   if (html.indexOf ('<div class="PlayableMedia PlayableMedia--gif">') >= 0) {
     return this._analyzeVideos ('/i/videos/tweet/' + this.id);
@@ -320,27 +328,62 @@ Twitter.prototype._analyzeTweetImage = function () {
 };
 
 
+// /i/web/status/... のページから Twitter ID を抽出する
+Twitter.prototype._extractTwitterId = function (html) {
+  if (/<link rel="canonical" href="https:\/\/twitter\.com\/([^\/]+)/.test (html)) {
+    this.twitter_id = RegExp.$1;
+    return this._ok ();
+  }
+
+  return this._unknown ('<link rel="canonical"> が見つかりません。');
+};
+
+
+// fullname を抽出する
+Twitter.prototype._extractFullname = function (html) {
+  if (!/<strong\s+class="fullname[^>]*>(.*?)<\/strong/.test (html)) {
+    return this._unknown ('fullname が見つかりません。');
+  }
+  var s = RegExp.$1.trim ();
+
+  // 絵文字用のタグを削除
+  var u = new Utf8 (s.replace (/&nbsp;/g, '')).removeTags ();
+
+  this.user_name = u.decodeCharRef ();
+
+  return this._ok ();
+};
+
+
 // ツイートの情報を取得する
 Twitter.prototype._analyzeTweet = function () {
   var http = this.http;
 
   var path = (new URL (http.baseUrl)).path.slice (1);
-  if (!/^([^\/]+)\/status(es)?\/(\d+)/.test (path)) {
+
+  if (/^([^\/]+)\/status(es)?\/(\d+)/.test (path)) {
+    this.twitter_id = RegExp.$1;  // ユーザー名
+    this.id = RegExp.$3;  // ツイートのパーマリンクID
+  }
+  else if (/^i\/web\/status\/(\d+)/.test (path)) {
+    this.id = RegExp.$1;
+    if (!this._extractTwitterId (http.data)) {
+      return false;
+    }
+  }
+  else {
     // エラー終了させるため mis ではなく unknown
     return this._unknown ('未対応のURLです。');
   }
-  this.twitter_id = RegExp.$1;  // ユーザー名
-  this.id = RegExp.$3;  // ツイートのパーマリンクID
 
   if (!/<div\s+[^>]*class="permalink-inner\s+permalink-tweet-container[^>]*>(.*?)<div\s+[^>]*class="permalink-footer/.test (http.data)) {
     return this._unknown ('<div class="permalink-inner permalink-tweet-container"> が見つかりません。');
   }
   var html = RegExp.$1;
 
-  if (!/<strong\s+class="fullname[^>]*>\s*([^<]+)\s*</.test (html)) {
-    return this._unknown ('<strong class="fullname ..."> が見つかりません。');
+  if (!this._extractFullname (html)) {
+    return false;
   }
-  this.user_name = (new Utf8 (RegExp.$1)).decodeCharRef ();
 
   var t = null;
   if (/<p\s+class="[^"]*js-tweet-text\s+tweet-text[^>]*>(.*?)<\/p>/.test (html)) {
@@ -499,6 +542,11 @@ Twitter.prototype._getMediaImage = function (url) {
         this._p ('"max_id":"-1" が検出されました。古いツイートが取得できません。');
         break;
       }
+      if (/"min_position"\s*:\s*null/.test (http.data)) {
+        // {"min_position":null,"has_more_items":true,"items_html":"...","new_latent_count":0}
+        this._p ('"min_position":null が検出されました。古いツイートが取得できません。');
+        break;
+      }
 
       return this._unknown ('data-permalink-path が見つかりません。');
     }
@@ -556,6 +604,9 @@ Twitter.prototype.get = function (url) {
   var path = u.path.slice (1);
 
   if (/^([^\/]+\/status(es)?\/\d+)([\/?#]|$)/.test (path)) {
+    return this._getTweetImage (u.expand ('/' + RegExp.$1));
+  }
+  if (/^(i\/web\/status\/\d+)([\/?#]|$)/.test (path)) {
     return this._getTweetImage (u.expand ('/' + RegExp.$1));
   }
   if (/^([^\/]+)\/media$/.test (path)) {

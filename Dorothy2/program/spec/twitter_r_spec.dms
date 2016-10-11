@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=twitter_r spec
-//version=20160626.0
+//version=20161011.0
 //hint=http://yasmine.dorothy.test/program/spec/twitter_r_spec.dms
 //match=
 //author=rentan
@@ -216,9 +216,10 @@ describe ('リプライツイートの画像', function () {
 
 describe ('動画', function () {
   var getter = null;
+  var opt = { M3u8: { Experiment: false, ExDownload: false } };
 
   beforeEach (function () {
-    getter = new Twitter ();
+    getter = new Twitter (opt);
   });
 
   cases ([
