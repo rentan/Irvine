@@ -70,11 +70,31 @@ common_load ('getter', 'http', 'utf8');
 // コンストラクタ
 Getter (function Twitter (opt) {
   this._cookie = this._getArg (opt, 'Cookie', null);
-  this._m3u8 = this._getArg (opt, 'M3u8', { ExDownload: false });
+  this._m3u8 = this._getArg (opt, 'M3u8', { }, this._initM3u8);
 },
 {
   _CHROME_UA: 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
 });
+
+
+Twitter.prototype.m3u8Template = {
+  Experiment: false,
+  ExDownload: true,
+  ShowWindow: true,
+  FfmpegWorkAround: true,
+  Ext: '.mp4',
+  Command: '"%BIN%\ffmpeg" -i "%URL%" -c copy -bsf:a aac_adtstoasc "%OUTPUT%"'
+};
+
+Twitter.prototype._initM3u8 = function (m) {
+  var o = { };
+  var t = Twitter.prototype.m3u8Template;
+
+  for (var key in t) {
+    o [key] = m.hasKey (key) ? m [key] : t [key];
+  }
+  return o;
+};
 
 
 // VMAP を読み込んで動画 URL を抽出する
