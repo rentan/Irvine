@@ -16,6 +16,7 @@ Twitter 用のスクリプトです。
 ========
 
 https://twitter.com/[^/]+/status(es)?/\d+
+https://twitter.com/i/web/status/\d+
   ツイート
   そのツイートに添付されている画像/動画をダウンロード。
 
@@ -32,6 +33,17 @@ https?://twitter.com/[^/]+/media
 
 変更履歴
 ========
+
+2016-10-11  version 20161011.0  rentan at rentan.org
+  絵文字を含む fullname に対応。
+  /i/web/status/\d+ 形式の URL に対応。
+  動画ツイートで画像をダウンロードしてしまう不具合を修正。
+    http://echo.2ch.net/test/read.cgi/win/1471704507/24
+
+  media の "min_position":null に対応。
+    http://echo.2ch.net/test/read.cgi/win/1471704507/32
+
+  twitter_r_spec.dms で ENameError になる不具合を修正。
 
 2016-07-10  version 20160710.0  rentan at rentan.org
   外部ダウンロードの FfmpegWorkAround 設定を追加。
