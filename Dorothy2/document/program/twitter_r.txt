@@ -34,6 +34,10 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2016-10-25  version 20161025.0  rentan at rentan.org
+  %USER_NAME% から「認証済みアカウント」のテキストを削除。
+    http://echo.2ch.net/test/read.cgi/win/1471704507/70
+
 2016-10-11  version 20161011.0  rentan at rentan.org
   絵文字を含む fullname に対応。
   /i/web/status/\d+ 形式の URL に対応。

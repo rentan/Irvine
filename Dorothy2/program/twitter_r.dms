@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20161011.0
+//version=20161025.0
 //hint=
 //match=^https://twitter\.com/([^/]+/(status(es)?/\d|media$)|i/web/status/\d)
 //author=rentan
@@ -346,10 +346,10 @@ Twitter.prototype._extractFullname = function (html) {
   }
   var s = RegExp.$1.trim ();
 
-  // 絵文字用のタグを削除
-  var u = new Utf8 (s.replace (/&nbsp;/g, '')).removeTags ();
+  // 絵文字、「認証済みアカウント」を削除
+  var s2 = s.replace (/(&nbsp;|<span\s+class="u-hiddenVisually[^>]*>[^<]*<\/span>)/g, '');
 
-  this.user_name = u.decodeCharRef ();
+  this.user_name = new Utf8 (s2).removeTags ().decodeCharRef ();
 
   return this._ok ();
 };
