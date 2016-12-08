@@ -10,6 +10,7 @@ DOA からは使用できません。
 
 2016-12-09  version 20161209.0  rentan at rentan.org
   ekdd.co iskk.co lba.io ooep.co yye.io に対応。
+  viid.me に対応。
 
 2016-08-28  version 20160828.0  rentan at rentan.org
   zytpirwai.net に対応。

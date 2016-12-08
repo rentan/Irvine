@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=redir spec
-//version=20160610.0
+//version=20161209.0
 //hint=http://yasmine.dorothy.test/common/spec/getter/redir_spec.dms
 //match=
 //author=rentan
@@ -11,7 +11,7 @@
 
 
 /*
-Copyright (C) 2015 rentan at rentan.org
+Copyright (C) 2015-2016 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -47,7 +47,9 @@ describe ('Redir#get', function () {
     [ 'http://t.co/gZIiQGoMbp', 'http://example.com/tco' ],
     [ 'http://bit.ly/1Huy8Xw', 'http://example.com/bitly' ],
     [ 'http://goo.gl/S8qTmW', 'http://example.com/googl' ],
+
     [ 'http://sh.st/SWE4e', 'http://example.com/shst' ],
+    [ 'http://viid.me/SWE4e', 'http://example.com/shst' ],
 
     [ 'http://ime.nu/example.com/imenu', 'http://example.com/imenu' ],
 
