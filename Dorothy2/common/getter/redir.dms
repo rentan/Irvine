@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Redir
-//version=20160828.0
+//version=20161209.0
 //hint=
 //match=
 //author=rentan
@@ -115,6 +115,7 @@ RedirLinkbucks.prototype.supportedUrl = (function () {
     'drstickyfingers.com',
     'dyo.gs',
     'eafyfsuh.net',
+    'ekdd.co',
     'erq.io',
     'fapoff.com',
     'filesonthe.net',
@@ -123,12 +124,15 @@ RedirLinkbucks.prototype.supportedUrl = (function () {
     'galleries.bz',
     'goneviral.com',
     'hornywood.tv',
+    'iskk.co',
+    'lba.io',
     'linkbabes.com',
     'linkbucks.com',
     'linkgalleries.net',
     'linkseer.net',
     'megaline.co',
     'miniurls.co',
+    'ooep.co',
     'picbucks.com',
     'picturesetc.net',
     'poontown.net',
@@ -159,6 +163,7 @@ RedirLinkbucks.prototype.supportedUrl = (function () {
     'whackyvidz.com',
     'yko.io',
     'youfap.me',
+    'yye.io',
     'yyv.co',
     'zatnawqy.net',
     'zff.co',
@@ -523,6 +528,15 @@ RedirMisc.prototype._getLocation = function (url) {
 };
 
 
+// sh.st
+RedirMisc.prototype._getShst = function (url) {
+  var http = this.http = new Http ();
+  http.removeRequestHeader ('User-Agent');
+
+  return http.getLocation (url) ? this._add ({ Url: http.location }) : this._httpError ();
+};
+
+
 // ÉTÉCÉgÇ≤Ç∆ÇÃèàóùä÷êîåQ
 RedirMisc.prototype._sites = [
 
@@ -564,10 +578,14 @@ RedirMisc.prototype._sites = [
 {
   re: /^http:\/\/sh\.st\/[^?&#]/,
   f: function (url) {
-    var http = this.http = new Http ();
-    http.removeRequestHeader ('User-Agent');
+    return this._getShst (url);
+  }
+},
 
-    return http.getLocation (url) ? this._add ({ Url: http.location }) : this._httpError ();
+{
+  re: /^http:\/\/viid\.me\/[^?&#]/,
+  f: function (url) {
+    return this._getShst (url);
   }
 },
 
