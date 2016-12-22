@@ -34,6 +34,9 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2016-12-23  version 20161223.0  rentan at rentan.org
+  promo_video_convo に対応。
+
 2016-10-25  version 20161025.0  rentan at rentan.org
   %USER_NAME% から「認証済みアカウント」のテキストを削除。
     http://echo.2ch.net/test/read.cgi/win/1471704507/70
