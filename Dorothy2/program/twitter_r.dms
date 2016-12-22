@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Twitter_r
-//version=20161025.0
+//version=20161223.0
 //hint=
 //match=^https://twitter\.com/([^/]+/(status(es)?/\d|media$)|i/web/status/\d)
 //author=rentan
@@ -109,9 +109,13 @@ Twitter.prototype._analyzeVmap = function (vmapUrl) {
 
   var mf = /<MediaFile>\s*<!\[CDATA\[(.*?)\]\]>\s*<\/MediaFile>/;
   http.data.replace (mf, function (s, p1) {
-    list.push (p1);
+    list.push (p1.trim ());
     return '';
   });
+
+  if (list.length === 0) {
+    return this._unknown ('<MediaFile> が見つかりません。');
+  }
 
   for (var i = 0; i < list.length; ++i) {
     this._add ({ Url: list [i] });
@@ -260,6 +264,42 @@ Twitter.prototype._analyzeVideos = function (url) {
 };
 
 
+// /i/cards/tfw/v1/\d+ 内の動画を抽出する
+Twitter.prototype._analyzePromoVideoConvo = function (url) {
+  var http = this.http;
+
+  if (!http.get (url)) {
+    return this._httpError ();
+  }
+
+  var re = /&quot;vmapUrl&quot;:&quot;(https?:.*?)&quot;/g;
+
+  var m = http.data.match (re);
+  if (m === null || m.length != 2) {
+    http.capture ();
+    return this._unknown (m ? 'vmapUrl の数が違います。' : 'vmapUrl が見つかりません。');
+  }
+
+  for (var i = 0; i < m.length; ++i) {
+    var vmapUrl = re.test (m [i]) && RegExp.$1.replace (/\\/g, '');
+    if (!vmapUrl) {
+      return this._ng ('内部エラー: vmapUrl = ' + vmapUrl);
+    }
+
+    if (!this._analyzeVmap (vmapUrl)) {
+      return false;
+    }
+  }
+
+  if (this.items.length != 2) {
+    return this._unknown ('動画の数が違います: ' + this.items.length);
+  }
+
+  this.type = 'Video2';
+  return this._ok ();
+};
+
+
 // ツイート内から抽出された画像を登録
 Twitter.prototype._addImages = function (urls) {
   function addImage (url) {
@@ -321,6 +361,12 @@ Twitter.prototype._analyzeTweetImage = function () {
   // gif から変換された動画
   if (html.indexOf ('<div class="PlayableMedia PlayableMedia--gif">') >= 0) {
     return this._analyzeVideos ('/i/videos/tweet/' + this.id);
+  }
+
+  // 「Tweetして、視聴しよう」動画
+  if (/<div[^>]*data-src="(\/i\/cards\/tfw\/[^"]*)"\s+data-card-name="promo_video_convo"/.test (html)) {
+    var cards = http.expandUrl (RegExp.$1.replace (/&amp;/g, '&'));
+    return this._analyzePromoVideoConvo (cards);
   }
 
   http.capture ();
