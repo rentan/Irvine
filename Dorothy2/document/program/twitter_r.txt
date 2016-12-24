@@ -34,6 +34,13 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2016-12-24  version 20161224.0  rentan at rentan.org
+  promo_video_convo のファイル名は twitter_r.ini [Filename] Video2
+  が使用されますが、twitter_r.default.ini に書き忘れていました。
+
+  twitter_r.ini に書き加えるか、削除して設定し直して下さい。
+  %PIC_ID% は使えません。
+
 2016-12-23  version 20161223.0  rentan at rentan.org
   promo_video_convo に対応。
 
