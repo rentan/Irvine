@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20160626.0
+//version=20170410.0
 //hint=pixiv 別バージョン
 //match=^http://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?|source.pixiv.net/)
 //author=rentan, wan
@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function () {
 
   common_load ('rutil', 'additem', 'browsercookie', 'http', 'namebuilder', 'utf8');
-  Util.min_version (20160522.0);
+  Util.min_version (20160828.0);
 
   // 設定ファイルの読み込み
   var default_ini = {
@@ -410,12 +410,12 @@ function get_manga_image_urls (http, pages) {
     return null;
   }
 
-  if (!/<img\s[^>]*src="(http:\/\/i\d*\.pixiv\.net\/[^"]+_p)0(\.[^."]*)"/.test (http.data)) {
+  if (!/<img\s[^>]*src="(https?:\/\/i\d*\.p(ximg|ixiv)\.net\/[^"]+_p)0(\.[^."]*)"/.test (http.data)) {
     http.capture ();
     http.die ('画像URLが見つかりません。');
   }
   var head = RegExp.$1;
-  var tail = RegExp.$2;
+  var tail = RegExp.$3;
 
   if (/_big_p$/.test (head)) {
     nb.manga_size = '_big';
@@ -478,7 +478,7 @@ function get_illust_image_url (http) {
     return retry ();
   }
 
-  if (/<img\s+src="(http:\/\/i\d*\.pixiv\.net\/[^"]+)/.test (http.data)) {
+  if (/<img\s+src="(https?:\/\/i\d*\.p(ximg|ixiv)\.net\/[^"]+)/.test (http.data)) {
     return RegExp.$1;
   }
 
