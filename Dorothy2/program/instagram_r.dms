@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=instagram_r
-//version=20160522.0
+//version=20170410.0
 //hint=Instagram 別バージョン
 //match=^https://(www\.)?instagram\.com/p/.
 //author=rentan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2015-2016 rentan at rentan.org
+Copyright (C) 2015-2017 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,16 +28,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20160522.0);
+  Util.min_version (20160828.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
     General: {
-      Zen2Han: false
+      Zen2Han: false,
+      PageOrigin: 0
     },
     Filename: {
       Photo: 'instagram_%ID%',
-      Video: 'instagram_%ID%'
+      Photo2: 'instagram_%ID%_%P%',
+      Video: 'instagram_%ID%',
+      Video2: 'instagram_%ID%_%P%'
     }
   };
 
@@ -45,12 +48,137 @@ function (scriptMode) {
 //------------------------------- Instagram --------------------------------
 
 
-common_load ('getter', 'http', 'utf8');
+common_load ('getter', 'esx\json', 'http', 'utf8');
 
 
 // コンストラクタ
 Getter (function Instagram () {
 });
+
+
+Instagram.prototype._extractMediaDataSingle = function (media) {
+  var props = {
+    is_video: 'boolean',
+    display_src: 'string',
+    video_url: 'string'
+  };
+
+  var o = { };
+
+  for (var key in props) {
+    var v = (key === 'video_url' && !media.hasKey (key)) ? '' : media [key];
+    if (typeof v != props [key]) {
+      throw;
+    }
+    o [key] = v;
+  }
+
+  o.display_url = o.display_src;
+
+  return [ o ];
+};
+
+
+Instagram.prototype._extractMediaDataMulti = function (edges) {
+  var props = {
+    is_video: 'boolean',
+    display_url: 'string',
+    video_url: 'string'
+  };
+
+  var data = [ ];
+
+  var len = edges.length;
+  if (len === 0) {
+    throw;
+  }
+
+  for (var i = 0; i < len; ++i) {
+    var node = edges [i].node;
+    var o = data [i] = { };
+
+    for (var key in props) {
+      var v = (key === 'video_url' && !node.hasKey (key)) ? '' : node [key];
+      if (typeof v != props [key]) {
+        throw;
+      }
+      o [key] = v;
+    }
+  }
+
+  return data;
+};
+
+
+Instagram.prototype._extractMediaData = function (sd) {
+  var media = sd.entry_data.PostPage [0].media;
+
+  if (media.hasKey ('edge_sidecar_to_children')) {
+    var edges = media.edge_sidecar_to_children.edges;
+    if (nameOf (edges) != 'Array') {
+      throw;
+    }
+
+    return this._extractMediaDataMulti (edges);
+  }
+
+  return this._extractMediaDataSingle (media);
+};
+
+
+Instagram.prototype._addUrlsFromExtractedData = function (data) {
+  var pages = data.length;
+  var typePhoto = (pages === 1) ? 'Photo' : 'Photo2';
+  var typeVideo = (pages === 1) ? 'Video' : 'Video2';
+
+  for (var i = 0; i < pages; ++i) {
+    var o = data [i];
+
+    // 画像
+    if (!o.display_url) {
+      return this._ng ('display_url が空です。');
+    }
+    var u = new URL (o.display_url);
+    u.path = '//' + u.filename;
+    this._add ({ Url: u.url, type: typePhoto, p: i, pages: pages });
+
+    // 動画
+    if (o.is_video) {
+      if (!o.video_url) {
+        return this._ng ('video_url が空です。');
+      }
+      this._add ({ Url: o.video_url, type: typeVideo, p: i, pages: pages });
+    }
+  }
+
+  return this._ok ();
+};
+
+
+// スクリプトからURLを抽出する
+Instagram.prototype._extractUrls = function (http) {
+  var re = /<script\s+type="text\/javascript">\s*window\._sharedData\s*=\s*(.*?);\s*<\/script>/;
+  if (!re.test (http.data)) {
+    return this._unknown ('window._sharedData が見つかりません。');
+  }
+  var json = RegExp.$1;
+
+  try {
+    var sd = JSON.parse (json);
+  }
+  catch (e) {
+    return this._ng (e);
+  }
+
+  try {
+    var data = this._extractMediaData (sd);
+  }
+  catch (e) {
+    return this._unknown ('未対応のJSONデータ構造です(edges)。');
+  }
+
+  return this._addUrlsFromExtractedData (data);
+};
 
 
 // public: ファイル URL を取得する
@@ -88,23 +216,12 @@ Instagram.prototype.get = function (url) {
   }
   this.title = title;
 
-  // 画像URL
-  if (!/<meta\s+property="og:image"\s+content="([^"]+)"/.test (http.data)) {
-    return this._unknown ('画像URLが見つかりません。');
-  }
-  this._add ({ Url: RegExp.$1, type: 'Photo' });
-
-  // 動画URL (画像ファイルもダウンロードする)
-  if (/<meta\s+property="og:video"\s+content="([^"]+)"/.test (http.data)) {
-    this._add ({ Url: RegExp.$1, type: 'Video' });
-  }
-
-  return this._ok ();
+  // ファイルURL
+  return this._extractUrls (http);
 };
 
 
 // public: ファイル名を生成する
-//   NameBuilder 指定時は必ず Format も指定すること。
 Instagram.prototype.buildFilename = function (args) {
   var nb = args.hasKey ('NameBuilder') && args.NameBuilder;
   if (!nb) {
@@ -115,7 +232,14 @@ Instagram.prototype.buildFilename = function (args) {
   nb.id = this.id;
   nb.title = new Utf8 (this.title);
 
-  return this._buildFilename (args);
+  // アイテムごとの直前コールバック処理
+  function before (nb, itemData) {
+    nb.pages = itemData.pages;
+    nb.p = itemData.p;
+    nb.f = itemData.Url.replace (/^.*\/|\.[^.\/]*$/g, '');
+  }
+
+  return this._buildFilename ({ BeforeBuildFilename: before }, args);
 };
 
 
@@ -131,7 +255,10 @@ Instagram.prototype.buildFilename = function (args) {
   var getter = new Instagram ();
 
   if (getter.get (urlinfo.url)) {
-    var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+    var nb = new NameBuilder ({
+      zen2han: ini.General.Zen2Han,
+      definePPZ: ini.General.PageOrigin
+    });
 
     getter.buildFilename ({
       NameBuilder: nb,
