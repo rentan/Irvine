@@ -8,6 +8,9 @@ DOA からは使用できません。
 変更履歴
 ========
 
+2017-04-10  version 20170410.0  rentan at rentan.org
+  Linkbucks 系で HTTPS に対応。
+
 2016-12-09  version 20161209.0  rentan at rentan.org
   ekdd.co iskk.co lba.io ooep.co yye.io に対応。
   viid.me に対応。
