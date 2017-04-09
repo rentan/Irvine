@@ -33,6 +33,8 @@ https?://(www.)?instagram.com/p/[^/]+
 
 2017-04-10  version 20170410.0  rentan at rentan.org
   複数画像(動画)に対応。
+
+  ファイル名変数 %F% を追加。
   リサイズ前の画像をダウンロードするようにした。
     http://echo.2ch.net/test/read.cgi/win/1471704507/320
 

@@ -236,6 +236,7 @@ Instagram.prototype.buildFilename = function (args) {
   function before (nb, itemData) {
     nb.pages = itemData.pages;
     nb.p = itemData.p;
+    nb.f = itemData.Url.replace (/^.*\/|\.[^.\/]*$/g, '');
   }
 
   return this._buildFilename ({ BeforeBuildFilename: before }, args);
