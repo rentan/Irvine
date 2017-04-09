@@ -33,6 +33,8 @@ https?://(www.)?instagram.com/p/[^/]+
 
 2017-04-10  version 20170410.0  rentan at rentan.org
   複数画像(動画)に対応。
+  リサイズ前の画像をダウンロードするようにした。
+    http://echo.2ch.net/test/read.cgi/win/1471704507/320
 
 2016-05-22  version 20160522.0  rentan at rentan.org
   getter version 20160522.0 に対応。

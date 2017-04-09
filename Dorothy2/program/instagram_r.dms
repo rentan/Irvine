@@ -138,7 +138,9 @@ Instagram.prototype._addUrlsFromExtractedData = function (data) {
     if (!o.display_url) {
       return this._ng ('display_url ‚ª‹ó‚Å‚·B');
     }
-    this._add ({ Url: o.display_url, type: typePhoto, p: i, pages: pages });
+    var u = new URL (o.display_url);
+    u.path = '//' + u.filename;
+    this._add ({ Url: u.url, type: typePhoto, p: i, pages: pages });
 
     // “®‰æ
     if (o.is_video) {
