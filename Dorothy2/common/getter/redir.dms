@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Redir
-//version=20161209.0
+//version=20170410.0
 //hint=
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2015-2016 rentan at rentan.org
+Copyright (C) 2015-2017 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -171,7 +171,7 @@ RedirLinkbucks.prototype.supportedUrl = (function () {
     'zytpirwai.net'
   ].join ('|').replace (/\./g, '\\.');
 
-  return new RegExp ('^http://[0-9a-zA-Z]+\.(' + domains + ')/');
+  return new RegExp ('^https?://[0-9a-zA-Z]+\.(' + domains + ')/');
 }) ();
 
 
