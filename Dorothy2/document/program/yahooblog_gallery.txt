@@ -16,7 +16,7 @@ Yahoo!ブログの画像用のスクリプトです。
 対応 URL
 ========
 
-http://blogs.yahoo.co.jp/[^/?#]+/GALLERY/show_image.html
+https?://blogs.yahoo.co.jp/[^/?#]+/GALLERY/show_image.html
 
 
 仕様・制限事項
@@ -25,6 +25,9 @@ http://blogs.yahoo.co.jp/[^/?#]+/GALLERY/show_image.html
 
 変更履歴
 ========
+
+2017-04-10  version 20170410.0  rentan at rentan.org
+  HTTPS に対応。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   初期バージョン。
