@@ -1,15 +1,15 @@
 //Dorothy2
 //caption=Yahoo!ÉuÉçÉOâÊëú
-//version=20140331.0
+//version=20170410.0
 //hint=
-//match=^http://blogs\.yahoo\.co\.jp/[^/?#]+/GALLERY/show_image\.html
+//match=^https?://blogs\.yahoo\.co\.jp/[^/?#]+/GALLERY/show_image\.html
 //author=rentan
 //path=program
 //priority=500
 //end
 
 /*
-Copyright (C) 2013,2014 rentan at rentan.org
+Copyright (C) 2013-2017 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ function dl_showimage (url) {
   }
   var html = RegExp.$1;
 
-  if (!/<img[^>]*\ssrc="(http:\/\/[^"]+)"/.test (html)) {
+  if (!/<img[^>]*\ssrc="(https?:\/\/[^"]+)"/.test (html)) {
     http.capture ();
     http.die ('<img src="..."> Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÅB');
   }
