@@ -34,6 +34,12 @@ https?://twitter.com/[^/]+/media
 変更履歴
 ========
 
+2017-04-16  version 20170416.0  rentan at rentan.org
+  .m3u8 プレイリストは任意のURLを受け付けるようにした。
+    http://echo.2ch.net/test/read.cgi/win/1471704507/340
+
+  動画ダウンロードの実験機能が動作しなくなっていたため削除。
+
 2016-12-24  version 20161224.0  rentan at rentan.org
   promo_video_convo のファイル名は twitter_r.ini [Filename] Video2
   が使用されますが、twitter_r.default.ini に書き忘れていました。
