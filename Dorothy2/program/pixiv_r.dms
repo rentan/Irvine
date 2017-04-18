@@ -410,12 +410,12 @@ function get_manga_image_urls (http, pages) {
     return null;
   }
 
-  if (!/<img\s[^>]*src="(https?:\/\/i\d*\.p(ximg|ixiv)\.net\/[^"]+_p)0(\.[^."]*)"/.test (http.data)) {
+  if (!/<img\s[^>]*src="(https?:\/\/[^"\/]+\/[^"]+_p)0(\.[^."]*)"/.test (http.data)) {
     http.capture ();
     http.die ('‰æ‘œURL‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB');
   }
   var head = RegExp.$1;
-  var tail = RegExp.$3;
+  var tail = RegExp.$2;
 
   if (/_big_p$/.test (head)) {
     nb.manga_size = '_big';
@@ -478,7 +478,7 @@ function get_illust_image_url (http) {
     return retry ();
   }
 
-  if (/<img\s+src="(https?:\/\/i\d*\.p(ximg|ixiv)\.net\/[^"]+)/.test (http.data)) {
+  if (/<img\s+src="(https?:\/\/[^"]+)/.test (http.data)) {
     return RegExp.$1;
   }
 
