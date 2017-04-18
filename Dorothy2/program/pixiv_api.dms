@@ -1,15 +1,15 @@
 //Dorothy2
 //caption=pixiv_api
-//version=20160208.0
+//version=20170419.0
 //hint=pixiv (public API)
-//match=^http://www\.pixiv\.net/member(_illust)?\.php
+//match=^https://www\.pixiv\.net/member(_illust)?\.php
 //author=rentan
 //path=program
 //priority=510
 //end
 
 /*
-Copyright (C) 2015-2016 rentan at rentan.org
+Copyright (C) 2015-2017 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function (scriptMode) {
 
   common_load ('rutil', 'additem', 'namebuilder');
-  Util.min_version (20160208.0);
+  Util.min_version (20160828.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
@@ -144,7 +144,7 @@ PixivApi.prototype.json = null;
 PixivApi.prototype._newHttp = function (setAuth) {
   var http = this.http = new Http ();
 
-  http.setRequestHeader ('Referer', 'http://www.pixiv.net/');
+  http.setRequestHeader ('Referer', 'https://www.pixiv.net/');
   http.setRequestHeader ('User-Agent', 'PixivIOSApp/5.1.1');
 
   if (setAuth) {
@@ -399,7 +399,7 @@ Getter (function Pixiv (opt) {
 }, LastModified);
 
 
-Pixiv.prototype._referer = 'http://www.pixiv.net/';
+Pixiv.prototype._referer = 'https://www.pixiv.net/';
 
 
 // ï°êîâÊëúÇÃURLÇíäèoÇ∑ÇÈ
@@ -588,7 +588,7 @@ Pixiv.prototype._getUsersWorks = function (user_id, page) {
     return this._ng ('çÏïiÇ™Ç†ÇËÇ‹ÇπÇÒÅB');
   }
 
-  var base = 'http://www.pixiv.net/member_illust.php?mode=medium&illust_id=';
+  var base = 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id=';
   for (var i = 0; i < len; ++i) {
     this._add ({ Url: base + ids [i] });
   }
@@ -641,7 +641,7 @@ Pixiv.prototype.get = function (url) {
     return false;
   }
 
-  var path = /^(http:\/\/www\.pixiv\.net\/)([^#]+)/.test (url) ? RegExp.$2 : '';
+  var path = /^(https:\/\/www\.pixiv\.net\/)([^#]+)/.test (url) ? RegExp.$2 : '';
 
   this.user_id = /[?&]id=([^&]+)/.test (path) ? RegExp.$1 : null;
   this.illust_id = /[?&]illust_id=([^&]+)/.test (path) ? RegExp.$1 : null;
