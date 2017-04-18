@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=instagram_r
-//version=20170410.0
+//version=20170419.0
 //hint=Instagram ï ÉoÅ[ÉWÉáÉì
 //match=^https://(www\.)?instagram\.com/p/.
 //author=rentan
@@ -59,7 +59,7 @@ Getter (function Instagram () {
 Instagram.prototype._extractMediaDataSingle = function (media) {
   var props = {
     is_video: 'boolean',
-    display_src: 'string',
+    display_url: 'string',
     video_url: 'string'
   };
 
@@ -72,8 +72,6 @@ Instagram.prototype._extractMediaDataSingle = function (media) {
     }
     o [key] = v;
   }
-
-  o.display_url = o.display_src;
 
   return [ o ];
 };
@@ -111,7 +109,7 @@ Instagram.prototype._extractMediaDataMulti = function (edges) {
 
 
 Instagram.prototype._extractMediaData = function (sd) {
-  var media = sd.entry_data.PostPage [0].media;
+  var media = sd.entry_data.PostPage [0].graphql.shortcode_media;
 
   if (media.hasKey ('edge_sidecar_to_children')) {
     var edges = media.edge_sidecar_to_children.edges;
