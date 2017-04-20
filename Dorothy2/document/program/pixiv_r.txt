@@ -33,35 +33,35 @@ pixiv 用のスクリプトです。
 対応 URL
 ========
 
-http://www.pixiv.net/member.php?id=\d+
+https://www.pixiv.net/member.php?id=\d+
   プロフィールのページ
   その作者の全作品をダウンロード。
 
-http://www.pixiv.net/member_illust.php?id=\d+
+https://www.pixiv.net/member_illust.php?id=\d+
   作品一覧のページ
   その作者の全作品をダウンロード。
 
   &p=\d+ が付いていればそのページ内の作品だけダウンロードする。
   1ページ目だけダウンロードしたい場合は &p=1 を付ける。
 
-http://www.pixiv.net/member_illust.php?mode=(big|medium|manga|ugoira_view)&illust_id=\d+
+https://www.pixiv.net/member_illust.php?mode=(big|medium|manga|ugoira_view)&illust_id=\d+
   イラストやうごイラ、漫画のページ
   漫画の場合は全画像をダウンロード。
 
-http://i\d+.pixiv.net/img-original/img/\d+/\d+/\d+/\d+/\d+/\d+/\d+?_p\d+
+https://i\d+.pixiv.net/img-original/img/\d+/\d+/\d+/\d+/\d+/\d+/\d+?_p\d+
   イラストまたは漫画の画像ファイル
 
-http://i\d+.pixiv.net/img\d+/profile/[^/]+/(bg_)?\d+
+https://i\d+.pixiv.net/img\d+/profile/[^/]+/(bg_)?\d+
   プロフィールと背景の画像ファイル
 
-http://www.pixiv.net/novel/member.php?id=\d+
+https://www.pixiv.net/novel/member.php?id=\d+
   小説の作品一覧のページ
   その作者の全作品をダウンロード。
 
   &p=\d+ が付いていればそのページ内の作品だけダウンロードする。
   1ページ目だけダウンロードしたい場合は &p=1 を付ける。
 
-http://www.pixiv.net/novel/show.php?id=\d+
+https://www.pixiv.net/novel/show.php?id=\d+
   小説のページ
   そのページ自体（HTML）と表紙画像（オリジナルのみ）をダウンロード。
 
@@ -69,7 +69,11 @@ http://www.pixiv.net/novel/show.php?id=\d+
 仕様・制限事項
 ==============
 
-・設定で指定したブラウザでログインしておく必要があります。
+・Internet Explorer でログインしておく必要があります。
+  ※Cookie の設定は無視されます。
+
+  なお INTERNET_FLAG_NO_COOKIES パッチが適用されている場合は、設定が有効に
+  なります(設定で指定したブラウザでログインしておく必要があります)。
 
 ・サイト側の仕様が変更された訳でもないのに、スクリプトでログインしていない
   と判定される場合は、ブラウザでログアウトしてから再ログインして下さい。
@@ -86,6 +90,11 @@ http://www.pixiv.net/novel/show.php?id=\d+
 
 変更履歴
 ========
+
+2017-04-21  version 20170421.0  rentan at rentan.org
+  Util.isHttpsNoCookies() に対応。
+
+  ※サイトが HTTPS に移行したため、Internet Explorer でのログインが必要です。
 
 2017-04-19  version 20170419.0  rentan at rentan.org
   HTTPSに対応。
