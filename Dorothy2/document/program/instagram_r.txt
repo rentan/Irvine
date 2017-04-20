@@ -33,6 +33,7 @@ https?://(www.)?instagram.com/p/[^/]+
 
 2017-04-20  version 20170420.0  rentan at rentan.org
   JSON の構造変更(タイトルが no-title になる)に対応。
+  リサイズ前の動画をダウンロードするようにした。
 
 2017-04-19  version 20170419.0  rentan at rentan.org
   JSON の構造変更に対応。

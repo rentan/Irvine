@@ -151,6 +151,12 @@ Instagram.prototype._addUrlsFromExtractedData = function (data) {
   var typePhoto = (pages === 1) ? 'Photo' : 'Photo2';
   var typeVideo = (pages === 1) ? 'Video' : 'Video2';
 
+  function add (url, type, i) {
+    var u = new URL (url);
+    u.path = '//' + u.filename;
+    this._add ({ Url: u.url, type: type, p: i, pages: pages });
+  }
+
   for (var i = 0; i < pages; ++i) {
     var o = data [i];
 
@@ -158,16 +164,14 @@ Instagram.prototype._addUrlsFromExtractedData = function (data) {
     if (!o.display_url) {
       return this._ng ('display_url ‚ª‹ó‚Å‚·B');
     }
-    var u = new URL (o.display_url);
-    u.path = '//' + u.filename;
-    this._add ({ Url: u.url, type: typePhoto, p: i, pages: pages });
+    add (o.display_url, typePhoto, i);
 
     // “®‰æ
     if (o.is_video) {
       if (!o.video_url) {
         return this._ng ('video_url ‚ª‹ó‚Å‚·B');
       }
-      this._add ({ Url: o.video_url, type: typeVideo, p: i, pages: pages });
+      add (o.video_url, typeVideo, i);
     }
   }
 
