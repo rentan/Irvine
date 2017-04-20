@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={C20B6AE2-AC5B-4D7E-A24A-CE98BCB95F7A}
 caption=オブジェクト情報を作成
-version=20160222
+version=20170420
 hint=Irvine/DMonkey の組み込みオブジェクトの情報を作成します
 event=OnMainMenuClick
 match=
@@ -11,7 +11,7 @@ synchronize=0
 */
 
 /*
-Copyright (C) 2012-2016 rentan at rentan.org
+Copyright (C) 2012-2017 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -131,7 +131,7 @@ ObjectInfo.prototype.makeHtml = function () {
   // プロパティを HTML 化
   function prop (key) {
     var t = "  <li><span class='p'>%key%</span> : %type%%haskey%</li>\n";
-    var esc_key = key.replace (/\$/g, '\$');
+    var esc_key = key.replace (/\$/g, '\\$');
 
     var n = nameOf (obj) + ':' + key;
 
