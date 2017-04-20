@@ -7,6 +7,9 @@ Irvine/DMonkey の組み込みオブジェクトの情報を作成します。
 変更履歴
 ========
 
+2017-04-20  version 20170420  rentan at rentan.org
+  RegExp.$0～$9 のプロパティ名が正しく出力されない不具合を修正。
+
 2016-02-22  version 20160222  rentan at rentan.org
   プロパティの型名が nameOf() で得られる場合はそれを出力する。
   VCL オブジェクトのプロパティの型名を出力する。
