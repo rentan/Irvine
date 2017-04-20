@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=instagram_r
-//version=20170419.0
+//version=20170420.0
 //hint=Instagram 別バージョン
 //match=^https://(www\.)?instagram\.com/p/.
 //author=rentan
@@ -56,67 +56,89 @@ Getter (function Instagram () {
 });
 
 
-Instagram.prototype._extractMediaDataSingle = function (media) {
-  var props = {
-    is_video: 'boolean',
-    display_url: 'string',
-    video_url: 'string'
-  };
+Instagram.prototype._lookUpObject = function (obj, path, type) {
+  var done = '';
 
-  var o = { };
+  for (var p = path; p;) {
 
-  for (var key in props) {
-    var v = (key === 'video_url' && !media.hasKey (key)) ? '' : media [key];
-    if (typeof v != props [key]) {
-      throw;
+    if (/^\.([^.\[]+)/.test (p)) {
+      p = RegExp.rightContext;
+      done += RegExp.$0;
+      var key = RegExp.$1;
+
+      if (nameOf (obj) != 'Object') {
+        throw 'オブジェクトではありません: ' + done;
+      }
+      if (!obj.hasKey (key)) {
+        throw 'プロパティがありません: ' + done;
+      }
+
+      obj = obj [key];
+      continue;
     }
-    o [key] = v;
+
+    if (/^\[(\d+)\]/.test (p)) {
+      p = RegExp.rightContext;
+      done += RegExp.$0;
+      var idx = parseInt (RegExp.$1);
+
+      if (nameOf (obj) != 'Array') {
+        throw '配列ではありません: ' + done;
+      }
+      if (obj.length <= idx) {
+        throw '添字が範囲外です: ' + done;
+      }
+
+      obj = obj [idx];
+      continue;
+    }
+
+    throw '不正なパス指定です: ' + done + '***' + p;
   }
 
-  return [ o ];
+  if ((nameOf (obj) || typeof obj) != type) {
+    throw type + ' ではありません: ' + (path || '(root)');
+  }
+
+  return obj;
+};
+
+
+Instagram.prototype._extractMediaDataSingle = function (media) {
+  return [ {
+    is_video: this._lookUpObject (media, '.is_video', 'boolean'),
+    display_url: this._lookUpObject (media, '.display_url', 'string'),
+    video_url: media.hasKey ('video_url') ? this._lookUpObject (media, '.video_url', 'string') : ''
+  } ];
 };
 
 
 Instagram.prototype._extractMediaDataMulti = function (edges) {
-  var props = {
-    is_video: 'boolean',
-    display_url: 'string',
-    video_url: 'string'
-  };
-
   var data = [ ];
 
   var len = edges.length;
   if (len === 0) {
-    throw;
+    throw 'edges.length == 0';
   }
 
   for (var i = 0; i < len; ++i) {
     var node = edges [i].node;
-    var o = data [i] = { };
 
-    for (var key in props) {
-      var v = (key === 'video_url' && !node.hasKey (key)) ? '' : node [key];
-      if (typeof v != props [key]) {
-        throw;
-      }
-      o [key] = v;
-    }
+    data [i] = {
+      is_video: this._lookUpObject (node, '.is_video', 'boolean'),
+      display_url: this._lookUpObject (node, '.display_url', 'string'),
+      video_url: node.hasKey ('video_url') ? this._lookUpObject (node, '.video_url', 'string') : ''
+    };
   }
 
   return data;
 };
 
 
-Instagram.prototype._extractMediaData = function (sd) {
-  var media = sd.entry_data.PostPage [0].graphql.shortcode_media;
+Instagram.prototype._extractMediaData = function (media) {
 
   if (media.hasKey ('edge_sidecar_to_children')) {
-    var edges = media.edge_sidecar_to_children.edges;
-    if (nameOf (edges) != 'Array') {
-      throw;
-    }
-
+    var edges = this._lookUpObject (media, '.edge_sidecar_to_children.edges', 'Array');
     return this._extractMediaDataMulti (edges);
   }
 
@@ -169,10 +191,15 @@ Instagram.prototype._extractUrls = function (http) {
   }
 
   try {
-    var data = this._extractMediaData (sd);
+    var media = this._lookUpObject (sd, '.entry_data.PostPage[0].graphql.shortcode_media', 'Object');
+
+    var t = this._lookUpObject (media, '.edge_media_to_caption.edges[0].node.text', 'string');
+    this.title = t || 'no-title';
+
+    var data = this._extractMediaData (media);
   }
   catch (e) {
-    return this._unknown ('未対応のJSONデータ構造です(edges)。');
+    return this._unknown ('未対応のJSONデータ構造です: ' + e);
   }
 
   return this._addUrlsFromExtractedData (data);
@@ -206,13 +233,6 @@ Instagram.prototype.get = function (url) {
     return this._unknown ('username が見つかりません。');
   }
   this.twitter_id = RegExp.$2;
-
-  // 題名
-  var title = 'no-title';
-  if (/"caption"\s*:\s*"([^"]+)"/.test (http.data)) {
-    title = (new Utf8 (RegExp.$1)).unescape ().toUTF8 ();
-  }
-  this.title = title;
 
   // ファイルURL
   return this._extractUrls (http);
