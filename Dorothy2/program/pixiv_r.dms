@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=pixiv_r
-//version=20170419.0
+//version=20170421.0
 //hint=pixiv 別バージョン
 //match=^https://(i\d+\.pixiv\.net/|www\.pixiv\.net/(member(_illust)?|novel/(member|show))\.php\?|source.pixiv.net/)
 //author=rentan, wan
@@ -143,7 +143,7 @@ function is_login () {
       return true;
     }
 
-    println ('ログインしていません。');
+    println (Util.isHttpsNoCookies () ? 'ログインしていません。' : 'IEでログインしていません。');
     return false;
   }
 
@@ -175,7 +175,12 @@ function get_and_login_check (url) {
 function new_http (url) {
   var http = new Http ();
 
-  import_cookie (http, url);
+  if (Util.isHttpsNoCookies ()) {
+    import_cookie (http, url);
+  }
+  else {
+    println ('Cookie をブラウザから読み込みません。');
+  }
 
   // メソッド追加
   http.is_login = is_login;
