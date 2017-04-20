@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=instagram_r
-//version=20170420.0
+//version=20170421.0
 //hint=Instagram 別バージョン
 //match=^https://(www\.)?instagram\.com/p/.
 //author=rentan
@@ -179,6 +179,14 @@ Instagram.prototype._addUrlsFromExtractedData = function (data) {
 };
 
 
+Instagram.prototype._extractTitle = function (media) {
+  var edges = this._lookUpObject (media, '.edge_media_to_caption.edges', 'Array');
+  var t = edges.length ? this._lookUpObject (edges, '[0].node.text', 'string') : '';
+
+  return t || 'no-title';
+};
+
+
 // スクリプトからURLを抽出する
 Instagram.prototype._extractUrls = function (http) {
   var re = /<script\s+type="text\/javascript">\s*window\._sharedData\s*=\s*(.*?);\s*<\/script>/;
@@ -197,8 +205,7 @@ Instagram.prototype._extractUrls = function (http) {
   try {
     var media = this._lookUpObject (sd, '.entry_data.PostPage[0].graphql.shortcode_media', 'Object');
 
-    var t = this._lookUpObject (media, '.edge_media_to_caption.edges[0].node.text', 'string');
-    this.title = t || 'no-title';
+    this.title = this._extractTitle (media);
 
     var data = this._extractMediaData (media);
   }
