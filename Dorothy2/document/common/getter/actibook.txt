@@ -7,6 +7,9 @@ ActiBook の画像情報を取得します。
 変更履歴
 ========
 
+2017-04-23  version 20170423.0  rentan at rentan.org
+  コメントの誤記を修正。
+
 2016-07-18  version 20160718.0  rentan at rentan.org
   新規作成。
 

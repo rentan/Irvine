@@ -7,17 +7,35 @@ kutunesirka.dms
 かけるのは避けて下さい。
 
 
+使用方法
+========
+
+※ HttpsNoCookies パッチの適用が必要です。
+
+1. ブラウザでログインします(ブックは閲覧しない)。
+2. document.cookie から newton_noesis_auth=～ の値を取り出します。
+3. ブックの URL を登録します。
+   その際、Cookie 欄に上記の newton_noesis_auth=～ を入力します。
+
+※ ファイルを一定数ごとに分割して追加しますが、時間が経つと Cookie が失効
+   するので、その時はブラウザをリロードして新しい Cookie を入力して下さい。
+
+
+対応 URL
+========
+
+https://newton-group.modd.com/noesis/authcheck/openbook?bookid=
+
+
 仕様・制限事項
 ==============
-
-・設定で指定したブラウザでログインしておく必要があります。
-
-・使用すると、何故かブラウザがログアウトしてしまいます。
-  直せるものなら直したいです。
 
 
 変更履歴
 ========
+
+2017-04-23  version 20170423.0  rentan at rentan.org
+  https://newton-group.modd.com/ に対応。
 
 2016-07-18  version 20160718.0  rentan at rentan.org
   新規作成。

@@ -1,15 +1,15 @@
 //Dorothy2
 //caption=kutunesirka
-//version=20160718.0
+//version=20170423.0
 //hint=
-//match=^https://newton-group\.e-manager\.jp/book-search/view(new|myshelf)/bookNum/\d+/$
+//match=^https://newton-group\.modd\.com/noesis/authcheck/openbook\?bookid=.
 //author=rentan
 //path=program
 //priority=500
 //end
 
 /*
-Copyright (C) 2016 rentan at rentan.org
+Copyright (C) 2016-2017 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,19 +27,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 function (scriptMode) {
 
-  common_load ('rutil', 'additem', 'browsercookie', 'namebuilder');
-  Util.min_version (20160708.0);
+  common_load ('rutil', 'additem');
+  Util.min_version (20160828.0);
 
   var defaultIni = {
     AddItem: AddItem.prototype.iniTemplate,
-    Cookie: BrowserCookie.prototype.iniTemplate,
     General: {
-      Zen2Han: false,
-      PageOrigin: 1,
-      BookImageOnly: false
-    },
-    Filename: {
-      Book: '[[md=%NAME%]]%P%'
+      BookImageOnly: false,
+      DownloadUnit: 200
     }
   };
 
@@ -52,38 +47,170 @@ common_load ('getter\actibook');
 // コンストラクタ
 Getter (function Kutunesirka (opt) {
   this._bookImageOnly = this._getArg (opt, 'BookImageOnly', false);
-  this._cookie = this._getArg (opt, 'Cookie', null);
+  this._downloadUnit = this._getArg (opt, 'DownloadUnit', 200);
 });
 
 
-Kutunesirka.prototype._importCookie = function (url) {
-  var bcookie = new BrowserCookie (this._cookie);
+Kutunesirka.prototype._authcheck = function (url) {
+  var http = this.http = new Http ();
 
-  var host = new URL (url).hostname;
-  var o = { https: true, host: '.' + host, name: [ 'ats', 'atk' ] };
-
-  var cookie = bcookie.import (o);
-  print_debug ('Cookie: ' + cookie);
-
-  if (!cookie) {
-    return this._ng ('Cookieが読み込めませんでした。');
+  if (Util.isHttpsNoCookies ()) {
+    var c = item.cookie;
+    if (!/(^|;\s*)newton_noesis_auth=./.test (c)) {
+      return this._ng ('アイテム設定->Cookieで newton_noesis_auth を指定してください。');
+    }
+    http.requestHeader.Cookie = c;
   }
 
-  this._cookieData = { host: host, value: cookie };
+  var loc = http.getLocation (url);
+  if (loc) {
+    if (/^https:\/\/privatecontents\.modd\.com\/cnos\/run\/book\/[kK]\d+\/HTML5\/pc\.html(\?version=1)?$/.test (loc)) {
+      return loc;
+    }
+
+    return this._unknown ('未対応の転送先です: ' + loc);
+  }
+
+  if (http.code === 200) {
+    var m = /message\s*:\s*([^<]*)/.test (http.data) ? RegExp.$1.fromUTF8toSJIS () : '';
+    if (m === '未ログイン') {
+      return this._ng ('ログインしていません。');
+    }
+    return this._unknown ('未対応のエラーです: ' + m.slice (0, 200));
+  }
+
+  return this._httpError ();
+};
+
+
+Kutunesirka.prototype._getBaseUrl = function (url) {
+  var u = this._authcheck (url.replace (/#.*$/, ''));
+
+  return u ? u.replace (/\/HTML5\/pc\.html(\?.*)?$/, '/') : false;
+};
+
+
+Kutunesirka.prototype._extractCookie = function (url) {
+  if (!Util.isHttpsNoCookies ()) {
+    return { host: '', value: '' };
+  }
+
+  var c = this.http.getRequestHeader ('Cookie') || '';
+  var cf = [ ];
+
+  c.replace (/(^|;\s*)(CloudFront-[^;]+)/g, function (s, p1, kv) {
+    cf.push (kv);
+    return '';
+  });
+
+  return {
+    host: new URL (url).hostname,  // privatecontents.modd.com
+    value: cf.join ('; ')
+  };
+};
+
+
+// オプション名
+Kutunesirka.prototype._START_OPTION_NAME = 'start';
+
+
+// 残りのダウンロードを行うためのURLを追加する
+Kutunesirka.prototype._addContinueUrl = function (url, cookie, start) {
+  // URL の重複を回避する
+  var u = url.replace (/#.*$/, '') + '#' + start;
+
+  var itemData = { Url: u, Cookie: cookie };
+  Dorothy.addOption (this._START_OPTION_NAME + '=' + start, itemData);
+
+  return this._add (itemData);
+};
+
+
+// 初回実行
+Kutunesirka.prototype._getFirst = function (url) {
+  if (File.exists (this._urlList)) {
+    this._p ('他のダウンロードが実行中または停止中(ファイルが存在します): ' + this._urlList);
+  }
+
+  var baseUrl = this._getBaseUrl (url);
+  if (!baseUrl) {
+    return false;
+  }
+
+  var opt = {
+    BookImageOnly: this._bookImageOnly,
+    CookieData: this._extractCookie (baseUrl)
+  };
+  var getter = this._getter = new ActiBook (opt);
+
+  if (!getter.get (baseUrl)) {
+    return this._raise (getter);
+  }
+
+  this._url = url;
+  this.items = getter.items;
   return this._ok ();
 };
 
 
-Kutunesirka.prototype._newHttp = function () {
-  var h = this.http = new Http ();
-  h.setRequestHeader ('Cookie', this._cookieData.value);
+// ダウンロード再開
+Kutunesirka.prototype._getContinue = function (url, startString) {
+  var start = parseInt (startString);
+  if (isNaN (start) || start < 0) {
+    return this._ng ('内部エラー: start オプションが正しくありません: ' + startString);
+  }
 
-  return h;
+  this._p ('Cookieを再取得して残りのファイルを登録します。');
+
+  var baseUrl = this._getBaseUrl (url);
+  if (!baseUrl) {
+    return false;
+  }
+
+  var cookie = this._extractCookie (baseUrl).value;
+
+  var urlList = this._urlList;
+  try {
+    var sl = new Strings ().loadFromFile (urlList);
+  }
+  catch (e) {
+    return this._ng (e + ': ' + urlList);
+  }
+
+  // 今回ダウンロード登録するURL
+  var unit = this._downloadUnit;
+  var next = Math.min (start + unit, sl.length);
+
+  for (var i = start; i < next; ++i) {
+    this._add ({ Url: sl [i], Cookie: cookie });
+  }
+
+  if (next < sl.length) {
+    // 残りのダウンロードを行うためのURLを追加する
+    return this._addContinueUrl (url, item.cookie, next);
+  }
+
+  // 最後までダウンロード登録した
+  try {
+    new File (urlList).remove ();
+  }
+  catch (e) {
+    return this._ng (e + ': ' + urlList);
+  }
+  return this._ok ();
 };
 
 
-Kutunesirka.prototype._isSameHost = function (url) {
-  return new URL (url).hostname == 'newton-group.e-manager.jp';
+Kutunesirka.prototype._validateSettings = function () {
+  if (!folderdata.UrlFolder) {
+    return this._ng ('フォルダ設定の「URL構造を再現する」にチェックを入れて下さい。');
+  }
+
+  if (this._downloadUnit < 1) {
+    return this._ng ('[General] DownloadUnit には1以上の数を指定して下さい。');
+  }
+
+  return this._ok ();
 };
 
 
@@ -92,80 +219,57 @@ Kutunesirka.prototype.get = function (url) {
   this.items = [ ];
   this._getter = null;
 
-  if (!this._importCookie (url)) {
+  this._urlList = Dorothy.temp + Dorothy.matchFile + '.irv';
+  this._url = null;
+
+  if (!this._validateSettings ()) {
     return false;
   }
 
-  // 詳細ページ
-
-  var http = this._newHttp ();
-  if (!http.get (url)) {
-    var loginUrl = /^https:\/\/newton-group\.e-manager\.jp\/auth\/login\//;
-    if (http.code === 302 && loginUrl.test (http.location)) {
-      return this._ng ('ログインしていません。');
-    }
-
-    return this._httpError ();
-  }
-  this._cookieData.value = http.getRequestHeader ('Cookie');
-
-  if (!/<p class="photobox01">\s*<a href="[^"]+" onclick="window\.open\('(https:\/\/[^']+)'/.test (http.data)) {
-    http.capture ();
-    return this._unknown ('閲覧URLが見つかりません。');
-  }
-  var bookview = RegExp.$1.replace (/\/$/, '');
-
-  if (!this._isSameHost (bookview)) {
-    http.capture ();
-    return this._unknown ('未対応の閲覧URLです: ' + bookiview);
+  var start = Dorothy.getOption (this._START_OPTION_NAME);
+  if (start) {
+    return this._getContinue (url, start);
   }
 
-  // ブックを読む PC版
+  return this._getFirst (url);
+};
 
-  if (!http.get (bookview)) {
-    return this._httpError ();
+
+// URLの一覧をファイルに保存する
+Kutunesirka.prototype._saveUrlList = function (items) {
+  var sl = new Strings ();
+  var len = items.length;
+  for (var i = 0; i < len; ++i) {
+    sl.add (items [i].Url);
   }
 
-  if (!/<base href="(https:\/\/[^"]+)"/.test (http.data)) {
-    http.capture ();
-    return this._unknown ('<base href="..."> が見つかりません。');
+  try {
+    sl.saveToFile (this._urlList);
   }
-  var base = RegExp.$1;
-
-  if (!this._isSameHost (base)) {
-    http.capture ();
-    return this._unknown ('未対応の基準URLです: ' + base);
+  catch (e) {
+    return this._ng (e + ': ' + this._urlList);
   }
 
-  // 基準URL
-  base = base.replace (/\/book\//, '/actibook-file/index/');
-
-  var opt = {
-    BookImageOnly: this._bookImageOnly,
-    CookieData: this._cookieData,
-    UrlSuffix: '/'
-  };
-  var getter = this._getter = new ActiBook (opt);
-
-  if (!getter.get (base)) {
-    return this._raise (getter);
-  }
-
-  this.items = getter.items;
   return this._ok ();
 };
 
 
-// public: ファイル名を生成する
-Kutunesirka.prototype.buildFilename = function (args) {
-  var getter = this._getter;
+// public: ダウンロード情報を登録する
+Kutunesirka.prototype.download = function (args) {
+  var items = this.items;
+  var unit = this._downloadUnit;
 
-  if (!getter.buildFilename (args)) {
-    return this._raise (getter);
+  if (this._url && unit < items.length) {
+    this.items = items.slice (0, unit);
+
+    if (!this._saveUrlList (items)) {
+      return false;
+    }
+
+    this._addContinueUrl (this._url, item.cookie, unit);
   }
 
-  this.items = getter.items;
-  return this._ok ();
+  return this._downloadFiles (args);
 };
 
 
@@ -180,20 +284,10 @@ Kutunesirka.prototype.buildFilename = function (args) {
 
   var getter = new Kutunesirka ({
     BookImageOnly: ini.General.BookImageOnly,
-    Cookie: ini.Cookie
+    DownloadUnit: ini.General.DownloadUnit
   });
 
   if (getter.get (urlinfo.url)) {
-    var nb = new NameBuilder ({
-      zen2han: ini.General.Zen2Han,
-      definePPZ: ini.General.PageOrigin
-    });
-
-    getter.buildFilename ({
-      NameBuilder: nb,
-      Format: ini.Filename.Book
-    });
-
     getter.download ({
       AddItem: new AddItem (ini.AddItem)
     });
