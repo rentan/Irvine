@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=ActiBook
-//version=20160718.0
+//version=20170423.0
 //hint=
 //match=
 //author=rentan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2016 rentan at rentan.org
+Copyright (C) 2016-2017 rentan at rentan.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -161,7 +161,7 @@ ActiBook.prototype._makeZoomImageList = function (bx, divCount) {
 };
 
 
-// book/db/book.xml <book><pages><page><type>
+// books/db/book.xml <book><pages><page><type>
 ActiBook.prototype._extractType = function (xml) {
   if (!/<page>(.*?)<\/page>/.test (xml)) {
     return this._ng ('<page> Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÅB');
