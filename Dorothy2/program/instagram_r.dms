@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=instagram_r
-//version=20170421.0
+//version=20170423.0
 //hint=Instagram 別バージョン
 //match=^https://(www\.)?instagram\.com/p/.
 //author=rentan
@@ -207,6 +207,8 @@ Instagram.prototype._extractUrls = function (http) {
 
     this.title = this._extractTitle (media);
 
+    this.twitter_id = this._lookUpObject (media, '.owner.username', 'string');
+
     var data = this._extractMediaData (media);
   }
   catch (e) {
@@ -238,12 +240,6 @@ Instagram.prototype.get = function (url) {
   if (!http.get (u)) {
     return this._httpError ();
   }
-
-  // Twitter ID
-  if (!/"owner"\s*:\s*\{([^}]*,)?\s*"username"\s*:\s*"([^"]+)"/.test (http.data)) {
-    return this._unknown ('username が見つかりません。');
-  }
-  this.twitter_id = RegExp.$2;
 
   // ファイルURL
   return this._extractUrls (http);
