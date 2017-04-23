@@ -36,8 +36,7 @@ function () {
     Cookie: BrowserCookie.prototype.iniTemplate,
     General: {
       Zen2Han: false,
-      PageOrigin: 0,
-      DownloadDrm: false
+      PageOrigin: 0
     },
     Filename: {
       Illust:  'seiga_%ID%',
@@ -536,11 +535,6 @@ function dl_manga_flv (http) {
   if (!http.get (url)) {
     return http.retry_or_die ();
   }
-
-  if (!ini.General.DownloadDrm && http.data.indexOf ('<source_url>http://drm.') != -1) {
-    http.die ('DRM Ç…ÇÊÇ¡Çƒï€åÏÇ≥ÇÍÇΩçÏïiÇÃÇΩÇﬂèIóπÇµÇ‹Ç∑ÅB');
-  }
-
 
   var list = [ ];
 

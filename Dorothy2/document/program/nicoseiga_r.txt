@@ -103,6 +103,7 @@ http://seiga.nicovideo.jp/bbs/sg\d+
 
 2017-04-23  version 20170423.0  rentan at rentan.org
   HTML の変更に対応。
+  DownloadDRM を削除。
 
 2014-03-31  version 20140331.0  rentan at rentan.org
   GNU GPL v3 or later を適用。
